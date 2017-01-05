@@ -3,7 +3,6 @@
 #include <cstdio>
 #include <cstddef>
 
-
 /* Bytecodes */
 
 /**
@@ -12,53 +11,53 @@
  * second 16 bytes may be an argument to the opcode
  */
 
-typedef uint16_t OpCode;
-typedef uint32_t ByteCode;
+typedef uint16_t ByteCode;
+typedef uint16_t Parameter;
+typedef uint32_t Instruction;
 
-enum BC_OPCODES : OpCode {
-    PUSH_CONSTANT     = 0x1,
-    DROP
-    PUSH_FROM_VAR
-    POP_INTO_VAR
-    SUB
-    ADD      = 0x3,
-    CALL
-    RETURN
-    JMPLE
-};
+#define PUSH_CONSTANT 0X1
+#define DROP 0x2
+#define PUSH_FROM_VAR 0x3
+#define POP_INTO_VAR 4
+#define SUB 5
+#define ADD 6
+#define CALL 7
+#define RETURN 8
+#define JMPLE 9
 
+constexpr ByteCode
+getByteCodeFromInstruction (Instruction instruction)
+{
+    return (instruction >> 16);
+}
 
-class BYTECODE {
-    public:
-        static constexpr OpCode getOpCodeFromByteCode (ByteCode byteCode) { return *(OpCode *)&byteCode; }
-        static constexpr uint16_t getParamFromByteCode (ByteCode byteCode) { return *(((uint16_t *)&byteCode)+1);}
+constexpr Parameter
+getParameterFromInstruction (Instruction instruction)
+{
+    return (instruction & 0xFFFF);
+}
 
-        static constexpr ByteCode createByteCode(const OpCode opCode, const uint16_t param)
-        {
-            uint16_t byteCode [2] = {opCode, param};
-            return *(ByteCode *) byteCode;
-        }
-};
+constexpr Instruction
+createInstruction(ByteCode byteCode, Parameter parameter)
+{
+    return byteCode << 16 | parameter;
+}
 
-class BYTECODE_PUSH : BYTECODE {
-    public:
-        static constexpr OpCode getOpCode() { return (OpCode) BC_OPCODES::PUSH; }
+#define decl(argCount, tmpCount, length) (argCount << 24 | tmpCount << 16 | length)
+#define progArgCount(a) (a >> 24)
+#define progTmpCount(a) (a >> 16 & 0xF)
+#define progLength(a) (a & 0xFFFF)
 
-        static constexpr uint16_t getValue(ByteCode byteCode) { return getParamFromByteCode(byteCode); }
-        static constexpr ByteCode gen(const uint16_t param) { return BYTECODE::createByteCode(BYTECODE_PUSH::getOpCode(), param); }
-
-};
-
-class BYTECODE_ADD : BYTECODE {
-    public:
-        static constexpr OpCode getOpCode() { return (OpCode) BC_OPCODES::ADD; }
-        static constexpr ByteCode gen() { return BYTECODE::createByteCode(BYTECODE_ADD::getOpCode(), 0); }
-};
 
 /* Byte Code Implementations */
 
+void push(ByteCode **programPointer, uint16_t **stackPointer, uint16_t value)
+{
+
+}
+
 void
-bc_push (ByteCode **programPointer, uint16_t **stackPointer, uint16_t value)
+bc_push (Instruction **programPointer, uint16_t **stackPointer, uint16_t value)
 {
     **stackPointer = value;
     ++(*stackPointer);
@@ -66,7 +65,7 @@ bc_push (ByteCode **programPointer, uint16_t **stackPointer, uint16_t value)
 }
 
 void
-bc_jmple(ByteCode **programPointer, uint16_t **stackPointer, int16_t delta)
+bc_jmple(Instruction **programPointer, uint16_t **stackPointer, int16_t delta)
 {
 
     --(*stackPointer);
@@ -84,7 +83,7 @@ bc_jmple(ByteCode **programPointer, uint16_t **stackPointer, int16_t delta)
 
 
 void
-bc_add (ByteCode **programPointer, uint16_t **stackPointer)
+bc_add (Instruction **programPointer, uint16_t **stackPointer)
 {
     --(*stackPointer);
     uint16_t operandA = **stackPointer;
@@ -112,23 +111,30 @@ public:
     }
 
     uint16_t stack[1000];
-    ByteCode *programPointer;
+    Instruction *instructionPointer;
     uint16_t *stackPointer;
 
-    uint16_t interpret(ByteCode *program, std::size_t programSize)
+    uint16_t interpret(Instruction *program)
     {
-        programPointer = program;
-        while (programPointer < program + programSize)
+        int args = progArgCount(*program);
+        int tmps = progTmpCount(*program);
+        int length = progLength(*program);
+
+        printf("Prog Arg Count %d, tmp count %d, length %d", args, tmps, length);
+
+        instructionPointer = program + 1;
+
+        while (instructionPointer < program + length)
         {
-            switch (BYTECODE::getOpCodeFromByteCode(*programPointer))
+            switch (getByteCodeFromInstruction(*instructionPointer))
             {
-                case static_cast<unsigned int>(BC_OPCODES::PUSH) :
+                case PUSH_CONSTANT :
                     printf("push\n");
-                    bc_push(&this->programPointer, &this->stackPointer, BYTECODE_PUSH::getValue(*programPointer));
+                    bc_push(&this->instructionPointer, &this->stackPointer, getParameterFromInstruction(*instructionPointer));
                     break;
-                case static_cast<unsigned int>(BC_OPCODES::ADD) :
+                case ADD :
                     printf("add\n");
-                    bc_add(&this->programPointer, &this->stackPointer);
+                    bc_add(&this->instructionPointer, &this->stackPointer);
                     break;
             }
         }
@@ -137,37 +143,36 @@ public:
 };
 
 
-static ByteCode fib_function [] = {};
+static Instruction fib_function [] = {
+ decl(0, 0, 2), //sizeof(fib_function) / sizeof(Instruction)),
+ createInstruction(PUSH_CONSTANT, 9),
+ createInstruction(RETURN, 0)
+};
 
-static ByteCode main_function [] =
+static Instruction main_function [] =
 {
-    BYTECODE_PUSH::gen(1),
-    BYTECODE_PUSH::gen(2),
-    BYTECODE_ADD::gen(),
-    BYTECODE_PUSH::gen(0),
-    BYTECODE_PUSH::gen(2),
-    BYTECODE_JMPLE::gen(2),
+    decl(0, 0, 4), //sizeof(main_function) / sizeof(Instruction)),
+    createInstruction(PUSH_CONSTANT, 1),
+    createInstruction(PUSH_CONSTANT, 5),
+    createInstruction(ADD, 0),
+    createInstruction(RETURN, 0)
 };
 
 /* Byte Code Program */
-static ByteCode *functions [] = {
-    &main_function,
-    &fib_function
-}
-
-static ByteCode program_size = 3;
+static Instruction *functions [] = {
+    main_function,
+    fib_function
+};
 
 /* Main Loop */
 
 int
 main ()
 {
-    ByteCode *programToRun = program;
-    std::size_t byteCodeCount = program_size;
-
+    Instruction *programToRun = main_function;
     ByteCodeInterpreter byteCodeInterpreter;
 
-    uint16_t result = byteCodeInterpreter.interpret(programToRun, byteCodeCount);
+    uint16_t result = byteCodeInterpreter.interpret(programToRun);
 
     printf("Program result is: %d", result);
 

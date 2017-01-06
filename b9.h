@@ -74,13 +74,4 @@ createInstruction(ByteCode byteCode, Parameter parameter)
 #define progArgCount(a) (a >> 16)
 #define progTmpCount(a) (a & 0xFFFF)
 
-void printStack(ExecutionContext *context) {
-
-  uint16_t *base = context->stack;
-  printf("------\n");
-  while (base < context->stackPointer) {
-    printf("%p: Stack[%ld] = %d\n", base, base - context->stack, *base);
-    base++;
-  }
-  printf("^^^^^^^^^^^^^^^^^\n");
-}
+extern void b9PrintStack(ExecutionContext *context);

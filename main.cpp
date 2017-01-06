@@ -269,6 +269,17 @@ uint16_t interpret(ExecutionContext* context, Instruction* program)
     return *(context->stackPointer - 1);
 }
 
+void b9PrintStack(ExecutionContext *context) {
+
+  uint16_t *base = context->stack;
+  printf("------\n");
+  while (base < context->stackPointer) {
+    printf("%p: Stack[%ld] = %d\n", base, base - context->stack, *base);
+    base++;
+  }
+  printf("^^^^^^^^^^^^^^^^^\n");
+}
+
 /* Main Loop */
 
 
@@ -281,39 +292,48 @@ int main()
 
     uint16_t result = 0;
 
-    // run main, which just calls fib 12
-    // result = interpret(&context, main_function);
-    // printf("Program result is: %d\n", result);
-
-    // run a hard loop of fib(12)
     push (&context, 1);
     push (&context, 2);
-
     printf("main: context.stackPointer = %p\n",context.stackPointer);
     result = interpret(&context, test_function2); 
-    printf("result is: %d\n", result);
+    printf("!!!!!!!  interpreted: result is supposed to be 3, result is: %d\n", result);
 
     generateCode(test_function2);
     push (&context, 3);
     push (&context, 4);
     printf("main: context.stackPointer = %p\n",context.stackPointer);
     result = interpret(&context, test_function2); 
+    printf("!!!!!!!  jitted: result is supposed to be 7, result is: %d\n", result);
+
+
+    printf("main: context.stackPointer = %p\n",context.stackPointer);
+    result = interpret(&context, test_function);
+    printf("!!!!!!!  interpreted: result is supposed to be 111, result is: %d\n", result);
     printf("result is: %d\n", result);
 
     generateCode(test_function);
+    printf("main: context.stackPointer = %p\n",context.stackPointer);
+    result = interpret(&context, test_function); 
+    printf("!!!!!!!  jitted: result is supposed to be 111, result is: %d\n", result);
 
-    uint64_t *address = (uint64_t *) (&test_function[1]);
-    Interpret jitedcode = (Interpret) *address;
-    result = (*jitedcode) (&context, test_function);
-    printf("result is: %d\n", result);
+    // generateCode(test_function);
+    // uint64_t *address = (uint64_t *) (&test_function[1]);
+    // Interpret jitedcode = (Interpret) *address;
+    // result = (*jitedcode) (&context, test_function);
+    // printf("result is: %d\n", result);
 
-    int count = 1000;
-    while (count--) { 
-        push (&context, 10000);
-        result = interpret(&context, loop_call_fib12_function); 
-        //context.stackPointer = context.stack;
-    }
-    printf("result is: %d\n", result);
+    // run main, which just calls fib 12
+    // result = interpret(&context, main_function);
+    // printf("Program result is: %d\n", result);
+
+    // run a hard loop of fib(12)
+    // int count = 1000;
+    // while (count--) { 
+    //     push (&context, 10000);
+    //     result = interpret(&context, loop_call_fib12_function); 
+    //     //context.stackPointer = context.stack;
+    // }
+    // printf("result is: %d\n", result);
 
     return 0;
 }

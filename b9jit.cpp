@@ -14,7 +14,6 @@
 #include "ilgen/VirtualMachineOperandStack.hpp"
 #include "ilgen/VirtualMachineRegister.hpp"
 #include "ilgen/VirtualMachineRegisterInStruct.hpp"
-// #include "j9.hpp"
 
 #include "b9.h"
 #include "b9jit.hpp"
@@ -201,10 +200,10 @@ void B9Method::defineFunctions()
    DefineFunction((char*)"getargs", (char*)__FILE__, (char*)NEWLINE_LINE, (void*)&getargs, Int64, 1, Int64);
    DefineFunction((char*)"gettemps", (char*)__FILE__, (char*)NEWLINE_LINE, (void*)&gettemps, Int64, 1, Int64);
 
-    void bc_call(ExecutionContext* context, uint16_t value);
+    // void bc_call(ExecutionContext* context, uint16_t value);
 
-DefineFunction((char*)"printStack", (char*)__FILE__, "printStack", (void*)&printStack, NoType, 1, Int64);
-    DefineFunction((char*)"bc_call", (char*)__FILE__, "bc_call", (void*)&bc_call, Int64, 2, Int64, Int64);
+    DefineFunction((char*)"printStack", (char*)__FILE__, "printStack", (void*)&b9PrintStack, NoType, 1, Int64);
+    // DefineFunction((char*)"bc_call", (char*)__FILE__, "bc_call", (void*)&bc_call, Int64, 2, Int64, Int64);
     DefineFunction((char*)"interpret", (char*)__FILE__, "interpret", (void*)&interpret, Int64, 2, Int64, Int64);
 }
 
@@ -419,8 +418,8 @@ bool B9Method::generateILForBytecode(TR::BytecodeBuilder** bytecodeBuilderTable,
     case CALL: {
         int callindex = getParameterFromInstruction(instruction);
         TR::IlValue* functions = builder->LoadIndirect("b9_execution_context", "functions", builder->Load("context"));
-
-        TR::IlValue* result = builder->Call("interpret", 2, builder->Load("context"), builder->ConstInt64(callindex));
+        TR::IlValue *address = builder->IndexAt(pInt64, functions, builder->ConstInt32(callindex));
+        TR::IlValue* result = builder->Call("interpret", 2, builder->Load("context"), builder->LoadAt(pInt64, address));
         push(builder, result);
 
         if (nextBytecodeBuilder)
@@ -459,74 +458,18 @@ void B9Method::handle_bc_jmp_le(TR::BytecodeBuilder* builder,
     int prevBytecodeIndex,
     TR::BytecodeBuilder* nextBuilder)
 {
-#ifdef FIX_FIX
-    int bc = int8At(bytecodeIndex);
-    assert(bc == T4_JMP_NZ); // for now just be sure
-    struct t4_bytecode_info* bc_info = t4_bcinfo_for_bc(bc);
+        Instruction instruction = program[bytecodeIndex];
 
-    int delta = int16At(bytecodeIndex + 1); // jmpnz <delta>
-    int next_bc_index = bytecodeIndex + delta + bc_info->length;
+        int delta = getParameterFromInstruction(instruction);
 
-    // printf("handle_bc_jmp_nz delta is <%d>\n", delta);
-    // printf("JUMPING TO pc @ %d\n", next_bc_index);
-    // printBC("BYTECODE at Destination", code, next_bc_index);
-
-    TR::BytecodeBuilder* destBuilder = bytecodeBuilderTable[next_bc_index];
-    // if (destBuilder)
-    //     builder->AddSuccessorBuilder(&destBuilder);
-
-    int prevBytecode = int8At(prevBytecodeIndex);
-    if (prevBytecode == T4_COMPARE) {
         TR::IlValue* right = pop(builder);
         TR::IlValue* left = pop(builder);
-        int comparetype = int8At(prevBytecodeIndex + 1);
-        char* compareTypeFunction = compareType_to_name(comparetype);
 
-        if (comparetype == COMPARE_LT) { // optimize compare LT inline
-            TR::BytecodeBuilder* isTaggedPath = OrphanBytecodeBuilder(genBCIndex++, (char*)"handle_bc_jmp_nz_then");
-            TR::BytecodeBuilder* isSlowPath = OrphanBytecodeBuilder(genBCIndex++, (char*)"handle_bc_jmp_nz_else");
+        int next_bc_index = bytecodeIndex + delta;
+        TR::BytecodeBuilder* thenPath = bytecodeBuilderTable[next_bc_index];
 
-            TR::IlValue* bothTagged = builder->And(builder->And(left, right), builder->ConstInt64(0x1));
-            builder->IfCmpEqual(isSlowPath,
-                builder->ConstInteger(Int64, 0),
-                bothTagged);
-            builder->AddFallThroughBuilder(isTaggedPath);
-
-            //both are tagged path if (<= gets converted to jump if GreaterThan)
-            isTaggedPath->IfCmpLessThan(destBuilder, right, left);
-            isTaggedPath->IfCmpEqual(destBuilder, right, left);
-            isTaggedPath->AddFallThroughBuilder(nextBuilder);
-
-            // slow path
-            TR::IlValue* true_or_false = isSlowPath->Call(compareTypeFunction, 4,
-                isSlowPath->Load("vm"),
-                isSlowPath->Load("frame"), left, right);
-            isSlowPath->IfCmpEqual(destBuilder, true_or_false, isSlowPath->ConstInt64(0));
-            isSlowPath->Goto(nextBuilder);
-        } else {
-            // handle the previously skipped compare, together with the jump
-            commitPrint(vm, builder, "CALLING slow function for compare ");
-            TR::IlValue* true_or_false = builder->Call(compareTypeFunction, 4, builder->Load("vm"),
-                builder->Load("frame"), left, right);
-            builder->IfCmpEqual(destBuilder, true_or_false, builder->ConstInt64(0)); // converted isFalse to 0/1
-            builder->AddFallThroughBuilder(nextBuilder);
-        }
-        return;
-    }
-    int true_false_guaranteed = (prevBytecode == T4_NOT);
-    if (true_false_guaranteed) {
-        TR::IlValue* value = pop(builder);
-        TR::IlValue* t4_false = builder->LoadIndirect(  "b9_execution_context", "t4_false", builder->Load("vm"));
-        builder->IfCmpEqual(destBuilder, value, t4_false); // converted isFalse to 0/1
-
-    } else {
-        TR::IlValue* value = pop(builder);
-        TR::IlValue* isFalseHood = isFalsehood(builder, value);
-        builder->IfCmpEqual(destBuilder, isFalseHood,
-            builder->ConstInt64((int64_t)1)); // converted isFalse to 0/1
-    }
-    builder->AddFallThroughBuilder(nextBuilder);
-#endif
+        builder->IfCmpLessOrEqual(thenPath, left, right);
+        builder->AddFallThroughBuilder(nextBuilder);
 }
 
 void B9Method::handle_bc_sub(TR::BytecodeBuilder* builder, TR::BytecodeBuilder* nextBuilder)

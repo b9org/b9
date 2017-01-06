@@ -38,7 +38,6 @@ class ExecutionContext {
     }
 
     uint16_t stack[1000];
-    Instruction *instructionPointer;
     uint16_t *stackPointer;
 };
 
@@ -133,7 +132,6 @@ bc_call(ExecutionContext *context,  uint16_t value)
     printf("return from  call %d\n" ,result);
 
     push (context, result);
-    ++(context->instructionPointer);
 }
 
 
@@ -141,31 +139,27 @@ void
 bc_push_from_arg(ExecutionContext *context, uint16_t *args, uint16_t offset)
 {
     push(context, args[offset]);
-    ++(context->instructionPointer);
 }
 
 void
 bc_pop_into_arg(ExecutionContext *context, uint16_t *args, uint16_t offset)
 {
     args[offset] = pop(context);
-    ++(context->instructionPointer);
 }
 
 void
 bc_drop(ExecutionContext *context)
 {
     pop(context);
-    ++(context->instructionPointer);
 }
 
 void
 bc_push_constant (ExecutionContext *context, uint16_t value)
 {
     push(context, value);
-    ++(context->instructionPointer);
 }
 
-void
+uint16_t
 bc_jmple(ExecutionContext *context, uint16_t delta)
 {
     uint16_t operandB = pop(context);
@@ -174,10 +168,9 @@ bc_jmple(ExecutionContext *context, uint16_t delta)
     printf("jmple operandA %d, operandB %d\n", operandA, operandB);
 
     if (operandA <= operandB) {
-        context->instructionPointer += delta;
-    } else {
-        ++(context->instructionPointer);
+        return delta - 1;
     }
+    return 0;
 }
 
 
@@ -190,9 +183,8 @@ bc_add (ExecutionContext *context)
     printf("add operandA %d operandB %d\n", operandA, operandB);
     uint16_t result = operandA + operandB;
 
-push(context, result);
+    push(context, result);
 
-    ++(context->instructionPointer);
 }
 
 void
@@ -205,7 +197,6 @@ bc_sub (ExecutionContext *context)
 
     push(context, result);
 
-    ++(context->instructionPointer);
 }
 
 
@@ -219,18 +210,16 @@ uint16_t interpret(ExecutionContext *context, Instruction *program)
 
     printf("Prog Arg Count %d, tmp count %d", nargs, tmps);
 
-    Instruction *save = context->instructionPointer;
-    context->instructionPointer = program + 1;
-
+    Instruction *instructionPointer = program + 1;
     uint16_t *args = context->stackPointer - nargs;
 
-    while (*context->instructionPointer != NO_MORE_BYTECODES)
+    while (instructionPointer != NO_MORE_BYTECODES)
     {
-        switch (getByteCodeFromInstruction(*context->instructionPointer))
+        switch (getByteCodeFromInstruction(*instructionPointer))
         {
             case PUSH_CONSTANT :
                 printf("push\n");
-                bc_push_constant(context, getParameterFromInstruction(*context->instructionPointer));
+                bc_push_constant(context, getParameterFromInstruction(*instructionPointer));
                 break;
             case DROP :
                 printf("drop\n");
@@ -246,31 +235,30 @@ uint16_t interpret(ExecutionContext *context, Instruction *program)
                 break;
             case JMPLE :
                 printf("jmple\n");
-                bc_jmple(context, getParameterFromInstruction(*context->instructionPointer));
+                instructionPointer += bc_jmple(context, getParameterFromInstruction(*instructionPointer));
                 break;
             case CALL :
                 printf ("call\n");
-                bc_call(context, getParameterFromInstruction(*context->instructionPointer));
+                bc_call(context, getParameterFromInstruction(*instructionPointer));
                 break;
             case PUSH_FROM_VAR :
                 printf ("poush_from_var\n");
-                bc_push_from_arg(context, args, getParameterFromInstruction(*context->instructionPointer));
+                bc_push_from_arg(context, args, getParameterFromInstruction(*instructionPointer));
                 break;
             case POP_INTO_VAR :
                 printf ("pop_into_var\n");
-                bc_pop_into_arg(context, args, getParameterFromInstruction(*context->instructionPointer));
+                bc_pop_into_arg(context, args, getParameterFromInstruction(*instructionPointer));
                 break;
             case RETURN :
                 printf("return\n");
                 /* bc_return */
                 int16_t result = *(context->stackPointer - 1);
-                context->instructionPointer = save;
                 context->stackPointer = args;
                 return result;
                 break;
         }
+        instructionPointer++;
     }
-    context->instructionPointer = save;
     return *(context->stackPointer-1);
 }
 

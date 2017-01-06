@@ -16,9 +16,11 @@ public:
     virtual bool buildIL();
 
 protected:
-    TR::IlType* b9_vm_struct;
-    TR::IlType* p_b9_vm_struct; 
+    TR::IlType* b9_execution_context;
+    TR::IlType* p_b9_execution_context; 
     TR::IlType* pInt64; 
+    TR::IlType* pInt32;
+    TR::IlType* pInt16;
 
 private:
     Instruction * program;
@@ -28,17 +30,15 @@ private:
     void defineLocals();
     void defineParameters();
 
-    void defineVMStructure(TR::TypeDictionary* types);
-    void defineVMFrameStructure(TR::TypeDictionary* types);
-    void defineVMObjectStructure(TR::TypeDictionary* types);
-
     void createBuilderForBytecode(TR::BytecodeBuilder** bytecodeBuilderTable, uint8_t bytecode, int64_t bytecodeIndex);
-    bool generateILForBytecode(TR::BytecodeBuilder** bytecodeBuilderTable, uint8_t bytecode, long bytecodeIndex, long prevBytecodeIndex);
+    bool generateILForBytecode(TR::BytecodeBuilder** bytecodeBuilderTable, uint8_t bytecode, long bytecodeIndex);
 
     TR::IlValue* pop(TR::BytecodeBuilder* builder);
     void push(TR::BytecodeBuilder* builder, TR::IlValue* value);
-    TR::IlValue* peek(TR::BytecodeBuilder* builder);
     void drop(TR::BytecodeBuilder* builder);
+
+TR::IlValue* loadVarIndex(TR::BytecodeBuilder* builder, int varindex);
+void storeVarIndex(TR::BytecodeBuilder* builder, int varindex, TR::IlValue* value);
 
     void handle_bc_push_constant(TR::BytecodeBuilder* builder, TR::BytecodeBuilder* nextBuilder);
     void handle_bc_drop(TR::BytecodeBuilder* builder, TR::BytecodeBuilder* nextBuilder);

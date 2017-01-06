@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <dlfcn.h>
 #include <errno.h>
+#include <assert.h>
 
 #include "Jit.hpp"
 #include "ilgen/BytecodeBuilder.hpp"
@@ -110,17 +111,21 @@ void b9_jit_init()
     initializeJit();
 }
 
-void generateCodeForLambda(Instruction* program)
+void generateCode(Instruction* program)
 {
     TR::TypeDictionary types;
     B9Method methodBuilder(&types, program);
     uint8_t* entry = 0;
+    printf("Start gen code\n");
     int rc = (*compileMethodBuilder)(&methodBuilder, &entry);
     if (0 == rc) {
             printf("Compiled success address = <%p>\n", entry);
+            uint64_t *slotForJitAddress = (uint64_t *) &program[1];
+            *slotForJitAddress = (uint64_t)entry;
     } else {
             printf("Failed to compile");
     }
+     printf("Done gen code\n", entry);
 }
 
 B9Method::B9Method(TR::TypeDictionary* types, Instruction *program)
@@ -148,24 +153,42 @@ B9Method::B9Method(TR::TypeDictionary* types, Instruction *program)
 
 void B9Method::defineParameters()
 {
-    DefineParameter("vm", p_b9_vm_struct); 
+    DefineParameter("context", p_b9_execution_context); 
+    DefineParameter("program", pInt32);
 }
 
 void B9Method::defineLocals()
 {
-    // DefineLocal("cachedVars", Int64);
-    // DefineLocal("var0", Int64);
+    DefineLocal("args", pInt16);
+    DefineLocal("nargs", Int64);
+    DefineLocal("tmps", Int64);
 }
 
 void B9Method::defineStructures(TR::TypeDictionary* types)
 {
     pInt64 = types->PointerTo(Int64); 
+    pInt32 = types->PointerTo(Int32);
+    pInt16 = types->PointerTo(Int16);
 
-    defineVMStructure(types);
-    defineVMFrameStructure(types);
-    defineVMObjectStructure(types);
+    b9_execution_context = types->DefineStruct("b9_execution_context");
+    types->DefineField( "b9_execution_context", "stack", pInt16, offsetof(struct ExecutionContext, stack));
+    types->DefineField( "b9_execution_context", "stackPointer", pInt16, offsetof(struct ExecutionContext, stackPointer));
+    types->DefineField( "b9_execution_context", "functions", pInt64, offsetof(struct ExecutionContext, functions));
+    types->CloseStruct("b9_execution_context");
+
+    p_b9_execution_context = types->PointerTo(b9_execution_context);
 }
 
+long getargs (Instruction p)
+{
+    return progArgCount(p);
+}
+
+long gettemps (Instruction p)
+{
+    return progTmpCount(p);
+}
+  
 void B9Method::defineFunctions()
 {
     DefineFunction((char*)"printString", (char*)__FILE__, (char*)PRINTSTRING_LINE, (void*)&printString, NoType, 1, Int64);
@@ -175,55 +198,14 @@ void B9Method::defineFunctions()
     DefineFunction((char*)"newline", (char*)__FILE__, (char*)NEWLINE_LINE, (void*)&newline, NoType, 0);
     DefineFunction((char*)"printstring", (char*)__FILE__, (char*)NEWLINE_LINE, (void*)&printstring, NoType, 1, Int64);
 
+   DefineFunction((char*)"getargs", (char*)__FILE__, (char*)NEWLINE_LINE, (void*)&getargs, Int64, 1, Int64);
+   DefineFunction((char*)"gettemps", (char*)__FILE__, (char*)NEWLINE_LINE, (void*)&gettemps, Int64, 1, Int64);
 
     void bc_call(ExecutionContext* context, uint16_t value);
 
+DefineFunction((char*)"printStack", (char*)__FILE__, "printStack", (void*)&printStack, NoType, 1, Int64);
     DefineFunction((char*)"bc_call", (char*)__FILE__, "bc_call", (void*)&bc_call, Int64, 2, Int64, Int64);
-}
-void B9Method::defineVMStructure(TR::TypeDictionary* types)
-{
-    b9_vm_struct = types->DefineStruct("b9_vm_struct");
-
-//    types->DefineField("b9_vm_struct", "xxxxx", Int64, offsetof(struct _t4_vm_, known_constants.kc_null));
-  
-    types->CloseStruct("b9_vm_struct");
-
-    p_b9_vm_struct = types->PointerTo("b9_vm_struct");
-}
-
-void B9Method::defineVMFrameStructure(TR::TypeDictionary* types)
-{
-
-    /*	struct _t4_frame_ {
-    struct _t4_frame_* caller; // frame you return to
-    t4_chunk method; // current method running in this frame
-    t4_chunk vars; // with variables
-    t4_chunk fthis; // this per frame, mainly null
-    u8* spc; // only valid on prepared frames - ready for GC
-    int args_passed; // only valid on prepared frames - ready for GC
-};
-*/
-
-    types->DefineField("t4_frame_struct", "caller", Int64);
-    types->DefineField("t4_frame_struct", "method", Int64);
-    types->DefineField("t4_frame_struct", "vars", Int64);
-    types->DefineField("t4_frame_struct", "fthis", Int64);
-    types->DefineField("t4_frame_struct", "spc", Int64);
-    types->DefineField("t4_frame_struct", "args_passed", Int64);
-
-    types->CloseStruct("t4_frame_struct");
-}
-
-void B9Method::defineVMObjectStructure(TR::TypeDictionary* types)
-{
-    // t4_chunk_struct = types->DefineStruct("t4_chunk_struct");
-    // types->DefineField("t4_chunk_struct", "omr_meta", Int64);
-    // types->DefineField("t4_chunk_struct", "flags", Int64);
-    // types->DefineField("t4_chunk_struct", "shape", Int64);
-    // types->DefineField("t4_chunk_struct", "prototype", Int64);
-    // types->DefineField("t4_chunk_struct", "acc", Int64);
-    // types->DefineField("t4_chunk_struct", "first_data_offset", Int64);
-    // types->CloseStruct("t4_chunk_struct");
+    DefineFunction((char*)"interpret", (char*)__FILE__, "interpret", (void*)&interpret, Int64, 2, Int64, Int64);
 }
 
 bool hackVMState = false;
@@ -245,7 +227,20 @@ bool hackVMState = false;
 void B9Method::createBuilderForBytecode(TR::BytecodeBuilder** bytecodeBuilderTable, uint8_t bytecode, int64_t bytecodeIndex)
 {
     TR::BytecodeBuilder* newBuilder = OrphanBytecodeBuilder(bytecodeIndex, (char*)b9_bytecodename(bytecode));
+    printf("Created bytecodebuilder index=%d bc=%d %p\n", bytecodeIndex, bytecode, newBuilder);
     bytecodeBuilderTable[bytecodeIndex] = newBuilder;
+}
+
+long computeNumberOfBytecodes(Instruction *program)
+{
+    long result = METHOD_FIRST_BC_OFFSET;
+    program += METHOD_FIRST_BC_OFFSET;
+    while(*program != NO_MORE_BYTECODES) {
+        program++;
+        result++;
+    }
+    // printf("bytecodeCount = %d\n", result);
+    return result;
 }
 
 bool B9Method::buildIL()
@@ -254,20 +249,12 @@ bool B9Method::buildIL()
     bool success = true;
 
     OMR::VirtualMachineRegisterInStruct* stackTop
-        = new OMR::VirtualMachineRegisterInStruct(this, "b9_vm_struct", "vm", "sp", "SP");
+        = new OMR::VirtualMachineRegisterInStruct(this, "b9_execution_context", "context", "stackPointer", "SP");
     OMR::VirtualMachineOperandStack* stack = new OMR::VirtualMachineOperandStack(this, 32, pInt64, stackTop);
     B9VirtualMachineState* vms = new B9VirtualMachineState(stack, stackTop);
     setVMState(vms);
 
-#ifdef FIX_FIX_FIX
-    //   printf("\nGenerating code for %s\n", t4_char_data_address(lambda->l.name.prop_value));
-    t4_chunk code = lambda->l.function.prop_value;
-    if (METHOD_CATCHES_THROW(code)) {
-        //printf("\nSKIP due to exception handler\n" ) ;
-        return false;
-    }
-
-    numberOfBytecodes = computeNumberOfBytecodes(code);
+    long numberOfBytecodes = computeNumberOfBytecodes(program);
 
     long tableSize = sizeof(TR::BytecodeBuilder*) * numberOfBytecodes;
     bytecodeBuilderTable = (TR::BytecodeBuilder**)malloc(tableSize);
@@ -276,339 +263,166 @@ bool B9Method::buildIL()
     }
     memset(bytecodeBuilderTable, 0, tableSize);
 
-    bool* reachable = (bool*)malloc(tableSize);
-    memset(reachable, 0, tableSize);
-
-    int64_t i = METHOD_FIRST_BC_OFFSET;
-    while (i < numberOfBytecodes) {
-        reachable[i] = true;
-        uint8_t bc = code->d.u8data[i];
-        struct t4_bytecode_info* bc_info = t4_bcinfo_for_bc(bc);
-        int nextbytecode = i + bc_info->length;
-        switch (bc) {
-        case T4_RETURN: {
-            i = nextbytecode;
-            while (!reachable[i] && i < numberOfBytecodes) {
-                i++;
-            }
-        } break;
-
-        case T4_JMP: {
-            int delta = int16At(i + 1);
-            int next_bc_index = nextbytecode + delta;
-            reachable[next_bc_index] = true;
-            i = nextbytecode;
-            if (code->d.u8data[i] == T4_JMP_EXCEPTION) {
-                reachable[i] = true;
-            }
-            while (!reachable[i] && i < numberOfBytecodes) {
-                i++;
-            }
-        } break;
-        case T4_JMP_EXCEPTION:
-        case T4_JMP_NZ:
-        case T4_JMP_EQ: {
-            reachable[nextbytecode] = true;
-            int delta = int16At(i + 1);
-            int next_bc_index = nextbytecode + delta;
-            reachable[next_bc_index] = true;
-            i = nextbytecode;
-        } break;
-        default:
-            // next bytecode fallthrough is reachable
-            reachable[nextbytecode] = true;
-            i = nextbytecode;
-            break;
-        }
-    }
+long i;
 
     i = METHOD_FIRST_BC_OFFSET;
     while (i < numberOfBytecodes) {
-        uint8_t bc = code->d.u8data[i];
-        struct t4_bytecode_info* bc_info = t4_bcinfo_for_bc(bc);
-        if (reachable[i]) {
-            createBuilderForBytecode(bytecodeBuilderTable, bc, i);
-        } else {
-            printBC("SKIP BC AT ", code, i, reachable[i]);
-        }
-        i += bc_info->length;
+        ByteCode bc = getByteCodeFromInstruction(program[i]);
+        createBuilderForBytecode(bytecodeBuilderTable, bc, i);
+        i += 1;
     }
+    TR::BytecodeBuilder* builder = bytecodeBuilderTable[METHOD_FIRST_BC_OFFSET];
+    printf("builder %p\n", builder);
+    AppendBuilder(builder);
+    
+    builder->Call("printstring", 1, builder->ConstString("hi jon"));
+    TR::IlValue* prog = builder->Load("program");
+    TR::IlValue* sp = builder->LoadIndirect("b9_execution_context", "stackPointer", builder->Load("context"));
 
-    AppendBuilder(bytecodeBuilderTable[METHOD_FIRST_BC_OFFSET]);
-    stackLevel = 0;
+    TR::IlValue* nargs = builder->ConstInt32(progArgCount(*program) * sizeof(uint16_t));
+    TR::IlValue* tmps = builder->ConstInt32(progTmpCount(*program));
+    TR::IlValue* args = builder->Sub(sp, nargs);
+
+    builder->Store("args", args);
+
+    builder->Call("printstring", 1, builder->ConstString("!!buildIl sp,nargs,tmps,args="));
+    builder->Call("printInt64Hex", 1, sp);
+    builder->Call("printInt64Hex", 1, nargs);
+    builder->Call("printInt64Hex", 1, tmps);
+    builder->Call("printInt64Hex", 1, args);
+
+    sp = Add(sp, tmps);
+
     i = METHOD_FIRST_BC_OFFSET;
-    int prevBytecodeIndex = -1;
     while (i < numberOfBytecodes) {
-        uint8_t bc = code->d.u8data[i];
-        struct t4_bytecode_info* bc_info = t4_bcinfo_for_bc(bc);
-        if (reachable[i]) {
-            if (vm->trace.verbose) {
-                printBC("generateILForBytecode", code, i, reachable[i]);
-            }
-            if (!generateILForBytecode(bytecodeBuilderTable, bc, i, prevBytecodeIndex)) {
-                if (vm->trace.verbose) {
-                    printBC("Failed to generateILForBytecode", code, i, reachable[i]);
-                }
+            Instruction bc = getByteCodeFromInstruction(program[i]);
+            if (!generateILForBytecode(bytecodeBuilderTable, bc, i)) {
                 success = false;
                 break;
             }
-            prevBytecodeIndex = i;
-        }
-        i += bc_info->length;
+
+        i += 1;
     }
 
     free((void*)bytecodeBuilderTable);
     return success;
-#endif 
-    return 0;
 }
 
-#ifdef FIX_FIX
-TR::IlValue* B9Method::loadVarIndex(TR::BytecodeBuilder* builder, int varindex)
-{
-    TR::IlValue* vars = builder->LoadIndirect("t4_frame_struct", "vars", builder->Load("frame"));
-    int offset = varindex + (offsetof(struct _t4_chunk_, d.pdata) / sizeof(Int64));
-    TR::IlValue* address = builder->IndexAt(pInt64,
-        vars,
-        builder->ConstInt32(offset));
-    return builder->LoadAt(pInt64, address);
+TR::IlValue *B9Method::loadVarIndex(TR::BytecodeBuilder *builder, int varindex) {
+  TR::IlValue *args = builder->Load("args");
+
+  TR::IlValue *address =
+      builder->IndexAt(pInt16, args, builder->ConstInt32(varindex));
+
+  builder->Call("printstring", 1, builder->ConstString("loadVarIndex args="));
+  builder->Call("printInt64Hex", 1, args);
+  builder->Call("printstring", 1, builder->ConstString(" varindex="));
+  builder->Call("printInt64Hex", 1, builder->ConstInt32(varindex));
+  builder->Call("printstring", 1, builder->ConstString(" address="));
+  builder->Call("printInt64Hex", 1, address);
+
+  TR::IlValue *result = builder->LoadAt(pInt16, address);
+
+  builder->Call("printstring", 1, builder->ConstString(" result="));
+  builder->Call("printInt64Hex", 1, result);
+
+  builder->Call("printStack", 1, builder->Load("context"));
+
+    result = builder->ConvertTo(Int64, result);
+      builder->Call("printstring", 1, builder->ConstString(" result="));
+  builder->Call("printInt64Hex", 1, result);
+  return result;
 }
+
 void B9Method::storeVarIndex(TR::BytecodeBuilder* builder, int varindex, TR::IlValue* value)
 {
-    TR::IlValue* vars = builder->LoadIndirect("t4_frame_struct", "vars", builder->Load("frame"));
-    int offset = varindex + (offsetof(struct _t4_chunk_, d.pdata) / sizeof(Int64));
-    TR::IlValue* address = builder->IndexAt(pInt64,
-        vars,
-        builder->ConstInt32(offset));
+    TR::IlValue* args = builder->Load("args");
+
+    TR::IlValue* address = builder->IndexAt(pInt16,
+        args,
+        builder->ConstInt32(varindex));
+
     builder->StoreAt(address, value);
 }
 
-#endif  
-
 bool B9Method::generateILForBytecode(TR::BytecodeBuilder** bytecodeBuilderTable,
-    uint8_t bytecode, long bytecodeIndex, long prevBytecodeIndex)
+    uint8_t bytecode, long bytecodeIndex)
 {
     TR::BytecodeBuilder* builder = bytecodeBuilderTable[bytecodeIndex];
 
-    // printf("generateILForBytecode builder %lx\n", (uint64_t)builder);
+    TR::IlValue* args = builder->Load("args");
+    Instruction instruction = program[bytecodeIndex];
+
+    assert(bytecode == getByteCodeFromInstruction(instruction));
+
+    printf("generateILForBytecode builder %lx\n", (uint64_t)builder);
 
     if (NULL == builder) {
         printf("unexpected NULL BytecodeBuilder!\n");
         return false;
     }
-#ifdef FIX_FIX
-    struct t4_bytecode_info* bc_info = t4_bcinfo_for_bc(bytecode);
+
+    long numberOfBytecodes = computeNumberOfBytecodes(program);
     TR::BytecodeBuilder* nextBytecodeBuilder = nullptr;
-    long nextBytecodeIndex = bytecodeIndex + bc_info->length;
+    long nextBytecodeIndex = bytecodeIndex + 1;
     if (nextBytecodeIndex < numberOfBytecodes) {
         nextBytecodeBuilder = bytecodeBuilderTable[nextBytecodeIndex];
     }
 
-    if (vm->trace.debug) {
-        QCOMMIT(builder);
-        builder->Call("printFrame", 3,
-            builder->Load("vm"),
-            builder->Load("frame"),
-            builder->ConstString(bc_info->name));
-    }
-
     bool handled = true;
+
+    printf("generating bytecode %d byteCodeIndex %d \n", bytecode, bytecodeIndex);
+
     switch (bytecode) {
-    case T4_NOP:
+        
+    case PUSH_FROM_VAR:
+        push(builder, loadVarIndex(builder, getParameterFromInstruction(instruction)));
         if (nextBytecodeBuilder)
             builder->AddFallThroughBuilder(nextBytecodeBuilder);
         break;
-    case T4_PUSH_THIS:
-        push(builder, builder->LoadIndirect("t4_frame_struct", "fthis", builder->Load("frame")));
+    case POP_INTO_VAR:
+        storeVarIndex(builder, getParameterFromInstruction(instruction), pop(builder));
         if (nextBytecodeBuilder)
             builder->AddFallThroughBuilder(nextBytecodeBuilder);
         break;
-    case T4_PUSH_MAGIC: {
-        TR::IlValue* toPush = 0;
-        switch (int8At(bytecodeIndex + 1)) {
-        case 0:
-            toPush = builder->LoadIndirect("b9_vm_struct", "t4_null", builder->Load("vm"));
-            break;
-        case 1:
-            toPush = builder->LoadIndirect("b9_vm_struct", "t4_true", builder->Load("vm"));
-            break;
-        case 2:
-            toPush = builder->LoadIndirect("b9_vm_struct", "t4_false", builder->Load("vm"));
-            break;
-        case 3:
-            toPush = builder->LoadIndirect("b9_vm_struct", "t4_undefined", builder->Load("vm"));
-            break;
-        case 4:
-            toPush = builder->LoadIndirect("b9_vm_struct", "t4_zero", builder->Load("vm"));
-            break;
-        case 5:
-            toPush = builder->LoadIndirect("b9_vm_struct", "t4_neg_zero", builder->Load("vm"));
-            break;
-        case 6:
-            toPush = builder->LoadIndirect("b9_vm_struct", "t4_NaN", builder->Load("vm"));
-            break;
-        default:
-            break;
-        }
-        if (toPush) {
-            push(builder, toPush);
-            if (nextBytecodeBuilder)
-                builder->AddFallThroughBuilder(nextBytecodeBuilder);
-        } else {
-            handled = false;
-        }
-    } break;
-
-    case T4_PUSH_VAR:
-        push(builder, loadVarIndex(builder, int8At(bytecodeIndex + 1)));
-        if (nextBytecodeBuilder)
-            builder->AddFallThroughBuilder(nextBytecodeBuilder);
+    case RETURN:
+    {
+        auto result = pop(builder);
+        builder->StoreIndirect("b9_execution_context", "stackPointer", builder->Load("context"), args);
+        builder->Return(result);
+    }
         break;
-    case T4_POP_VAR:
-        storeVarIndex(builder, int8At(bytecodeIndex + 1), pop(builder));
-        if (nextBytecodeBuilder)
-            builder->AddFallThroughBuilder(nextBytecodeBuilder);
-        break;
-    case T4_PUSH_VAR0:
-        push(builder, loadVarIndex(builder, 0));
-        if (nextBytecodeBuilder)
-            builder->AddFallThroughBuilder(nextBytecodeBuilder);
-        break;
-
-    case T4_POP_VAR0:
-        storeVarIndex(builder, 0, pop(builder));
-        if (nextBytecodeBuilder)
-            builder->AddFallThroughBuilder(nextBytecodeBuilder);
-        break;
-
-    case T4_PUSH_VAR1:
-        push(builder, loadVarIndex(builder, 1));
-        if (nextBytecodeBuilder)
-            builder->AddFallThroughBuilder(nextBytecodeBuilder);
-        break;
-    case T4_POP_VAR1:
-        storeVarIndex(builder, 1, pop(builder));
-        if (nextBytecodeBuilder)
-            builder->AddFallThroughBuilder(nextBytecodeBuilder);
-        break;
-    case T4_PUSH_VAR2:
-        push(builder, loadVarIndex(builder, 2));
-        if (nextBytecodeBuilder)
-            builder->AddFallThroughBuilder(nextBytecodeBuilder);
-        break;
-    case T4_POP_VAR2:
-        storeVarIndex(builder, 2, pop(builder));
-        if (nextBytecodeBuilder)
-            builder->AddFallThroughBuilder(nextBytecodeBuilder);
-        break;
-    case T4_PUSH_VAR3:
-        push(builder, loadVarIndex(builder, 3));
-        if (nextBytecodeBuilder)
-            builder->AddFallThroughBuilder(nextBytecodeBuilder);
-        break;
-    case T4_POP_VAR3:
-        storeVarIndex(builder, 3, pop(builder));
-        if (nextBytecodeBuilder)
-            builder->AddFallThroughBuilder(nextBytecodeBuilder);
-        break;
-    case T4_PUSH_1:
-        push(builder, builder->ConstInt64(T4_TAG_OBJECT(1)));
-        if (nextBytecodeBuilder)
-            builder->AddFallThroughBuilder(nextBytecodeBuilder);
-        break;
-    case T4_PUSH_2:
-        push(builder, builder->ConstInt64(T4_TAG_OBJECT(2)));
-        if (nextBytecodeBuilder)
-            builder->AddFallThroughBuilder(nextBytecodeBuilder);
-        break;
-    case T4_PUSH_3:
-        push(builder, builder->ConstInt64(T4_TAG_OBJECT(3)));
-        if (nextBytecodeBuilder)
-            builder->AddFallThroughBuilder(nextBytecodeBuilder);
-        break;
-    case T4_RETURN: // BC_FORMAT_B
-        QCOMMIT(builder);
-        builder->Return(builder->ConstInt64(0));
-        break;
-    case T4_DROP: // BC_FORMAT_B
+    case DROP:
         drop(builder);
         if (nextBytecodeBuilder)
             builder->AddFallThroughBuilder(nextBytecodeBuilder);
         break;
-    case T4_COMPARE: {
-        int comp = int8At(bytecodeIndex + 1);
-        int nextbc = int8At(bytecodeIndex + 2);
-        bool skip = (nextbc == T4_JMP_NZ) || (nextbc == T4_JMP_EQ);
-        if (!skip) {
-            handle_as_c_call_bb(builder, bc_info->jit_bc_name, comp);
-        }
-        if (nextBytecodeBuilder)
-            builder->AddFallThroughBuilder(nextBytecodeBuilder);
-    } break;
-
-    case T4_JMP: //BC_FORMAT_BW
+    case JMP:
         handle_bc_jmp(builder, bytecodeBuilderTable, bytecodeIndex);
         break;
-    case T4_JMP_NZ: //BC_FORMAT_BW
-        handle_bc_jmp_nz(builder, bytecodeBuilderTable, bytecodeIndex, prevBytecodeIndex, nextBytecodeBuilder);
-        break;
-    case T4_JMP_EQ: //BC_FORMAT_BW
-        handle_bc_jmp_eq(builder, bytecodeBuilderTable, bytecodeIndex, prevBytecodeIndex, nextBytecodeBuilder);
-        break;
-    case T4_DEC:
-        handle_bc_dec(builder, nextBytecodeBuilder);
-        break;
-    case T4_SUB:
+    // case JMPLE:
+    //     handle_bc_jmp_le(builder, bytecodeBuilderTable, bytecodeIndex, prevBytecodeIndex, nextBytecodeBuilder);
+    //     break;
+    case SUB:
         handle_bc_sub(builder, nextBytecodeBuilder);
         break;
-    case T4_ADD:
+    case ADD:
         handle_bc_add(builder, nextBytecodeBuilder);
         break;
-    case T4_DUP:
-        handle_bc_dup(builder, nextBytecodeBuilder);
-        break;
-
-    case T4_PUSH_CONST: {
-        int constValue = int16At(bytecodeIndex + 1);
-        // printf("T4_PUSH_CONST %d\n", constValue);
-        push(builder, builder->ConstInt64(T4_TAG_OBJECT(constValue)));
-        // printf("DONE T4_PUSH_CONST %d\n", constValue);
-
+    case PUSH_CONSTANT: {
+        int constvalue = getParameterFromInstruction(instruction);
+        printf("generating push_constant %d\n", constvalue);
+        push(builder, builder->ConstInt16(constvalue));
         if (nextBytecodeBuilder)
             builder->AddFallThroughBuilder(nextBytecodeBuilder);
     } break;
+    case CALL: {
+        int callindex = getParameterFromInstruction(instruction);
+        TR::IlValue* functions = builder->LoadIndirect("b9_execution_context", "functions", builder->Load("context"));
 
-    case T4_PUSH_LAMBDA: {
-        int index = int16At(bytecodeIndex + 1);
-
-        TR::IlValue* result = builder->Call("jit_push_lambda_ret",
-            3,
-            builder->Load("vm"),
-            builder->Load("frame"),
-            builder->ConstInt64(index));
-        if (bc_info->format & BC_FORMAT_CHECKS_EXCEPTION) {
-            handle_exception(builder);
-        }
+        TR::IlValue* result = builder->Call("interpret", 2, builder->Load("context"), builder->ConstInt64(callindex));
         push(builder, result);
-        if (nextBytecodeBuilder)
-            builder->AddFallThroughBuilder(nextBytecodeBuilder);
-    } break;
-    case T4_CALL: {
-        int selectorIndex = int16At(bytecodeIndex + 1);
-        int numberOfArgs = int8At(bytecodeIndex + 3);
 
-        QCOMMIT(builder);
-        TR::IlValue* result = builder->Call("jit_call_return_result", 4, builder->Load("vm"), builder->Load("frame"),
-            builder->ConstInt64(selectorIndex), builder->ConstInt64(numberOfArgs));
-        //QRELOAD(builder);
-        if (numberOfArgs > 0) {
-            QSTACK(builder)
-                ->Drop(builder, numberOfArgs); // hack all args dropped
-        }
-        push(builder, result);
-        if (bc_info->format & BC_FORMAT_CHECKS_EXCEPTION) {
-            handle_exception(builder);
-        }
         if (nextBytecodeBuilder)
             builder->AddFallThroughBuilder(nextBytecodeBuilder);
 
@@ -617,16 +431,8 @@ bool B9Method::generateILForBytecode(TR::BytecodeBuilder** bytecodeBuilderTable,
         handled = false;
         break;
     }
-    if (handled) {
-        if (bc_info->jit_bc_name != 0) {
-            printf("Can remove C handler for <%s> \n", bc_info->name);
-        }
-        return handled;
-    }
 
     return handled;
-#endif 
-    return 0;
 }
 
 /*************************************************
@@ -636,21 +442,13 @@ bool B9Method::generateILForBytecode(TR::BytecodeBuilder** bytecodeBuilderTable,
 
 void B9Method::handle_bc_jmp(TR::BytecodeBuilder* builder, TR::BytecodeBuilder** bytecodeBuilderTable, long bytecodeIndex)
 {
-#ifdef FIX_FIX
-    int bc = int8At(bytecodeIndex);
-    assert(bc == T4_JMP); // for now just be sure
-    struct t4_bytecode_info* bc_info = t4_bcinfo_for_bc(bc);
+    Instruction instruction = program[bytecodeIndex];
 
-    int delta = int16At(bytecodeIndex + 1); // jump <delta>
-    int next_bc_index = bytecodeIndex + delta + bc_info->length;
-
-    // printf("handle_bc_jmp delta is <%d>\n", delta);
-    // printf("JUMPING TO pc @ %d\n", next_bc_index);
-    // printBC("BYTECODE at Destination", code, next_bc_index);
+    int delta = getParameterFromInstruction(instruction);
+    int next_bc_index = bytecodeIndex + delta;
 
     TR::BytecodeBuilder* destBuilder = bytecodeBuilderTable[next_bc_index];
     builder->Goto(destBuilder);
-#endif
 }
     
 
@@ -718,7 +516,7 @@ void B9Method::handle_bc_jmp_le(TR::BytecodeBuilder* builder,
     int true_false_guaranteed = (prevBytecode == T4_NOT);
     if (true_false_guaranteed) {
         TR::IlValue* value = pop(builder);
-        TR::IlValue* t4_false = builder->LoadIndirect("b9_vm_struct", "t4_false", builder->Load("vm"));
+        TR::IlValue* t4_false = builder->LoadIndirect(  "b9_execution_context", "t4_false", builder->Load("vm"));
         builder->IfCmpEqual(destBuilder, value, t4_false); // converted isFalse to 0/1
 
     } else {
@@ -733,82 +531,25 @@ void B9Method::handle_bc_jmp_le(TR::BytecodeBuilder* builder,
 
 void B9Method::handle_bc_sub(TR::BytecodeBuilder* builder, TR::BytecodeBuilder* nextBuilder)
 {
-#ifdef FIX_FIX
-    TR::BytecodeBuilder* isTaggedPath = OrphanBytecodeBuilder(genBCIndex++, (char*)"handle_bc_sub_then");
-    TR::BytecodeBuilder* isSlowPath = OrphanBytecodeBuilder(genBCIndex++, (char*)"handle_bc_sub_else");
-
     TR::IlValue* right = pop(builder);
     TR::IlValue* left = pop(builder);
 
-    TR::IlValue* bothTagged = builder->And(builder->And(left, right), builder->ConstInt64(0x1));
-    builder->IfCmpEqual(isSlowPath,
-        builder->ConstInteger(Int64, 0),
-        bothTagged);
-    builder->AddFallThroughBuilder(isTaggedPath);
-
-    // tagged path
-    push(isTaggedPath, isTaggedPath->Sub(left, isTaggedPath->Sub(right, isTaggedPath->ConstInt64(1))));
-    isTaggedPath->AddFallThroughBuilder(nextBuilder);
-
-    // slow path
-    TR::IlValue* result = isSlowPath->Call("jit_sub_lr", 4, isSlowPath->Load("vm"), isSlowPath->Load("frame"), left, right);
-    push(isSlowPath, result);
-
-    isSlowPath->Goto(nextBuilder);
-#endif
-
+    push(builder, builder->Sub(left, right));
+    builder->AddFallThroughBuilder(nextBuilder);
 }
 
 void B9Method::handle_bc_add(TR::BytecodeBuilder* builder, TR::BytecodeBuilder* nextBuilder)
 {
-#ifdef FIX_FIX
-    TR::BytecodeBuilder* isTaggedPath = OrphanBytecodeBuilder(genBCIndex++, (char*)"handle_bc_add_then");
-    TR::BytecodeBuilder* isSlowPath = OrphanBytecodeBuilder(genBCIndex++, (char*)"handle_bc_add_else");
-
     TR::IlValue* right = pop(builder);
     TR::IlValue* left = pop(builder);
-    TR::IlValue* bothTagged = builder->And(builder->And(left, right), builder->ConstInt64(0x1));
-    builder->IfCmpEqual(isSlowPath,
-        builder->ConstInteger(Int64, 0),
-        bothTagged);
-    builder->AddFallThroughBuilder(isTaggedPath);
 
-    // tagged path
-    push(isTaggedPath, isTaggedPath->Add(left, isTaggedPath->Sub(right, isTaggedPath->ConstInt64(1))));
-    isTaggedPath->AddFallThroughBuilder(nextBuilder);
-
-    // slow path
-    TR::IlValue* result = isSlowPath->Call("jit_add_lr", 4, isSlowPath->Load("vm"), isSlowPath->Load("frame"), left, right);
-    push(isSlowPath, result);
-
-    isSlowPath->Goto(nextBuilder);
-#endif
+    push(builder, builder->Add(left, right));
+    builder->AddFallThroughBuilder(nextBuilder);
 }
 
 void B9Method::drop(TR::BytecodeBuilder* builder)
 { 
-    if (hackVMState) {
-        // printf("enableVMState drop <%s> stack %d\n", __func__, stackLevel);
-        QSTACK(builder)
-            ->Drop(builder, 1);
-    } else {
-        TR::IlValue* sp = builder->LoadIndirect("b9_vm_struct", "sp", builder->Load("vm"));
-        TR::IlValue* newSP = builder->Sub(sp, builder->ConstInt64(8));
-        builder->StoreIndirect("b9_vm_struct", "sp", builder->Load("vm"), newSP);
-    }
-}
-
-TR::IlValue*
-B9Method::peek(TR::BytecodeBuilder* builder)
-{
-    if (hackVMState) { 
-        return QSTACK(builder)->Top();
-    } else {
-        TR::IlValue* sp = builder->LoadIndirect("b9_vm_struct", "sp", builder->Load("vm"));
-        TR::IlValue* tos = builder->Sub(sp, builder->ConstInt64(8));
-        TR::IlValue* value = builder->LoadAt(pInt64, tos);
-        return value;
-    }
+    pop(builder);
 }
 
 TR::IlValue* B9Method::pop(TR::BytecodeBuilder* builder)
@@ -819,10 +560,12 @@ TR::IlValue* B9Method::pop(TR::BytecodeBuilder* builder)
         return QSTACK(builder)->Pop(builder);
     } else {
         // return *--sp
-        TR::IlValue* sp = builder->LoadIndirect("b9_vm_struct", "sp", builder->Load("vm"));
-        TR::IlValue* newSP = builder->Sub(sp, builder->ConstInt64(8));
-        builder->StoreIndirect("b9_vm_struct", "sp", builder->Load("vm"), newSP);
-        TR::IlValue* value = builder->LoadAt(pInt64, newSP);
+
+                TR::IlValue* sp = builder->LoadIndirect("b9_execution_context", "stackPointer", builder->Load("context"));
+ TR::IlValue* newSP = builder->Sub(sp, builder->ConstInt64(2));
+ builder->StoreIndirect( "b9_execution_context", "stackPointer", builder->Load("context"), newSP);
+
+  TR::IlValue* value = builder->LoadAt(pInt16, newSP);
         return value;
     }
 }
@@ -833,10 +576,21 @@ void B9Method::push(TR::BytecodeBuilder* builder, TR::IlValue* value)
         // printf("QPUSH <%s> stack %d\n", __func__, stackLevel);
         return QSTACK(builder)->Push(builder, value);
     } else {
+
         // *vm->sp++ = value
-        TR::IlValue* sp = builder->LoadIndirect("b9_vm_struct", "sp", builder->Load("vm"));
-        builder->StoreAt(sp, value);
-        TR::IlValue* newSP = builder->Add(sp, builder->ConstInt64(8));
-        builder->StoreIndirect("b9_vm_struct", "sp", builder->Load("vm"), newSP);
+        TR::IlValue* sp = builder->LoadIndirect("b9_execution_context", "stackPointer", builder->Load("context"));
+        
+        builder->Call("printstring", 1, builder->ConstString("IN PUSH: sp="));
+    builder->Call("printInt64Hex", 1, sp);
+
+        builder->StoreAt(builder->ConvertTo(pInt16, sp), builder->ConvertTo(Int16, value));
+
+        TR::IlValue* newSP = builder->Add(sp, builder->ConstInt64(2));
+        builder->StoreIndirect( "b9_execution_context", "stackPointer", builder->Load("context"), newSP);
+    
+        builder->Call("printstring", 1, builder->ConstString("AFTER PUSH sp="));
+        builder->Call("printInt64Hex", 1, newSP);
+        builder->Call("printStack", 1, builder->Load("context"));
+
     }
 } 

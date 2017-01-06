@@ -2,33 +2,11 @@
 
 #include "b9.h"
 
-
-
-constexpr ByteCode
-getByteCodeFromInstruction(Instruction instruction)
-{
-    return (instruction >> 16);
-}
-
-constexpr Parameter
-getParameterFromInstruction(Instruction instruction)
-{
-    return (instruction & 0xFFFF);
-}
-
-constexpr Instruction
-createInstruction(ByteCode byteCode, Parameter parameter)
-{
-    return byteCode << 16 | (parameter & 0xFFFF);
-}
-
-#define decl(argCount, tmpCount) (argCount << 16 | tmpCount)
-#define progArgCount(a) (a >> 16)
-#define progTmpCount(a) (a & 0xFFFF)
-
 static Instruction fib_function[] = {
     // one argument, 0 temps
     decl(1, 0),
+    decl(0,0),
+    decl(0,0),
 
     // if (arg1 < 3) return 1;
     // so converted to jump if 3 <= arg1
@@ -57,8 +35,32 @@ static Instruction fib_function[] = {
     createInstruction(NO_MORE_BYTECODES, 0)
 };
 
+static Instruction test_function[] = {
+    decl(0,0),
+    decl(0,0),
+    decl(0,0),
+    createInstruction(PUSH_CONSTANT, 12),
+    createInstruction(PUSH_CONSTANT, 99),
+    createInstruction(CALL, 2),
+    createInstruction(RETURN, 0),
+    createInstruction(NO_MORE_BYTECODES, 0)
+};
+
+static Instruction test_function2[] = {
+    decl(2,0),
+    decl(0,0),
+    decl(0,0),
+    createInstruction(PUSH_FROM_VAR, 0),
+    createInstruction(PUSH_FROM_VAR, 1),
+    createInstruction(ADD, 0), 
+    createInstruction(RETURN, 0),
+    createInstruction(NO_MORE_BYTECODES, 0)
+};
+
 static Instruction main_function[] = {
     decl(0, 0),
+    decl(0,0),
+    decl(0,0),
     createInstruction(PUSH_CONSTANT, 12),
     createInstruction(CALL, 1),
     createInstruction(RETURN, 0),
@@ -67,6 +69,8 @@ static Instruction main_function[] = {
 
 static Instruction loop_call_fib12_function[] = {
     decl(1, 1),
+    decl(0,0),
+    decl(0,0),
     createInstruction(PUSH_FROM_VAR, 0),
     createInstruction(POP_INTO_VAR, 1), // t = 50000
 
@@ -97,8 +101,10 @@ static Instruction loop_call_fib12_function[] = {
 /* Byte Code Program */
 static Instruction* functions[] = {
     main_function,
-    fib_function
+    fib_function,
+    test_function2
 };
+
 /* Byte Code Implementations */
 
 void push(ExecutionContext* context, uint16_t value)
@@ -116,9 +122,9 @@ pop(ExecutionContext* context)
 void bc_call(ExecutionContext* context, uint16_t value)
 {
     Instruction* program = functions[value];
-   // printf("inside call\n");
+    // printf("inside call\n");
     uint16_t result = interpret(context, program);
-  //  printf("return from  call %d\n", result);
+    //  printf("return from  call %d\n", result);
 
     push(context, result);
 }
@@ -165,7 +171,7 @@ void bc_add(ExecutionContext* context)
     // a+b is push(a);push(b); add
     uint16_t right = pop(context);
     uint16_t left = pop(context);
-    printf("add right %d operandB %d\n", right, left);
+    // printf("add right %d left %d\n", right, left);
     uint16_t result = left + right;
 
     push(context, result);
@@ -185,12 +191,22 @@ void bc_sub(ExecutionContext* context)
 
 uint16_t interpret(ExecutionContext* context, Instruction* program)
 {
+
+    uint64_t *address = (uint64_t *) (&program[1]);
+    Interpret jitedcode = (Interpret) *address;
+    if (jitedcode != NULL) {
+        printf("about to call jit");
+        uint16_t result = (*jitedcode) (context, program);
+        printf("jit result is: %d\n", result);
+        return result;
+    }
+
     int nargs = progArgCount(*program);
     int tmps = progTmpCount(*program);
 
     //printf("Prog Arg Count %d, tmp count %d\n", nargs, tmps);
 
-    Instruction* instructionPointer = program + 1;
+    Instruction* instructionPointer = program + 3;
     uint16_t* args = context->stackPointer - nargs;
     context->stackPointer += tmps; // local storage for temps
 
@@ -255,9 +271,13 @@ uint16_t interpret(ExecutionContext* context, Instruction* program)
 
 /* Main Loop */
 
+
 int main()
 {
+    b9_jit_init();
+
     ExecutionContext context;
+    context.functions = functions;
 
     uint16_t result = 0;
 
@@ -266,13 +286,34 @@ int main()
     // printf("Program result is: %d\n", result);
 
     // run a hard loop of fib(12)
+    push (&context, 1);
+    push (&context, 2);
+
+    printf("main: context.stackPointer = %p\n",context.stackPointer);
+    result = interpret(&context, test_function2); 
+    printf("result is: %d\n", result);
+
+    generateCode(test_function2);
+    push (&context, 3);
+    push (&context, 4);
+    printf("main: context.stackPointer = %p\n",context.stackPointer);
+    result = interpret(&context, test_function2); 
+    printf("result is: %d\n", result);
+
+    generateCode(test_function);
+
+    uint64_t *address = (uint64_t *) (&test_function[1]);
+    Interpret jitedcode = (Interpret) *address;
+    result = (*jitedcode) (&context, test_function);
+    printf("result is: %d\n", result);
+
     int count = 1000;
     while (count--) { 
         push (&context, 10000);
         result = interpret(&context, loop_call_fib12_function); 
         //context.stackPointer = context.stack;
     }
-    printf("loop_call_fib12_function result is: %d\n", result);
+    printf("result is: %d\n", result);
 
     return 0;
 }

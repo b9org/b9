@@ -88,7 +88,7 @@ static Instruction loop_call_fib12_function[] = {
     createInstruction(SUB, 0),           // 6
     createInstruction(POP_INTO_VAR, 1),  // 7
 
-    createInstruction(JMP, -11), // 8
+    createInstruction(JMP, -10), // 8
 
     // exit
     createInstruction(PUSH_CONSTANT, 999),
@@ -202,7 +202,7 @@ interpret(ExecutionContext *context, Instruction *program)
     uint64_t *address = (uint64_t *)(&program[1]);
     Interpret jitedcode = (Interpret)*address;
     if (jitedcode != NULL) {
-        printf("about to call jit");
+        printf("about to call jit\n");
         uint16_t result = (*jitedcode)(context, program);
         printf("jit result is: %d\n", result);
         return result;

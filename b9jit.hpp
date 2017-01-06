@@ -48,7 +48,7 @@ void storeVarIndex(TR::BytecodeBuilder* builder, int varindex, TR::IlValue* valu
     void handle_bc_add(TR::BytecodeBuilder* builder, TR::BytecodeBuilder* nextBuilder);
     void handle_bc_call(TR::BytecodeBuilder* builder, TR::BytecodeBuilder* nextBuilder);
     void handle_bc_jmp(TR::BytecodeBuilder* builder, TR::BytecodeBuilder** bytecodeBuilderTable, long bytecodeIndex);
-    void handle_bc_jmp_le(TR::BytecodeBuilder* builder, TR::BytecodeBuilder** bytecodeBuilderTable, long bytecodeIndex, int prevBytecode, TR::BytecodeBuilder* nextBuilder);
+    void handle_bc_jmp_le(TR::BytecodeBuilder* builder, TR::BytecodeBuilder** bytecodeBuilderTable, long bytecodeIndex, TR::BytecodeBuilder* nextBuilder);
  
 };
 

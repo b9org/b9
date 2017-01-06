@@ -279,18 +279,19 @@ long i;
     TR::IlValue* sp = builder->LoadIndirect("b9_execution_context", "stackPointer", builder->Load("context"));
 
     TR::IlValue* nargs = builder->ConstInt32(progArgCount(*program) * sizeof(uint16_t));
-    TR::IlValue* tmps = builder->ConstInt32(progTmpCount(*program));
+    TR::IlValue* tmps = builder->ConstInt32(progTmpCount(*program) * sizeof(uint16_t));
     TR::IlValue* args = builder->Sub(sp, nargs);
 
     builder->Store("args", args);
+
+    sp = builder->Add(sp, tmps);
+    builder->StoreIndirect( "b9_execution_context", "stackPointer", builder->Load("context"), sp);
 
     builder->Call("printstring", 1, builder->ConstString("!!buildIl sp,nargs,tmps,args="));
     builder->Call("printInt64Hex", 1, sp);
     builder->Call("printInt64Hex", 1, nargs);
     builder->Call("printInt64Hex", 1, tmps);
     builder->Call("printInt64Hex", 1, args);
-
-    sp = Add(sp, tmps);
 
     i = METHOD_FIRST_BC_OFFSET;
     while (i < numberOfBytecodes) {
@@ -372,6 +373,8 @@ bool B9Method::generateILForBytecode(TR::BytecodeBuilder** bytecodeBuilderTable,
 
     printf("generating bytecode %d byteCodeIndex %d \n", bytecode, bytecodeIndex);
 
+    builder->Call("printStack", 1, builder->Load("context"));
+
     switch (bytecode) {
         
     case PUSH_FROM_VAR:
@@ -399,9 +402,9 @@ bool B9Method::generateILForBytecode(TR::BytecodeBuilder** bytecodeBuilderTable,
     case JMP:
         handle_bc_jmp(builder, bytecodeBuilderTable, bytecodeIndex);
         break;
-    // case JMPLE:
-    //     handle_bc_jmp_le(builder, bytecodeBuilderTable, bytecodeIndex, prevBytecodeIndex, nextBytecodeBuilder);
-    //     break;
+    case JMPLE:
+        handle_bc_jmp_le(builder, bytecodeBuilderTable, bytecodeIndex, nextBytecodeBuilder);
+        break;
     case SUB:
         handle_bc_sub(builder, nextBytecodeBuilder);
         break;
@@ -412,6 +415,7 @@ bool B9Method::generateILForBytecode(TR::BytecodeBuilder** bytecodeBuilderTable,
         int constvalue = getParameterFromInstruction(instruction);
         printf("generating push_constant %d\n", constvalue);
         push(builder, builder->ConstInt16(constvalue));
+        printf("generating push_constant nextBytecodeBuilder %p\n", nextBytecodeBuilder);
         if (nextBytecodeBuilder)
             builder->AddFallThroughBuilder(nextBytecodeBuilder);
     } break;
@@ -427,6 +431,7 @@ bool B9Method::generateILForBytecode(TR::BytecodeBuilder** bytecodeBuilderTable,
 
     } break;
     default:
+        printf(" genIlForByteCode Failed, unrecognized byte code :%d\n", bytecode);
         handled = false;
         break;
     }
@@ -451,24 +456,29 @@ void B9Method::handle_bc_jmp(TR::BytecodeBuilder* builder, TR::BytecodeBuilder**
 }
     
 
-static int genBCIndex = 1024;
 void B9Method::handle_bc_jmp_le(TR::BytecodeBuilder* builder,
     TR::BytecodeBuilder** bytecodeBuilderTable,
     long bytecodeIndex,
-    int prevBytecodeIndex,
     TR::BytecodeBuilder* nextBuilder)
 {
         Instruction instruction = program[bytecodeIndex];
 
-        int delta = getParameterFromInstruction(instruction);
+        int delta = getParameterFromInstruction(instruction) + 1;
+
+        // printf("in handle_bc_jmp_le delta is %d\n", delta);
+        // printf("in handle_bc_jmp_le delta is %d\n", delta);
 
         TR::IlValue* right = pop(builder);
         TR::IlValue* left = pop(builder);
 
         int next_bc_index = bytecodeIndex + delta;
-        TR::BytecodeBuilder* thenPath = bytecodeBuilderTable[next_bc_index];
+        // printf("in handle_bc_jmp_le nextPCIndex is %d\n", next_bc_index);
+        // printf("   dest instruction = %x\n", getByteCodeFromInstruction(program[next_bc_index]));
+        TR::BytecodeBuilder* jumpTo = bytecodeBuilderTable[next_bc_index];
 
-        builder->IfCmpLessOrEqual(thenPath, left, right);
+        builder->IfCmpLessThan(jumpTo, left, right);
+        builder->IfCmpEqual(jumpTo, left, right);
+
         builder->AddFallThroughBuilder(nextBuilder);
 }
 
@@ -524,7 +534,7 @@ void B9Method::push(TR::BytecodeBuilder* builder, TR::IlValue* value)
         TR::IlValue* sp = builder->LoadIndirect("b9_execution_context", "stackPointer", builder->Load("context"));
         
         builder->Call("printstring", 1, builder->ConstString("IN PUSH: sp="));
-    builder->Call("printInt64Hex", 1, sp);
+        builder->Call("printInt64Hex", 1, sp);
 
         builder->StoreAt(builder->ConvertTo(pInt16, sp), builder->ConvertTo(Int16, value));
 
@@ -533,7 +543,6 @@ void B9Method::push(TR::BytecodeBuilder* builder, TR::IlValue* value)
     
         builder->Call("printstring", 1, builder->ConstString("AFTER PUSH sp="));
         builder->Call("printInt64Hex", 1, newSP);
-        builder->Call("printStack", 1, builder->Load("context"));
-
+        // builder->Call("printStack", 1, builder->Load("context"));
     }
 } 

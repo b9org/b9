@@ -71,6 +71,8 @@ static Instruction loop_call_fib12_function[] = {
     decl(1, 1),
     decl(0,0),
     decl(0,0),
+    createInstruction(PUSH_CONSTANT, 666),
+    createInstruction(PUSH_CONSTANT, 999),
     createInstruction(PUSH_FROM_VAR, 0),
     createInstruction(POP_INTO_VAR, 1), // t = 50000
 
@@ -80,7 +82,7 @@ static Instruction loop_call_fib12_function[] = {
     createInstruction(PUSH_CONSTANT, 0),
     createInstruction(JMPLE, 8), // SKIP to past the JMP
 
-    createInstruction(PUSH_CONSTANT, 2), // 1
+    createInstruction(PUSH_CONSTANT, 12), // 1
     createInstruction(CALL, 1), // 2
     createInstruction(DROP, 0), // 3
 
@@ -102,7 +104,9 @@ static Instruction loop_call_fib12_function[] = {
 static Instruction* functions[] = {
     main_function,
     fib_function,
-    test_function2
+    test_function2,
+    test_function,
+    loop_call_fib12_function
 };
 
 /* Byte Code Implementations */
@@ -292,29 +296,29 @@ int main()
 
     uint16_t result = 0;
 
-    push (&context, 1);
-    push (&context, 2);
-    printf("main: context.stackPointer = %p\n",context.stackPointer);
-    result = interpret(&context, test_function2); 
-    printf("!!!!!!!  interpreted: result is supposed to be 3, result is: %d\n", result);
+    // push (&context, 1);
+    // push (&context, 2);
+    // printf("main: context.stackPointer = %p\n",context.stackPointer);
+    // result = interpret(&context, test_function2); 
+    // printf("!!!!!!!  interpreted: result is supposed to be 3, result is: %d\n", result);
 
-    generateCode(test_function2);
-    push (&context, 3);
-    push (&context, 4);
-    printf("main: context.stackPointer = %p\n",context.stackPointer);
-    result = interpret(&context, test_function2); 
-    printf("!!!!!!!  jitted: result is supposed to be 7, result is: %d\n", result);
+    // generateCode(test_function2);
+    // push (&context, 3);
+    // push (&context, 4);
+    // printf("main: context.stackPointer = %p\n",context.stackPointer);
+    // result = interpret(&context, test_function2); 
+    // printf("!!!!!!!  jitted: result is supposed to be 7, result is: %d\n", result);
 
 
-    printf("main: context.stackPointer = %p\n",context.stackPointer);
-    result = interpret(&context, test_function);
-    printf("!!!!!!!  interpreted: result is supposed to be 111, result is: %d\n", result);
-    printf("result is: %d\n", result);
+    // printf("main: context.stackPointer = %p\n",context.stackPointer);
+    // result = interpret(&context, test_function);
+    // printf("!!!!!!!  interpreted: result is supposed to be 111, result is: %d\n", result);
+    // printf("result is: %d\n", result);
 
-    generateCode(test_function);
-    printf("main: context.stackPointer = %p\n",context.stackPointer);
-    result = interpret(&context, test_function); 
-    printf("!!!!!!!  jitted: result is supposed to be 111, result is: %d\n", result);
+    // generateCode(test_function);
+    // printf("main: context.stackPointer = %p\n",context.stackPointer);
+    // result = interpret(&context, test_function); 
+    // printf("!!!!!!!  jitted: result is supposed to be 111, result is: %d\n", result);
 
     // generateCode(test_function);
     // uint64_t *address = (uint64_t *) (&test_function[1]);
@@ -332,6 +336,23 @@ int main()
     //     push (&context, 10000);
     //     result = interpret(&context, loop_call_fib12_function); 
     //     //context.stackPointer = context.stack;
+    // }
+    // printf("result is: %d\n", result);
+
+// for (int i = 0; i <sizeof(functions) / sizeof(Instruction *); i++) {
+//     generateCode(functions[i]);
+// }
+    generateCode(loop_call_fib12_function);
+    // generateCode(fib_function);
+
+    push (&context, 5);
+    result = interpret(&context, loop_call_fib12_function); 
+
+    // int count = 1000;
+    // while (count--) { 
+    //     push (&context, 10000);
+    //     result = interpret(&context, loop_call_fib12_function); 
+    //     context.stackPointer = context.stack;
     // }
     // printf("result is: %d\n", result);
 

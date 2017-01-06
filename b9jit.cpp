@@ -237,7 +237,7 @@ void
 B9Method::createBuilderForBytecode(TR::BytecodeBuilder **bytecodeBuilderTable, uint8_t bytecode, int64_t bytecodeIndex)
 {
     TR::BytecodeBuilder *newBuilder = OrphanBytecodeBuilder(bytecodeIndex, (char *)b9_bytecodename(bytecode));
-    printf("Created bytecodebuilder index=%d bc=%d %p\n", bytecodeIndex, bytecode, newBuilder);
+    printf("Created bytecodebuilder index=%d bc=%d param=%d %p\n", bytecodeIndex, bytecode, getParameterFromInstruction(program[bytecodeIndex]), newBuilder);
     bytecodeBuilderTable[bytecodeIndex] = newBuilder;
 }
 
@@ -286,7 +286,6 @@ B9Method::buildIL()
     printf("builder %p\n", builder);
     AppendBuilder(builder);
 
-    builder->Call("printstring", 1, builder->ConstString("hi jon"));
     TR::IlValue *prog = builder->Load("program");
     TR::IlValue *sp = builder->LoadIndirect("b9_execution_context", "stackPointer", builder->Load("context"));
 
@@ -328,23 +327,23 @@ B9Method::loadVarIndex(TR::BytecodeBuilder *builder, int varindex)
     TR::IlValue *address =
         builder->IndexAt(pInt16, args, builder->ConstInt32(varindex));
 
-    builder->Call("printstring", 1, builder->ConstString("loadVarIndex args="));
-    builder->Call("printInt64Hex", 1, args);
-    builder->Call("printstring", 1, builder->ConstString(" varindex="));
-    builder->Call("printInt64Hex", 1, builder->ConstInt32(varindex));
-    builder->Call("printstring", 1, builder->ConstString(" address="));
-    builder->Call("printInt64Hex", 1, address);
+    // builder->Call("printstring", 1, builder->ConstString("loadVarIndex args="));
+    // builder->Call("printInt64Hex", 1, args);
+    // builder->Call("printstring", 1, builder->ConstString(" varindex="));
+    // builder->Call("printInt64Hex", 1, builder->ConstInt32(varindex));
+    // builder->Call("printstring", 1, builder->ConstString(" address="));
+    // builder->Call("printInt64Hex", 1, address);
 
     TR::IlValue *result = builder->LoadAt(pInt16, address);
 
-    builder->Call("printstring", 1, builder->ConstString(" result="));
-    builder->Call("printInt64Hex", 1, result);
+    // builder->Call("printstring", 1, builder->ConstString(" result="));
+    // builder->Call("printInt64Hex", 1, result);
 
-    builder->Call("printStack", 1, builder->Load("context"));
+    // builder->Call("printStack", 1, builder->Load("context"));
 
     result = builder->ConvertTo(Int64, result);
-    builder->Call("printstring", 1, builder->ConstString(" result="));
-    builder->Call("printInt64Hex", 1, result);
+    // builder->Call("printstring", 1, builder->ConstString(" result="));
+    // builder->Call("printInt64Hex", 1, result);
     return result;
 }
 
@@ -371,7 +370,7 @@ B9Method::generateILForBytecode(TR::BytecodeBuilder **bytecodeBuilderTable,
 
     assert(bytecode == getByteCodeFromInstruction(instruction));
 
-    printf("generateILForBytecode builder %lx\n", (uint64_t)builder);
+    // printf("generateILForBytecode builder %lx\n", (uint64_t)builder);
 
     if (NULL == builder) {
         printf("unexpected NULL BytecodeBuilder!\n");
@@ -387,7 +386,12 @@ B9Method::generateILForBytecode(TR::BytecodeBuilder **bytecodeBuilderTable,
 
     bool handled = true;
 
-    printf("generating bytecode %d byteCodeIndex %d \n", bytecode, bytecodeIndex);
+    printf("generating index=%d bc=%d param=%d \n", bytecodeIndex, bytecode, getParameterFromInstruction(instruction));
+
+    builder->Call("printstring", 1, builder->ConstString("\n\nvvvvvvvvvvvvvvvvvvv\nEXECUTING Index BC param"));
+    builder->Call("printInt64Hex", 1, builder->ConstInt64(bytecodeIndex));
+    builder->Call("printInt64Hex", 1, builder->ConstInt64(bytecode));
+    builder->Call("printInt64Hex", 1, builder->ConstInt64(getParameterFromInstruction(instruction)));
 
     builder->Call("printStack", 1, builder->Load("context"));
 
@@ -427,9 +431,9 @@ B9Method::generateILForBytecode(TR::BytecodeBuilder **bytecodeBuilderTable,
         break;
     case PUSH_CONSTANT: {
         int constvalue = getParameterFromInstruction(instruction);
-        printf("generating push_constant %d\n", constvalue);
+        // printf("generating push_constant %d\n", constvalue);
         push(builder, builder->ConstInt16(constvalue));
-        printf("generating push_constant nextBytecodeBuilder %p\n", nextBytecodeBuilder);
+        // printf("generating push_constant nextBytecodeBuilder %p\n", nextBytecodeBuilder);
         if (nextBytecodeBuilder)
             builder->AddFallThroughBuilder(nextBytecodeBuilder);
     } break;

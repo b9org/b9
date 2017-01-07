@@ -466,7 +466,7 @@ B9Method::handle_bc_jmp(TR::BytecodeBuilder *builder, TR::BytecodeBuilder **byte
 {
     Instruction instruction = program[bytecodeIndex];
 
-    int delta = getParameterFromInstruction(instruction);
+    int delta = getParameterFromInstruction(instruction) + 1;
     int next_bc_index = bytecodeIndex + delta;
 
     TR::BytecodeBuilder *destBuilder = bytecodeBuilderTable[next_bc_index];

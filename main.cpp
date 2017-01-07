@@ -298,7 +298,7 @@ main()
     uint16_t result = 0;
 
 #define COUNT 10
-#define LOOP 10
+#define LOOP 10000
 
    printf("About to run %d repeats of %d loops, interpreted\n", COUNT, LOOP);
 
@@ -316,9 +316,7 @@ main()
        timersub(&tval_after, &tval_before, &tval_result);
        printf("Result is: %d\n", result);
 
-       gettimeofday(&tval_after, NULL);
-       timersub(&tval_after, &tval_before, &tval_result);
-       timeInterp = (tval_result.tv_sec*1000 + (tval_result.tv_usec*1000)) / 1000;
+       timeInterp = (tval_result.tv_sec*1000 + (tval_result.tv_usec / 1000));
     } while (0);
 
    for (int i = 0; i < sizeof(functions) / sizeof(Instruction*); i++) {
@@ -336,12 +334,11 @@ main()
        timersub(&tval_after, &tval_before, &tval_result);
        printf("Result is: %d\n", result);
 
-       gettimeofday(&tval_after, NULL);
-       timersub(&tval_after, &tval_before, &tval_result);
-       timeJIT =  (tval_result.tv_sec*1000 + (tval_result.tv_usec*1000)) / 1000;
+       timeJIT = (tval_result.tv_sec*1000 + (tval_result.tv_usec / 1000));
      } while (0);
    
-   printf("Time Interp %ld ms JIT %ld ms\n", timeInterp, timeJIT);
+   printf("Time for %d(%d,%d) iterations Interp %ld ms JIT %ld ms\n", COUNT*LOOP, COUNT, LOOP, timeInterp, timeJIT);
+   printf("JIT speedup = %f\n", timeInterp * 1.0/ timeJIT);
 
     return 0;
 }

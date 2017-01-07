@@ -298,11 +298,11 @@ B9Method::buildIL()
     sp = builder->Add(sp, tmps);
     builder->StoreIndirect("b9_execution_context", "stackPointer", builder->Load("context"), sp);
 
-    builder->Call("printstring", 1, builder->ConstString("!!buildIl sp,nargs,tmps,args="));
-    builder->Call("printInt64Hex", 1, sp);
-    builder->Call("printInt64Hex", 1, nargs);
-    builder->Call("printInt64Hex", 1, tmps);
-    builder->Call("printInt64Hex", 1, args);
+    // builder->Call("printstring", 1, builder->ConstString("!!buildIl sp,nargs,tmps,args="));
+    // builder->Call("printInt64Hex", 1, sp);
+    // builder->Call("printInt64Hex", 1, nargs);
+    // builder->Call("printInt64Hex", 1, tmps);
+    // builder->Call("printInt64Hex", 1, args);
 
     i = METHOD_FIRST_BC_OFFSET;
     while (i < numberOfBytecodes) {
@@ -388,12 +388,12 @@ B9Method::generateILForBytecode(TR::BytecodeBuilder **bytecodeBuilderTable,
 
     printf("generating index=%d bc=%d param=%d \n", bytecodeIndex, bytecode, getParameterFromInstruction(instruction));
 
-    builder->Call("printstring", 1, builder->ConstString("\n\nvvvvvvvvvvvvvvvvvvv\nEXECUTING Index BC param"));
-    builder->Call("printInt64Hex", 1, builder->ConstInt64(bytecodeIndex));
-    builder->Call("printInt64Hex", 1, builder->ConstInt64(bytecode));
-    builder->Call("printInt64Hex", 1, builder->ConstInt64(getParameterFromInstruction(instruction)));
+    // builder->Call("printstring", 1, builder->ConstString("\n\nvvvvvvvvvvvvvvvvvvv\nEXECUTING Index BC param"));
+    // builder->Call("printInt64Hex", 1, builder->ConstInt64(bytecodeIndex));
+    // builder->Call("printInt64Hex", 1, builder->ConstInt64(bytecode));
+    // builder->Call("printInt64Hex", 1, builder->ConstInt64(getParameterFromInstruction(instruction)));
 
-    builder->Call("printStack", 1, builder->Load("context"));
+    // builder->Call("printStack", 1, builder->Load("context"));
 
     switch (bytecode) {
 
@@ -556,16 +556,16 @@ B9Method::push(TR::BytecodeBuilder *builder, TR::IlValue *value)
         // *vm->sp++ = value
         TR::IlValue *sp = builder->LoadIndirect("b9_execution_context", "stackPointer", builder->Load("context"));
 
-        builder->Call("printstring", 1, builder->ConstString("IN PUSH: sp="));
-        builder->Call("printInt64Hex", 1, sp);
+        // builder->Call("printstring", 1, builder->ConstString("IN PUSH: sp="));
+        // builder->Call("printInt64Hex", 1, sp);
 
         builder->StoreAt(builder->ConvertTo(pInt16, sp), builder->ConvertTo(Int16, value));
 
         TR::IlValue *newSP = builder->Add(sp, builder->ConstInt64(2));
         builder->StoreIndirect("b9_execution_context", "stackPointer", builder->Load("context"), newSP);
 
-        builder->Call("printstring", 1, builder->ConstString("AFTER PUSH sp="));
-        builder->Call("printInt64Hex", 1, newSP);
+        // builder->Call("printstring", 1, builder->ConstString("AFTER PUSH sp="));
+        // builder->Call("printInt64Hex", 1, newSP);
         // builder->Call("printStack", 1, builder->Load("context"));
     }
 }

@@ -2,6 +2,8 @@
 
 #include "b9.h"
 
+#include <sys/time.h>
+
 static Instruction fib_function[] = {
     // one argument, 0 temps
     decl(1, 0),
@@ -88,7 +90,7 @@ static Instruction loop_call_fib12_function[] = {
     createInstruction(SUB, 0),           // 6
     createInstruction(POP_INTO_VAR, 1),  // 7
 
-    createInstruction(JMP, -10), // 8
+    createInstruction(JMP, -11), // 8
 
     // exit
     createInstruction(PUSH_CONSTANT, 999),
@@ -202,9 +204,9 @@ interpret(ExecutionContext *context, Instruction *program)
     uint64_t *address = (uint64_t *)(&program[1]);
     Interpret jitedcode = (Interpret)*address;
     if (jitedcode != NULL) {
-        printf("about to call jit\n");
+        // printf("about to call jit\n");
         uint16_t result = (*jitedcode)(context, program);
-        printf("jit result is: %d\n", result);
+        // printf("jit result is: %d\n", result);
         return result;
     }
 
@@ -218,13 +220,7 @@ interpret(ExecutionContext *context, Instruction *program)
     context->stackPointer += tmps; // local storage for temps
 
     while (*instructionPointer != NO_MORE_BYTECODES) {
-        // uint16_t* base = context->stack;
-        // printf("------\n");
-        // while (base < context->stackPointer) {
-        //     printf("Stack[%ld] = %d\n", base - context->stack, *base);
-        //     base++;
-        // }
-        // printf("^^^^^^^^^^^^^^^^^\n");
+        // b9PrintStack(context);
         //printf("about to run %d %d\n", getByteCodeFromInstruction(*instructionPointer), getParameterFromInstruction(*instructionPointer));
         switch (getByteCodeFromInstruction(*instructionPointer)) {
         case PUSH_CONSTANT:
@@ -301,64 +297,51 @@ main()
 
     uint16_t result = 0;
 
-    // push (&context, 1);
-    // push (&context, 2);
-    // printf("main: context.stackPointer = %p\n",context.stackPointer);
-    // result = interpret(&context, test_function2);
-    // printf("!!!!!!!  interpreted: result is supposed to be 3, result is: %d\n", result);
+#define COUNT 10
+#define LOOP 10
 
-    // generateCode(test_function2);
-    // push (&context, 3);
-    // push (&context, 4);
-    // printf("main: context.stackPointer = %p\n",context.stackPointer);
-    // result = interpret(&context, test_function2);
-    // printf("!!!!!!!  jitted: result is supposed to be 7, result is: %d\n", result);
+   printf("About to run %d repeats of %d loops, interpreted\n", COUNT, LOOP);
 
-    // printf("main: context.stackPointer = %p\n",context.stackPointer);
-    // result = interpret(&context, test_function);
-    // printf("!!!!!!!  interpreted: result is supposed to be 111, result is: %d\n", result);
-    // printf("result is: %d\n", result);
+   long timeInterp = 0;
+   long timeJIT = 0;
+   do {
+       struct timeval tval_before, tval_after, tval_result;
+       gettimeofday(&tval_before, NULL);
+       int count = COUNT;
+       while (count--) {
+           push(&context, LOOP);
+           result = interpret(&context, loop_call_fib12_function);
+       }
+       gettimeofday(&tval_after, NULL);
+       timersub(&tval_after, &tval_before, &tval_result);
+       printf("Result is: %d\n", result);
 
-    // generateCode(test_function);
-    // printf("main: context.stackPointer = %p\n",context.stackPointer);
-    // result = interpret(&context, test_function);
-    // printf("!!!!!!!  jitted: result is supposed to be 111, result is: %d\n", result);
+       gettimeofday(&tval_after, NULL);
+       timersub(&tval_after, &tval_before, &tval_result);
+       timeInterp = (tval_result.tv_sec*1000 + (tval_result.tv_usec*1000)) / 1000;
+    } while (0);
 
-    // generateCode(test_function);
-    // uint64_t *address = (uint64_t *) (&test_function[1]);
-    // Interpret jitedcode = (Interpret) *address;
-    // result = (*jitedcode) (&context, test_function);
-    // printf("result is: %d\n", result);
+   for (int i = 0; i < sizeof(functions) / sizeof(Instruction*); i++) {
+       generateCode(functions[i]);
+   }
+   do {
+       struct timeval tval_before, tval_after, tval_result;
+       gettimeofday(&tval_before, NULL);
+       int count = COUNT;
+       while (count--) {
+           push(&context, LOOP);
+           result = interpret(&context, loop_call_fib12_function);
+       }
+       gettimeofday(&tval_after, NULL);
+       timersub(&tval_after, &tval_before, &tval_result);
+       printf("Result is: %d\n", result);
 
-    // run main, which just calls fib 12
-    // result = interpret(&context, main_function);
-    // printf("Program result is: %d\n", result);
-
-    // run a hard loop of fib(12)
-    // int count = 1000;
-    // while (count--) {
-    //     push (&context, 10000);
-    //     result = interpret(&context, loop_call_fib12_function);
-    //     //context.stackPointer = context.stack;
-    // }
-    // printf("result is: %d\n", result);
-
-    // for (int i = 0; i <sizeof(functions) / sizeof(Instruction *); i++) {
-    //     generateCode(functions[i]);
-    // }
-    generateCode(loop_call_fib12_function);
-    // generateCode(fib_function);
-
-    push(&context, 5);
-    result = interpret(&context, loop_call_fib12_function);
-
-    // int count = 1000;
-    // while (count--) {
-    //     push (&context, 10000);
-    //     result = interpret(&context, loop_call_fib12_function);
-    //     context.stackPointer = context.stack;
-    // }
-    // printf("result is: %d\n", result);
+       gettimeofday(&tval_after, NULL);
+       timersub(&tval_after, &tval_before, &tval_result);
+       timeJIT =  (tval_result.tv_sec*1000 + (tval_result.tv_usec*1000)) / 1000;
+     } while (0);
+   
+   printf("Time Interp %ld ms JIT %ld ms\n", timeInterp, timeJIT);
 
     return 0;
 }

@@ -162,7 +162,7 @@ B9Method::defineParameters()
 void
 B9Method::defineLocals()
 {
-    DefineLocal("args", pInt16);
+    DefineLocal("args", pStackElement);
     DefineLocal("nargs", Int64);
     DefineLocal("tmps", Int64);
 }
@@ -188,8 +188,8 @@ B9Method::defineStructures(TR::TypeDictionary *types)
     }
 
     b9_execution_context = types->DefineStruct("b9_execution_context");
-    types->DefineField("b9_execution_context", "stack", pInt16, offsetof(struct ExecutionContext, stack));
-    types->DefineField("b9_execution_context", "stackPointer", pInt16, offsetof(struct ExecutionContext, stackPointer));
+    types->DefineField("b9_execution_context", "stack", pStackElement, offsetof(struct ExecutionContext, stack));
+    types->DefineField("b9_execution_context", "stackPointer", pStackElement, offsetof(struct ExecutionContext, stackPointer));
     types->DefineField("b9_execution_context", "functions", pInt64, offsetof(struct ExecutionContext, functions));
     types->CloseStruct("b9_execution_context");
 
@@ -274,7 +274,7 @@ B9Method::buildIL()
     bool success = true;
 
     OMR::VirtualMachineRegisterInStruct *stackTop = new OMR::VirtualMachineRegisterInStruct(this, "b9_execution_context", "context", "stackPointer", "SP");
-    OMR::VirtualMachineOperandStack *stack = new OMR::VirtualMachineOperandStack(this, 32, pInt64, stackTop);
+    OMR::VirtualMachineOperandStack *stack = new OMR::VirtualMachineOperandStack(this, 32, pStackElement, stackTop);
     B9VirtualMachineState *vms = new B9VirtualMachineState(stack, stackTop);
     setVMState(vms);
 
@@ -338,7 +338,7 @@ B9Method::loadVarIndex(TR::BytecodeBuilder *builder, int varindex)
     TR::IlValue *args = builder->Load("args");
 
     TR::IlValue *address =
-        builder->IndexAt(pInt16, args, builder->ConstInt32(varindex));
+        builder->IndexAt(pStackElement, args, builder->ConstInt32(varindex));
 
     // builder->Call("printstring", 1, builder->ConstString("loadVarIndex args="));
     // builder->Call("printInt64Hex", 1, args);
@@ -347,7 +347,7 @@ B9Method::loadVarIndex(TR::BytecodeBuilder *builder, int varindex)
     // builder->Call("printstring", 1, builder->ConstString(" address="));
     // builder->Call("printInt64Hex", 1, address);
 
-    TR::IlValue *result = builder->LoadAt(pInt16, address);
+    TR::IlValue *result = builder->LoadAt(pStackElement, address);
 
     // builder->Call("printstring", 1, builder->ConstString(" result="));
     // builder->Call("printInt64Hex", 1, result);
@@ -365,7 +365,7 @@ B9Method::storeVarIndex(TR::BytecodeBuilder *builder, int varindex, TR::IlValue 
 {
     TR::IlValue *args = builder->Load("args");
 
-    TR::IlValue *address = builder->IndexAt(pInt16,
+    TR::IlValue *address = builder->IndexAt(pStackElement,
         args,
         builder->ConstInt32(varindex));
 

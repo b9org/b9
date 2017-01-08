@@ -12,7 +12,7 @@ OBJ=main.o b9jit.o
 b9:  main.o  b9jit.o $(LIB)
 	c++ -std=c++11 -g -fPIC -fno-rtti  $(OBJ) -lm -lm $(LIB) -o b9 $(LIBS) -ldl
 
-main.o:  main.cpp  
+main.o:  main.cpp  b9.h
 	c++ -std=c++11 -g -fPIC -fno-rtti  main.cpp  -c -o main.o $()
 
 b9jit.o: b9jit.cpp b9jit.hpp $(INCLUDE_DEPS)

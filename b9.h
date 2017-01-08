@@ -32,21 +32,25 @@ typedef uint32_t Instruction;
 
 /* VM State */
 
+typedef int16_t stack_element_t ;
+
 class ExecutionContext {
 public:
     ExecutionContext()
-        : stackPointer(this->stack)
+        : stackPointer(this->stack),
+         stackEnd(&stack[ (sizeof (stack)/sizeof(stack_element_t)) - 16])  // hack for warning
     {
-        std::memset(stack, 0, sizeof(stack));
+        std::memset(stack, 0, sizeof(stack)); 
     }
 
-    uint16_t stack[1000];
-    uint16_t* stackPointer;
+    stack_element_t stack[1000];
+    stack_element_t* stackPointer;
+    stack_element_t* stackEnd;
     Instruction **functions;
 };
 
-typedef uint16_t (*Interpret) (ExecutionContext* context, Instruction* program);
-uint16_t interpret(ExecutionContext* context, Instruction* program);
+typedef stack_element_t (*Interpret) (ExecutionContext* context, Instruction* program);
+stack_element_t interpret(ExecutionContext* context, Instruction* program);
 void generateCode(Instruction* program);
 void b9_jit_init();
 

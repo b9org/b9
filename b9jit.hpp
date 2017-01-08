@@ -21,6 +21,8 @@ public:
 protected:
     TR::IlType *b9_execution_context;
     TR::IlType *p_b9_execution_context;
+    TR::IlType *StackElement;
+    TR::IlType *pStackElement;
     TR::IlType *pInt64;
     TR::IlType *pInt32;
     TR::IlType *pInt16;

@@ -132,14 +132,14 @@ bc_call(ExecutionContext *context, uint16_t value)
 }
 
 void
-bc_push_from_arg(ExecutionContext *context, uint16_t *args, uint16_t offset)
+bc_push_from_arg(ExecutionContext *context, stack_element_t *args, uint16_t offset)
 {
     //  printf("bc_push_from_arg[%d] %d\n", offset, args[offset]);
     push(context, args[offset]);
 }
 
 void
-bc_pop_into_arg(ExecutionContext *context, uint16_t *args, uint16_t offset)
+bc_pop_into_arg(ExecutionContext *context, stack_element_t *args, uint16_t offset)
 {
     args[offset] = pop(context);
     //   printf("bc_pop_into_arg[%d] %d\n", offset, args[offset]);
@@ -197,7 +197,7 @@ bc_sub(ExecutionContext *context)
 
 /* ByteCode Interpreter */
 
-uint16_t
+stack_element_t
 interpret(ExecutionContext *context, Instruction *program)
 {
 
@@ -216,7 +216,7 @@ interpret(ExecutionContext *context, Instruction *program)
     //printf("Prog Arg Count %d, tmp count %d\n", nargs, tmps);
 
     Instruction *instructionPointer = program + 3;
-    uint16_t *args = context->stackPointer - nargs;
+    stack_element_t *args = context->stackPointer - nargs;
     context->stackPointer += tmps; // local storage for temps
 
     while (*instructionPointer != NO_MORE_BYTECODES) {
@@ -276,7 +276,7 @@ void
 b9PrintStack(ExecutionContext *context)
 {
 
-    uint16_t *base = context->stack;
+    stack_element_t *base = context->stack;
     printf("------\n");
     while (base < context->stackPointer) {
         printf("%p: Stack[%ld] = %d\n", base, base - context->stack, *base);
@@ -285,6 +285,39 @@ b9PrintStack(ExecutionContext *context)
     printf("^^^^^^^^^^^^^^^^^\n");
 }
 
+int fib (int n) { 
+    if (n < 3) return 1;
+    return fib (n-1) + fib (n-2);
+}
+
+bool hasJITAddress (Instruction *p) {
+    uint64_t *slotForJitAddress = (uint64_t *)&p[1];
+    return    *slotForJitAddress != 0;
+}
+
+void runFib (ExecutionContext *context, int value) { 
+    stack_element_t result = 0; 
+    const char *mode = hasJITAddress(fib_function) ? "JIT" : "Interpreted";
+    int validate = fib (value); 
+    push(context, value);
+    result = interpret(context, fib_function);
+    if (result == validate) { 
+        printf("Success: Mode <%s> fib %d returned %d\n", mode, value, result);
+    } else { 
+        printf("Fail: Mode <%s> fib %d returned %d\n", mode, value, result);
+    }
+}
+void validateFibResult (ExecutionContext *context) {
+
+    int i;
+    for (i=0;i<=12;i++) {
+       runFib (context, i);
+    }
+    generateCode(fib_function);
+    for (i=0;i<=12;i++) {
+       runFib (context, i);
+    }
+}
 /* Main Loop */
 
 int
@@ -295,10 +328,21 @@ main()
     ExecutionContext context;
     context.functions = functions;
 
-    uint16_t result = 0;
+    validateFibResult(&context);
+    stack_element_t result = 0;
+
 
 #define COUNT 10
-#define LOOP 10
+#define LOOP 20000
+
+    // make sure everything is not-jit'd for this initial bench
+    // allows you to put examples above, tests etc, and not influence this 
+    // benchmark compare interpreted vs JIT'd
+    for (int i = 0; i < sizeof(functions) / sizeof(Instruction*); i++) {
+        Instruction *p = functions[i];
+        uint64_t *slotForJitAddress = (uint64_t *)&p[1];
+        *slotForJitAddress = 0;
+   }
 
    printf("About to run %d repeats of %d loops, interpreted\n", COUNT, LOOP);
 
@@ -315,15 +359,16 @@ main()
        gettimeofday(&tval_after, NULL);
        timersub(&tval_after, &tval_before, &tval_result);
        printf("Result is: %d\n", result);
-
-       gettimeofday(&tval_after, NULL);
-       timersub(&tval_after, &tval_before, &tval_result);
-       timeInterp = (tval_result.tv_sec*1000 + (tval_result.tv_usec*1000)) / 1000;
+       timeInterp =  (tval_result.tv_sec*1000 + (tval_result.tv_usec/1000));;
     } while (0);
 
    for (int i = 0; i < sizeof(functions) / sizeof(Instruction*); i++) {
-       generateCode(functions[i]);
+     //  generateCode(functions[i]);   // temp, do not compile all 
    }
+
+    generateCode(fib_function);  // temp, only do fib for now, some issue in loops jit
+    //generateCode(loop_call_fib12_function);
+
    do {
        struct timeval tval_before, tval_after, tval_result;
        gettimeofday(&tval_before, NULL);
@@ -334,14 +379,12 @@ main()
        }
        gettimeofday(&tval_after, NULL);
        timersub(&tval_after, &tval_before, &tval_result);
-       printf("Result is: %d\n", result);
-
-       gettimeofday(&tval_after, NULL);
-       timersub(&tval_after, &tval_before, &tval_result);
-       timeJIT =  (tval_result.tv_sec*1000 + (tval_result.tv_usec*1000)) / 1000;
+       printf("Result is: %d\n", result); 
+       timeJIT =  (tval_result.tv_sec*1000 + (tval_result.tv_usec/1000));
      } while (0);
    
-   printf("Time Interp %ld ms JIT %ld ms\n", timeInterp, timeJIT);
+   printf("Time for %d(%d,%d) iterations Interp %ld ms JIT %ld ms\n", COUNT*LOOP, COUNT, LOOP, timeInterp, timeJIT);
+   printf("JIT speedup = %f\n", timeInterp * 1.0/ timeJIT);
 
     return 0;
 }

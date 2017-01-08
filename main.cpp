@@ -333,6 +333,7 @@ main()
 
 
 #define COUNT 10
+
 #define LOOP 20000
 
     // make sure everything is not-jit'd for this initial bench
@@ -343,6 +344,7 @@ main()
         uint64_t *slotForJitAddress = (uint64_t *)&p[1];
         *slotForJitAddress = 0;
    }
+
 
    printf("About to run %d repeats of %d loops, interpreted\n", COUNT, LOOP);
 
@@ -359,7 +361,7 @@ main()
        gettimeofday(&tval_after, NULL);
        timersub(&tval_after, &tval_before, &tval_result);
        printf("Result is: %d\n", result);
-       timeInterp =  (tval_result.tv_sec*1000 + (tval_result.tv_usec/1000));;
+       timeInterp = (tval_result.tv_sec*1000 + (tval_result.tv_usec / 1000));
     } while (0);
 
    for (int i = 0; i < sizeof(functions) / sizeof(Instruction*); i++) {
@@ -381,6 +383,7 @@ main()
        timersub(&tval_after, &tval_before, &tval_result);
        printf("Result is: %d\n", result); 
        timeJIT =  (tval_result.tv_sec*1000 + (tval_result.tv_usec/1000));
+
      } while (0);
    
    printf("Time for %d(%d,%d) iterations Interp %ld ms JIT %ld ms\n", COUNT*LOOP, COUNT, LOOP, timeInterp, timeJIT);

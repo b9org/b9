@@ -53,6 +53,13 @@ printstring(char *s)
     printf("PS: <%s> \n", s);
 }
 
+extern const char * b9_bytecodename(int bc);
+void printVMState (ExecutionContext *context, int64_t pc, ByteCode bytecode, Parameter param)
+{
+    printf ("Executing at pc %d, bc is (%d, %s), param is (%d)\n", pc, bytecode, b9_bytecodename(bytecode), param);
+    b9PrintStack (context);
+}
+
 class B9VirtualMachineState : public OMR::VirtualMachineState
 {
 public:
@@ -222,7 +229,8 @@ B9Method::defineFunctions()
     DefineFunction((char *)"gettemps", (char *)__FILE__, (char *)NEWLINE_LINE, (void *)&gettemps, Int64, 1, Int64);
 
     // void bc_call(ExecutionContext* context, uint16_t value);
-
+    DefineFunction((char *)"printVMState", (char *)__FILE__, "printVMState", (void *)&printVMState, NoType, 4, Int64,
+    Int64, Int64, Int64);
     DefineFunction((char *)"printStack", (char *)__FILE__, "printStack", (void *)&b9PrintStack, NoType, 1, Int64);
     // DefineFunction((char*)"bc_call", (char*)__FILE__, "bc_call", (void*)&bc_call, Int64, 2, Int64, Int64);
     DefineFunction((char *)"interpret", (char *)__FILE__, "interpret", (void *)&interpret, Int64, 2, Int64, Int64);
@@ -240,17 +248,30 @@ bool hackVMState = false;
         ((b)->vmState()->Reload(b)); \
     }
 
-char *
+const char *
 b9_bytecodename(int bc)
 {
-    return "FIX b9_bytecodename";
+
+    if (bc==PUSH_CONSTANT) return "PUSH_CONSTANT" ;
+    if (bc==DROP) return "DROP" ;
+    if (bc==PUSH_FROM_VAR) return "PUSH_FROM_VAR" ;
+    if (bc==POP_INTO_VAR) return "POP_INTO_VAR" ;
+    if (bc==SUB) return "SUB" ;
+    if (bc==ADD) return "ADD" ;
+    if (bc==CALL) return "CALL" ;
+    if (bc==RETURN) return "RETURN" ;
+    if (bc==JMPLE) return "JMPLE" ;
+    if (bc==JMP) return "JMP" ;
+    return "unknown bc";
 }
+
+
 
 void
 B9Method::createBuilderForBytecode(TR::BytecodeBuilder **bytecodeBuilderTable, uint8_t bytecode, int64_t bytecodeIndex)
 {
     TR::BytecodeBuilder *newBuilder = OrphanBytecodeBuilder(bytecodeIndex, (char *)b9_bytecodename(bytecode));
-    printf("Created bytecodebuilder index=%d bc=%d param=%d %p\n", bytecodeIndex, bytecode, getParameterFromInstruction(program[bytecodeIndex]), newBuilder);
+    //printf("Created bytecodebuilder index=%d bc=%d param=%d %p\n", bytecodeIndex, bytecode, getParameterFromInstruction(program[bytecodeIndex]), newBuilder);
     bytecodeBuilderTable[bytecodeIndex] = newBuilder;
 }
 
@@ -311,11 +332,6 @@ B9Method::buildIL()
     sp = builder->Add(sp, tmps);
     builder->StoreIndirect("b9_execution_context", "stackPointer", builder->Load("context"), sp);
 
-    // builder->Call("printstring", 1, builder->ConstString("!!buildIl sp,nargs,tmps,args="));
-    // builder->Call("printInt64Hex", 1, sp);
-    // builder->Call("printInt64Hex", 1, nargs);
-    // builder->Call("printInt64Hex", 1, tmps);
-    // builder->Call("printInt64Hex", 1, args);
 
     i = METHOD_FIRST_BC_OFFSET;
     while (i < numberOfBytecodes) {
@@ -399,14 +415,16 @@ B9Method::generateILForBytecode(TR::BytecodeBuilder **bytecodeBuilderTable,
 
     bool handled = true;
 
-    printf("generating index=%d bc=%d param=%d \n", bytecodeIndex, bytecode, getParameterFromInstruction(instruction));
+    printf("generating index=%d bc=%s(%d) param=%d \n", bytecodeIndex, b9_bytecodename(bytecode), bytecode, getParameterFromInstruction(instruction));
 
-    // builder->Call("printstring", 1, builder->ConstString("\n\nvvvvvvvvvvvvvvvvvvv\nEXECUTING Index BC param"));
-    // builder->Call("printInt64Hex", 1, builder->ConstInt64(bytecodeIndex));
-    // builder->Call("printInt64Hex", 1, builder->ConstInt64(bytecode));
-    // builder->Call("printInt64Hex", 1, builder->ConstInt64(getParameterFromInstruction(instruction)));
-
-    // builder->Call("printStack", 1, builder->Load("context"));
+    // if (bytecodeIndex == METHOD_FIRST_BC_OFFSET) {
+    //     QCOMMIT (builder);
+    //     builder->Call("printVMState", 4, builder->Load("context"), 
+    //         builder->ConstInt64(bytecodeIndex),
+    //         builder->ConstInt64(bytecode),
+    //         builder->ConstInt64(getParameterFromInstruction(instruction))
+    //         );
+    // }
 
     switch (bytecode) {
 
@@ -452,10 +470,36 @@ B9Method::generateILForBytecode(TR::BytecodeBuilder **bytecodeBuilderTable,
     } break;
     case CALL: {
         int callindex = getParameterFromInstruction(instruction);
-        TR::IlValue *functions = builder->LoadIndirect("b9_execution_context", "functions", builder->Load("context"));
-        TR::IlValue *address = builder->IndexAt(pInt64, functions, builder->ConstInt32(callindex));
+#define USE_DIRECT_CALL  0
+#if USE_DIRECT_CALL
+        extern  Instruction *functions[];
+        Instruction *tocall = functions[callindex]; 
+        uint64_t *slotForJitAddress = (uint64_t *)&tocall[1];
+        char *nameToCall = 0; 
+        printf ("JIT Address %p\n", *slotForJitAddress);
+        if (*slotForJitAddress != 0) { 
+            printf ("CALL CALL DIRECTLY!!!\n");
+            //should generate a name for this address, then be able to look it up
+            DefineFunction((char *)"HACK", (char *)__FILE__, "HACK", (void *)*slotForJitAddress , Int64, 2, Int64, Int64);
+            nameToCall = "HACK";
+        } else { 
+            printf ("CALL via Interpreter\n");
+            nameToCall = "interpret";
+        }
+        QCOMMIT(builder);
+        TR::IlValue *result = builder->Call(nameToCall, 2, builder->Load("context"), 
+            builder->ConstAddress(tocall));
+        if (hackVMState) {
+            printf ("Dropping %d\n", progArgCount(*tocall));
+            QSTACK(builder)->Drop(builder, progArgCount(*tocall));
+        }
+#else
+        TR::IlValue *fTable = builder->LoadIndirect("b9_execution_context", "functions", builder->Load("context"));
+        TR::IlValue *address = builder->IndexAt(pInt64, fTable, builder->ConstInt32(callindex));
+        QCOMMIT(builder);
         TR::IlValue *result = builder->Call("interpret", 2, builder->Load("context"), builder->LoadAt(pInt64, address));
-        push(builder, result);
+#endif 
+       push(builder, result);
 
         if (nextBytecodeBuilder)
             builder->AddFallThroughBuilder(nextBytecodeBuilder);

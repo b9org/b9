@@ -98,7 +98,8 @@ static Instruction loop_call_fib12_function[] = {
     createInstruction(NO_MORE_BYTECODES, 0)};
 
 /* Byte Code Program */
-static Instruction *functions[] = {
+// hack make public so you can direct call from JIT (CALL)
+ Instruction *functions[] = {
     main_function,
     fib_function,
     test_function2,
@@ -369,7 +370,7 @@ main()
    }
 
     generateCode(fib_function);  // temp, only do fib for now, some issue in loops jit
-    //generateCode(loop_call_fib12_function);
+    generateCode(loop_call_fib12_function);
 
    do {
        struct timeval tval_before, tval_after, tval_result;

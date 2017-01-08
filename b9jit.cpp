@@ -470,7 +470,7 @@ B9Method::generateILForBytecode(TR::BytecodeBuilder **bytecodeBuilderTable,
     } break;
     case CALL: {
         int callindex = getParameterFromInstruction(instruction);
-#define USE_DIRECT_CALL  0
+#define USE_DIRECT_CALL  1
 #if USE_DIRECT_CALL
         extern  Instruction *functions[];
         Instruction *tocall = functions[callindex]; 
@@ -600,7 +600,7 @@ B9Method::pop(TR::BytecodeBuilder *builder)
 
         builder->StoreIndirect("b9_execution_context", "stackPointer", builder->Load("context"), newSP);
 
-        TR::IlValue *value = builder->LoadAt(pInt16, newSP);
+        TR::IlValue *value = builder->LoadAt(pStackElement, newSP);
         return value;
     }
 }

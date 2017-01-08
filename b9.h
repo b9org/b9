@@ -32,7 +32,7 @@ typedef uint32_t Instruction;
 
 /* VM State */
 
-typedef int16_t stack_element_t ;
+typedef int64_t stack_element_t ;
 
 class ExecutionContext {
 public:

@@ -174,6 +174,19 @@ B9Method::defineStructures(TR::TypeDictionary *types)
     pInt32 = types->PointerTo(Int32);
     pInt16 = types->PointerTo(Int16);
 
+    if (sizeof(stack_element_t) == 2)  { 
+            StackElement=Int16; 
+            pStackElement = types->PointerTo(StackElement);
+    }
+    if (sizeof(stack_element_t) == 4) {
+            StackElement=Int32; 
+            pStackElement = types->PointerTo(StackElement);
+    } 
+    if (sizeof(stack_element_t) == 8) {
+            StackElement=Int64; 
+            pStackElement = types->PointerTo(StackElement);
+    }
+
     b9_execution_context = types->DefineStruct("b9_execution_context");
     types->DefineField("b9_execution_context", "stack", pInt16, offsetof(struct ExecutionContext, stack));
     types->DefineField("b9_execution_context", "stackPointer", pInt16, offsetof(struct ExecutionContext, stackPointer));
@@ -289,8 +302,8 @@ B9Method::buildIL()
     TR::IlValue *prog = builder->Load("program");
     TR::IlValue *sp = builder->LoadIndirect("b9_execution_context", "stackPointer", builder->Load("context"));
 
-    TR::IlValue *nargs = builder->ConstInt32(progArgCount(*program) * sizeof(uint16_t));
-    TR::IlValue *tmps = builder->ConstInt32(progTmpCount(*program) * sizeof(uint16_t));
+    TR::IlValue *nargs = builder->ConstInt32(progArgCount(*program) * sizeof(stack_element_t));
+    TR::IlValue *tmps = builder->ConstInt32(progTmpCount(*program) * sizeof(stack_element_t));
     TR::IlValue *args = builder->Sub(sp, nargs);
 
     builder->Store("args", args);
@@ -537,7 +550,10 @@ B9Method::pop(TR::BytecodeBuilder *builder)
         // return *--sp
 
         TR::IlValue *sp = builder->LoadIndirect("b9_execution_context", "stackPointer", builder->Load("context"));
-        TR::IlValue *newSP = builder->Sub(sp, builder->ConstInt64(2));
+        //TR::IlValue *newSP = builder->Sub(sp, builder->ConstInt64(sizeof (stack_element_t)));
+        // you can use the above which does an "sub sizeof() or below which uses the size of the pStackElement"
+        TR::IlValue *newSP = builder->IndexAt(pStackElement, sp, builder->ConstInt32(-1));
+
         builder->StoreIndirect("b9_execution_context", "stackPointer", builder->Load("context"), newSP);
 
         TR::IlValue *value = builder->LoadAt(pInt16, newSP);
@@ -559,9 +575,11 @@ B9Method::push(TR::BytecodeBuilder *builder, TR::IlValue *value)
         // builder->Call("printstring", 1, builder->ConstString("IN PUSH: sp="));
         // builder->Call("printInt64Hex", 1, sp);
 
-        builder->StoreAt(builder->ConvertTo(pInt16, sp), builder->ConvertTo(Int16, value));
+        builder->StoreAt(builder->ConvertTo(pStackElement, sp), builder->ConvertTo(StackElement, value));
 
-        TR::IlValue *newSP = builder->Add(sp, builder->ConstInt64(2));
+        //TR::IlValue *newSP = builder->Add(sp, builder->ConstInt64(sizeof (stack_element_t)));
+        TR::IlValue *newSP = builder->IndexAt(pStackElement, sp, builder->ConstInt32(1));
+
         builder->StoreIndirect("b9_execution_context", "stackPointer", builder->Load("context"), newSP);
 
         // builder->Call("printstring", 1, builder->ConstString("AFTER PUSH sp="));

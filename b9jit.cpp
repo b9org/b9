@@ -162,7 +162,7 @@ B9Method::defineParameters()
 void
 B9Method::defineLocals()
 {
-    DefineLocal("args", pInt16);
+    DefineLocal("args", pStackElement);
     DefineLocal("nargs", Int64);
     DefineLocal("tmps", Int64);
 }
@@ -174,9 +174,22 @@ B9Method::defineStructures(TR::TypeDictionary *types)
     pInt32 = types->PointerTo(Int32);
     pInt16 = types->PointerTo(Int16);
 
+    if (sizeof(stack_element_t) == 2)  { 
+            StackElement=Int16; 
+            pStackElement = types->PointerTo(StackElement);
+    }
+    if (sizeof(stack_element_t) == 4) {
+            StackElement=Int32; 
+            pStackElement = types->PointerTo(StackElement);
+    } 
+    if (sizeof(stack_element_t) == 8) {
+            StackElement=Int64; 
+            pStackElement = types->PointerTo(StackElement);
+    }
+
     b9_execution_context = types->DefineStruct("b9_execution_context");
-    types->DefineField("b9_execution_context", "stack", pInt16, offsetof(struct ExecutionContext, stack));
-    types->DefineField("b9_execution_context", "stackPointer", pInt16, offsetof(struct ExecutionContext, stackPointer));
+    types->DefineField("b9_execution_context", "stack", pStackElement, offsetof(struct ExecutionContext, stack));
+    types->DefineField("b9_execution_context", "stackPointer", pStackElement, offsetof(struct ExecutionContext, stackPointer));
     types->DefineField("b9_execution_context", "functions", pInt64, offsetof(struct ExecutionContext, functions));
     types->CloseStruct("b9_execution_context");
 
@@ -261,7 +274,7 @@ B9Method::buildIL()
     bool success = true;
 
     OMR::VirtualMachineRegisterInStruct *stackTop = new OMR::VirtualMachineRegisterInStruct(this, "b9_execution_context", "context", "stackPointer", "SP");
-    OMR::VirtualMachineOperandStack *stack = new OMR::VirtualMachineOperandStack(this, 32, pInt64, stackTop);
+    OMR::VirtualMachineOperandStack *stack = new OMR::VirtualMachineOperandStack(this, 32, pStackElement, stackTop);
     B9VirtualMachineState *vms = new B9VirtualMachineState(stack, stackTop);
     setVMState(vms);
 
@@ -289,8 +302,8 @@ B9Method::buildIL()
     TR::IlValue *prog = builder->Load("program");
     TR::IlValue *sp = builder->LoadIndirect("b9_execution_context", "stackPointer", builder->Load("context"));
 
-    TR::IlValue *nargs = builder->ConstInt32(progArgCount(*program) * sizeof(uint16_t));
-    TR::IlValue *tmps = builder->ConstInt32(progTmpCount(*program) * sizeof(uint16_t));
+    TR::IlValue *nargs = builder->ConstInt32(progArgCount(*program) * sizeof(stack_element_t));
+    TR::IlValue *tmps = builder->ConstInt32(progTmpCount(*program) * sizeof(stack_element_t));
     TR::IlValue *args = builder->Sub(sp, nargs);
 
     builder->Store("args", args);
@@ -325,7 +338,7 @@ B9Method::loadVarIndex(TR::BytecodeBuilder *builder, int varindex)
     TR::IlValue *args = builder->Load("args");
 
     TR::IlValue *address =
-        builder->IndexAt(pInt16, args, builder->ConstInt32(varindex));
+        builder->IndexAt(pStackElement, args, builder->ConstInt32(varindex));
 
     // builder->Call("printstring", 1, builder->ConstString("loadVarIndex args="));
     // builder->Call("printInt64Hex", 1, args);
@@ -334,7 +347,7 @@ B9Method::loadVarIndex(TR::BytecodeBuilder *builder, int varindex)
     // builder->Call("printstring", 1, builder->ConstString(" address="));
     // builder->Call("printInt64Hex", 1, address);
 
-    TR::IlValue *result = builder->LoadAt(pInt16, address);
+    TR::IlValue *result = builder->LoadAt(pStackElement, address);
 
     // builder->Call("printstring", 1, builder->ConstString(" result="));
     // builder->Call("printInt64Hex", 1, result);
@@ -352,7 +365,7 @@ B9Method::storeVarIndex(TR::BytecodeBuilder *builder, int varindex, TR::IlValue 
 {
     TR::IlValue *args = builder->Load("args");
 
-    TR::IlValue *address = builder->IndexAt(pInt16,
+    TR::IlValue *address = builder->IndexAt(pStackElement,
         args,
         builder->ConstInt32(varindex));
 
@@ -537,7 +550,10 @@ B9Method::pop(TR::BytecodeBuilder *builder)
         // return *--sp
 
         TR::IlValue *sp = builder->LoadIndirect("b9_execution_context", "stackPointer", builder->Load("context"));
-        TR::IlValue *newSP = builder->Sub(sp, builder->ConstInt64(2));
+        //TR::IlValue *newSP = builder->Sub(sp, builder->ConstInt64(sizeof (stack_element_t)));
+        // you can use the above which does an "sub sizeof() or below which uses the size of the pStackElement"
+        TR::IlValue *newSP = builder->IndexAt(pStackElement, sp, builder->ConstInt32(-1));
+
         builder->StoreIndirect("b9_execution_context", "stackPointer", builder->Load("context"), newSP);
 
         TR::IlValue *value = builder->LoadAt(pInt16, newSP);
@@ -559,9 +575,11 @@ B9Method::push(TR::BytecodeBuilder *builder, TR::IlValue *value)
         // builder->Call("printstring", 1, builder->ConstString("IN PUSH: sp="));
         // builder->Call("printInt64Hex", 1, sp);
 
-        builder->StoreAt(builder->ConvertTo(pInt16, sp), builder->ConvertTo(Int16, value));
+        builder->StoreAt(builder->ConvertTo(pStackElement, sp), builder->ConvertTo(StackElement, value));
 
-        TR::IlValue *newSP = builder->Add(sp, builder->ConstInt64(2));
+        //TR::IlValue *newSP = builder->Add(sp, builder->ConstInt64(sizeof (stack_element_t)));
+        TR::IlValue *newSP = builder->IndexAt(pStackElement, sp, builder->ConstInt32(1));
+
         builder->StoreIndirect("b9_execution_context", "stackPointer", builder->Load("context"), newSP);
 
         // builder->Call("printstring", 1, builder->ConstString("AFTER PUSH sp="));

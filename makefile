@@ -15,7 +15,7 @@ b9:  main.o  b9jit.o $(LIB)
 main.o:  main.cpp  b9.h
 	c++ -std=c++11 -g -fPIC -fno-rtti  main.cpp  -c -o main.o $()
 
-b9jit.o: b9jit.cpp b9jit.hpp $(INCLUDE_DEPS)
+b9jit.o: b9jit.cpp b9jit.hpp b9.h $(INCLUDE_DEPS)
 	c++ -std=c++11 -g -fPIC -fno-rtti -c b9jit.cpp -o b9jit.o -I$(IJIT) -I$(IJIT1) 
 
 $(LIB):

@@ -1,9 +1,9 @@
 
 
 #include "b9.h"
+#include <dlfcn.h>
 
 #include <sys/time.h>
-
 static Instruction fib_function[] = {
     // one argument, 0 temps
     decl(1, 0),
@@ -36,6 +36,9 @@ static Instruction fib_function[] = {
     createInstruction(RETURN, 0),
     createInstruction(NO_MORE_BYTECODES, 0)};
 
+
+
+
 static Instruction test_function[] = {
     decl(0, 0),
     decl(0, 0),
@@ -46,15 +49,7 @@ static Instruction test_function[] = {
     createInstruction(RETURN, 0),
     createInstruction(NO_MORE_BYTECODES, 0)};
 
-static Instruction test_function2[] = {
-    decl(2, 0),
-    decl(0, 0),
-    decl(0, 0),
-    createInstruction(PUSH_FROM_VAR, 0),
-    createInstruction(PUSH_FROM_VAR, 1),
-    createInstruction(ADD, 0),
-    createInstruction(RETURN, 0),
-    createInstruction(NO_MORE_BYTECODES, 0)};
+
 
 static Instruction main_function[] = {
     decl(0, 0),
@@ -100,22 +95,21 @@ static Instruction loop_call_fib12_function[] = {
 /* Byte Code Program */
 // hack make public so you can direct call from JIT (CALL)
  Instruction *functions[] = {
-    main_function,
-    fib_function,
-    test_function2,
-    test_function,
+    main_function,  // call, 0
+    fib_function,  // call, 1
+    test_function, // call 2
     loop_call_fib12_function};
 
 /* Byte Code Implementations */
 
 void
-push(ExecutionContext *context, uint16_t value)
+push(ExecutionContext *context, stack_element_t value)
 {
     *context->stackPointer = value;
     ++(context->stackPointer);
 }
 
-uint16_t
+stack_element_t
 pop(ExecutionContext *context)
 {
     return *(--context->stackPointer);
@@ -164,8 +158,8 @@ bc_jmple(ExecutionContext *context, uint16_t delta)
 {
 
     // push(left); push(right); if (left <= right) jmp
-    int16_t right = pop(context);
-    int16_t left = pop(context);
+    stack_element_t right = pop(context);
+    stack_element_t left = pop(context);
     // printf("jmple left %d, right %d\n", left, right);
     if (left <= right) {
         return delta;
@@ -177,10 +171,10 @@ void
 bc_add(ExecutionContext *context)
 {
     // a+b is push(a);push(b); add
-    uint16_t right = pop(context);
-    uint16_t left = pop(context);
+    stack_element_t right = pop(context);
+    stack_element_t left = pop(context);
     // printf("add right %d left %d\n", right, left);
-    uint16_t result = left + right;
+    stack_element_t result = left + right;
 
     push(context, result);
 }
@@ -189,9 +183,9 @@ void
 bc_sub(ExecutionContext *context)
 {
     // left-right is push(left);push(right); sub
-    uint16_t right = pop(context);
-    uint16_t left = pop(context);
-    uint16_t result = left - right;
+    stack_element_t right = pop(context);
+    stack_element_t left = pop(context);
+    stack_element_t result = left - right;
 
     push(context, result);
 }
@@ -322,20 +316,48 @@ void validateFibResult (ExecutionContext *context) {
 /* Main Loop */
 
 int
-main()
+main(int argc, char *argv[])
 {
-    b9_jit_init();
+    int i;
+    b9_jit_init();  
 
+        printf (" argc %d\n", argc);
+        
     ExecutionContext context;
     context.functions = functions;
-
+    for (i=1;i<argc;i++) { 
+        char sharelib[128];
+        char func_name[128];
+        char *name = argv[i];
+        printf ("Code in a Shared Lib Demo = %s\n", name);
+        snprintf(sharelib, sizeof(sharelib), "%s.so", name); 
+        snprintf(func_name, sizeof(func_name), "_%s", name); 
+        void * handle = dlopen (sharelib, RTLD_NOW); 
+        Instruction* func;
+        func = (Instruction*) dlsym(handle, name); 
+        printf ("Running %s::%s  %p::%p\n", sharelib, name, handle, func);
+        if (func == 0) {  
+            func = (Instruction*) dlsym(handle, func_name); 
+            printf ("Running %s::%s  %p::%p\n", sharelib, func_name, handle, func);
+        }
+        if (func != 0) { 
+            stack_element_t result = 0;
+           int nargs = progArgCount(*func);
+           for (int i=0;i<nargs;i++){
+            int arg = 100 - (i*10);
+            printf ("Pushing args %d: %d\n", i, arg);
+            push(&context, arg); 
+           }
+           result = interpret(&context, (Instruction*) func);
+            printf (" result is %ld\n", result); 
+            return 0;
+        }
+    }
+    
     validateFibResult(&context);
     stack_element_t result = 0;
 
-
-#define COUNT 10
-
-#define LOOP 20000
+#define LOOP 200000
 
     // make sure everything is not-jit'd for this initial bench
     // allows you to put examples above, tests etc, and not influence this 
@@ -347,18 +369,15 @@ main()
    }
 
 
-   printf("About to run %d repeats of %d loops, interpreted\n", COUNT, LOOP);
+   printf("About to run %d loops, interpreted\n", LOOP);
 
    long timeInterp = 0;
    long timeJIT = 0;
    do {
        struct timeval tval_before, tval_after, tval_result;
-       gettimeofday(&tval_before, NULL);
-       int count = COUNT;
-       while (count--) {
-           push(&context, LOOP);
-           result = interpret(&context, loop_call_fib12_function);
-       }
+       gettimeofday(&tval_before, NULL); 
+        push(&context, LOOP);
+        result = interpret(&context, loop_call_fib12_function);
        gettimeofday(&tval_after, NULL);
        timersub(&tval_after, &tval_before, &tval_result);
        printf("Result is: %d\n", result);
@@ -375,11 +394,8 @@ main()
    do {
        struct timeval tval_before, tval_after, tval_result;
        gettimeofday(&tval_before, NULL);
-       int count = COUNT;
-       while (count--) {
-           push(&context, LOOP);
-           result = interpret(&context, loop_call_fib12_function);
-       }
+       push(&context, LOOP);
+       result = interpret(&context, loop_call_fib12_function);
        gettimeofday(&tval_after, NULL);
        timersub(&tval_after, &tval_before, &tval_result);
        printf("Result is: %d\n", result); 
@@ -387,7 +403,7 @@ main()
 
      } while (0);
    
-   printf("Time for %d(%d,%d) iterations Interp %ld ms JIT %ld ms\n", COUNT*LOOP, COUNT, LOOP, timeInterp, timeJIT);
+   printf("Time for %d iterations Interp %ld ms JIT %ld ms\n", LOOP, timeInterp, timeJIT);
    printf("JIT speedup = %f\n", timeInterp * 1.0/ timeJIT);
 
     return 0;

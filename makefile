@@ -18,6 +18,11 @@ main.o:  main.cpp  b9.h
 b9jit.o: b9jit.cpp b9jit.hpp b9.h $(INCLUDE_DEPS)
 	c++ -std=c++11 -g -fPIC -fno-rtti -c b9jit.cpp -o b9jit.o -I$(IJIT) -I$(IJIT1) 
 
+sharedlib:  b9
+	clang -std=c++11  -shared -undefined dynamic_lookup -o test_sub.so test_sub.cpp
+	./b9 test_sub
+
+
 $(LIB):
 	(cd $(top_srcdir)/jitbuilder; make)
 

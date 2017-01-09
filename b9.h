@@ -7,47 +7,48 @@
 /* Bytecodes */
 
 /**
- * Each bytecode is 32 bytes:
- * first 16 bytes are the OpCode
- * second 16 bytes may be an argument to the opcode
+ * Each bytecode is 32 bits:
+ * first 8 bits are the OpCode
+ * second 24 bits may be an argument to the opcode
  */
 
-typedef uint16_t ByteCode;
-typedef int16_t Parameter;
+typedef uint8_t ByteCode;
+typedef int32_t Parameter;  // even though only 24 bits used
 typedef uint32_t Instruction;
 
 #define METHOD_FIRST_BC_OFFSET 0x3
 
-#define NO_MORE_BYTECODES 0x0
-#define PUSH_CONSTANT 0X1
-#define DROP 0x2
-#define PUSH_FROM_VAR 0x3
-#define POP_INTO_VAR 4
-#define SUB 5
-#define ADD 6
-#define CALL 7
-#define RETURN 8
-#define JMPLE 9
-#define JMP 10
+#define NO_MORE_BYTECODES   0x0
+#define PUSH_CONSTANT       0x1
+#define DROP                0x2
+#define PUSH_FROM_VAR       0x3
+#define POP_INTO_VAR        0x4
+#define SUB                 0x5
+#define ADD                 0x6
+#define CALL                0x7
+#define RETURN              0x8
+#define JMPLE               0x9
+#define JMP                 0xA
 
 /* VM State */
 
-typedef int16_t stack_element_t ;
+typedef int64_t stack_element_t ;
 
 class ExecutionContext {
 public:
     ExecutionContext()
         : stackPointer(this->stack),
-         stackEnd(&stack[ (sizeof (stack)/sizeof(stack_element_t)) - 16])  // hack for warning
+         stackEnd(&stack[ (sizeof (stack)/sizeof(stack_element_t)) - 16])
     {
         std::memset(stack, 0, sizeof(stack)); 
     }
 
     stack_element_t stack[1000];
     stack_element_t* stackPointer;
-    stack_element_t* stackEnd;
+    stack_element_t* stackEnd; 
     Instruction **functions;
 };
+
 
 typedef stack_element_t (*Interpret) (ExecutionContext* context, Instruction* program);
 stack_element_t interpret(ExecutionContext* context, Instruction* program);
@@ -59,19 +60,19 @@ void b9_jit_init();
 constexpr ByteCode
 getByteCodeFromInstruction(Instruction instruction)
 {
-    return (instruction >> 16);
+    return (instruction >> 24);
 }
 
 constexpr Parameter
 getParameterFromInstruction(Instruction instruction)
-{
-    return (instruction & 0xFFFF);
+{ 
+    return instruction & 0x800000 ? instruction | 0xFF000000: instruction & 0xFFFFFF;
 }
 
 constexpr Instruction
 createInstruction(ByteCode byteCode, Parameter parameter)
 {
-    return byteCode << 16 | (parameter & 0xFFFF);
+    return byteCode << 24 | (parameter & 0xFFFFFF);
 }
 
 #define decl(argCount, tmpCount) (argCount << 16 | tmpCount)

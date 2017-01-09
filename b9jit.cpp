@@ -137,19 +137,35 @@ generateCode(Instruction *program)
     printf("Done gen code\n", entry);
 }
 
+
+
 B9Method::B9Method(TR::TypeDictionary *types, Instruction *program)
     : MethodBuilder(types), program(program)
 {
     DefineLine(LINETOSTR(__LINE__));
     DefineFile(__FILE__);
 
-    char *signature = "compiled code";
-    char *methodName = (char *)malloc(strlen(signature) + 1);
-    printf("Generating -> <%s>\n", signature);
-    snprintf(methodName, sizeof(methodName), "%s", signature);
+    char *signature = "jit";
+    int len = strlen(signature) + 16;
+    char *methodName = (char *)malloc(len);  
+    snprintf(methodName, len, "%s_%p", signature, program);
+    printf("Generating from %p -> <%s>\n", program, methodName);
 
     DefineName(methodName);
-    DefineReturnType(NoType);
+    if (sizeof(stack_element_t) == 2)  { 
+            StackElement=Int16; 
+            pStackElement = types->PointerTo(StackElement);
+    }
+    if (sizeof(stack_element_t) == 4) {
+            StackElement=Int32; 
+            pStackElement = types->PointerTo(StackElement);
+    } 
+    if (sizeof(stack_element_t) == 8) {
+            StackElement=Int64; 
+            pStackElement = types->PointerTo(StackElement);
+    }
+
+    DefineReturnType(StackElement);
 
     defineStructures(types);
     defineParameters();
@@ -169,9 +185,7 @@ B9Method::defineParameters()
 void
 B9Method::defineLocals()
 {
-    DefineLocal("args", pStackElement);
-    DefineLocal("nargs", Int64);
-    DefineLocal("tmps", Int64);
+    DefineLocal("args", pStackElement); 
 }
 
 void
@@ -180,19 +194,6 @@ B9Method::defineStructures(TR::TypeDictionary *types)
     pInt64 = types->PointerTo(Int64);
     pInt32 = types->PointerTo(Int32);
     pInt16 = types->PointerTo(Int16);
-
-    if (sizeof(stack_element_t) == 2)  { 
-            StackElement=Int16; 
-            pStackElement = types->PointerTo(StackElement);
-    }
-    if (sizeof(stack_element_t) == 4) {
-            StackElement=Int32; 
-            pStackElement = types->PointerTo(StackElement);
-    } 
-    if (sizeof(stack_element_t) == 8) {
-            StackElement=Int64; 
-            pStackElement = types->PointerTo(StackElement);
-    }
 
     b9_execution_context = types->DefineStruct("b9_execution_context");
     types->DefineField("b9_execution_context", "stack", pStackElement, offsetof(struct ExecutionContext, stack));
@@ -325,6 +326,7 @@ B9Method::buildIL()
 
     TR::IlValue *nargs = builder->ConstInt32(progArgCount(*program) * sizeof(stack_element_t));
     TR::IlValue *tmps = builder->ConstInt32(progTmpCount(*program) * sizeof(stack_element_t));
+   
     TR::IlValue *args = builder->Sub(sp, nargs);
 
     builder->Store("args", args);
@@ -418,12 +420,12 @@ B9Method::generateILForBytecode(TR::BytecodeBuilder **bytecodeBuilderTable,
     printf("generating index=%d bc=%s(%d) param=%d \n", bytecodeIndex, b9_bytecodename(bytecode), bytecode, getParameterFromInstruction(instruction));
 
     // if (bytecodeIndex == METHOD_FIRST_BC_OFFSET) {
-    //     QCOMMIT (builder);
-    //     builder->Call("printVMState", 4, builder->Load("context"), 
-    //         builder->ConstInt64(bytecodeIndex),
-    //         builder->ConstInt64(bytecode),
-    //         builder->ConstInt64(getParameterFromInstruction(instruction))
-    //         );
+        // QCOMMIT (builder);
+        // builder->Call("printVMState", 4, builder->Load("context"), 
+        //     builder->ConstInt64(bytecodeIndex),
+        //     builder->ConstInt64(bytecode),
+        //     builder->ConstInt64(getParameterFromInstruction(instruction))
+        //     );
     // }
 
     switch (bytecode) {
@@ -463,7 +465,7 @@ B9Method::generateILForBytecode(TR::BytecodeBuilder **bytecodeBuilderTable,
     case PUSH_CONSTANT: {
         int constvalue = getParameterFromInstruction(instruction);
         // printf("generating push_constant %d\n", constvalue);
-        push(builder, builder->ConstInt16(constvalue));
+        push(builder, builder->ConstInt32(constvalue));
         // printf("generating push_constant nextBytecodeBuilder %p\n", nextBytecodeBuilder);
         if (nextBytecodeBuilder)
             builder->AddFallThroughBuilder(nextBytecodeBuilder);
@@ -474,21 +476,23 @@ B9Method::generateILForBytecode(TR::BytecodeBuilder **bytecodeBuilderTable,
 #if USE_DIRECT_CALL
         extern  Instruction *functions[];
         Instruction *tocall = functions[callindex]; 
-        uint64_t *slotForJitAddress = (uint64_t *)&tocall[1];
         char *nameToCall = 0; 
-        printf ("JIT Address %p\n", *slotForJitAddress);
-        if (*slotForJitAddress != 0) { 
-            printf ("CALL CALL DIRECTLY!!!\n");
-            //should generate a name for this address, then be able to look it up
-            DefineFunction((char *)"HACK", (char *)__FILE__, "HACK", (void *)*slotForJitAddress , Int64, 2, Int64, Int64);
-            nameToCall = "HACK";
+        uint64_t *slotForJitAddress = (uint64_t *)&tocall[1];
+        if (tocall == program || *slotForJitAddress != 0) { 
+            char *signature = "jit";
+            int len = strlen(signature) + 16;
+            nameToCall = (char *)malloc(len);  // need to free later 
+            snprintf(nameToCall, len, "%s_%p", signature, tocall);
+            //printf ("Direct Call to <%s>\n", nameToCall);
+            if (tocall != program ) {
+              DefineFunction((char *)nameToCall, (char *)__FILE__, nameToCall, (void *)*slotForJitAddress , Int64, 2, Int64, Int64);
+            }         
         } else { 
-            printf ("CALL via Interpreter\n");
-            nameToCall = "interpret";
-        }
+                //printf ("Interpreter Call to <%p>\n", tocall); 
+                nameToCall = "interpret";
+        } 
         QCOMMIT(builder);
-        TR::IlValue *result = builder->Call(nameToCall, 2, builder->Load("context"), 
-            builder->ConstAddress(tocall));
+        TR::IlValue *result = builder->Call(nameToCall, 2, builder->Load("context"), builder->ConstAddress(tocall));
         if (hackVMState) {
             printf ("Dropping %d\n", progArgCount(*tocall));
             QSTACK(builder)->Drop(builder, progArgCount(*tocall));
@@ -521,11 +525,9 @@ B9Method::generateILForBytecode(TR::BytecodeBuilder **bytecodeBuilderTable,
 void
 B9Method::handle_bc_jmp(TR::BytecodeBuilder *builder, TR::BytecodeBuilder **bytecodeBuilderTable, long bytecodeIndex)
 {
-    Instruction instruction = program[bytecodeIndex];
-
-    int delta = getParameterFromInstruction(instruction) + 1;
-    int next_bc_index = bytecodeIndex + delta;
-
+    Instruction instruction = program[bytecodeIndex]; 
+    stack_element_t  delta = getParameterFromInstruction(instruction) + 1; 
+    int next_bc_index = bytecodeIndex + delta; 
     TR::BytecodeBuilder *destBuilder = bytecodeBuilderTable[next_bc_index];
     builder->Goto(destBuilder);
 }
@@ -538,17 +540,12 @@ B9Method::handle_bc_jmp_le(TR::BytecodeBuilder *builder,
 {
     Instruction instruction = program[bytecodeIndex];
 
-    int delta = getParameterFromInstruction(instruction) + 1;
-
-    // printf("in handle_bc_jmp_le delta is %d\n", delta);
-    // printf("in handle_bc_jmp_le delta is %d\n", delta);
+    stack_element_t delta = getParameterFromInstruction(instruction) + 1;
 
     TR::IlValue *right = pop(builder);
     TR::IlValue *left = pop(builder);
 
     int next_bc_index = bytecodeIndex + delta;
-    // printf("in handle_bc_jmp_le nextPCIndex is %d\n", next_bc_index);
-    // printf("   dest instruction = %x\n", getByteCodeFromInstruction(program[next_bc_index]));
     TR::BytecodeBuilder *jumpTo = bytecodeBuilderTable[next_bc_index];
 
     builder->IfCmpLessThan(jumpTo, left, right);

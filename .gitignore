@@ -1,3 +1,6 @@
+###  B9 ###
+
+b9
 
 ### C++ ###
 # Prerequisites
@@ -32,3 +35,6 @@
 *.exe
 *.out
 *.app
+
+### GDB ###
+.gdb_history

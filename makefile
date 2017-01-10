@@ -8,7 +8,7 @@ IJIT1 = $(IJIT)/compiler
 LIB=$(top_srcdir)/jitbuilder/release/libjitbuilder.a
 
 OBJ=main.o b9jit.o
-
+$(OBJ): omr
 b9:  $(OBJ) $(LIB)
 	c++ -fPIC -fno-rtti  $(OBJ) -lm -lm $(LIB) -o b9 $(LIBS) -ldl -I./omr/compiler/
 
@@ -34,3 +34,7 @@ bench: b9
 clean:
 	$(RM) b9
 	$(RM) $(OBJ)
+
+omr:
+	if [ -d ../omr ]; then ln -s ../omr ./omr; else git clone git@github.com:eclipse/omr.git; fi
+	

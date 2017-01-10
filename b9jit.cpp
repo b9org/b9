@@ -18,8 +18,26 @@
 #include "b9.h"
 #include "b9jit.hpp"
 
-extern const char * b9_bytecodename(int bc);
-void printVMState (ExecutionContext *context, int64_t pc, ByteCode bytecode, Parameter param)
+
+const char *
+b9_bytecodename(ByteCode bc)
+{
+    if (bc == PUSH_CONSTANT) return "PUSH_CONSTANT";
+    if (bc==DROP) return "DROP" ;
+    if (bc==PUSH_FROM_VAR) return "PUSH_FROM_VAR" ;
+    if (bc==POP_INTO_VAR) return "POP_INTO_VAR" ;
+    if (bc==SUB) return "SUB" ;
+    if (bc==ADD) return "ADD" ;
+    if (bc==CALL) return "CALL" ;
+    if (bc==RETURN) return "RETURN" ;
+    if (bc==JMPLE) return "JMPLE" ;
+    if (bc==JMP) return "JMP" ;
+    return "unknown bc";
+}
+
+
+void
+printVMState (ExecutionContext *context, int64_t pc, ByteCode bytecode, Parameter param)
 {
     printf ("Executing at pc %d, bc is (%d, %s), param is (%d)\n", pc, bytecode, b9_bytecodename(bytecode), param);
     b9PrintStack (context);
@@ -187,24 +205,9 @@ B9Method::defineStructures(TR::TypeDictionary *types)
     p_b9_execution_context = types->PointerTo(b9_execution_context);
 }
 
-long
-getargs(Instruction p)
-{
-    return progArgCount(p);
-}
-
-long
-gettemps(Instruction p)
-{
-    return progTmpCount(p);
-}
-
 void
 B9Method::defineFunctions()
 {
-    DefineFunction((char *)"getargs", (char *)__FILE__, "getargs", (void *)&getargs, Int64, 1, Int64);
-    DefineFunction((char *)"gettemps", (char *)__FILE__, "gettemps", (void *)&gettemps, Int64, 1, Int64);
-
     DefineFunction((char *)"printVMState", (char *)__FILE__, "printVMState", (void *)&printVMState, NoType, 4, Int64, Int64, Int64, Int64);
     DefineFunction((char *)"printStack", (char *)__FILE__, "printStack", (void *)&b9PrintStack, NoType, 1, Int64);
 
@@ -218,26 +221,7 @@ B9Method::defineFunctions()
 #else 
 #define QCOMMIT(b)   
 #define QRELOAD(b)    
-#endif 
-
-const char *
-b9_bytecodename(int bc)
-{
-
-    if (bc==PUSH_CONSTANT) return "PUSH_CONSTANT" ;
-    if (bc==DROP) return "DROP" ;
-    if (bc==PUSH_FROM_VAR) return "PUSH_FROM_VAR" ;
-    if (bc==POP_INTO_VAR) return "POP_INTO_VAR" ;
-    if (bc==SUB) return "SUB" ;
-    if (bc==ADD) return "ADD" ;
-    if (bc==CALL) return "CALL" ;
-    if (bc==RETURN) return "RETURN" ;
-    if (bc==JMPLE) return "JMPLE" ;
-    if (bc==JMP) return "JMP" ;
-    return "unknown bc";
-}
-
-
+#endif
 
 void
 B9Method::createBuilderForBytecode(TR::BytecodeBuilder **bytecodeBuilderTable, uint8_t bytecode, int64_t bytecodeIndex)

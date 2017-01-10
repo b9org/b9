@@ -270,18 +270,24 @@ main(int argc, char *argv[])
         snprintf(sharelib, sizeof(sharelib), "./%s.so", name);
 
         void *handle = dlopen(sharelib, RTLD_NOW);
-        // printf("%s\n", dlerror());
+        char *error = dlerror();
+        if (error) {
+            printf("%s\n", dlerror());
+        }
         Instruction **table = (Instruction **)dlsym(handle, "b9_exported_functions");
-        // printf("%s\n", dlerror());
+        error = dlerror();
+        if (error) {
+            printf("%s\n", dlerror());
+        }
 
         printf("Handle=%p table=%p\n", handle, table);
 
         Instruction *func = table[0];
         context.functions = table;
 
-        printf("!!!\n");
-        printf("Context @0=%p, @1 =%p\n", context.functions[0], context.functions[1]);
-        printf("Running %s::%s  %p::%p\n", sharelib, name, handle, func);
+        // printf("!!!\n");
+        // printf("Context @0=%p, @1 =%p\n", context.functions[0], context.functions[1]);
+        // printf("Running %s::%s  %p::%p\n", sharelib, name, handle, func);
 
         stack_element_t result = 0;
         int nargs = progArgCount(*func);
@@ -290,9 +296,10 @@ main(int argc, char *argv[])
             printf("Pushing args %d: %d\n", i, arg);
             push(&context, arg);
         }
-        
+
         /* TODO generate code for all methods */
         generateCode(context.functions[0], &context);
+        generateCode(context.functions[1], &context);
 
         result = interpret(&context, func);
         printf(" result is %ld\n", result);

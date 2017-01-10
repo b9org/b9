@@ -17,6 +17,8 @@ files.forEach(function (filename) {
     codegen.handleAll(parsed.body);
     // codegen.genReturn(false);
     codegen.processDeferred();
+    codegen.handleFooters();
+
 });
 
 function FunctionContext(codegen, outer) {
@@ -138,7 +140,7 @@ function CodeGen(f) {
         if (name == "") {
             this.gen("calltos " + args, comment);
         } else {
-            this.genInstruction("CALL", -1, "TBD: compute offset of: ", name);
+            this.genInstruction("CALL", 1, "TBD: compute offset of: ", name);
         }
     }
 
@@ -170,7 +172,11 @@ function CodeGen(f) {
     this.handleHeaders = function () {
         this.gen('#include "b9.h"');
         this.gen("");
+    };
 
+    this.handleFooters = function () {
+        this.gen('Instruction *b9_exported_functions[] = { program, call_sub};');
+        this.gen("");
     };
 
     this.handle = function (element) {

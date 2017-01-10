@@ -262,22 +262,22 @@ main(int argc, char *argv[])
     context.functions = 0; // TODO set functions
 
     for (i = 1; i < argc; i++) {
-
-        char sharelib[128];
         char *name = argv[i];
 
         printf("Code in a Shared Lib Demo = %s\n", name);
-        snprintf(sharelib, sizeof(sharelib), "./%s.so", name);
 
-        void *handle = dlopen(sharelib, RTLD_NOW);
+        dlerror();
+        void *handle = dlopen(name, RTLD_NOW);
         char *error = dlerror();
         if (error) {
-            printf("%s\n", dlerror());
+            printf("%s\n", error);
+            continue;
         }
         Instruction **table = (Instruction **)dlsym(handle, "b9_exported_functions");
         error = dlerror();
         if (error) {
-            printf("%s\n", dlerror());
+            printf("%s\n", error);
+            continue;
         }
 
         printf("Handle=%p table=%p\n", handle, table);

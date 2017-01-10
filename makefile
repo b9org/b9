@@ -22,6 +22,8 @@ sharedlib:  b9
 	clang -std=c++11  -shared -undefined dynamic_lookup -o test_sub.so test_sub.cpp
 	./b9 test_sub
 
+gen:  b9 b9.js test_sub.src
+	node b9.js test_sub.src
 
 $(LIB):
 	(cd $(top_srcdir)/jitbuilder; make)

@@ -4,6 +4,6 @@
     "version": "0.1.0",
     "command": "make",
     "isShellCommand": true,
-    "args": ["b9", "bench"],
+    "args": ["b9", "gen"],
     "showOutput": "always"
 }

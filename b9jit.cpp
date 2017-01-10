@@ -495,7 +495,6 @@ B9Method::generateILForBytecode(TR::BytecodeBuilder **bytecodeBuilderTable,
         } else {  
                 nameToCall = "interpret";
         } 
-        QCOMMIT(builder);
 
 #if PASS_PARAMETERS_DIRECTLY
         int argsCount = progArgCount(*program); 
@@ -529,6 +528,7 @@ B9Method::generateILForBytecode(TR::BytecodeBuilder **bytecodeBuilderTable,
                 break;
         } 
 #else 
+    QCOMMIT(builder);
     TR::IlValue *result = 
                 builder->Call(nameToCall, 2, builder->Load("context"), builder->ConstAddress(tocall));      
 #endif 

@@ -195,19 +195,50 @@ bc_sub(ExecutionContext *context)
 stack_element_t
 interpret(ExecutionContext *context, Instruction *program)
 {
-
     uint64_t *address = (uint64_t *)(&program[1]);
-    Interpret jitedcode = (Interpret)*address;
-    if (jitedcode != NULL) {
-        // printf("about to call jit\n");
-        uint16_t result = (*jitedcode)(context, program);
-        // printf("jit result is: %d\n", result);
+    if (*address) {
+        stack_element_t result = 0;
+
+#if PASS_PARAMETERS_DIRECTLY
+        int argsCount = progArgCount(*program); 
+        //printf("about to call jit args %d\n", argsCount);
+        switch (argsCount) {
+            case 0:{
+                Interpret jitedcode = (Interpret)*address;
+                result = (*jitedcode)(context, program);
+            } break;
+           case  1: {
+                Interpret_1_args jitedcode = (Interpret_1_args)*address;
+                stack_element_t p1 = pop(context);
+                result = (*jitedcode)(context, program, p1);
+            }
+            break;
+            case 2:{
+                Interpret_2_args jitedcode = (Interpret_2_args)*address;
+                stack_element_t p2 = pop(context);
+                stack_element_t p1 = pop(context);
+                result = (*jitedcode)(context, program, p1, p2);
+            } break;
+            case 3:{
+                Interpret_3_args jitedcode = (Interpret_3_args)*address;
+                stack_element_t p3 = pop(context);
+                stack_element_t p2 = pop(context);
+                stack_element_t p1 = pop(context);
+                result = (*jitedcode)(context, program, p1, p2, p3);
+            }break;
+            default: 
+                printf ("Need to add handlers for more parameters\n");
+                break;
+        } 
+#else
+        Interpret jitedcode = (Interpret)*address;
+        result = (*jitedcode)(context, program);
+#endif 
         return result;
-    }
+    } 
 
     int nargs = progArgCount(*program);
     int tmps = progTmpCount(*program);
-
     //printf("Prog Arg Count %d, tmp count %d\n", nargs, tmps);
 
     Instruction *instructionPointer = program + 3;
@@ -294,7 +325,7 @@ void runFib (ExecutionContext *context, int value) {
     stack_element_t result = 0; 
     const char *mode = hasJITAddress(fib_function) ? "JIT" : "Interpreted";
     int validate = fib (value); 
-    push(context, value);
+    push(context, value); 
     result = interpret(context, fib_function);
     if (result == validate) { 
         printf("Success: Mode <%s> fib %d returned %d\n", mode, value, result);
@@ -321,10 +352,10 @@ main(int argc, char *argv[])
     int i;
     b9_jit_init();  
 
-        printf (" argc %d\n", argc);
-        
+    
     ExecutionContext context;
-    context.functions = functions;
+    context.functions = functions; 
+
     for (i=1;i<argc;i++) { 
         char sharelib[128];
         char func_name[128];

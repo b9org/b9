@@ -134,7 +134,7 @@ generateCode(Instruction *program)
     } else {
         printf("Failed to compile");
     }
-    printf("Done gen code\n", entry);
+    printf("Done gen code\n");
 }
 
 
@@ -145,7 +145,7 @@ B9Method::B9Method(TR::TypeDictionary *types, Instruction *program)
     DefineLine(LINETOSTR(__LINE__));
     DefineFile(__FILE__);
 
-    char *signature = "jit";
+    const char *signature = "jit";
     int len = strlen(signature) + 16;
     char *methodName = (char *)malloc(len);  
     snprintf(methodName, len, "%s_%p", signature, program);
@@ -175,17 +175,39 @@ B9Method::B9Method(TR::TypeDictionary *types, Instruction *program)
     AllLocalsHaveBeenDefined();
 }
 
+
+#if PASS_PARAMETERS_DIRECTLY
+static const char *argsAndTempNames[]= 
+{"arg0", "arg1", "arg2", "arg3", "arg4", "arg5", "arg6", "arg7", "arg8", "arg9"};
+#endif 
+
 void
 B9Method::defineParameters()
 {
     DefineParameter("context", p_b9_execution_context);
     DefineParameter("program", pInt32);
+#if PASS_PARAMETERS_DIRECTLY
+    int argsCount = progArgCount(*program);
+    for (int i = 0;i<argsCount;i++) { 
+        printf ("Arg %d defined <%s>\n", i, argsAndTempNames[i]);
+        DefineParameter(argsAndTempNames[i], Int64); 
+    }
+#endif
 }
 
 void
 B9Method::defineLocals()
 {
-    DefineLocal("args", pStackElement); 
+    int argsCount = progArgCount(*program);
+    int tempCount = progTmpCount(*program); 
+#if PASS_PARAMETERS_DIRECTLY
+    for (int i = argsCount;i<argsCount+tempCount;i++) { 
+        printf ("Temp %d defined <%s>\n", i, argsAndTempNames[i]);
+        DefineLocal(argsAndTempNames[i], Int64); 
+    }
+#else
+    DefineLocal("returnSP", Int64);
+#endif
 }
 
 void
@@ -237,17 +259,14 @@ B9Method::defineFunctions()
     DefineFunction((char *)"interpret", (char *)__FILE__, "interpret", (void *)&interpret, Int64, 2, Int64, Int64);
 }
 
-bool hackVMState = false;
-
+#if USE_VM_OPERAND_STACK
 #define QSTACK(b) (((B9VirtualMachineState *)(b)->vmState())->_stack)
-#define QCOMMIT(b)                   \
-    if (hackVMState) {               \
-        ((b)->vmState()->Commit(b)); \
-    }
-#define QRELOAD(b)                   \
-    if (hackVMState) {               \
-        ((b)->vmState()->Reload(b)); \
-    }
+#define QCOMMIT(b) ((b)->vmState()->Commit(b));  
+#define QRELOAD(b)  ((b)->vmState()->Reload(b)); 
+#else 
+#define QCOMMIT(b)   
+#define QRELOAD(b)    
+#endif 
 
 const char *
 b9_bytecodename(int bc)
@@ -318,21 +337,19 @@ B9Method::buildIL()
         i += 1;
     }
     TR::BytecodeBuilder *builder = bytecodeBuilderTable[METHOD_FIRST_BC_OFFSET];
-    printf("builder %p\n", builder);
+  //printf("builder %p\n", builder);
     AppendBuilder(builder);
 
-    TR::IlValue *prog = builder->Load("program");
-    TR::IlValue *sp = builder->LoadIndirect("b9_execution_context", "stackPointer", builder->Load("context"));
-
+#if !PASS_PARAMETERS_DIRECTLY 
     TR::IlValue *nargs = builder->ConstInt32(progArgCount(*program) * sizeof(stack_element_t));
     TR::IlValue *tmps = builder->ConstInt32(progTmpCount(*program) * sizeof(stack_element_t));
-   
+
+    TR::IlValue *sp = builder->LoadIndirect("b9_execution_context", "stackPointer", builder->Load("context"));
     TR::IlValue *args = builder->Sub(sp, nargs);
-
-    builder->Store("args", args);
-
+    builder->Store("returnSP", args);
     sp = builder->Add(sp, tmps);
     builder->StoreIndirect("b9_execution_context", "stackPointer", builder->Load("context"), sp);
+#endif
 
 
     i = METHOD_FIRST_BC_OFFSET;
@@ -353,41 +370,31 @@ B9Method::buildIL()
 TR::IlValue *
 B9Method::loadVarIndex(TR::BytecodeBuilder *builder, int varindex)
 {
-    TR::IlValue *args = builder->Load("args");
-
-    TR::IlValue *address =
-        builder->IndexAt(pStackElement, args, builder->ConstInt32(varindex));
-
-    // builder->Call("printstring", 1, builder->ConstString("loadVarIndex args="));
-    // builder->Call("printInt64Hex", 1, args);
-    // builder->Call("printstring", 1, builder->ConstString(" varindex="));
-    // builder->Call("printInt64Hex", 1, builder->ConstInt32(varindex));
-    // builder->Call("printstring", 1, builder->ConstString(" address="));
-    // builder->Call("printInt64Hex", 1, address);
-
-    TR::IlValue *result = builder->LoadAt(pStackElement, address);
-
-    // builder->Call("printstring", 1, builder->ConstString(" result="));
-    // builder->Call("printInt64Hex", 1, result);
-
-    // builder->Call("printStack", 1, builder->Load("context"));
-
-    result = builder->ConvertTo(Int64, result);
-    // builder->Call("printstring", 1, builder->ConstString(" result="));
-    // builder->Call("printInt64Hex", 1, result);
+#if PASS_PARAMETERS_DIRECTLY
+    return builder->Load(argsAndTempNames[varindex]);
+#else 
+    TR::IlValue *args = builder->Load("returnSP");
+    TR::IlValue *address = builder->IndexAt(pStackElement, args, builder->ConstInt32(varindex)); 
+    TR::IlValue *result = builder->LoadAt(pStackElement, address);  
+    result = builder->ConvertTo(Int64, result); 
     return result;
+#endif
 }
 
 void
 B9Method::storeVarIndex(TR::BytecodeBuilder *builder, int varindex, TR::IlValue *value)
 {
-    TR::IlValue *args = builder->Load("args");
-
+#if PASS_PARAMETERS_DIRECTLY
+    builder->Store(argsAndTempNames[varindex], value);
+    return; 
+#else 
+    TR::IlValue *args = builder->Load("returnSP");
     TR::IlValue *address = builder->IndexAt(pStackElement,
         args,
         builder->ConstInt32(varindex));
-
     builder->StoreAt(address, value);
+#endif 
+
 }
 
 bool
@@ -396,7 +403,7 @@ B9Method::generateILForBytecode(TR::BytecodeBuilder **bytecodeBuilderTable,
 {
     TR::BytecodeBuilder *builder = bytecodeBuilderTable[bytecodeIndex];
 
-    TR::IlValue *args = builder->Load("args");
+    
     Instruction instruction = program[bytecodeIndex];
 
     assert(bytecode == getByteCodeFromInstruction(instruction));
@@ -441,8 +448,10 @@ B9Method::generateILForBytecode(TR::BytecodeBuilder **bytecodeBuilderTable,
             builder->AddFallThroughBuilder(nextBytecodeBuilder);
         break;
     case RETURN: {
-        auto result = pop(builder);
-        builder->StoreIndirect("b9_execution_context", "stackPointer", builder->Load("context"), args);
+        auto result = pop(builder); 
+#if !PASS_PARAMETERS_DIRECTLY
+        builder->StoreIndirect("b9_execution_context", "stackPointer", builder->Load("context"), builder->Load("returnSP"));
+#endif
         builder->Return(result);
     } break;
     case DROP:
@@ -463,40 +472,73 @@ B9Method::generateILForBytecode(TR::BytecodeBuilder **bytecodeBuilderTable,
         handle_bc_add(builder, nextBytecodeBuilder);
         break;
     case PUSH_CONSTANT: {
-        int constvalue = getParameterFromInstruction(instruction);
-        // printf("generating push_constant %d\n", constvalue);
-        push(builder, builder->ConstInt32(constvalue));
-        // printf("generating push_constant nextBytecodeBuilder %p\n", nextBytecodeBuilder);
+        int constvalue = getParameterFromInstruction(instruction); 
+        push(builder, builder->ConstInt64(constvalue)); 
         if (nextBytecodeBuilder)
             builder->AddFallThroughBuilder(nextBytecodeBuilder);
     } break;
     case CALL: {
         int callindex = getParameterFromInstruction(instruction);
-#define USE_DIRECT_CALL  1
 #if USE_DIRECT_CALL
-        extern  Instruction *functions[];
+        extern  Instruction *functions[]; 
         Instruction *tocall = functions[callindex]; 
         char *nameToCall = 0; 
         uint64_t *slotForJitAddress = (uint64_t *)&tocall[1];
         if (tocall == program || *slotForJitAddress != 0) { 
-            char *signature = "jit";
+            const char *signature = "jit";
             int len = strlen(signature) + 16;
             nameToCall = (char *)malloc(len);  // need to free later 
-            snprintf(nameToCall, len, "%s_%p", signature, tocall);
-            //printf ("Direct Call to <%s>\n", nameToCall);
+            snprintf(nameToCall, len, "%s_%p", signature, tocall); 
             if (tocall != program ) {
               DefineFunction((char *)nameToCall, (char *)__FILE__, nameToCall, (void *)*slotForJitAddress , Int64, 2, Int64, Int64);
             }         
-        } else { 
-                //printf ("Interpreter Call to <%p>\n", tocall); 
+        } else {  
                 nameToCall = "interpret";
         } 
         QCOMMIT(builder);
-        TR::IlValue *result = builder->Call(nameToCall, 2, builder->Load("context"), builder->ConstAddress(tocall));
-        if (hackVMState) {
-            printf ("Dropping %d\n", progArgCount(*tocall));
+
+#if PASS_PARAMETERS_DIRECTLY
+        int argsCount = progArgCount(*program); 
+        printf ("Generating JIT CALL %d args\n", argsCount); 
+        TR::IlValue *result = 0;
+        switch (argsCount) {
+            case 0:  
+            result = 
+                builder->Call(nameToCall, 2, builder->Load("context"), builder->ConstAddress(tocall));
+            break;
+           case  1:   {   
+                TR::IlValue * p1 = pop(builder);
+                result = builder->Call(nameToCall, 3, builder->Load("context"), builder->ConstAddress(tocall), p1); 
+           }
+           break; 
+            case 2:  {    
+                TR::IlValue * p2 = pop(builder);
+                TR::IlValue * p1 = pop(builder);
+                result = builder->Call(nameToCall, 4, builder->Load("context"), builder->ConstAddress(tocall),p1,p2); 
+           }
+            break;
+            case 3: {
+                TR::IlValue * p3 = pop(builder);
+                TR::IlValue * p2 = pop(builder);
+                TR::IlValue * p1 = pop(builder);
+                result = builder->Call(nameToCall, 5, builder->Load("context"), builder->ConstAddress(tocall),p1,p2,p3);
+            }
+            break;
+            default: 
+                printf ("Need to add handlers for more parameters\n");
+                break;
+        } 
+#else 
+    TR::IlValue *result = 
+                builder->Call(nameToCall, 2, builder->Load("context"), builder->ConstAddress(tocall));      
+#endif 
+
+#if !PASS_PARAMETERS_DIRECTLY
+#if USE_VM_OPERAND_STACK  //locally inform the operand stck the parms are consumed by the call
             QSTACK(builder)->Drop(builder, progArgCount(*tocall));
-        }
+#endif 
+#endif 
+
 #else
         TR::IlValue *fTable = builder->LoadIndirect("b9_execution_context", "functions", builder->Load("context"));
         TR::IlValue *address = builder->IndexAt(pInt64, fTable, builder->ConstInt32(callindex));
@@ -583,13 +625,11 @@ B9Method::drop(TR::BytecodeBuilder *builder)
 TR::IlValue *
 B9Method::pop(TR::BytecodeBuilder *builder)
 {
-
-    if (hackVMState) {
+#if USE_VM_OPERAND_STACK
         //printf("QPOP <%s> stack %d\n", __func__, stackLevel);
         return QSTACK(builder)->Pop(builder);
-    } else {
+#else
         // return *--sp
-
         TR::IlValue *sp = builder->LoadIndirect("b9_execution_context", "stackPointer", builder->Load("context"));
         //TR::IlValue *newSP = builder->Sub(sp, builder->ConstInt64(sizeof (stack_element_t)));
         // you can use the above which does an "sub sizeof() or below which uses the size of the pStackElement"
@@ -599,22 +639,18 @@ B9Method::pop(TR::BytecodeBuilder *builder)
 
         TR::IlValue *value = builder->LoadAt(pStackElement, newSP);
         return value;
-    }
+#endif
 }
 
 void
 B9Method::push(TR::BytecodeBuilder *builder, TR::IlValue *value)
 {
-    if (hackVMState) {
+#if USE_VM_OPERAND_STACK
         // printf("QPUSH <%s> stack %d\n", __func__, stackLevel);
         return QSTACK(builder)->Push(builder, value);
-    } else {
-
+#else
         // *vm->sp++ = value
         TR::IlValue *sp = builder->LoadIndirect("b9_execution_context", "stackPointer", builder->Load("context"));
-
-        // builder->Call("printstring", 1, builder->ConstString("IN PUSH: sp="));
-        // builder->Call("printInt64Hex", 1, sp);
 
         builder->StoreAt(builder->ConvertTo(pStackElement, sp), builder->ConvertTo(StackElement, value));
 
@@ -622,9 +658,5 @@ B9Method::push(TR::BytecodeBuilder *builder, TR::IlValue *value)
         TR::IlValue *newSP = builder->IndexAt(pStackElement, sp, builder->ConstInt32(1));
 
         builder->StoreIndirect("b9_execution_context", "stackPointer", builder->Load("context"), newSP);
-
-        // builder->Call("printstring", 1, builder->ConstString("AFTER PUSH sp="));
-        // builder->Call("printInt64Hex", 1, newSP);
-        // builder->Call("printStack", 1, builder->Load("context"));
-    }
+#endif 
 }

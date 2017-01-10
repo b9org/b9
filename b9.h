@@ -1,4 +1,6 @@
-#define andrew
+#if !defined(b9_h_)
+
+#define b9_h_
 
 // structs from b9
 #include <cstring>
@@ -104,3 +106,5 @@ createInstruction(ByteCode byteCode, Parameter parameter)
 #define progTmpCount(a) (a & 0xFFFF)
 
 extern void b9PrintStack(ExecutionContext *context);
+
+#endif

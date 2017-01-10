@@ -1,3 +1,4 @@
+#include "b9.h"
 
 static Instruction fib_function[] = {
     // one argument, 0 temps
@@ -65,7 +66,7 @@ static Instruction main_loop[] = {
 
 /* Byte Code Program */
 // hack make public so you can direct call from JIT (CALL)
- Instruction *test_sub[] = {
+ Instruction *b9_exported_functions[] = {
     main_loop,  // call, 0
     fib_function  // call, 1
  };

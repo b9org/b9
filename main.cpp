@@ -22,25 +22,25 @@ pop(ExecutionContext *context)
 }
 
 void
-bc_call(ExecutionContext *context, uint16_t value)
+bc_call(ExecutionContext *context, Parameter value)
 {
     Instruction *program = context->functions[value];
     // printf("inside call\n");
-    uint16_t result = interpret(context, program);
-    //  printf("return from  call %d\n", result);
+    stack_element_t result = interpret(context, program);
+    // printf("return from  call %d\n", result);
 
     push(context, result);
 }
 
 void
-bc_push_from_arg(ExecutionContext *context, stack_element_t *args, uint16_t offset)
+bc_push_from_arg(ExecutionContext *context, stack_element_t *args, Parameter offset)
 {
     //  printf("bc_push_from_arg[%d] %d\n", offset, args[offset]);
     push(context, args[offset]);
 }
 
 void
-bc_pop_into_arg(ExecutionContext *context, stack_element_t *args, uint16_t offset)
+bc_pop_into_arg(ExecutionContext *context, stack_element_t *args, Parameter offset)
 {
     args[offset] = pop(context);
     //   printf("bc_pop_into_arg[%d] %d\n", offset, args[offset]);
@@ -53,14 +53,14 @@ bc_drop(ExecutionContext *context)
 }
 
 void
-bc_push_constant(ExecutionContext *context, uint16_t value)
+bc_push_constant(ExecutionContext *context, Parameter value)
 {
     //   printf("bc_push_constant %d\n", value);
     push(context, value);
 }
 
-uint16_t
-bc_jmple(ExecutionContext *context, uint16_t delta)
+Parameter
+bc_jmple(ExecutionContext *context, Parameter delta)
 {
 
     // push(left); push(right); if (left <= right) jmp
@@ -224,7 +224,7 @@ int fib (int n) {
 
 bool hasJITAddress (Instruction *p) {
     uint64_t *slotForJitAddress = (uint64_t *)&p[1];
-    return    *slotForJitAddress != 0;
+    return *slotForJitAddress != 0;
 }
 
 void runFib (ExecutionContext *context, int value) { 
@@ -252,8 +252,6 @@ void validateFibResult (ExecutionContext *context) {
 }
 /* Main Loop */
 
-#include "test_sub.cpp"
-
 int
 main(int argc, char *argv[])
 {
@@ -261,40 +259,47 @@ main(int argc, char *argv[])
     b9_jit_init();  
 
     ExecutionContext context;
-    context.functions = test_sub; // TODO set functions
-    printf("!!!\n");
-    printf("Context @0=%p, @1 =%p\n", context.functions[0], context.functions[1]);
+    context.functions = 0; // TODO set functions
 
-    for (i=1;i<argc;i++) {
+    for (i = 1; i < argc; i++) {
+
         char sharelib[128];
-
         char *name = argv[i];
 
-        printf ("Code in a Shared Lib Demo = %s\n", name);
-        snprintf(sharelib, sizeof(sharelib), "%s.so", name); 
+        printf("Code in a Shared Lib Demo = %s\n", name);
+        snprintf(sharelib, sizeof(sharelib), "./%s.so", name);
 
-        void * handle = dlopen (sharelib, RTLD_NOW); 
-        Instruction **table;
-        table = (Instruction**) dlsym(handle, name); 
+        void *handle = dlopen(sharelib, RTLD_NOW);
+        // printf("%s\n", dlerror());
+        Instruction **table = (Instruction **)dlsym(handle, "b9_exported_functions");
+        // printf("%s\n", dlerror());
+
+        printf("Handle=%p table=%p\n", handle, table);
+
         Instruction *func = table[0];
         context.functions = table;
 
-        printf ("Running %s::%s  %p::%p\n", sharelib, name, handle, func);
+        printf("!!!\n");
+        printf("Context @0=%p, @1 =%p\n", context.functions[0], context.functions[1]);
+        printf("Running %s::%s  %p::%p\n", sharelib, name, handle, func);
 
-        if (func != 0) { 
-           stack_element_t result = 0;
-           int nargs = progArgCount(*func);
-           for (int i=0;i<nargs;i++){
-            int arg = 100 - (i*10);
-            printf ("Pushing args %d: %d\n", i, arg);
-            push(&context, arg); 
-           }
-           result = interpret(&context, func);
-            printf (" result is %ld\n", result); 
-            return 0;
+        stack_element_t result = 0;
+        int nargs = progArgCount(*func);
+        for (int i = 0; i < nargs; i++) {
+            int arg = 100 - (i * 10);
+            printf("Pushing args %d: %d\n", i, arg);
+            push(&context, arg);
         }
+        
+        /* TODO generate code for all methods */
+        generateCode(context.functions[0], &context);
+
+        result = interpret(&context, func);
+        printf(" result is %ld\n", result);
+
+        return 0;
     }
-    
+
     validateFibResult(&context);
     stack_element_t result = 0;
 
@@ -309,6 +314,7 @@ main(int argc, char *argv[])
 //         uint64_t *slotForJitAddress = (uint64_t *)&p[1];
 //         *slotForJitAddress = 0;
 //    }
+// TODO hardcoded to remove the first two jit methods
 Instruction *p = context.functions[0];
  uint64_t *slotForJitAddress = (uint64_t *)&p[1];
  *slotForJitAddress = 0;

@@ -8,6 +8,7 @@ IJIT1 = $(IJIT)/compiler
 LIB=$(top_srcdir)/jitbuilder/release/libjitbuilder.a
 
 OBJ=main.o b9jit.o
+#test_sub.o
 
 $(OBJ): omr
 
@@ -16,6 +17,10 @@ b9:  $(OBJ) $(LIB)
 
 main.o:  main.cpp  b9.h
 	$(CXX) -std=c++11 -fPIC -fno-rtti  main.cpp  -c -o main.o $() -I./omr/compiler/ $(CFLAGS)
+
+test_sub.o:  test_sub.cpp
+	$(CXX) -std=c++11 -fPIC -fno-rtti  test_sub.cpp  -c -o test_sub.o $() -I./omr/compiler/ $(CFLAGS)
+
 
 b9jit.o: b9jit.cpp b9jit.hpp b9.h $(INCLUDE_DEPS)
 	$(CXX) -std=c++11 -fPIC -fno-rtti -c b9jit.cpp -o b9jit.o -I$(IJIT) -I$(IJIT1) -I./omr/compiler/ $(CFLAGS)

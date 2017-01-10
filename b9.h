@@ -1,3 +1,5 @@
+#define andrew
+
 // structs from b9
 #include <cstring>
 #include <cstdint>
@@ -74,7 +76,7 @@ typedef stack_element_t (*Interpret_3_args) (ExecutionContext* context, Instruct
 #endif
 
 stack_element_t interpret(ExecutionContext* context, Instruction* program);
-void generateCode(Instruction* program);
+void generateCode(Instruction* program, ExecutionContext *context);
 void b9_jit_init();
 
 /* Instruction Helpers */

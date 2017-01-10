@@ -80,10 +80,11 @@ b9_jit_init()
 }
 
 void
-generateCode(Instruction *program)
+generateCode(Instruction *program, ExecutionContext *context)
 {
     TR::TypeDictionary types;
-    B9Method methodBuilder(&types, program);
+    // todo pass in context->functions
+    B9Method methodBuilder(&types, program, context);
     uint8_t *entry = 0;
     printf("Start gen code\n");
     int rc = (*compileMethodBuilder)(&methodBuilder, &entry);
@@ -99,8 +100,8 @@ generateCode(Instruction *program)
 
 
 
-B9Method::B9Method(TR::TypeDictionary *types, Instruction *program)
-    : MethodBuilder(types), program(program)
+B9Method::B9Method(TR::TypeDictionary *types, Instruction *program, ExecutionContext *context)
+    : MethodBuilder(types), program(program), context(context)
 {
     DefineLine(LINETOSTR(__LINE__));
     DefineFile(__FILE__);
@@ -429,8 +430,10 @@ B9Method::generateILForBytecode(TR::BytecodeBuilder **bytecodeBuilderTable,
     case CALL: {
         int callindex = getParameterFromInstruction(instruction);
 #if USE_DIRECT_CALL
-        extern  Instruction *functions[]; 
-        Instruction *tocall = functions[callindex]; 
+
+// functions; move to B9Method::functions 
+
+        Instruction *tocall = context->functions[callindex]; 
         char *nameToCall = 0; 
         uint64_t *slotForJitAddress = (uint64_t *)&tocall[1];
         if (tocall == program || *slotForJitAddress != 0) { 

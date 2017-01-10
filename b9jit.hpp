@@ -14,7 +14,7 @@ class IlType;
 class B9Method : public TR::MethodBuilder
 {
 public:
-    B9Method(TR::TypeDictionary *types, Instruction *program);
+    B9Method(TR::TypeDictionary *types, Instruction *program, ExecutionContext *context);
     virtual bool
     buildIL();
 
@@ -29,6 +29,7 @@ protected:
 
 private:
     Instruction *program;
+    ExecutionContext *context;
 
     void
     defineFunctions();

@@ -18,41 +18,6 @@
 #include "b9.h"
 #include "b9jit.hpp"
 
-static void
-printString(int64_t stringPointer)
-{
-#define PRINTSTRING_LINE LINETOSTR(__LINE__)
-    char *strPtr = (char *)stringPointer;
-    fprintf(stderr, "%s", strPtr);
-}
-
-static void
-printInt64(int64_t value)
-{
-#define PRINTINT64_LINE LINETOSTR(__LINE__)
-    fprintf(stderr, "%ld", value);
-}
-
-static void
-printInt64Hex(int64_t value)
-{
-#define PRINTINT64HEX_LINE LINETOSTR(__LINE__)
-    printf("%lx\n", value);
-}
-
-static void
-newline()
-{
-#define NEWLINE_LINE LINETOSTR(__LINE__)
-    fprintf(stderr, "\n");
-}
-
-static void
-printstring(char *s)
-{
-    printf("PS: <%s> \n", s);
-}
-
 extern const char * b9_bytecodename(int bc);
 void printVMState (ExecutionContext *context, int64_t pc, ByteCode bytecode, Parameter param)
 {
@@ -76,16 +41,13 @@ public:
     virtual void
     Commit(TR::IlBuilder *b)
     {
-        //printf("Begin B9VirtualMachineState Commit\n");
         _stack->Commit(b);
         _stackTop->Commit(b);
-        //printf("End B9VirtualMachineState Commit\n");
     }
 
     virtual void
     Reload(TR::IlBuilder *b)
     {
-        printf("Begin B9VirtualMachineState Reload\n");
         _stackTop->Reload(b);
         _stack->Reload(b);
     }
@@ -93,7 +55,6 @@ public:
     virtual VirtualMachineState *
     MakeCopy()
     {
-        // printf("IN B9VirtualMachineState* MakeCopy\n");
         B9VirtualMachineState *newState = new B9VirtualMachineState();
         newState->_stack = (OMR::VirtualMachineOperandStack *)_stack->MakeCopy();
         newState->_stackTop = (OMR::VirtualMachineRegister *)_stackTop->MakeCopy();
@@ -103,7 +64,6 @@ public:
     virtual void
     MergeInto(VirtualMachineState *other, TR::IlBuilder *b)
     {
-        // printf("IN B9VirtualMachineState* MergeInto\n");
         B9VirtualMachineState *otherState = (B9VirtualMachineState *)other;
         _stack->MergeInto(otherState->_stack, b);
         _stackTop->MergeInto(otherState->_stackTop, b);
@@ -153,7 +113,7 @@ B9Method::B9Method(TR::TypeDictionary *types, Instruction *program)
 
     DefineName(methodName);
     if (sizeof(stack_element_t) == 2)  { 
-            StackElement=Int16; 
+            StackElement = Int16; 
             pStackElement = types->PointerTo(StackElement);
     }
     if (sizeof(stack_element_t) == 4) {
@@ -161,7 +121,7 @@ B9Method::B9Method(TR::TypeDictionary *types, Instruction *program)
             pStackElement = types->PointerTo(StackElement);
     } 
     if (sizeof(stack_element_t) == 8) {
-            StackElement=Int64; 
+            StackElement = Int64; 
             pStackElement = types->PointerTo(StackElement);
     }
 
@@ -241,21 +201,12 @@ gettemps(Instruction p)
 void
 B9Method::defineFunctions()
 {
-    DefineFunction((char *)"printString", (char *)__FILE__, (char *)PRINTSTRING_LINE, (void *)&printString, NoType, 1, Int64);
-    DefineFunction((char *)"printInt64", (char *)__FILE__, (char *)PRINTINT64_LINE, (void *)&printInt64, NoType, 1, Int64);
-    DefineFunction((char *)"printInt64Hex", (char *)__FILE__, (char *)PRINTINT64HEX_LINE, (void *)&printInt64Hex, NoType, 1, Int64);
+    DefineFunction((char *)"getargs", (char *)__FILE__, "getargs", (void *)&getargs, Int64, 1, Int64);
+    DefineFunction((char *)"gettemps", (char *)__FILE__, "gettemps", (void *)&gettemps, Int64, 1, Int64);
 
-    DefineFunction((char *)"newline", (char *)__FILE__, (char *)NEWLINE_LINE, (void *)&newline, NoType, 0);
-    DefineFunction((char *)"printstring", (char *)__FILE__, (char *)NEWLINE_LINE, (void *)&printstring, NoType, 1, Int64);
-
-    DefineFunction((char *)"getargs", (char *)__FILE__, (char *)NEWLINE_LINE, (void *)&getargs, Int64, 1, Int64);
-    DefineFunction((char *)"gettemps", (char *)__FILE__, (char *)NEWLINE_LINE, (void *)&gettemps, Int64, 1, Int64);
-
-    // void bc_call(ExecutionContext* context, uint16_t value);
-    DefineFunction((char *)"printVMState", (char *)__FILE__, "printVMState", (void *)&printVMState, NoType, 4, Int64,
-    Int64, Int64, Int64);
+    DefineFunction((char *)"printVMState", (char *)__FILE__, "printVMState", (void *)&printVMState, NoType, 4, Int64, Int64, Int64, Int64);
     DefineFunction((char *)"printStack", (char *)__FILE__, "printStack", (void *)&b9PrintStack, NoType, 1, Int64);
-    // DefineFunction((char*)"bc_call", (char*)__FILE__, "bc_call", (void*)&bc_call, Int64, 2, Int64, Int64);
+
     DefineFunction((char *)"interpret", (char *)__FILE__, "interpret", (void *)&interpret, Int64, 2, Int64, Int64);
 }
 
@@ -408,8 +359,6 @@ B9Method::generateILForBytecode(TR::BytecodeBuilder **bytecodeBuilderTable,
 
     assert(bytecode == getByteCodeFromInstruction(instruction));
 
-    // printf("generateILForBytecode builder %lx\n", (uint64_t)builder);
-
     if (NULL == builder) {
         printf("unexpected NULL BytecodeBuilder!\n");
         return false;
@@ -498,7 +447,6 @@ B9Method::generateILForBytecode(TR::BytecodeBuilder **bytecodeBuilderTable,
 
 #if PASS_PARAMETERS_DIRECTLY
         int argsCount = progArgCount(*program); 
-        printf ("Generating JIT CALL %d args\n", argsCount); 
         TR::IlValue *result = 0;
         switch (argsCount) {
             case 0:  
@@ -626,19 +574,14 @@ TR::IlValue *
 B9Method::pop(TR::BytecodeBuilder *builder)
 {
 #if USE_VM_OPERAND_STACK
-        //printf("QPOP <%s> stack %d\n", __func__, stackLevel);
         return QSTACK(builder)->Pop(builder);
 #else
-        // return *--sp
         TR::IlValue *sp = builder->LoadIndirect("b9_execution_context", "stackPointer", builder->Load("context"));
-        //TR::IlValue *newSP = builder->Sub(sp, builder->ConstInt64(sizeof (stack_element_t)));
-        // you can use the above which does an "sub sizeof() or below which uses the size of the pStackElement"
         TR::IlValue *newSP = builder->IndexAt(pStackElement, sp, builder->ConstInt32(-1));
 
         builder->StoreIndirect("b9_execution_context", "stackPointer", builder->Load("context"), newSP);
 
-        TR::IlValue *value = builder->LoadAt(pStackElement, newSP);
-        return value;
+        return builder->LoadAt(pStackElement, newSP);;
 #endif
 }
 
@@ -646,15 +589,11 @@ void
 B9Method::push(TR::BytecodeBuilder *builder, TR::IlValue *value)
 {
 #if USE_VM_OPERAND_STACK
-        // printf("QPUSH <%s> stack %d\n", __func__, stackLevel);
         return QSTACK(builder)->Push(builder, value);
 #else
-        // *vm->sp++ = value
         TR::IlValue *sp = builder->LoadIndirect("b9_execution_context", "stackPointer", builder->Load("context"));
-
         builder->StoreAt(builder->ConvertTo(pStackElement, sp), builder->ConvertTo(StackElement, value));
 
-        //TR::IlValue *newSP = builder->Add(sp, builder->ConstInt64(sizeof (stack_element_t)));
         TR::IlValue *newSP = builder->IndexAt(pStackElement, sp, builder->ConstInt32(1));
 
         builder->StoreIndirect("b9_execution_context", "stackPointer", builder->Load("context"), newSP);

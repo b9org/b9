@@ -1,0 +1,16 @@
+
+// main, no args for b9 entry point
+function program() {
+	var a = 100;
+	var b = 10; 
+	b++;
+	
+	call_sub (100, 9);
+	return a-b;
+}
+
+function call_sub(a,b) {
+	var c = a-b;
+	return c; 
+}
+ 

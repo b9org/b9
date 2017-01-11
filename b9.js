@@ -108,6 +108,9 @@ function CodeGen(f) {
     this.deferred = [];
     this.filename = f;
 
+    this.functions = {program: 0};
+    this.nextFunctionIndex = 1;
+
     var i, char, id;
     for (i = 0; i < f.length; i++) {
         id = ((id * 32) - id) + f.charCodeAt(i);
@@ -175,7 +178,11 @@ function CodeGen(f) {
     };
 
     this.handleFooters = function () {
-        this.gen('Instruction *b9_exported_functions[] = { program, call_sub};');
+        this.gen('Instruction *b9_exported_functions[] = {');
+        for(key in this.functions){
+            this.gen('    ' + key + ',')
+        }
+        this.gen('};');
         this.gen("");
     };
 
@@ -239,8 +246,6 @@ function CodeGen(f) {
         };
 
     }
-
-
 
     this.handleUnaryExpression = function (decl) {
         // console.log ("handleUnaryExpression " + JSON.stringify (decl));  
@@ -449,6 +454,15 @@ function CodeGen(f) {
         this.currentFunction.pushN(-1);
     }
 
+    this.getFunctionIndex = function (id) {
+        if (this.functions[id]) {
+            return functions[id];
+        } else {
+            this.functions[id] = this.nextFunctionIndex;
+            this.nextFunctionIndex ++;
+            return this.functions[id];
+        }
+    }
 
     this.declareFunction = function (id, decl) {
         var save;
@@ -468,6 +482,10 @@ function CodeGen(f) {
             index++;
         });
         currentFunction.argcount = index;
+
+        /* This will make sure the current function has a valid index */
+        this.getFunctionIndex(id);
+
         if (decl.isTopLevel) {
             this.gen("Instruction " + id + "[] = {", "", false);
 

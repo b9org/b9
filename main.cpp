@@ -151,7 +151,7 @@ interpret(ExecutionContext *context, Instruction *program)
 
     while (*instructionPointer != NO_MORE_BYTECODES) {
         // b9PrintStack(context);
-        //printf("about to run %d %d\n", getByteCodeFromInstruction(*instructionPointer), getParameterFromInstruction(*instructionPointer));
+        // printf("about to run %d %d\n", getByteCodeFromInstruction(*instructionPointer), getParameterFromInstruction(*instructionPointer));
         switch (getByteCodeFromInstruction(*instructionPointer)) {
         case PUSH_CONSTANT:
             // printf("push\n");
@@ -215,17 +215,20 @@ b9PrintStack(ExecutionContext *context)
     printf("^^^^^^^^^^^^^^^^^\n");
 }
 
-int fib (int n) { 
+int
+fib(int n) { 
     if (n < 3) return 1;
     return fib (n-1) + fib (n-2);
 }
 
-bool hasJITAddress (Instruction *p) {
+bool
+hasJITAddress(Instruction *p) {
     uint64_t *slotForJitAddress = (uint64_t *)&p[1];
     return *slotForJitAddress != 0;
 }
 
-void runFib (ExecutionContext *context, int value) { 
+void
+runFib(ExecutionContext *context, int value) { 
     StackElement result = 0; 
     const char *mode = hasJITAddress(context->functions[1]) ? "JIT" : "Interpreted";
     int validate = fib (value); 
@@ -237,8 +240,9 @@ void runFib (ExecutionContext *context, int value) {
         printf("Fail: Mode <%s> fib %d returned %d\n", mode, value, result);
     }
 }
-void validateFibResult (ExecutionContext *context) {
 
+void
+validateFibResult(ExecutionContext *context) {
     int i;
     for (i=0;i<=12;i++) {
        runFib (context, i);
@@ -248,120 +252,153 @@ void validateFibResult (ExecutionContext *context) {
        runFib (context, i);
     }
 }
+
+bool
+loadProgram(ExecutionContext *context, const char *programName)
+{
+    char sharelib[128];
+    printf("Loading \"%s\"\n", programName);
+    snprintf(sharelib, sizeof(sharelib), "./%s", programName);
+
+    dlerror();
+    void *handle = dlopen(sharelib, RTLD_NOW);
+    char *error = dlerror();
+    if (error) {
+        printf("%s\n", error);
+        return false;
+    }
+    Instruction **table = (Instruction **)dlsym(handle, "b9_exported_functions");
+    error = dlerror();
+    if (error) {
+        printf("%s\n", error);
+        return false;
+    }
+
+    printf("Handle=%p table=%p\n", handle, table);
+
+    context->functions = table;
+
+    return true;
+}
+
+StackElement
+runProgram(ExecutionContext *context, int functionIndex)
+{
+    Instruction *func = context->functions[0];
+
+    /* Push random arguments to send to the program */
+    int nargs = progArgCount(*func);
+    for (int i = 0; i < nargs; i++) {
+        int arg = 100 - (i * 10);
+        printf("Pushing args %d: %d\n", i, arg);
+        push(context, arg);
+    }
+
+    return interpret(context, func);
+}
+
+int
+benchMarkFib(ExecutionContext *context)
+{
+    /* Load the fib program into the context, and validate that
+     * the fib functions return the correct result */
+    loadProgram(context, "./bench.so");
+
+    // validateFibResult(context);
+
+    StackElement result = 0;
+
+    /* make sure everything is not-jit'd for this initial bench
+     * allows you to put examples above, tests etc, and not influence this
+     * benchmark compare interpreted vs JIT'd */
+    // TODO hardcoded to remove the first two jit methods
+    //    for (int i = 0; i < sizeof(functions) / sizeof(Instruction*); i++) {
+    //         Instruction *p = functions[i];
+    //         uint64_t *slotForJitAddress = (uint64_t *)&p[1];
+    //         *slotForJitAddress = 0;
+    //    }
+    // Instruction *p = context->functions[0];
+    // uint64_t *slotForJitAddress = (uint64_t *)&p[1];
+    // *slotForJitAddress = 0;
+
+    // p = context->functions[1];
+    // slotForJitAddress = (uint64_t *)&p[1];
+    // *slotForJitAddress = 0;
+
+#define LOOP 200000
+    printf("\nAbout to run %d loops, interpreted\n", LOOP);
+
+    long timeInterp = 0;
+    long timeJIT = 0;
+    do {
+        struct timeval tval_before, tval_after, tval_result;
+        gettimeofday(&tval_before, NULL);
+
+        result = interpret(context, context->functions[0]);
+
+        gettimeofday(&tval_after, NULL);
+        timersub(&tval_after, &tval_before, &tval_result);
+
+        printf("Result is: %d\n", result);
+        timeInterp = (tval_result.tv_sec * 1000 + (tval_result.tv_usec / 1000));
+    } while (0);
+
+    /* Generate code for fib functions */
+    // temp, only do fib for now, some issue in loops jit
+    generateCode(context->functions[1], context);
+    generateCode(context->functions[0], context);
+
+    printf("\nAbout to run %d loops, compiled\n", LOOP);
+
+    do {
+        struct timeval tval_before, tval_after, tval_result;
+        gettimeofday(&tval_before, NULL);
+
+        result = interpret(context, context->functions[0]);
+
+        gettimeofday(&tval_after, NULL);
+        timersub(&tval_after, &tval_before, &tval_result);
+
+        printf("Result is: %d\n", result);
+        timeJIT = (tval_result.tv_sec * 1000 + (tval_result.tv_usec / 1000));
+    } while (0);
+
+    printf("Time for %d iterations Interp %ld ms JIT %ld ms\n", LOOP, timeInterp, timeJIT);
+    printf("JIT speedup = %f\n", timeInterp * 1.0 / timeJIT);
+
+    return 0;
+}
+
 /* Main Loop */
 
 int
 main(int argc, char *argv[])
 {
-    int i;
-    b9_jit_init();  
+    b9_jit_init();
 
     ExecutionContext context;
-    context.functions = 0; // TODO set functions
 
-    for (i = 1; i < argc; i++) {
+    char sharelib[128];
+
+    if (argc == 1) {
+        printf("No program was passed to b9, Running default benchmark for b9.\n");
+        return benchMarkFib(&context);
+    }
+
+    for (int i = 1; i < argc; i++) {
         char *name = argv[i];
-        char sharelib[128];
 
-        printf("Code in a Shared Lib Demo = %s\n", name);
-        snprintf(sharelib, sizeof(sharelib), "./%s", name);
-
-        dlerror();
-        void *handle = dlopen(sharelib, RTLD_NOW);
-        char *error = dlerror();
-        if (error) {
-            printf("%s\n", error);
-            continue;
-        }
-        Instruction **table = (Instruction **)dlsym(handle, "b9_exported_functions");
-        error = dlerror();
-        if (error) {
-            printf("%s\n", error);
-            continue;
+        if (!loadProgram(&context, name)) {
+            return -1;
         }
 
-        printf("Handle=%p table=%p\n", handle, table);
-
-        Instruction *func = table[0];
-        context.functions = table;
-
-        // printf("!!!\n");
-        // printf("Context @0=%p, @1 =%p\n", context.functions[0], context.functions[1]);
-        // printf("Running %s::%s  %p::%p\n", sharelib, name, handle, func);
-
-        StackElement result = 0;
-        int nargs = progArgCount(*func);
-        for (int i = 0; i < nargs; i++) {
-            int arg = 100 - (i * 10);
-            printf("Pushing args %d: %d\n", i, arg);
-            push(&context, arg);
-        }
-
-        /* TODO generate code for all methods */
+        /* only generate code for the first function */
         generateCode(context.functions[0], &context);
-        generateCode(context.functions[1], &context);
 
-        result = interpret(&context, func);
+        StackElement result = runProgram(&context, 0);
+
         printf(" result is %ld\n", result);
 
         return 0;
     }
-
-    validateFibResult(&context);
-    StackElement result = 0;
-
-#define LOOP 200000
-
-    // make sure everything is not-jit'd for this initial bench
-    // allows you to put examples above, tests etc, and not influence this 
-    // benchmark compare interpreted vs JIT'd
-
-//     for (int i = 0; i < sizeof(functions) / sizeof(Instruction*); i++) {
-//         Instruction *p = functions[i];
-//         uint64_t *slotForJitAddress = (uint64_t *)&p[1];
-//         *slotForJitAddress = 0;
-//    }
-// TODO hardcoded to remove the first two jit methods
-Instruction *p = context.functions[0];
- uint64_t *slotForJitAddress = (uint64_t *)&p[1];
- *slotForJitAddress = 0;
-
- p = context.functions[1];
- slotForJitAddress = (uint64_t *)&p[1];
- *slotForJitAddress = 0;
-
-   printf("About to run %d loops, interpreted\n", LOOP);
-
-   long timeInterp = 0;
-   long timeJIT = 0;
-   do {
-       struct timeval tval_before, tval_after, tval_result;
-       gettimeofday(&tval_before, NULL); 
-        push(&context, LOOP);
-        result = interpret(&context, context.functions[0]);
-       gettimeofday(&tval_after, NULL);
-       timersub(&tval_after, &tval_before, &tval_result);
-       printf("Result is: %d\n", result);
-       timeInterp = (tval_result.tv_sec*1000 + (tval_result.tv_usec / 1000));
-    } while (0);
-
-    generateCode(context.functions[1], &context);  // temp, only do fib for now, some issue in loops jit
-    generateCode(context.functions[0], &context);
-
-   do {
-       struct timeval tval_before, tval_after, tval_result;
-       gettimeofday(&tval_before, NULL);
-       push(&context, LOOP);
-       result = interpret(&context, context.functions[0]);
-       gettimeofday(&tval_after, NULL);
-       timersub(&tval_after, &tval_before, &tval_result);
-       printf("Result is: %d\n", result); 
-       timeJIT =  (tval_result.tv_sec*1000 + (tval_result.tv_usec/1000));
-
-     } while (0);
-   
-   printf("Time for %d iterations Interp %ld ms JIT %ld ms\n", LOOP, timeInterp, timeJIT);
-   printf("JIT speedup = %f\n", timeInterp * 1.0/ timeJIT);
-
-    return 0;
 }

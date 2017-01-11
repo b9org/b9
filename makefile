@@ -4,7 +4,7 @@ all: b9 $(b9_programs)
 
 programs = b9
 b9_objects = main.o b9jit.o
-b9_programs = program.so
+b9_programs = program.so bench.so
 
 omr_srcdir := ./omr
 IJIT = $(omr_srcdir)/jitbuilder/release/include
@@ -37,7 +37,7 @@ program: b9 b9.js program.src
 	clang -std=c++11  -shared -undefined dynamic_lookup -o program.so program.cpp
 	./b9 program
 
-bench: b9
+bench: b9 bench.so
 	time  ./b9
 
 test: b9 $(b9_programs)

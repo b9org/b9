@@ -81,6 +81,11 @@ void b9_jit_init();
 
 /* Instruction Helpers */
 
+#define decl(argCount, tmpCount) (argCount << 16 | tmpCount)
+#define progArgCount(a) (a >> 16)
+#define progTmpCount(a) (a & 0xFFFF)
+
+
 constexpr ByteCode
 getByteCodeFromInstruction(Instruction instruction)
 {
@@ -99,23 +104,23 @@ createInstruction(ByteCode byteCode, Parameter parameter)
     return byteCode << 24 | (parameter & 0xFFFFFF);
 }
 
-constexpr Instruction
-decl(uint16_t argCount, uint16_t tmpCount)
-{
-    return argCount << 16 | tmpCount;
-}
+// constexpr Instruction
+// decl(uint16_t argCount, uint16_t tmpCount)
+// {
+//     return argCount << 16 | tmpCount;
+// }
 
-constexpr uint16_t
-progArgCount(Instruction a)
-{
-    return a >> 16;
-}
+// constexpr uint16_t
+// progArgCount(Instruction a)
+// {
+//     return a >> 16;
+// }
 
-constexpr uint16_t
-progTmpCount(Instruction a)
-{
-    return a & 0xFFFF;
-}
+// constexpr uint16_t
+// progTmpCount(Instruction a)
+// {
+//     return a & 0xFFFF;
+// }
 
 extern void b9PrintStack(ExecutionContext *context);
 

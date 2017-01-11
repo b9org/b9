@@ -116,8 +116,6 @@ generateCode(Instruction *program, ExecutionContext *context)
     printf("Done gen code\n");
 }
 
-
-
 B9Method::B9Method(TR::TypeDictionary *types, Instruction *program, ExecutionContext *context)
     : MethodBuilder(types), program(program), context(context)
 {

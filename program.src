@@ -3,7 +3,7 @@
 function program() {
 	var a = 100;
 	var b = 10; 
-	b++;
+	b--;
 	
 	call_sub (100, 9);
 	call_add(5, 6);

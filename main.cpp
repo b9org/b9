@@ -263,11 +263,13 @@ main(int argc, char *argv[])
 
     for (i = 1; i < argc; i++) {
         char *name = argv[i];
+        char sharelib[128];
 
         printf("Code in a Shared Lib Demo = %s\n", name);
+        snprintf(sharelib, sizeof(sharelib), "./%s", name);
 
         dlerror();
-        void *handle = dlopen(name, RTLD_NOW);
+        void *handle = dlopen(sharelib, RTLD_NOW);
         char *error = dlerror();
         if (error) {
             printf("%s\n", error);

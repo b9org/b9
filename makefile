@@ -23,7 +23,7 @@ b9: $(b9_objects)
 	node b9.js $^ > $@
 
 %.so: %.o
-	clang -std=c++11 -shared -undefined dynamic_lookup -o $@ $^ $(CFLAGS)
+	$(CXX) -std=c++11 -shared -o $@ $^ $(CFLAGS)
 
 $(programs):
 	$(CXX) -o $@ -lm $^ -ldl $(cflags) $(CFLAGS)
@@ -34,7 +34,7 @@ $(LIB):
 program: b9 b9.js program.src
 	node b9.js program.src >program.cpp
 	cat program.cpp
-	clang -std=c++11  -shared -undefined dynamic_lookup -o program.so program.cpp
+	$(CXX) -std=c++11  -shared -o program.so program.cpp
 	./b9 program.so
 
 bench: b9 bench.so

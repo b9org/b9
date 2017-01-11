@@ -1,13 +1,11 @@
-#if !defined(b9_h_)
-
+#ifndef b9_h_
 #define b9_h_
 
-// structs from b9
 #include <cstring>
-#include <cstdint>
 #include <cstdio>
 #include <cstddef>
 
+#include <cstdint>
 /* Bytecodes */
 
 /**
@@ -29,6 +27,7 @@
 typedef uint8_t ByteCode;
 typedef int32_t Parameter;  // even though only 24 bits used
 typedef uint32_t Instruction;
+typedef int64_t StackElement;
 
 #define METHOD_FIRST_BC_OFFSET 0x3
 
@@ -46,38 +45,37 @@ typedef uint32_t Instruction;
 
 /* VM State */
 
-typedef int64_t stack_element_t ;
-
-class ExecutionContext {
+class ExecutionContext
+{
 public:
     ExecutionContext()
         : stackPointer(this->stack),
-         stackEnd(&stack[ (sizeof (stack)/sizeof(stack_element_t)) - 16])
+         stackEnd(&stack[ (sizeof (stack)/sizeof(StackElement)) - 16])
     {
         std::memset(stack, 0, sizeof(stack)); 
     }
 
-    stack_element_t stack[1000];
-    stack_element_t* stackPointer;
-    stack_element_t* stackEnd; 
+    StackElement stack[1000];
+    StackElement* stackPointer;
+    StackElement* stackEnd; 
     Instruction **functions;
 };
 
 
-typedef stack_element_t (*Interpret) (ExecutionContext* context, Instruction* program);
+typedef StackElement (*Interpret) (ExecutionContext* context, Instruction* program);
 
 #if PASS_PARAMETERS_DIRECTLY
 // define C callable Interpret API for each arg call 
 // if args are passed to the function, they are not passed 
 // on the intepreter stack
-typedef stack_element_t (*Interpret_1_args) (ExecutionContext* context, Instruction* program, stack_element_t p1);
-typedef stack_element_t (*Interpret_2_args) (ExecutionContext* context, Instruction* program, 
-    stack_element_t p1, stack_element_t p2);
-typedef stack_element_t (*Interpret_3_args) (ExecutionContext* context, Instruction* program,
-    stack_element_t p1, stack_element_t p2,  stack_element_t p3);
+typedef StackElement (*Interpret_1_args) (ExecutionContext* context, Instruction* program, StackElement p1);
+typedef StackElement (*Interpret_2_args) (ExecutionContext* context, Instruction* program, 
+    StackElement p1, StackElement p2);
+typedef StackElement (*Interpret_3_args) (ExecutionContext* context, Instruction* program,
+    StackElement p1, StackElement p2,  StackElement p3);
 #endif
 
-stack_element_t interpret(ExecutionContext* context, Instruction* program);
+StackElement interpret(ExecutionContext* context, Instruction* program);
 void generateCode(Instruction* program, ExecutionContext *context);
 void b9_jit_init();
 
@@ -101,9 +99,23 @@ createInstruction(ByteCode byteCode, Parameter parameter)
     return byteCode << 24 | (parameter & 0xFFFFFF);
 }
 
-#define decl(argCount, tmpCount) (argCount << 16 | tmpCount)
-#define progArgCount(a) (a >> 16)
-#define progTmpCount(a) (a & 0xFFFF)
+constexpr Instruction
+decl(uint16_t argCount, uint16_t tmpCount)
+{
+    return argCount << 16 | tmpCount;
+}
+
+constexpr uint16_t
+progArgCount(Instruction a)
+{
+    return a >> 16;
+}
+
+constexpr uint16_t
+progTmpCount(Instruction a)
+{
+    return a & 0xFFFF;
+}
 
 extern void b9PrintStack(ExecutionContext *context);
 

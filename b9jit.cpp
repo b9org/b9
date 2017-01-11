@@ -131,20 +131,20 @@ B9Method::B9Method(TR::TypeDictionary *types, Instruction *program, ExecutionCon
     printf("Generating from %p -> <%s>\n", program, methodName);
 
     DefineName(methodName);
-    if (sizeof(stack_element_t) == 2)  { 
-            StackElement = Int16; 
-            pStackElement = types->PointerTo(StackElement);
+    if (sizeof(StackElement) == 2)  { 
+            stackElementType = Int16; 
+            stackElementPointerType = types->PointerTo(stackElementType);
     }
-    if (sizeof(stack_element_t) == 4) {
-            StackElement=Int32; 
-            pStackElement = types->PointerTo(StackElement);
+    if (sizeof(StackElement) == 4) {
+            stackElementType = Int32; 
+            stackElementPointerType = types->PointerTo(stackElementType);
     } 
-    if (sizeof(stack_element_t) == 8) {
-            StackElement = Int64; 
-            pStackElement = types->PointerTo(StackElement);
+    if (sizeof(StackElement) == 8) {
+            stackElementType = Int64; 
+            stackElementPointerType = types->PointerTo(stackElementType);
     }
 
-    DefineReturnType(StackElement);
+    DefineReturnType(stackElementType);
 
     defineStructures(types);
     defineParameters();
@@ -163,8 +163,8 @@ static const char *argsAndTempNames[]=
 void
 B9Method::defineParameters()
 {
-    DefineParameter("context", p_b9_execution_context);
-    DefineParameter("program", pInt32);
+    DefineParameter("context", executionContextType);
+    DefineParameter("program", int32PointerType);
 #if PASS_PARAMETERS_DIRECTLY
     int argsCount = progArgCount(*program);
     for (int i = 0;i<argsCount;i++) { 
@@ -192,17 +192,17 @@ B9Method::defineLocals()
 void
 B9Method::defineStructures(TR::TypeDictionary *types)
 {
-    pInt64 = types->PointerTo(Int64);
-    pInt32 = types->PointerTo(Int32);
-    pInt16 = types->PointerTo(Int16);
+    int64PointerType = types->PointerTo(Int64);
+    int32PointerType = types->PointerTo(Int32);
+    int16PointerType = types->PointerTo(Int16);
 
-    b9_execution_context = types->DefineStruct("b9_execution_context");
-    types->DefineField("b9_execution_context", "stack", pStackElement, offsetof(struct ExecutionContext, stack));
-    types->DefineField("b9_execution_context", "stackPointer", pStackElement, offsetof(struct ExecutionContext, stackPointer));
-    types->DefineField("b9_execution_context", "functions", pInt64, offsetof(struct ExecutionContext, functions));
-    types->CloseStruct("b9_execution_context");
+    executionContextType = types->DefineStruct("executionContextType");
+    types->DefineField("executionContextType", "stack", stackElementPointerType, offsetof(struct ExecutionContext, stack));
+    types->DefineField("executionContextType", "stackPointer", stackElementPointerType, offsetof(struct ExecutionContext, stackPointer));
+    types->DefineField("executionContextType", "functions", int64PointerType, offsetof(struct ExecutionContext, functions));
+    types->CloseStruct("executionContextType");
 
-    p_b9_execution_context = types->PointerTo(b9_execution_context);
+    executionContextPointerType = types->PointerTo(executionContextType);
 }
 
 void
@@ -250,8 +250,8 @@ B9Method::buildIL()
     TR::BytecodeBuilder **bytecodeBuilderTable = nullptr;
     bool success = true;
 
-    OMR::VirtualMachineRegisterInStruct *stackTop = new OMR::VirtualMachineRegisterInStruct(this, "b9_execution_context", "context", "stackPointer", "SP");
-    OMR::VirtualMachineOperandStack *stack = new OMR::VirtualMachineOperandStack(this, 32, pStackElement, stackTop);
+    OMR::VirtualMachineRegisterInStruct *stackTop = new OMR::VirtualMachineRegisterInStruct(this, "executionContextType", "context", "stackPointer", "SP");
+    OMR::VirtualMachineOperandStack *stack = new OMR::VirtualMachineOperandStack(this, 32, stackElementPointerType, stackTop);
     B9VirtualMachineState *vms = new B9VirtualMachineState(stack, stackTop);
     setVMState(vms);
 
@@ -277,14 +277,14 @@ B9Method::buildIL()
     AppendBuilder(builder);
 
 #if !PASS_PARAMETERS_DIRECTLY 
-    TR::IlValue *nargs = builder->ConstInt32(progArgCount(*program) * sizeof(stack_element_t));
-    TR::IlValue *tmps = builder->ConstInt32(progTmpCount(*program) * sizeof(stack_element_t));
+    TR::IlValue *nargs = builder->ConstInt32(progArgCount(*program) * sizeof(StackElement));
+    TR::IlValue *tmps = builder->ConstInt32(progTmpCount(*program) * sizeof(StackElement));
 
-    TR::IlValue *sp = builder->LoadIndirect("b9_execution_context", "stackPointer", builder->Load("context"));
+    TR::IlValue *sp = builder->LoadIndirect("executionContextType", "stackPointer", builder->Load("context"));
     TR::IlValue *args = builder->Sub(sp, nargs);
     builder->Store("returnSP", args);
     sp = builder->Add(sp, tmps);
-    builder->StoreIndirect("b9_execution_context", "stackPointer", builder->Load("context"), sp);
+    builder->StoreIndirect("executionContextType", "stackPointer", builder->Load("context"), sp);
 #endif
 
 
@@ -310,8 +310,8 @@ B9Method::loadVarIndex(TR::BytecodeBuilder *builder, int varindex)
     return builder->Load(argsAndTempNames[varindex]);
 #else 
     TR::IlValue *args = builder->Load("returnSP");
-    TR::IlValue *address = builder->IndexAt(pStackElement, args, builder->ConstInt32(varindex)); 
-    TR::IlValue *result = builder->LoadAt(pStackElement, address);  
+    TR::IlValue *address = builder->IndexAt(stackElementPointerType, args, builder->ConstInt32(varindex)); 
+    TR::IlValue *result = builder->LoadAt(stackElementPointerType, address);  
     result = builder->ConvertTo(Int64, result); 
     return result;
 #endif
@@ -325,7 +325,7 @@ B9Method::storeVarIndex(TR::BytecodeBuilder *builder, int varindex, TR::IlValue 
     return; 
 #else 
     TR::IlValue *args = builder->Load("returnSP");
-    TR::IlValue *address = builder->IndexAt(pStackElement,
+    TR::IlValue *address = builder->IndexAt(stackElementPointerType,
         args,
         builder->ConstInt32(varindex));
     builder->StoreAt(address, value);
@@ -384,7 +384,7 @@ B9Method::generateILForBytecode(TR::BytecodeBuilder **bytecodeBuilderTable,
     case RETURN: {
         auto result = pop(builder); 
 #if !PASS_PARAMETERS_DIRECTLY
-        builder->StoreIndirect("b9_execution_context", "stackPointer", builder->Load("context"), builder->Load("returnSP"));
+        builder->StoreIndirect("executionContextType", "stackPointer", builder->Load("context"), builder->Load("returnSP"));
 #endif
         builder->Return(result);
     } break;
@@ -475,10 +475,10 @@ B9Method::generateILForBytecode(TR::BytecodeBuilder **bytecodeBuilderTable,
 #endif 
 
 #else
-        TR::IlValue *fTable = builder->LoadIndirect("b9_execution_context", "functions", builder->Load("context"));
-        TR::IlValue *address = builder->IndexAt(pInt64, fTable, builder->ConstInt32(callindex));
+        TR::IlValue *fTable = builder->LoadIndirect("executionContextType", "functions", builder->Load("context"));
+        TR::IlValue *address = builder->IndexAt(int64PointerType, fTable, builder->ConstInt32(callindex));
         QCOMMIT(builder);
-        TR::IlValue *result = builder->Call("interpret", 2, builder->Load("context"), builder->LoadAt(pInt64, address));
+        TR::IlValue *result = builder->Call("interpret", 2, builder->Load("context"), builder->LoadAt(int64PointerType, address));
 #endif 
        push(builder, result);
 
@@ -503,7 +503,7 @@ void
 B9Method::handle_bc_jmp(TR::BytecodeBuilder *builder, TR::BytecodeBuilder **bytecodeBuilderTable, long bytecodeIndex)
 {
     Instruction instruction = program[bytecodeIndex]; 
-    stack_element_t  delta = getParameterFromInstruction(instruction) + 1; 
+    StackElement  delta = getParameterFromInstruction(instruction) + 1; 
     int next_bc_index = bytecodeIndex + delta; 
     TR::BytecodeBuilder *destBuilder = bytecodeBuilderTable[next_bc_index];
     builder->Goto(destBuilder);
@@ -517,7 +517,7 @@ B9Method::handle_bc_jmp_le(TR::BytecodeBuilder *builder,
 {
     Instruction instruction = program[bytecodeIndex];
 
-    stack_element_t delta = getParameterFromInstruction(instruction) + 1;
+    StackElement delta = getParameterFromInstruction(instruction) + 1;
 
     TR::IlValue *right = pop(builder);
     TR::IlValue *left = pop(builder);
@@ -563,12 +563,12 @@ B9Method::pop(TR::BytecodeBuilder *builder)
 #if USE_VM_OPERAND_STACK
         return QSTACK(builder)->Pop(builder);
 #else
-        TR::IlValue *sp = builder->LoadIndirect("b9_execution_context", "stackPointer", builder->Load("context"));
-        TR::IlValue *newSP = builder->IndexAt(pStackElement, sp, builder->ConstInt32(-1));
+        TR::IlValue *sp = builder->LoadIndirect("executionContextType", "stackPointer", builder->Load("context"));
+        TR::IlValue *newSP = builder->IndexAt(stackElementPointerType, sp, builder->ConstInt32(-1));
 
-        builder->StoreIndirect("b9_execution_context", "stackPointer", builder->Load("context"), newSP);
+        builder->StoreIndirect("executionContextType", "stackPointer", builder->Load("context"), newSP);
 
-        return builder->LoadAt(pStackElement, newSP);;
+        return builder->LoadAt(stackElementPointerType, newSP);;
 #endif
 }
 
@@ -578,11 +578,11 @@ B9Method::push(TR::BytecodeBuilder *builder, TR::IlValue *value)
 #if USE_VM_OPERAND_STACK
         return QSTACK(builder)->Push(builder, value);
 #else
-        TR::IlValue *sp = builder->LoadIndirect("b9_execution_context", "stackPointer", builder->Load("context"));
-        builder->StoreAt(builder->ConvertTo(pStackElement, sp), builder->ConvertTo(StackElement, value));
+        TR::IlValue *sp = builder->LoadIndirect("executionContextType", "stackPointer", builder->Load("context"));
+        builder->StoreAt(builder->ConvertTo(stackElementPointerType, sp), builder->ConvertTo(stackElementType, value));
 
-        TR::IlValue *newSP = builder->IndexAt(pStackElement, sp, builder->ConstInt32(1));
+        TR::IlValue *newSP = builder->IndexAt(stackElementPointerType, sp, builder->ConstInt32(1));
 
-        builder->StoreIndirect("b9_execution_context", "stackPointer", builder->Load("context"), newSP);
+        builder->StoreIndirect("executionContextType", "stackPointer", builder->Load("context"), newSP);
 #endif 
 }

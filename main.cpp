@@ -1,21 +1,19 @@
-
-
 #include "b9.h"
-#include <dlfcn.h>
 
+#include <dlfcn.h>
 #include <sys/time.h>
 
 
 /* Byte Code Implementations */
 
 void
-push(ExecutionContext *context, stack_element_t value)
+push(ExecutionContext *context, StackElement value)
 {
     *context->stackPointer = value;
     ++(context->stackPointer);
 }
 
-stack_element_t
+StackElement
 pop(ExecutionContext *context)
 {
     return *(--context->stackPointer);
@@ -26,21 +24,21 @@ bc_call(ExecutionContext *context, Parameter value)
 {
     Instruction *program = context->functions[value];
     // printf("inside call\n");
-    stack_element_t result = interpret(context, program);
+    StackElement result = interpret(context, program);
     // printf("return from  call %d\n", result);
 
     push(context, result);
 }
 
 void
-bc_push_from_arg(ExecutionContext *context, stack_element_t *args, Parameter offset)
+bc_push_from_arg(ExecutionContext *context, StackElement *args, Parameter offset)
 {
     //  printf("bc_push_from_arg[%d] %d\n", offset, args[offset]);
     push(context, args[offset]);
 }
 
 void
-bc_pop_into_arg(ExecutionContext *context, stack_element_t *args, Parameter offset)
+bc_pop_into_arg(ExecutionContext *context, StackElement *args, Parameter offset)
 {
     args[offset] = pop(context);
     //   printf("bc_pop_into_arg[%d] %d\n", offset, args[offset]);
@@ -64,8 +62,8 @@ bc_jmple(ExecutionContext *context, Parameter delta)
 {
 
     // push(left); push(right); if (left <= right) jmp
-    stack_element_t right = pop(context);
-    stack_element_t left = pop(context);
+    StackElement right = pop(context);
+    StackElement left = pop(context);
     // printf("jmple left %d, right %d\n", left, right);
     if (left <= right) {
         return delta;
@@ -77,10 +75,10 @@ void
 bc_add(ExecutionContext *context)
 {
     // a+b is push(a);push(b); add
-    stack_element_t right = pop(context);
-    stack_element_t left = pop(context);
+    StackElement right = pop(context);
+    StackElement left = pop(context);
     // printf("add right %d left %d\n", right, left);
-    stack_element_t result = left + right;
+    StackElement result = left + right;
 
     push(context, result);
 }
@@ -89,21 +87,21 @@ void
 bc_sub(ExecutionContext *context)
 {
     // left-right is push(left);push(right); sub
-    stack_element_t right = pop(context);
-    stack_element_t left = pop(context);
-    stack_element_t result = left - right;
+    StackElement right = pop(context);
+    StackElement left = pop(context);
+    StackElement result = left - right;
 
     push(context, result);
 }
 
 /* ByteCode Interpreter */
 
-stack_element_t
+StackElement
 interpret(ExecutionContext *context, Instruction *program)
 {
     uint64_t *address = (uint64_t *)(&program[1]);
     if (*address) {
-        stack_element_t result = 0;
+        StackElement result = 0;
 
 #if PASS_PARAMETERS_DIRECTLY
         int argsCount = progArgCount(*program); 
@@ -115,21 +113,21 @@ interpret(ExecutionContext *context, Instruction *program)
             } break;
            case  1: {
                 Interpret_1_args jitedcode = (Interpret_1_args)*address;
-                stack_element_t p1 = pop(context);
+                StackElement p1 = pop(context);
                 result = (*jitedcode)(context, program, p1);
             }
             break;
             case 2:{
                 Interpret_2_args jitedcode = (Interpret_2_args)*address;
-                stack_element_t p2 = pop(context);
-                stack_element_t p1 = pop(context);
+                StackElement p2 = pop(context);
+                StackElement p1 = pop(context);
                 result = (*jitedcode)(context, program, p1, p2);
             } break;
             case 3:{
                 Interpret_3_args jitedcode = (Interpret_3_args)*address;
-                stack_element_t p3 = pop(context);
-                stack_element_t p2 = pop(context);
-                stack_element_t p1 = pop(context);
+                StackElement p3 = pop(context);
+                StackElement p2 = pop(context);
+                StackElement p1 = pop(context);
                 result = (*jitedcode)(context, program, p1, p2, p3);
             }break;
             default: 
@@ -148,7 +146,7 @@ interpret(ExecutionContext *context, Instruction *program)
     //printf("Prog Arg Count %d, tmp count %d\n", nargs, tmps);
 
     Instruction *instructionPointer = program + 3;
-    stack_element_t *args = context->stackPointer - nargs;
+    StackElement *args = context->stackPointer - nargs;
     context->stackPointer += tmps; // local storage for temps
 
     while (*instructionPointer != NO_MORE_BYTECODES) {
@@ -208,7 +206,7 @@ void
 b9PrintStack(ExecutionContext *context)
 {
 
-    stack_element_t *base = context->stack;
+    StackElement *base = context->stack;
     printf("------\n");
     while (base < context->stackPointer) {
         printf("%p: Stack[%ld] = %d\n", base, base - context->stack, *base);
@@ -228,7 +226,7 @@ bool hasJITAddress (Instruction *p) {
 }
 
 void runFib (ExecutionContext *context, int value) { 
-    stack_element_t result = 0; 
+    StackElement result = 0; 
     const char *mode = hasJITAddress(context->functions[1]) ? "JIT" : "Interpreted";
     int validate = fib (value); 
     push(context, value); 
@@ -291,7 +289,7 @@ main(int argc, char *argv[])
         // printf("Context @0=%p, @1 =%p\n", context.functions[0], context.functions[1]);
         // printf("Running %s::%s  %p::%p\n", sharelib, name, handle, func);
 
-        stack_element_t result = 0;
+        StackElement result = 0;
         int nargs = progArgCount(*func);
         for (int i = 0; i < nargs; i++) {
             int arg = 100 - (i * 10);
@@ -310,7 +308,7 @@ main(int argc, char *argv[])
     }
 
     validateFibResult(&context);
-    stack_element_t result = 0;
+    StackElement result = 0;
 
 #define LOOP 200000
 

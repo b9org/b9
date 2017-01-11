@@ -19,13 +19,13 @@ public:
     buildIL();
 
 protected:
-    TR::IlType *b9_execution_context;
-    TR::IlType *p_b9_execution_context;
-    TR::IlType *StackElement;
-    TR::IlType *pStackElement;
-    TR::IlType *pInt64;
-    TR::IlType *pInt32;
-    TR::IlType *pInt16;
+    TR::IlType *executionContextType;
+    TR::IlType *executionContextPointerType;
+    TR::IlType *stackElementType;
+    TR::IlType *stackElementPointerType;
+    TR::IlType *int64PointerType;
+    TR::IlType *int32PointerType;
+    TR::IlType *int16PointerType;
 
 private:
     Instruction *program;

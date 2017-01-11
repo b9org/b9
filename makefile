@@ -19,10 +19,10 @@ b9: $(b9_objects)
 %.o : %.cpp
 	$(CXX) -o $@ -c $< $(cflags) $(CFLAGS)
 
-%.src.cpp: %.src
+%.cpp: %.src
 	node b9.js $^ > $@
 
-%.so: %.cpp
+%.so: %.o
 	clang -std=c++11 -shared -undefined dynamic_lookup -o $@ $^ $(CFLAGS)
 
 $(programs):
@@ -47,7 +47,7 @@ clean:
 	$(RM) b9
 	$(RM) $(b9_objects)
 	$(RM) $(b9_programs)
-
+	$(RM) $(patsubst %.so,%.src.cpp,$(b9_programs))
 omr:
 	if [ -d ../omr ]; then ln -s ../omr ./omr; else git clone git@github.com:eclipse/omr.git; fi
 

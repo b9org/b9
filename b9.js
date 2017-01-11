@@ -108,8 +108,8 @@ function CodeGen(f) {
     this.deferred = [];
     this.filename = f;
 
-    this.functions = {program: 0};
-    this.nextFunctionIndex = 1;
+    this.functions = {}
+    this.nextFunctionIndex = 0;
 
     var i, char, id;
     for (i = 0; i < f.length; i++) {
@@ -117,7 +117,7 @@ function CodeGen(f) {
         id = id & id;
     }
     if (id < 0) id = 0 - id;
-    // 
+
     id = id & 65535 + (id >> 16);
     this.anonPrefix = "_" + id.toString(26);
 
@@ -143,7 +143,7 @@ function CodeGen(f) {
         if (name == "") {
             this.gen("calltos " + args, comment);
         } else {
-            this.genInstruction("CALL", 1, "TBD: compute offset of: ", name);
+            this.genInstruction("CALL", this.getFunctionIndex(name), "Offset of: ", name);
         }
     }
 
@@ -456,7 +456,7 @@ function CodeGen(f) {
 
     this.getFunctionIndex = function (id) {
         if (this.functions[id]) {
-            return functions[id];
+            return this.functions[id];
         } else {
             this.functions[id] = this.nextFunctionIndex;
             this.nextFunctionIndex ++;
@@ -945,7 +945,7 @@ function CodeGen(f) {
             this.currentFunction.pushN(-1); // pop 2, push 1
             return decl.operator;
         }
-        if (decl.operator == "-") {
+        if (decl.operator == "+") {
             this.genInstruction("ADD", 0, "");
             this.currentFunction.pushN(-1); // pop 2, push 1
             return decl.operator;

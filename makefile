@@ -30,10 +30,12 @@ $(programs):
 
 $(LIB):
 	(cd $(omr_srcdir)/jitbuilder; make)
+	
+#install: node_modules/esprima/package.json
 
 program: b9 b9.js program.src
+	npm install
 	node b9.js program.src >program.cpp
-	cat program.cpp
 	$(CXX) -std=c++11  -shared -o program.so program.cpp
 	./b9 program.so
 
@@ -42,6 +44,15 @@ bench: b9 bench.so
 
 test: b9 test.so
 	./b9 test.so
+
+gdbprogram: b9 program.so
+	gdb -q --args ./b9 program.so
+
+gdbbench: b9 bench.so
+	gdb -q --args ./b9 bench.so
+
+gdbtest: b9 test.so
+	gdb -q --args ./b9 test.so
 
 clean:
 	$(RM) b9

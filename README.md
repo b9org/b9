@@ -1,3 +1,5 @@
+[![Build Status](https://api.travis-ci.org/youngar/Base9.svg?branch=master)](https://travis-ci.org/eclipse/omr)
+
 Cloning
 -------
 To quickly clone the source code, use:

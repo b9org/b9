@@ -950,8 +950,17 @@ function CodeGen(f) {
             this.currentFunction.pushN(-1); // pop 2, push 1
             return decl.operator;
         }
-        this.gen("halt", "ERROR due to bad operator " + decl.operator);
+        if (decl.operator == "*") {
+            this.genInstruction("MUL", 0, "");
+            this.currentFunction.pushN(-1); // pop 2, push 1
+            return decl.operator;
+        }
+        if (decl.operator == "/") {
+            this.genInstruction("DIV", 0, "");
+            this.currentFunction.pushN(-1); // pop 2, push 1
+            return decl.operator;
+        }
+        this.gen("#halt", "ERROR due to bad operator " + decl.operator);
     };
-
 }
 

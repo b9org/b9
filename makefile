@@ -38,7 +38,7 @@ program: b9 b9.js program.cpp
 	./b9 program.so
 
 bench: b9 bench.so
-	time ./b9
+	./b9
 
 test: b9 test.so
 	./b9 test.so

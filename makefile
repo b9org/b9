@@ -32,7 +32,10 @@ $(LIB): $(omr_srcdir)
 	(cd $(omr_srcdir)/; ./configure)
 	(cd $(omr_srcdir)/jitbuilder; make)
 
-program: b9 b9.js program.cpp
+program.cpp: program.src
+
+program: b9
+	node b9.js program.src > program.cpp
 	cat program.cpp
 	$(CXX) -std=c++11 -shared -o program.so program.cpp
 	./b9 program.so

@@ -30,6 +30,7 @@ typedef uint32_t Instruction;
 typedef int64_t StackElement;
 
 #define METHOD_FIRST_BC_OFFSET 0x3
+#define NO_MORE_FUNCTIONS      0x0
 
 #define NO_MORE_BYTECODES   0x0
 #define PUSH_CONSTANT       0x1

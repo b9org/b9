@@ -231,7 +231,7 @@ getJitAddressSlot(Instruction *p)
 uint64_t
 setJitAddressSlot(Instruction *p, uint64_t value)
 {
-    uint64_t *slotForJitAddress = (uint64_t *)&p[1];
+    uint64_t *slotForJitAddress = getJitAddressSlot(p);
     *getJitAddressSlot(p) = value;
 }
 
@@ -366,7 +366,9 @@ benchMarkFib(ExecutionContext *context)
 {
     /* Load the fib program into the context, and validate that
      * the fib functions return the correct result */
-    loadProgram(context, "./bench.so");
+    if (!loadProgram(context, "./bench.so")) {
+        return 0;
+    }
 
     // Validate the our fib is returning the correct results
     // validateFibResult(context);
@@ -376,7 +378,7 @@ benchMarkFib(ExecutionContext *context)
     /* make sure everything is not-jit'd for this initial bench
      * allows you to put examples above, tests etc, and not influence this
      * benchmark compare interpreted vs JIT'd */
-     removeAllGeneratedCode(context);
+    //  removeAllGeneratedCode(context);
 
     int LOOP = 200000;
     printf("\nAbout to run %d loops, interpreted\n", LOOP);

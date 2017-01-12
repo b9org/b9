@@ -216,15 +216,79 @@ b9PrintStack(ExecutionContext *context)
 }
 
 int
-fib(int n) { 
+fib(int n)
+{ 
     if (n < 3) return 1;
     return fib (n-1) + fib (n-2);
 }
 
+uint64_t *
+getJitAddressSlot(Instruction *p)
+{
+    return (uint64_t *)&p[1];
+}
+
+uint64_t
+setJitAddressSlot(Instruction *p, uint64_t value)
+{
+    uint64_t *slotForJitAddress = getJitAddressSlot(p);
+    *getJitAddressSlot(p) = value;
+}
+
 bool
-hasJITAddress(Instruction *p) {
-    uint64_t *slotForJitAddress = (uint64_t *)&p[1];
-    return *slotForJitAddress != 0;
+hasJITAddress(Instruction *p)
+{
+    return *getJitAddressSlot(p) != 0;
+}
+
+uint64_t
+getJitAddress(ExecutionContext *context, int functionIndex)
+{
+    Instruction *p = context->functions[functionIndex];
+    return *getJitAddressSlot(p);
+}
+
+void
+setJitAddress(ExecutionContext *context, int functionIndex, uint64_t value)
+{
+    Instruction *p = context->functions[functionIndex];
+    setJitAddressSlot(p, value);
+}
+
+int
+getFunctionCount(ExecutionContext *context)
+{
+    int functionIndex = 0;
+    while(context->functions[functionIndex] != NO_MORE_FUNCTIONS) {
+        functionIndex++;
+    }
+    return functionIndex;
+}
+
+void
+removeGeneratedCode(ExecutionContext *context, int functionIndex)
+{
+    setJitAddressSlot(context->functions[functionIndex], 0);
+}
+
+void
+removeAllGeneratedCode(ExecutionContext *context)
+{
+    int functionIndex = 0;
+    while(context->functions[functionIndex] != NO_MORE_FUNCTIONS) {
+        removeGeneratedCode(context, functionIndex);
+        functionIndex++;
+    }
+}
+
+void
+generateAllCode(ExecutionContext *context)
+{
+    int functionIndex = 0;
+    while(context->functions[functionIndex] != NO_MORE_FUNCTIONS) {
+        generateCode(context->functions[functionIndex], context);
+        functionIndex++;
+    }
 }
 
 void
@@ -302,8 +366,11 @@ benchMarkFib(ExecutionContext *context)
 {
     /* Load the fib program into the context, and validate that
      * the fib functions return the correct result */
-    loadProgram(context, "./bench.so");
+    if (!loadProgram(context, "./bench.so")) {
+        return 0;
+    }
 
+    // Validate the our fib is returning the correct results
     // validateFibResult(context);
 
     StackElement result = 0;
@@ -311,26 +378,14 @@ benchMarkFib(ExecutionContext *context)
     /* make sure everything is not-jit'd for this initial bench
      * allows you to put examples above, tests etc, and not influence this
      * benchmark compare interpreted vs JIT'd */
-    // TODO hardcoded to remove the first two jit methods
-    //    for (int i = 0; i < sizeof(functions) / sizeof(Instruction*); i++) {
-    //         Instruction *p = functions[i];
-    //         uint64_t *slotForJitAddress = (uint64_t *)&p[1];
-    //         *slotForJitAddress = 0;
-    //    }
-    // Instruction *p = context->functions[0];
-    // uint64_t *slotForJitAddress = (uint64_t *)&p[1];
-    // *slotForJitAddress = 0;
+    //  removeAllGeneratedCode(context);
 
-    // p = context->functions[1];
-    // slotForJitAddress = (uint64_t *)&p[1];
-    // *slotForJitAddress = 0;
-
-#define LOOP 200000
+    int LOOP = 200000;
     printf("\nAbout to run %d loops, interpreted\n", LOOP);
 
     long timeInterp = 0;
     long timeJIT = 0;
-    do {
+    {
         struct timeval tval_before, tval_after, tval_result;
         gettimeofday(&tval_before, NULL);
 
@@ -341,16 +396,15 @@ benchMarkFib(ExecutionContext *context)
 
         printf("Result is: %d\n", result);
         timeInterp = (tval_result.tv_sec * 1000 + (tval_result.tv_usec / 1000));
-    } while (0);
+    }
 
     /* Generate code for fib functions */
     // temp, only do fib for now, some issue in loops jit
     generateCode(context->functions[1], context);
-    generateCode(context->functions[0], context);
 
     printf("\nAbout to run %d loops, compiled\n", LOOP);
 
-    do {
+    {
         struct timeval tval_before, tval_after, tval_result;
         gettimeofday(&tval_before, NULL);
 
@@ -361,7 +415,7 @@ benchMarkFib(ExecutionContext *context)
 
         printf("Result is: %d\n", result);
         timeJIT = (tval_result.tv_sec * 1000 + (tval_result.tv_usec / 1000));
-    } while (0);
+    }
 
     printf("Time for %d iterations Interp %ld ms JIT %ld ms\n", LOOP, timeInterp, timeJIT);
     printf("JIT speedup = %f\n", timeInterp * 1.0 / timeJIT);
@@ -392,11 +446,13 @@ main(int argc, char *argv[])
             return -1;
         }
 
-        /* only generate code for the first function */
-        generateCode(context.functions[0], &context);
-
+        printf("  Running Interpreted\n");
         StackElement result = runProgram(&context, 0);
+        printf("   result is %ld\n", result);
 
+        printf("  Running JIT\n");
+        generateAllCode(&context);
+        result = runProgram(&context, 0);
         printf(" result is %ld\n", result);
 
         return 0;

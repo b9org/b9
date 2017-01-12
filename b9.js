@@ -182,6 +182,7 @@ function CodeGen(f) {
         for(key in this.functions){
             this.gen('    ' + key + ',')
         }
+        this.gen('    NO_MORE_FUNCTIONS');
         this.gen('};');
         this.gen("");
     };

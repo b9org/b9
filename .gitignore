@@ -2,6 +2,7 @@
 
 b9
 omr
+node_modules
 
 ### C++ ###
 # Prerequisites
@@ -31,11 +32,15 @@ omr
 *.la
 *.a
 *.lib
-
-# Executables
-*.exe
-*.out
+e
 *.app
 
 ### GDB ###
-.gdb_history
+/.gdb_history
+
+# Eclipse
+/.cproject
+/.project
+
+# Node
+node_modules/

@@ -1,0 +1,32 @@
+# Do not set the language for c++, 
+# this over rides our environment variable CXX below.
+#language: c++
+
+sudo: false
+git:
+    depth: 1
+
+addons:
+  apt:
+    sources:
+       - ubuntu-toolchain-r-test
+    packages:
+       - clang-3.4
+
+os:
+  - linux
+
+# omr will not compile with clang
+env:
+    - CXX=clang++
+
+# omr compiles with gcc, so ccache works for it
+cache: ccache
+
+install:
+    - npm install
+
+script:
+    - make test
+    - make bench
+    - make program

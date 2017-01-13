@@ -104,16 +104,16 @@ generateCode(Instruction *program, ExecutionContext *context)
     // todo pass in context->functions
     B9Method methodBuilder(&types, program, context);
     uint8_t *entry = 0;
-    printf("Start gen code\n");
+    // printf("Start gen code\n");
     int rc = (*compileMethodBuilder)(&methodBuilder, &entry);
     if (0 == rc) {
-        printf("Compiled success address = <%p>\n", entry);
+        // printf("Compiled success address = <%p>\n", entry);
         uint64_t *slotForJitAddress = (uint64_t *)&program[1];
         *slotForJitAddress = (uint64_t)entry;
     } else {
         printf("Failed to compile");
     }
-    printf("Done gen code\n");
+    // printf("Done gen code\n");
 }
 
 B9Method::B9Method(TR::TypeDictionary *types, Instruction *program, ExecutionContext *context)
@@ -126,7 +126,7 @@ B9Method::B9Method(TR::TypeDictionary *types, Instruction *program, ExecutionCon
     int len = strlen(signature) + 16;
     char *methodName = (char *)malloc(len);  
     snprintf(methodName, len, "%s_%p", signature, program);
-    printf("Generating from %p -> <%s>\n", program, methodName);
+    // printf("Generating from %p -> <%s>\n", program, methodName);
 
     DefineName(methodName);
     if (sizeof(StackElement) == 2)  { 
@@ -166,7 +166,7 @@ B9Method::defineParameters()
 #if PASS_PARAMETERS_DIRECTLY
     int argsCount = progArgCount(*program);
     for (int i = 0;i<argsCount;i++) { 
-        printf ("Arg %d defined <%s>\n", i, argsAndTempNames[i]);
+        // printf ("Arg %d defined <%s>\n", i, argsAndTempNames[i]);
         DefineParameter(argsAndTempNames[i], Int64); 
     }
 #endif
@@ -179,7 +179,7 @@ B9Method::defineLocals()
     int tempCount = progTmpCount(*program); 
 #if PASS_PARAMETERS_DIRECTLY
     for (int i = argsCount;i<argsCount+tempCount;i++) { 
-        printf ("Temp %d defined <%s>\n", i, argsAndTempNames[i]);
+        // printf ("Temp %d defined <%s>\n", i, argsAndTempNames[i]);
         DefineLocal(argsAndTempNames[i], Int64); 
     }
 #else

@@ -34,15 +34,15 @@
  
    
 static Instruction program[] = {
-    decl(1, 1),
+    decl(0, 1),
     decl(0, 0),
     decl(0, 0), 
     createInstruction(PUSH_CONSTANT, 200000), 
-    createInstruction(POP_INTO_VAR, 1), // t = 200000
+    createInstruction(POP_INTO_VAR, 0), // t = 200000
 
     // if (t <= 0)  jmp exit
     // loop test
-    createInstruction(PUSH_FROM_VAR, 1),
+    createInstruction(PUSH_FROM_VAR, 0),
     createInstruction(PUSH_CONSTANT, 0),
     createInstruction(JMPLE, 8), // SKIP to past the JMP
 
@@ -51,10 +51,10 @@ static Instruction program[] = {
     createInstruction(DROP, 0),           // 3
 
     // t--;
-    createInstruction(PUSH_FROM_VAR, 1), // 4
+    createInstruction(PUSH_FROM_VAR, 0), // 4
     createInstruction(PUSH_CONSTANT, 1), // 5
     createInstruction(SUB, 0),           // 6
-    createInstruction(POP_INTO_VAR, 1),  // 7
+    createInstruction(POP_INTO_VAR, 0),  // 7
 
     createInstruction(JMP, -11), // 8
 

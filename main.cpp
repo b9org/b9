@@ -344,7 +344,7 @@ loadProgram(ExecutionContext *context, const char *programName)
         return false;
     }
 
-    printf("Handle=%p table=%p\n", handle, table);
+    // printf("Handle=%p table=%p\n", handle, table);
 
     context->functions = table;
 
@@ -354,9 +354,9 @@ loadProgram(ExecutionContext *context, const char *programName)
 StackElement
 runProgram(ExecutionContext *context, int functionIndex)
 {
-    resetContext(context);
+    // resetContext(context);
 
-    Instruction *func = context->functions[0];
+    Instruction *func = context->functions[functionIndex];
 
     /* Push random arguments to send to the program */
     int nargs = progArgCount(*func);
@@ -507,7 +507,7 @@ main(int argc, char *argv[])
     long timeInterp = 0;
     long timeJIT = 0;
 
-    printf("    Running Interpreted, looping %d times\n", context.loopCount);
+    printf("Running Interpreted, looping %d times\n", context.loopCount);
     {
         struct timeval tval_before, tval_after, tval_result;
 
@@ -521,10 +521,10 @@ main(int argc, char *argv[])
         gettimeofday(&tval_after, NULL);
         timersub(&tval_after, &tval_before, &tval_result);
 
-        printf("   resultInterp is %ld\n", resultInterp);
+        // printf("    resultInterp is %ld\n", resultInterp);
     }
 
-    printf("    Running JIT looping %d times\n", context.loopCount);
+    printf("Running JIT looping %d times\n", context.loopCount);
     generateAllCode(&context);
 
     {
@@ -532,10 +532,7 @@ main(int argc, char *argv[])
 
         gettimeofday(&tval_before, NULL);
 
-        int loopCount = context.loopCount; 
-        if (loopCount != 1)
-
-
+        int loopCount = context.loopCount;
         while(loopCount--) {
             resultJit = runProgram(&context, 0);
         }
@@ -543,11 +540,11 @@ main(int argc, char *argv[])
         gettimeofday(&tval_after, NULL);
         timersub(&tval_after, &tval_before, &tval_result);
 
-        printf("   resultJit is %ld\n", resultJit);
+        // printf("    resultJit is %ld\n", resultJit);
     }
 
-    printf("   resultInterp is %ld, resultJit is %ld\n", resultInterp, resultJit);
-    printf("Time for Interp %ld ms JIT %ld ms\n", timeInterp, timeJIT);
+    printf("Result for Interp is %ld, resultJit is %ld\n", resultInterp, resultJit);
+    printf("Time for Interp %ld ms, JIT %ld ms\n", timeInterp, timeJIT);
     printf("JIT speedup = %f\n", timeInterp * 1.0 / timeJIT);
 
     if (resultInterp == resultJit) {

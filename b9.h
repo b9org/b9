@@ -60,6 +60,16 @@ public:
     StackElement* stackPointer;
     StackElement* stackEnd; 
     Instruction **functions;
+
+    /* Command Line Parameters */
+    int loopCount = 1;
+    int verbose = 0;
+    int debug = 0;
+    int directCall = 1;
+    int passParameters = 1;
+    int operandStack = 1;
+    char *name = nullptr;
+
 };
 
 

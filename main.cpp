@@ -2,7 +2,7 @@
 
 #include <dlfcn.h>
 #include <sys/time.h>
-
+#include <stdlib.h>
 
 /* Byte Code Implementations */
 
@@ -292,6 +292,12 @@ generateAllCode(ExecutionContext *context)
 }
 
 void
+resetContext(ExecutionContext *context)
+{
+    context->stackPointer = context->stack;
+}
+
+void
 runFib(ExecutionContext *context, int value) { 
     StackElement result = 0; 
     const char *mode = hasJITAddress(context->functions[1]) ? "JIT" : "Interpreted";
@@ -348,6 +354,8 @@ loadProgram(ExecutionContext *context, const char *programName)
 StackElement
 runProgram(ExecutionContext *context, int functionIndex)
 {
+    resetContext(context);
+
     Instruction *func = context->functions[0];
 
     /* Push random arguments to send to the program */
@@ -369,9 +377,6 @@ benchMarkFib(ExecutionContext *context)
     if (!loadProgram(context, "./bench.so")) {
         return 0;
     }
-
-    // Validate the our fib is returning the correct results
-    // validateFibResult(context);
 
     StackElement result = 0;
 
@@ -429,32 +434,125 @@ int
 main(int argc, char *argv[])
 {
     b9_jit_init();
-
     ExecutionContext context;
-
     char sharelib[128];
 
-    if (argc == 1) {
-        printf("No program was passed to b9, Running default benchmark for b9.\n");
-        return benchMarkFib(&context);
+    // Validate the our fib is returning the correct results
+    if (context.debug == 1) {
+        if (!loadProgram(&context, "./bench.so")) {
+            return 0;
+        }
+        validateFibResult(&context);
     }
 
+    /* Command Line Arguments */
     for (int i = 1; i < argc; i++) {
         char *name = argv[i];
 
-        if (!loadProgram(&context, name)) {
-            return -1;
+         if (!strcmp(name, "-help")) {
+            continue;
         }
 
-        printf("  Running Interpreted\n");
-        StackElement result = runProgram(&context, 0);
-        printf("   result is %ld\n", result);
+        if (!strcmp(name, "-loop")) {
+            context.loopCount = atoi(argv[i + 1]);
+            i++;
+            continue;
+        }
 
-        printf("  Running JIT\n");
-        generateAllCode(&context);
-        result = runProgram(&context, 0);
-        printf(" result is %ld\n", result);
+        if (!strcmp(name, "-verbose")) {
+            context.verbose = 1;
+            continue;
+        }
 
+        if (!strcmp(name, "-debug")) {
+            context.debug = 1;
+            continue;
+        }
+
+        if (!strcmp(name, "-directcall")) {
+            context.directCall = atoi(argv[i + 1]);
+            i++;
+            continue;
+        }
+
+        if (!strcmp(name, "-passparameters")) {
+            context.passParameters = atoi(argv[i + 1]);
+            i++;
+            continue;
+        }
+
+        if (!strcmp(name, "-operandstack")) {
+            context.operandStack = atoi(argv[i + 1]);
+            i++;
+            continue;
+        }
+
+        context.name = name;
+        continue;
+    }
+
+    if (context.name == nullptr) {
+        printf("No program was passed to b9, Running default benchmark for b9, looping 200000.\n");
+        benchMarkFib(&context);
+        // TODO use the common path below to time
+        context.name = "./bench.so";
+        context.loopCount = 200000;
         return 0;
+    }
+
+    loadProgram(&context, context.name);
+
+    StackElement resultInterp = 0;
+    StackElement resultJit = 0;
+    long timeInterp = 0;
+    long timeJIT = 0;
+
+    printf("    Running Interpreted, looping %d times\n", context.loopCount);
+    {
+        struct timeval tval_before, tval_after, tval_result;
+
+        gettimeofday(&tval_before, NULL);
+
+        int loopCount = context.loopCount; 
+        while(loopCount--) {
+            resultInterp = runProgram(&context, 0);
+        }
+
+        gettimeofday(&tval_after, NULL);
+        timersub(&tval_after, &tval_before, &tval_result);
+
+        printf("   resultInterp is %ld\n", resultInterp);
+    }
+
+    printf("    Running JIT looping %d times\n", context.loopCount);
+    generateAllCode(&context);
+
+    {
+        struct timeval tval_before, tval_after, tval_result;
+
+        gettimeofday(&tval_before, NULL);
+
+        int loopCount = context.loopCount; 
+        if (loopCount != 1)
+
+
+        while(loopCount--) {
+            resultJit = runProgram(&context, 0);
+        }
+
+        gettimeofday(&tval_after, NULL);
+        timersub(&tval_after, &tval_before, &tval_result);
+
+        printf("   resultJit is %ld\n", resultJit);
+    }
+
+    printf("   resultInterp is %ld, resultJit is %ld\n", resultInterp, resultJit);
+    printf("Time for Interp %ld ms JIT %ld ms\n", timeInterp, timeJIT);
+    printf("JIT speedup = %f\n", timeInterp * 1.0 / timeJIT);
+
+    if (resultInterp == resultJit) {
+        return EXIT_SUCCESS;
+    } else {
+        return EXIT_FAILURE;
     }
 }

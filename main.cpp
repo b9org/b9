@@ -520,8 +520,7 @@ main(int argc, char *argv[])
 
         gettimeofday(&tval_after, NULL);
         timersub(&tval_after, &tval_before, &tval_result);
-
-        // printf("    resultInterp is %ld\n", resultInterp);
+        timeInterp = (tval_result.tv_sec * 1000 + (tval_result.tv_usec / 1000));
     }
 
     printf("Running JIT looping %d times\n", context.loopCount);
@@ -539,8 +538,7 @@ main(int argc, char *argv[])
 
         gettimeofday(&tval_after, NULL);
         timersub(&tval_after, &tval_before, &tval_result);
-
-        // printf("    resultJit is %ld\n", resultJit);
+        timeJIT = (tval_result.tv_sec * 1000 + (tval_result.tv_usec / 1000));
     }
 
     printf("Result for Interp is %ld, resultJit is %ld\n", resultInterp, resultJit);

@@ -50,6 +50,6 @@ clean:
 	$(RM) $(b9_programs)
 
 $(omr_srcdir):
-	if [ -d ../omr ]; then ln -s ../omr ./omr; else git clone https://github.com/eclipse/omr.git; fi
+	if [ -d ../omr ]; then ln -s ../omr ./omr; else git clone https://github.com/jduimovich/omr.git; fi
 
 .PHONY: program bench test clean

@@ -192,7 +192,7 @@ interpret(ExecutionContext *context, Instruction *program)
         case RETURN:
             //  printf("return\n");
             /* bc_return */
-            int16_t result = *(context->stackPointer - 1);
+            StackElement result = *(context->stackPointer - 1);
             context->stackPointer = args;
             return result;
             break;

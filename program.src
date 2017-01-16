@@ -1,12 +1,12 @@
 
 // main, no args for b9 entry point
 function program() {
-	var a = 100;
+	var a = 100; 
 	var b = 10; 
 	b--;
-	
 	call_sub (100, 9);
 	call_add(5, 6);
+	test_while (100000);
 	return a-b;
 }
 
@@ -19,3 +19,15 @@ function call_add(a,b) {
 	var c = a+b;
 	return c;
 }
+
+// test a while loop, should return repeatCount * 2
+function test_while(repeatCount) { 
+	var result = 0;
+	var a = repeatCount; 
+	while (a > 0) {
+		a = a - 1;
+		result = result + 2;
+	}
+	return result;
+}
+

@@ -15,31 +15,24 @@ files.forEach(function (filename) {
     var codegen = new CodeGen(filename);
     codegen.handleHeaders();
     codegen.handleAll(parsed.body);
-    // codegen.genReturn(false);
     codegen.processDeferred();
     codegen.handleFooters();
+
+    codegen.outputProgram();
 
 });
 
 function FunctionContext(codegen, outer) {
     this.outer = outer;
     this.codegen = codegen;
-    this.hasLambda = 0;
     this.usesScope = 0;
-    if (outer != undefined) {
-        outer.hasLambda = 1;
-    }
     this.pushcount = 0;
     this.maxstack = 0;
 
-    this.args = new Object;
-    this.args["_hop_"] = this.args.hasOwnProperty;
+    this.args = Object.create(null);
     this.argcount = 0;
-    this.temps = new Object;
-    this.temps["_hop_"] = this.temps.hasOwnProperty;
+    this.temps = Object.create(null);
     this.tempcount = 0;
-
-    this.prevInstructionWasReturn = false;
     this.isTopLevel = false;
 
     this.getsavedcontext = function () {
@@ -53,8 +46,7 @@ function FunctionContext(codegen, outer) {
     }
     this.removeUnusedTOS = function (expected) {
         if (this.pushcount > expected) {
-            this.codegen.gen("drop", "unused TOS, drop return result to get to expected " + expected);
-            this.codegen.gen("");
+            this.codegen.outputInstruction("DROP", 0, "// unused TOS, drop return result to get to expected ");
             this.pushN(-1);
         }
     };
@@ -62,138 +54,140 @@ function FunctionContext(codegen, outer) {
     this.declareGlobal = function (vname) {
         this.codegen.globals[vname] = vname;
     }
-
     this.declareVariable = function (name) {
-        //        if (this.temps[name] != undefined) return; 
         if (this.variableExists(name)) return;
-
-        this.codegen.gen("// Local variable " + name + " offset " + (this.argcount + this.tempcount));
         this.temps[name] = this.argcount + this.tempcount++;
     };
-
     this.variableExists = function (name) {
-        return this.jsLocalGetProperty(this.temps, name) != undefined;
-        //return this.temps[name] != undefined;
+        return this.temps[name] != undefined;
     };
-
-
-    this.jsLocalGetProperty = function (o, name) {
-        if (o["_hop_"](name)) return o[name];
-        return undefined;
-    }
-
     this.variableOffset = function (name) {
         var frame = this;
         var result = new Object();
         result.name = name;
         result.index = 0;
-        result.offset = this.jsLocalGetProperty(frame.args, name);
+        result.offset = frame.args[name];
         if (result.offset != undefined) {
             return result;  // this is an arg
         }
-        result.offset = this.jsLocalGetProperty(frame.temps, name);
+        result.offset = frame.temps[name];
         if (result.offset != undefined) {
             return result;  // this is a temp
         }
         return result;
     };
-
 }
 
 function CodeGen(f) {
-    this.main = false;
-    this.label = 0;
-    this.arrayinit = 0;
-    this.nameless = 0;
-    this.deferred = [];
-    this.filename = f;
 
+    this.filename = f;
+    // number labels globally 
+    this.label = 0;
+    // functions get compiled all at the end, so all global definitions can be known
+    this.deferred = [];
+
+    // all the functions you compile in this file. 
     this.functions = {}
     this.nextFunctionIndex = 0;
 
-    var i, char, id;
-    for (i = 0; i < f.length; i++) {
-        id = ((id * 32) - id) + f.charCodeAt(i);
-        id = id & id;
-    }
-    if (id < 0) id = 0 - id;
+    this.labels = new Object();
+    this.instructionIndex = 0;
+    this.outputLines = [];
 
-    id = id & 65535 + (id >> 16);
-    this.anonPrefix = "_" + id.toString(26);
-
-    this.globals = new Object;
-    this.globals["_hop_"] = this.globals.hasOwnProperty;
-
+    this.globals = Object.create(null);
     this.currentFunction = new FunctionContext(this, this.currentFunction); // top level function
     this.currentFunction.isTopLevel = true;
 
+    this.outputProgram = function () {
+        for (var i = 0; i < this.outputLines.length; i++) {
+            if (this.outputLines[i].computeText) {
+                console.log(this.outputLines[i].computeText());
+            } else {
+                console.log(this.outputLines[i].text);
+            }
+        }
+    }
+
     this.currentBreak = function () {
-        throw "Invalid Break Statement";
+        throw "No Break Destination Set, Invalid Break Statement";
     }
     this.currentContinue = function () {
-        throw "Invalid Continue Statement";
+        throw "No Continue Destination Set, Invalid Break Statement";
     }
 
     this.gencall = function (name, args, comment) {
-
-        if (name == "_halt_") {
-            this.gen("halt");
-            return;
-        }
         if (name == "") {
-            this.gen("calltos " + args, comment);
+            throw "Invalid Call with no name to call ";
         } else {
-            this.genInstruction("CALL", this.getFunctionIndex(name), "Offset of: ", name);
+            this.outputInstruction("CALL", this.getFunctionIndex(name), "Offset of: " + name);
+        }
+    }
+    this.outputRawString = function (s) {
+        this.outputLines.push({ "text": s });
+    }
+    this.outputComment = function (comment) {
+        this.outputRawString("// " + comment);
+    }
+    this.placeLabel = function (labelName) {
+        this.labels[labelName] = this.instructionIndex;
+    }
+    this.deltaForLabel = function (labelName) {
+        var gen = this;
+        return function (fromInstruction) {
+            // delay computing offset until forward labels are found
+            // output is done at the end, all labels will be defined
+            var fromIndex = fromInstruction.instructionIndex;
+            var toIndex = gen.labels[labelName];
+            return toIndex - fromIndex - 1;
         }
     }
 
-    this.genInstruction = function (bc, param, comment) {
-        this.gen("createInstruction(" + bc + "," + param + "),", comment);
+    this.outputInstruction = function (bc, param, comment) {
+        var instruction = new Object();
+        instruction.bc = bc;  // used to check prev-bytecodename
+        instruction.instructionIndex = this.instructionIndex++;  // used to compute branch distance 
+        instruction.stack = this.currentFunction.pushcount;  // keep track of stack depth in function line by line
+        var gen = this;
+        instruction.computeText = function () {
+            var computedParm = param;
+            if (typeof (param) == "function") computedParm = param(instruction);
+            var out = " I:" + instruction.instructionIndex + " S:" + instruction.stack + " " + comment;
+            return gen.outputInstructionText(
+                "createInstruction(" + bc + "," + computedParm + "),",
+                out,
+                true);
+        };
+        this.prevInstruction = instruction;
+        this.outputLines.push(instruction);
     }
-    this.gen = function (out, comment, tab) {
-        if (out == "") {
-            console.log("");
-            return;
-        }
-        if (out[0] != '.' && out[0] != '/') {
-            this.currentFunction.prevInstructionWasReturn = (out == "return");
-        }
-        if (tab != undefined) {
-            console.log(out);
-            return;
-        }
+
+    this.outputInstructionText = function (out, comment, tab) {
+        while (out.length < 32) out += " ";
         var line = "\t" + out;
         if (comment) {
-            var c = 3 - (out.length / 4);
-            tabs = "\t// ";
-            while (c-- > 0) tabs = "\t" + tabs;
-            line = line + tabs + comment;
+            line = line + "\t// " + comment;
         }
-        console.log(line);
+        return line;
     };
 
     this.handleHeaders = function () {
-        this.gen('#include "b9.h"');
-        this.gen("");
+        this.outputRawString('#include "b9.h"');
     };
 
     this.handleFooters = function () {
-        this.gen('Instruction *b9_exported_functions[] = {');
-        for(key in this.functions){
-            this.gen('    ' + key + ',')
+        this.outputRawString('Instruction *b9_exported_functions[] = {');
+        for (key in this.functions) {
+            this.outputRawString('    ' + key + ',');
         }
-        this.gen('    NO_MORE_FUNCTIONS');
-        this.gen('};');
-        this.gen("");
+        this.outputRawString('    NO_MORE_FUNCTIONS');
+        this.outputRawString('};');
     };
 
     this.handle = function (element) {
         if (element == null) {
-            this.gen("// Invalid element for code generation");
-            return;
+            throw "// Invalid element for code generation";
         }
         var fname = "handle" + element.type;
-        // console.log ("ABOUT TO RUN: " + fname);  
         var f = this[fname];
         if (f) {
             return f.call(this, element);
@@ -205,11 +199,11 @@ function CodeGen(f) {
     this.flowControlBreakContinue = function (breakLabel, continueLabel, location, body) {
         var saveBreak = this.currentBreak;
         this.currentBreak = function () {
-            this.gen("jmp " + breakLabel, "break in " + location);
+            this.outputInstruction("JMP", this.deltaForLabel(breakLabel), "break in " + location);
         }
         var saveContinue = this.currentContinue;
         this.currentContinue = function () {
-            this.gen("jmp " + continueLabel, "continue in " + location);
+            this.outputInstruction("JMP", this.deltaForLabel(continueLabel), "continue in " + location);
         }
 
         body.call(this);
@@ -217,33 +211,15 @@ function CodeGen(f) {
         this.currentContinue = saveContinue;
     }
 
-    this.handleSwitchStatement = function (decl) {
-        // console.log ("SWITCH " + JSON.stringify (decl)); 
-
-        var endSwitch = "@switch" + this.label;
-        this.label++;
-
-        this.flowControlBreakContinue(endSwitch, null, "Switch", function () {
-            this.handle(decl.discriminant);
-            this.gen("// Switches bodies ");
-            this.handleAll(decl.cases);
-            this.gen("// End Switch bodies ");
-            this.gen(endSwitch + ":");
-        });
-        this.gen("drop", "end switch ");
-
-    }
-
     this.handleSequenceExpression = function (decl) {
-        console.log("//handleSequenceExpression " + JSON.stringify(decl));
-        //        this.handleAll(decl.expressions);
+        //console.log("//handleSequenceExpression " + JSON.stringify(decl)); 
         var expressions = decl.expressions;
         var droplast = !decl.isParameter;
         for (var i = 0; i < expressions.length; i++) {
             var element = expressions[i];
             this.handle(element);
             if (i != (expressions.length - 1) || droplast)
-                this.gen("drop");
+                this.outputInstruction("DROP", 0, "// This is for -Constant");
         };
 
     }
@@ -251,13 +227,8 @@ function CodeGen(f) {
     this.handleUnaryExpression = function (decl) {
         // console.log ("handleUnaryExpression " + JSON.stringify (decl));  
         if (decl.operator == '-' && decl.argument.type == 'Literal') {
-            this.gen("push -" + decl.argument.value, "neg constant -" + decl.argument.value);
+            this.outputInstruction("PUSH_CONSTANT", 0 - decl.argument.value, "// This is for -Constant");
             this.currentFunction.pushN(1);
-            return;
-        }
-        if (decl.operator == "typeof") {
-            this.handle(decl.argument);
-            this.gen("_typeof", "type of tos");
             return;
         }
         if (decl.operator == "+") {
@@ -267,63 +238,15 @@ function CodeGen(f) {
         if (decl.operator == "-") {
             this.pushconstant(0);
             this.handle(decl.argument);
-            this.gen("sub");
+            this.outputInstruction("SUB", 0, "// This is for -Constant"); ""
             return;
         }
-        if (decl.operator == "~") {
-            this.handle(decl.argument);
-            this.gencall("_tilde", 1);
-            return;
-        }
-
         if (decl.operator == "!") {
             this.handle(decl.argument);
-            this.gen("not", "not");
-            return "not";
-        }
-        if (decl.operator == "void") {
-            this.handle(decl.argument);
-            this.gen("drop");
-            this.gen("push undefined ");
-            return "void";
-        }
-        if (decl.operator == "delete") {
-            this.gen("// arg to delete" + decl.argument.object);
-            if (decl.argument.object) {
-                this.handle(decl.argument.object);
-            } else {
-                this.gen("push null", "global delete");
-            }
-            console.log("// delete " + JSON.stringify(decl));
-
-            if (decl.argument.type == "Identifier") {
-                if (this.currentFunction.variableExists(decl.argument.name)) {
-                    this.handle(decl.argument);
-                } else {
-                    this.pushconstant(decl.argument.name);
-                }
-            } else {
-                if (decl.argument.property.name == undefined) {
-                    this.handle(decl.argument.property);
-                } else {
-                    var name = decl.argument.property.name;
-                    var offset = this.currentFunction.variableOffset(name);
-                    if (offset.offset != undefined) {
-                        this.pushvar(name);
-                    } else {
-                        this.pushconstant(name);
-                    }
-                }
-            }
-
-            // console.log("// _delete " + JSON.stringify(decl));
-            this.gen("_delete", "delete property from object");
+            this.outputInstruction("NOT", 0, "// This is for !");
             return;
         }
-
-        console.log("// handleUnaryExpression " + JSON.stringify(decl));
-        this.gen("halt");
-        // halt();
+        throw "halt", "Error - No Handler For Type: " + decl;
     }
 
     this.handleWhileStatement = function (decl) {
@@ -334,21 +257,20 @@ function CodeGen(f) {
         this.label++;
 
         this.savehack(function () {
-            console.log("// -- while loop test ---");
-            this.gen(loopTest + ":");
+            this.placeLabel(loopTest);
             var code = this.handle(decl.test);
             var instruction = this.genJmpForCompare(code, "WHILE");
-            this.gen(instruction + loopEnd, "genJmpForCompare WHILE " + code); // jump opposite        
+            this.outputInstruction(instruction,
+                this.deltaForLabel(loopEnd), "genJmpForCompare WHILE " + code);
         });
 
         this.flowControlBreakContinue(loopEnd, loopContinue, "WHILE", function () {
             this.savehack(function () {
-                //  this.gen(loopBody + ":");
                 this.handle(decl.body);
                 decl.needResult = false;
-                this.gen(loopContinue + ":");
-                this.gen("jmp " + loopTest);
-                this.gen(loopEnd + ":");
+                this.placeLabel(loopContinue);
+                this.outputInstruction("JMP", this.deltaForLabel(loopTest), "WHILE ");
+                this.placeLabel(loopEnd);
             });
         });
     };
@@ -360,37 +282,10 @@ function CodeGen(f) {
         return (typeof num == 'string' && !isNaN(parseInt(num)));
     };
 
-    this.hex = function (number, length) {
-        var str = number.toString(16).toUpperCase();
-        while (str.length < length)
-            str = "0" + str;
-        return str;
-    }
-
-    this.munge = function munge(original) {
-        var str = original;
-        //   str = str.replace("\n", "\\n");
-        // str = str.replace("\r", "\\r");
-        //  str = str.replace("\t", "\\t");
-        var i;
-        var result = "";
-        for (i = 0; i < str.length; ++i) {
-            if (str.charCodeAt(i) > 127 || str.charCodeAt(i) < 32)
-                result += "\\u" + this.hex(str.charCodeAt(i), 4);
-            else {
-                if (str[i] == '"') {
-                    result += '\\"';
-                } else {
-                    result += str[i];
-                }
-            }
-        }
-        return result;
-    };
-
     this.pushconstant = function (constant) {
         if (this.isNumber(constant)) {
-            this.genInstruction("PUSH_CONSTANT", constant, " number constant " + (constant - 0));
+            this.outputInstruction("PUSH_CONSTANT", constant, " number constant " + (constant - 0));
+            this.currentFunction.pushN(1);
             return;
         }
         this.currentFunction.pushN(1);
@@ -399,68 +294,30 @@ function CodeGen(f) {
 
     this.pushvar = function (varname) {
         var offset = this.currentFunction.variableOffset(varname);
-        if (offset.offset == varname) {
-            this.gen("pushglobal " + varname);
-            this.currentFunction.pushN(1);
-            return;
-        }
         if (offset.offset == undefined) {
-            if (varname == "arguments") {
-                this.currentFunction.hasLambda = 1; // make sure the method has context to looked at
-                this.gen("_arguments", " will enable lambda to ensure context");
-                this.currentFunction.pushN(1);
-                return;
-            }
-            if (varname == "this") {
-                this.gen("push this ");
-            } else {
-                if (varname == "undefined") {
-                    this.gen("push undefined ");
-                } else {
-                    this.currentFunction.declareGlobal(varname);
-                    this.gen("pushglobal " + varname + " // Y");
-                }
-            }
+            throw "Invalid Variable Name";
         } else {
-            this.genInstruction("PUSH_FROM_VAR", offset.offset, "variable " + varname);
+            this.outputInstruction("PUSH_FROM_VAR", offset.offset, "variable " + varname);
         }
         this.currentFunction.pushN(1);
     }
 
     this.popvar = function (varname) {
-        if (varname == "undefined") {
-            // nop
-            this.gen("drop", "NO ASSIGN TO ANY VARS CALLED UNDEFINED");
-            this.currentFunction.pushN(-1);
-            return;
-        }
         var offset = this.currentFunction.variableOffset(varname);
-        if (offset.offset == varname) {
-            this.gen("popglobal " + varname);
-            this.currentFunction.pushN(-1);
-            return;
-        }
-        if (offset.offset == undefined) {
-            this.currentFunction.declareGlobal(varname);
-            this.gen("popglobal " + varname);
-            this.currentFunction.pushN(-1);
-            return;
-        }
         if (offset.index == 0) {
-            this.genInstruction("POP_INTO_VAR", offset.offset, "variable " + varname);
+            this.outputInstruction("POP_INTO_VAR", offset.offset, "variable " + varname);
         } else {
-            this.currentFunction.usesScope = 1;
-            this.gen("popf " + offset.index + "," + offset.offset, "variable " + varname);
+            throw "Invalid Variable Name";
         }
         this.currentFunction.pushN(-1);
     }
 
+    // returns the function index for CALL
     this.getFunctionIndex = function (id) {
         if (this.functions[id]) {
             return this.functions[id];
         } else {
-            this.functions[id] = this.nextFunctionIndex;
-            this.nextFunctionIndex ++;
+            this.functions[id] = this.nextFunctionIndex++;
             return this.functions[id];
         }
     }
@@ -488,53 +345,60 @@ function CodeGen(f) {
         this.getFunctionIndex(id);
 
         if (decl.isTopLevel) {
-            this.gen("Instruction " + id + "[] = {", "", false);
+            this.instructionIndex = 0;
+            this.outputRawString("Instruction " + id + "[] = {", "", false);
 
-            this.gen("decl (" + decl.params.length + ",8),", "(args,temps)  assume max 8 temps");
-            this.gen("decl (0,0),", "0: space for JIT address");
-            this.gen("decl (0,0),", "1: space for JIT address");
-            this.gen("");
+            var declArgsAndTemps = new Object();
+            var fThis = this;
+            var func = fThis.currentFunction;
+            declArgsAndTemps.computeText = function () {
+                return fThis.outputInstructionText(
+                    "decl (" + decl.params.length + "," + func.tempcount + "),",
+                    "args:" + decl.params.length + " temps:" + func.tempcount,
+                    true);
+            };
+            this.outputLines.push(declArgsAndTemps);
+
+            // this.outputRawString(this.outputInstructionText(
+            //     "decl (" + decl.params.length + ",8),",
+            //     "args and temps",
+            //     true));
+
+            this.outputRawString(this.outputInstructionText(
+                "decl (0,0),",
+                "0: space for JIT address",
+                true));
+            this.outputRawString(this.outputInstructionText(
+                "decl (0,0),",
+                "0: space for JIT address",
+                true));
 
         } else {
-            this.gen("");
-            this.gen(id + ":", "define local label");
-            this.gen(".local" + " // lambda now is " + currentFunction.hasLambda);
-
+            throw "Only supports top level functions for now";
         }
-        this.gen("");
+        this.outputRawString("");
         this.handle(decl.body);
-
-        this.gen("createInstruction(NO_MORE_BYTECODES, 0)};", " end of function");
-        this.gen("");
+        this.genReturn(true);
+        this.outputRawString("createInstruction(NO_MORE_BYTECODES, 0)};", " end of function");
+        this.outputRawString("");
 
         this.currentFunction = save;
     };
 
     this.genReturn = function (forced) {
-        var currentFunction = this.currentFunction;
-        if (!currentFunction.prevInstructionWasReturn || forced) {
-            currentFunction.prevInstructionWasReturn = true;
-            //this.gen("//.temps " + currentFunction.tempcount);
-            //this.gen("//.stack " + currentFunction.maxstack); 
-            if (currentFunction.pushcount == 0) {
-                this.gen("// free return for undefined");
-                this.pushvar("undefined");
-            }
-
-            this.genInstruction("RETURN", 0, " forced = " + forced);
+        if (this.prevInstruction.bc == "RETURN") {
+            return;
         }
+        if (this.currentFunction.pushcount == 0) {
+            this.outputInstruction("PUSH_CONSTANT", 0, " Generate Free Return");
+        }
+        this.outputInstruction("RETURN", 0, " forced = " + forced);
     };
 
     this.processDeferred = function () {
         var todo = this.deferred.shift();;
         while (todo) {
-            var id;
-            if (todo.id) {
-                id = todo.id.name;
-            } else {
-                id = todo.anonID;
-            }
-            this.declareFunction(id, todo);
+            this.declareFunction(todo.id.name, todo);
             todo = this.deferred.shift();
         }
     };
@@ -544,20 +408,9 @@ function CodeGen(f) {
             decl.isTopLevel = true;
             this.currentFunction.declareGlobal(decl.id.name);
         } else {
-            decl.isTopLevel = false;
-
-            this.gen("// decl var: " + decl.id.name);
-            this.currentFunction.declareVariable(decl.id.name);
-            this.currentFunction.hasLambda = 1;
-
-            this.gen("push_lambda " + decl.id.name, "has lambda " + this.currentFunction.hasLambda);
-            this.currentFunction.pushN(1);
-            this.popvar(decl.id.name);
-            decl.functionScope = new FunctionContext(this, this.currentFunction);
+            throw "Only supports top level functions for now";
         }
-
         this.deferred.push(decl);
-        //  this.processDeferred ();
     };
 
     this.handleExpressionStatement = function (decl) {
@@ -581,51 +434,11 @@ function CodeGen(f) {
                 this.currentFunction.pushN(1 - decl.arguments.length);
                 return;
             } else {
-                this.pushvar(decl.callee.name);
-                this.gencall("", decl.arguments.length);
-                this.currentFunction.pushN(0 - decl.arguments.length);
+                throw "Only handle named functions";
                 return;
             }
         }
-        //      
-        if (decl.callee.type == "ThisExpression") {
-            this.pushvar("this");
-            this.gen("send " + decl.callee.name + "," + decl.arguments.length);
-            this.currentFunction.pushN(0 - decl.arguments.length);
-            return;
-        }
-        if (decl.callee.type == "MemberExpression") {
-            this.getProperty(decl.callee.object);
-            //   this.gen ("// call expressions" + JSON.stringify (decl)); 
-            if (decl.callee.computed) {
-                this.pushconstant(decl.callee.property.value);
-                this.gen("getproperty_tos ", " get prop from tos for call");
-                this.gencall("", decl.arguments.length);
-                return;
-            }
-
-
-            this.gen("send " + decl.callee.property.name + "," + decl.arguments.length);
-            this.currentFunction.pushN(0 - decl.arguments.length);
-            return;
-        }
-
-        if (decl.callee.type == "FunctionExpression") {
-            this.handle(decl.callee);
-            this.gencall("", 0);
-            return;
-        }
-        if (decl.callee.type == "CallExpression") {
-            this.handle(decl.callee);
-            this.gencall("", 0);
-            return;
-        }
-        if (decl.callee.type == "SequenceExpression") {
-            this.handle(decl.callee);
-            this.gencall("", 0);
-            return;
-        }
-        this.gen("// unhandled call expressions" + JSON.stringify(decl));
+        this.outputRawString("// unhandled call expressions" + JSON.stringify(decl));
         throw "UNHANDLED CALL EXPRESSION " + decl.callee.type;
     };
 
@@ -638,168 +451,45 @@ function CodeGen(f) {
     };
 
     this.handleIdentifier = function (decl) {
-        // JS(decl);
         this.pushvar(decl.name);
     };
 
-    this.handleArrayExpression = function (decl) {
-        //    console.log ("XX" + JSON.stringify (decl));  
-
-        var hack = "array_init" + this.arrayinit;
-        this.arrayinit++;
-
-        this.currentFunction.declareVariable(hack);
-        this.gen("push_array", " empty array ");
-        this.currentFunction.pushN(1);
-        this.popvar(hack);
-        this.pushvar(hack);
-
-        var gen = this;
-        var idx = 0;
-        decl.elements.forEach(function (element) {
-            if (element == null) {
-                gen.gen("//array init slot " + idx + " is undefined");
-            } else {
-                gen.handle(element);
-                gen.pushvar(hack);
-                gen.pushconstant(idx);
-                gen.gen("setproperty_tos");
-                gen.currentFunction.pushN(-3);
-            }
-            idx++;
-        });
-
-        this.gen("push null", "clear the temp hack slot to null ");
-        this.currentFunction.pushN(1);
-        this.popvar(hack);
-        this.arrayinit--;
-    };
-
-    this.handleMemberExpression = function (decl) {
-        this.getProperty(decl);
-    };
-
     this.updateOpToInstruction = {
-        "+=": "add",
-        "-=": "sub",
-        "/=": "div",
-        "*=": "mul",
-        ">>>=": "unsignedshiftright",
-        ">>=": "bitshiftright",
-        "<<=": "bitshiftleft"
+        "+=": "ADD",
+        "-=": "SUB",
+        "/=": "DIV",
+        "*=": "MUL"
     };
 
     this.handleAssignmentExpression = function (decl) {
         //console.log("// assignment " + JSON.stringify(decl));
-        this.gen("");
+
         if (decl.left.type == "Identifier") {
             var op = this.updateOpToInstruction[decl.operator];
             if (op) {
                 this.handle(decl.left); // extra left 
                 this.handle(decl.right);
-                // this.pushvar(decl.left.name);
-                this.gen(op);
+                this.outputInstruction(op, 0, "// +=, -= etc");
                 this.currentFunction.pushN(-1);
             } else {
                 decl.right.needResult = true;
                 this.handle(decl.right);
             }
             if (decl.needResult === true) {
-                this.gen("dup ", " extra copy ");
+                this.outputInstruction("DUP", 0, "// to be implemented as example in class");
             }
             this.popvar(decl.left.name);
             if (decl.isParameter == true) {
                 this.pushvar(decl.left.name);
             }
-
-
             return;
         }
         this.handle(decl.right);
-        if (decl.left.type == "MemberExpression") {
-            if (decl.left.property.name == undefined) {
-                this.handle(decl.left.object);
-                this.handle(decl.left.property);
-                this.gen("setproperty_tos ", " assign 1 get prop from tos (pops 3)");
-                this.currentFunction.pushN(-3);
-                return;
-            } else {
-                this.getProperty(decl.left.object);
-                if (decl.left.computed) {
-                    this.pushvar(decl.left.property.name);
-                    this.gen("setproperty_tos ", " assign 2 set prop from tos (pops 3)");
-                    this.currentFunction.pushN(-3);
-                    return;
-                }
-                if (decl.left.property.name == "__proto__") {
-                    this.gen("_set_prototype", " redirect to primitive-2");
-                    this.currentFunction.pushN(-2);
-                    return;
-                }
-                if (decl.left.property.name == "length") {
-                    this.gen("_set_length", " redirect to primitive");
-                    this.currentFunction.pushN(-1); //pop 2, push 1
-                    return;
-                }
-                this.gen("setproperty " + decl.left.property.name, "setproperty (pop3,push1)");
-                this.currentFunction.pushN(-2);
-                return;
-            }
-            XXX();
-            this.gen("// XXX");
-            this.currentFunction.pushN(-2);
-            return;
-        }
-    };
-    this.getProperty = function (decl) {
-        // console.log ("// getProperty " + JSON.stringify (decl)); 
-        if (decl.type == "MemberExpression") {
-            if (decl.property.name == undefined) {
-                this.handle(decl.object);
-                this.handle(decl.property);
-                this.gen("getproperty_tos ", " getproperty_tos pops 2, pushes 1 (1)");
-                this.currentFunction.pushN(-1);
-            } else {
-                this.getProperty(decl.object);
-                if (decl.computed) {
-                    this.pushvar(decl.property.name);
-                    this.gen("getproperty_tos ", " getproperty_tos pops 2, pushes 1 (2)");
-                    this.currentFunction.pushN(-1);
-                    return;
-                }
-                if (decl.property.name == "__proto__") {
-                    this.gen("_get_prototype", " redirect to primitive");
-                    this.currentFunction.pushN(0);
-                    return;
-                }
-                if (decl.property.name == "length") {
-                    this.gen("_get_length", " redirect to primitive");
-                    this.currentFunction.pushN(0);
-                    return;
-                }
-
-                this.gen("getproperty " + decl.property.name, " getproperty name  pops 1, pushes 1");
-                this.currentFunction.pushN(0);
-            }
-            this.gen("");
-            return;
-        }
-
-        this.handle(decl);
-
-        //  console.log ("FAIL " + JSON.stringify (decl)); 
     };
 
     this.handleVariableDeclaration = function (decl) {
         this.handleAll(decl.declarations);
     };
-
-   
-
-    this.handleThisExpression = function (decl) {
-        //     console.log (JSON.stringify (decl));
-        this.pushvar("this");
-    }
 
     this.handleVariableDeclarator = function (decl) {
         //     console.log (JSON.stringify (decl));
@@ -819,7 +509,6 @@ function CodeGen(f) {
         // console.log ("HANDLE BLOCK " + JSON.stringify (decl));
         this.handleAll(decl.body);
     };
-
 
     this.savehack = function (f) {
         var savehack = this.currentFunction.pushcount;
@@ -844,31 +533,30 @@ function CodeGen(f) {
             if (decl.init) this.handle(decl.init);
 
             console.log("// -- test ---");
-            this.gen(loopTest + ":");
+
+            this.placeLabel(loopTest);
             if (decl.test == undefined) {
-                //	      this.gen("push true", "No test, loop forever"); 
                 code = "nojump";
             } else {
                 var code = this.handle(decl.test);
             }
             var instruction = this.genJmpForCompare(code, "FOR");
-            this.gen(instruction + loopEnd, "genJmpForCompare FOR " + code); // jump opposite        
+            this.outputInstruction(instruction, this.deltaForLabel(loopEnd), "genJmpForCompare FOR " + code);
         });
 
         this.flowControlBreakContinue(loopEnd, loopContinue, "FOR",
             function () {
                 this.savehack(function () {
-                    //  this.gen(loopBody + ":");
+                    //  this.outputRawString(loopBody + ":");
                     this.handle(decl.body);
-
-                    this.gen(loopContinue + ":");
+                    this.placeLabel(loopContinue);
                     decl.needResult = false;
                     if (decl.update) decl.update.needResult = false;
                     var expected = this.currentFunction.pushcount;
                     this.handle(decl.update);
                     this.currentFunction.removeUnusedTOS(expected);
-                    this.gen("jmp " + loopTest);
-                    this.gen(loopEnd + ":");
+                    this.outputInstruction("JMP", this.deltaForLabel(loopTest), "FOR LOOP");
+                    this.placeLabel(loopEnd);
                 });
             });
     };
@@ -879,10 +567,12 @@ function CodeGen(f) {
             this.pushvar(decl.argument.name);
             this.pushconstant(1);
             if (decl.operator == "++") {
-                this.genInstruction("ADD", 0, "// generating var++");
+                this.outputInstruction("ADD", 0, "// generating var++");
+                this.currentFunction.pushN(-1); // pop 2, push 1
             }
             if (decl.operator == "--") {
-                this.genInstruction("SUB", 0, "// generating var--");
+                this.outputInstruction("SUB", 0, "// generating var--");
+                this.currentFunction.pushN(-1); // pop 2, push 1
             }
             this.popvar(decl.argument.name);
             return;
@@ -890,28 +580,30 @@ function CodeGen(f) {
         throw "Invalid Update Statement support variables only";
     };
 
-    this.genJmpForCompare = function (code, location) {
-        if (code == "<") instruction = "JMPLE ";
+    this.genJmpForCompare = function (code) {
+        if (code == "<=") instruction = "JMPGT ";
+        if (code == "<") instruction = "JMPGE ";
+        if (code == ">") instruction = "JMPLE ";
+        if (code == ">=") instruction = "JMPLT ";
+        if (code == "==") instruction = "JMPEQ ";
         return instruction;
     };
 
     this.handleIfStatement = function (decl) {
-
         var labelF = "@labelF" + this.label;
         var labelEnd = "@labelEnd" + this.label;
         this.label++;
 
         this.savehack(function () {
-            this.gen("// if statement");
             var code = this.handle(decl.test);
             var instruction = this.genJmpForCompare(code, "IF");
             if (decl.alternate != null) {
-                this.gen(instruction + labelF, "genJmpForCompare has false block, IF " + code); // jump to true opposite condition
+                this.outputInstruction(instruction, this.deltaForLabel(labelF),
+                    "genJmpForCompare has false block, IF " + code);
             } else {
-                this.gen(instruction + labelEnd, "genJmpForCompare has no false block, IF " + code); // jump to true opposite condition
+                this.outputInstruction(instruction, this.deltaForLabel(labelEnd),
+                    "genJmpForCompare has no false block, IF " + code);
             }
-            // this.gen("jmp " + labelF); // skip true, go false
-
         });
         this.savehack(function () { // true part  is fall through from genJmpForCompare 
             this.handle(decl.consequent);
@@ -919,12 +611,14 @@ function CodeGen(f) {
         this.savehack(function () {
             if (decl.alternate != null) {
                 // you only have a false if there is code
-                // so you only jump if there is code to jump around
-                this.gen("jmp " + labelEnd, "SKIP AROUND THE FALSE CODE BLOCK");
-                this.gen(labelF + ":");
+                // so you only jump if there is code to jump around 
+                if (this.prevInstruction.bc != "RETURN") {
+                    this.outputInstruction("JMP", this.deltaForLabel(labelEnd), "SKIP AROUND THE FALSE CODE BLOCK");
+                }
+                this.placeLabel(labelF);
                 this.handle(decl.alternate);
             }
-            this.gen(labelEnd + ":");
+            this.placeLabel(labelEnd);
         });
     };
 
@@ -942,26 +636,31 @@ function CodeGen(f) {
         this.handle(decl.left);
         this.handle(decl.right);
         if (decl.operator == "-") {
-            this.genInstruction("SUB", 0, "");
+            this.outputInstruction("SUB", 0, "");
             this.currentFunction.pushN(-1); // pop 2, push 1
             return decl.operator;
         }
         if (decl.operator == "+") {
-            this.genInstruction("ADD", 0, "");
+            this.outputInstruction("ADD", 0, "");
             this.currentFunction.pushN(-1); // pop 2, push 1
             return decl.operator;
         }
         if (decl.operator == "*") {
-            this.genInstruction("MUL", 0, "");
+            this.outputInstruction("MUL", 0, "");
             this.currentFunction.pushN(-1); // pop 2, push 1
             return decl.operator;
         }
         if (decl.operator == "/") {
-            this.genInstruction("DIV", 0, "");
+            this.outputInstruction("DIV", 0, "");
             this.currentFunction.pushN(-1); // pop 2, push 1
             return decl.operator;
         }
-        this.gen("#halt", "ERROR due to bad operator " + decl.operator);
+        var code = this.genJmpForCompare(decl.operator)
+        if (code) {
+            // this will be handled by the jmp which includes the compare operation (i.e jmple, jmpgt)
+            return decl.operator;
+        }
+        throw "This operator is not being handled" + decl.operator;
     };
 }
 

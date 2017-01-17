@@ -303,7 +303,9 @@ runFib(ExecutionContext *context, int value) {
     push(context, value); 
     result = interpret(context, context->functions[1]);
     if (result == validate) { 
-        printf("Success: Mode <%s> fib %d returned %lld\n", mode, value, result);
+        if (context->debug >= 1) { 
+            printf("Success: Mode <%s> fib %d returned %lld\n", mode, value, result);
+        }
     } else { 
         printf("Fail: Mode <%s> fib %d returned %lld\n", mode, value, result);
     }
@@ -443,13 +445,7 @@ main(int argc, char *argv[])
     ExecutionContext context;
     char sharelib[128];
 
-    // Validate the our fib is returning the correct results
-    if (context.debug == 1) {
-        if (!loadProgram(&context, "./bench.so")) {
-            return 0;
-        }
-        validateFibResult(&context);
-    }
+
 
     /* Command Line Arguments */
     for (int i = 1; i < argc; i++) {
@@ -471,7 +467,7 @@ main(int argc, char *argv[])
         }
 
         if (!strcmp(name, "-debug")) {
-            context.debug = 1;
+            context.debug++;
             continue;
         }
 
@@ -496,6 +492,13 @@ main(int argc, char *argv[])
         context.name = name;
         continue;
     }
+
+    // Validate the our fib is returning the correct results
+    if (!loadProgram(&context, "./bench.so")) {
+        return 0;
+    }
+    validateFibResult(&context);
+    removeAllGeneratedCode(&context);
 
     if (context.name == nullptr) {
         printf("No program was passed to b9, Running default benchmark for b9, looping 200000.\n");

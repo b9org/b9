@@ -15,9 +15,13 @@ Instruction program[] = {
 	createInstruction(PUSH_CONSTANT,100),	//  number constant 100
 	createInstruction(PUSH_CONSTANT,9),	//  number constant 9
 	createInstruction(CALL,1),	// Offset of: 
+	createInstruction(DROP,0),	 
+
 	createInstruction(PUSH_CONSTANT,5),	//  number constant 5
 	createInstruction(PUSH_CONSTANT,6),	//  number constant 6
 	createInstruction(CALL,2),	// Offset of: 
+	createInstruction(DROP,0),	 
+
 	createInstruction(PUSH_FROM_VAR,0),	// variable a
 	createInstruction(PUSH_FROM_VAR,1),	// variable b
 	createInstruction(SUB,0),

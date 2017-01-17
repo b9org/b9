@@ -207,7 +207,7 @@ b9PrintStack(ExecutionContext *context)
     StackElement *base = context->stack;
     printf("------\n");
     while (base < context->stackPointer) {
-        printf("%p: Stack[%ld] = %d\n", base, base - context->stack, *base);
+        printf("%p: Stack[%ld] = %lld\n", base, base - context->stack, *base);
         base++;
     }
     printf("^^^^^^^^^^^^^^^^^\n");
@@ -226,7 +226,7 @@ getJitAddressSlot(Instruction *p)
     return (uint64_t *)&p[1];
 }
 
-uint64_t
+void
 setJitAddressSlot(Instruction *p, uint64_t value)
 {
     uint64_t *slotForJitAddress = getJitAddressSlot(p);
@@ -303,9 +303,9 @@ runFib(ExecutionContext *context, int value) {
     push(context, value); 
     result = interpret(context, context->functions[1]);
     if (result == validate) { 
-        printf("Success: Mode <%s> fib %d returned %d\n", mode, value, result);
+        printf("Success: Mode <%s> fib %d returned %lld\n", mode, value, result);
     } else { 
-        printf("Fail: Mode <%s> fib %d returned %d\n", mode, value, result);
+        printf("Fail: Mode <%s> fib %d returned %lld\n", mode, value, result);
     }
 }
 
@@ -356,6 +356,12 @@ runProgram(ExecutionContext *context, int functionIndex)
 {
     // resetContext(context);
 
+    if (context->stackPointer != context->stack) { 
+        printf ("runProgram: Warning Stack not Empty (%ld elements)\n", context->stackPointer-context->stack);
+        printf ("Possibly a prior run left items on stack, resetting the stack to a clean point.\n");
+        resetContext(context);
+    }
+
     Instruction *func = context->functions[functionIndex];
 
     /* Push random arguments to send to the program */
@@ -399,7 +405,7 @@ benchMarkFib(ExecutionContext *context)
         gettimeofday(&tval_after, NULL);
         timersub(&tval_after, &tval_before, &tval_result);
 
-        printf(" result is: %d\n", result);
+        printf(" result is: %lld\n", result);
         timeInterp = (tval_result.tv_sec * 1000 + (tval_result.tv_usec / 1000));
     }
 
@@ -407,7 +413,7 @@ benchMarkFib(ExecutionContext *context)
     // temp, only do fib for now, some issue in loops jit
     generateCode(context->functions[1], context);
 
-    printf("Running %d loops, compiled ", LOOP);
+    printf("Running %d loops, compiled -> ", LOOP);
 
     {
         struct timeval tval_before, tval_after, tval_result;
@@ -418,7 +424,7 @@ benchMarkFib(ExecutionContext *context)
         gettimeofday(&tval_after, NULL);
         timersub(&tval_after, &tval_before, &tval_result);
 
-        printf(" result is: %d\n", result);
+        printf(" result is: %lld\n", result);
         timeJIT = (tval_result.tv_sec * 1000 + (tval_result.tv_usec / 1000));
     }
 
@@ -510,6 +516,8 @@ main(int argc, char *argv[])
     long timeJIT = 0;
 
     printf("Running Interpreted, looping %d times\n", context.loopCount);
+    printf("Options: DirectCall (%d), DirectParameterPassing (%d), UseVMOperandStack (%d)\n",
+            context.directCall, context.passParameters, context.operandStack);
     {
         struct timeval tval_before, tval_after, tval_result;
 

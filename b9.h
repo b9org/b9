@@ -74,7 +74,7 @@ public:
     int passParameters = 1;
     int operandStack = 1;
 
-    char *name = nullptr;
+    const char *name = nullptr;
 
 };
 

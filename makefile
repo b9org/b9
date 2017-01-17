@@ -10,9 +10,10 @@ omr_srcdir := ./omr
 IJIT = $(omr_srcdir)/jitbuilder/release/include
 IJIT1 = $(IJIT)/compiler
 LIB=$(omr_srcdir)/jitbuilder/release/libjitbuilder.a
+LINK=-ldl -lm $(LIB)
 
 cflags = -std=c++11 -fPIC -fno-rtti
-b9: cflags+=-ldl -lm -I./omr/compiler/ $(LIB)
+b9: cflags+=-I./omr/compiler/ 
 b9jit.o: cflags+=-I$(IJIT) -I$(IJIT1)
 b9: $(b9_objects)
 
@@ -26,7 +27,7 @@ b9: $(b9_objects)
 	$(CXX) -std=c++11 -shared -o $@ $^ $(CFLAGS)
 
 $(programs): $(LIB)
-	$(CXX) -o $@ -lm $^ -ldl $(cflags) $(CFLAGS)
+	$(CXX) -o $@ -lm $^ -ldl $(cflags) $(CFLAGS) $(LINK)
 
 $(LIB): $(omr_srcdir)
 	(cd $(omr_srcdir)/; ./configure)

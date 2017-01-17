@@ -371,9 +371,9 @@ bool B9Method::generateILForBytecode(TR::BytecodeBuilder** bytecodeBuilderTable,
         break;
     case RETURN: {
         auto result = pop(builder);
- if (!context->passParameters) {  
-        builder->StoreIndirect("executionContextType", "stackPointer", builder->Load("context"), builder->Load("returnSP"));
- } 
+        if (!context->passParameters) {  
+                builder->StoreIndirect("executionContextType", "stackPointer", builder->Load("context"), builder->Load("returnSP"));
+        } 
         builder->Return(result);
     } break;
     case DROP:
@@ -439,12 +439,14 @@ bool B9Method::generateILForBytecode(TR::BytecodeBuilder** bytecodeBuilderTable,
             } else { // no address known in direct call, so dispatch intepreter
                 QCOMMIT(builder);
                 TR::IlValue* result = builder->Call("interpret", 2, builder->Load("context"), builder->ConstAddress(tocall));
+                QRELOAD_DROP(builder, progArgCount(*tocall));
                 push(builder, result);
             }
         } else {
             // only use interpreter to dispatch the calls
             QCOMMIT(builder);
             TR::IlValue* result = builder->Call("interpret", 2, builder->Load("context"), builder->ConstAddress(tocall));
+            QRELOAD_DROP(builder, progArgCount(*tocall));
             push(builder, result);
         }
 
@@ -516,6 +518,7 @@ void B9Method::drop(TR::BytecodeBuilder* builder)
 {
     pop(builder);
 }
+
 
 TR::IlValue*
 B9Method::pop(TR::BytecodeBuilder* builder)

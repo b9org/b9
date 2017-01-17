@@ -102,44 +102,42 @@ interpret(ExecutionContext *context, Instruction *program)
     uint64_t *address = (uint64_t *)(&program[1]);
     if (*address) {
         StackElement result = 0;
-
-#if PASS_PARAMETERS_DIRECTLY
-        int argsCount = progArgCount(*program); 
-        //printf("about to call jit args %d\n", argsCount);
-        switch (argsCount) {
-            case 0:{
+        if (context->passParameters) {
+            int argsCount = progArgCount(*program);
+            //printf("about to call jit args %d\n", argsCount);
+            switch (argsCount) {
+            case 0: {
                 Interpret jitedcode = (Interpret)*address;
                 result = (*jitedcode)(context, program);
             } break;
-           case  1: {
+            case 1: {
                 Interpret_1_args jitedcode = (Interpret_1_args)*address;
                 StackElement p1 = pop(context);
                 result = (*jitedcode)(context, program, p1);
-            }
-            break;
-            case 2:{
+            } break;
+            case 2: {
                 Interpret_2_args jitedcode = (Interpret_2_args)*address;
                 StackElement p2 = pop(context);
                 StackElement p1 = pop(context);
                 result = (*jitedcode)(context, program, p1, p2);
             } break;
-            case 3:{
+            case 3: {
                 Interpret_3_args jitedcode = (Interpret_3_args)*address;
                 StackElement p3 = pop(context);
                 StackElement p2 = pop(context);
                 StackElement p1 = pop(context);
                 result = (*jitedcode)(context, program, p1, p2, p3);
-            }break;
-            default: 
-                printf ("Need to add handlers for more parameters\n");
+            } break;
+            default:
+                printf("Need to add handlers for more parameters\n");
                 break;
-        } 
-#else
-        Interpret jitedcode = (Interpret)*address;
-        result = (*jitedcode)(context, program);
-#endif 
+            }
+        } else {
+            Interpret jitedcode = (Interpret)*address;
+            result = (*jitedcode)(context, program);
+        }
         return result;
-    } 
+    }
 
     int nargs = progArgCount(*program);
     int tmps = progTmpCount(*program);
@@ -327,7 +325,9 @@ bool
 loadProgram(ExecutionContext *context, const char *programName)
 {
     char sharelib[128];
-    printf("Loading \"%s\"\n", programName);
+    if (context->verbose){
+        printf("Loading \"%s\"\n", programName);
+    } 
     snprintf(sharelib, sizeof(sharelib), "./%s", programName);
 
     dlerror();
@@ -386,7 +386,7 @@ benchMarkFib(ExecutionContext *context)
     //  removeAllGeneratedCode(context);
 
     int LOOP = 200000;
-    printf("\nAbout to run %d loops, interpreted\n", LOOP);
+    printf("Running %d loops, interpreted -> ", LOOP);
 
     long timeInterp = 0;
     long timeJIT = 0;
@@ -399,7 +399,7 @@ benchMarkFib(ExecutionContext *context)
         gettimeofday(&tval_after, NULL);
         timersub(&tval_after, &tval_before, &tval_result);
 
-        printf("Result is: %d\n", result);
+        printf(" result is: %d\n", result);
         timeInterp = (tval_result.tv_sec * 1000 + (tval_result.tv_usec / 1000));
     }
 
@@ -407,7 +407,7 @@ benchMarkFib(ExecutionContext *context)
     // temp, only do fib for now, some issue in loops jit
     generateCode(context->functions[1], context);
 
-    printf("\nAbout to run %d loops, compiled\n", LOOP);
+    printf("Running %d loops, compiled ", LOOP);
 
     {
         struct timeval tval_before, tval_after, tval_result;
@@ -418,7 +418,7 @@ benchMarkFib(ExecutionContext *context)
         gettimeofday(&tval_after, NULL);
         timersub(&tval_after, &tval_before, &tval_result);
 
-        printf("Result is: %d\n", result);
+        printf(" result is: %d\n", result);
         timeJIT = (tval_result.tv_sec * 1000 + (tval_result.tv_usec / 1000));
     }
 
@@ -470,7 +470,7 @@ main(int argc, char *argv[])
         }
 
         if (!strcmp(name, "-directcall")) {
-            context.directCall = atoi(argv[i + 1]);
+            context.directCall = atoi(argv[i + 1]); 
             i++;
             continue;
         }
@@ -493,6 +493,8 @@ main(int argc, char *argv[])
 
     if (context.name == nullptr) {
         printf("No program was passed to b9, Running default benchmark for b9, looping 200000.\n");
+        printf("Options: DirectCall (%d), DirectParameterPassing (%d), UseVMOperandStack (%d)\n",
+            context.directCall, context.passParameters, context.operandStack);
         benchMarkFib(&context);
         // TODO use the common path below to time
         context.name = "./bench.so";
@@ -541,7 +543,7 @@ main(int argc, char *argv[])
         timeJIT = (tval_result.tv_sec * 1000 + (tval_result.tv_usec / 1000));
     }
 
-    printf("Result for Interp is %ld, resultJit is %ld\n", resultInterp, resultJit);
+    printf("Result for Interp is %lld, resultJit is %lld\n", resultInterp, resultJit);
     printf("Time for Interp %ld ms, JIT %ld ms\n", timeInterp, timeJIT);
     printf("JIT speedup = %f\n", timeInterp * 1.0 / timeJIT);
 

@@ -14,15 +14,19 @@
  * second 24 bits may be an argument to the opcode
  */
 
-// USE_DIRECT_CALL means no jumping to a general purpose 
+// runtime options 
+
+// -directcall 0/1 means no jumping to a general purpose 
 // intepreter for jit->jit calls
-#define USE_DIRECT_CALL  1
-// PASS_PARAMETERS_DIRECTLY means to pass parameters 
+// default == 1
+   
+// -passparameters 0/1  means to pass parameters 
 // to the JIT methods instead of on the interpreter stack
-#define PASS_PARAMETERS_DIRECTLY 1
-// USE_VM_OPERAND_STACK means to use the JITBuilder 
-// facility for modelling VM stacks
-#define USE_VM_OPERAND_STACK 1
+// default == 1
+
+// -operandstack 0/1  toggles to the JITBuilder 
+// facility for modelling VM stacks  
+// default == 1
 
 typedef uint8_t ByteCode;
 typedef int32_t Parameter;  // even though only 24 bits used
@@ -76,17 +80,17 @@ public:
 
 
 typedef StackElement (*Interpret) (ExecutionContext* context, Instruction* program);
-
-#if PASS_PARAMETERS_DIRECTLY
+ 
 // define C callable Interpret API for each arg call 
 // if args are passed to the function, they are not passed 
 // on the intepreter stack
+typedef StackElement (*Interpret_0_args) (ExecutionContext* context, Instruction* program);
 typedef StackElement (*Interpret_1_args) (ExecutionContext* context, Instruction* program, StackElement p1);
 typedef StackElement (*Interpret_2_args) (ExecutionContext* context, Instruction* program, 
     StackElement p1, StackElement p2);
 typedef StackElement (*Interpret_3_args) (ExecutionContext* context, Instruction* program,
     StackElement p1, StackElement p2,  StackElement p3);
-#endif
+ 
 
 StackElement interpret(ExecutionContext* context, Instruction* program);
 void generateCode(Instruction* program, ExecutionContext *context);

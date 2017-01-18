@@ -175,9 +175,10 @@ function CodeGen(f) {
     };
 
     this.handleFooters = function () {
+        var out = this.functions;
         this.outputRawString('Instruction *b9_exported_functions[] = {');
-        for (key in this.functions) {
-            this.outputRawString('    ' + key + ',');
+        for (key in out) {
+            this.outputRawString('    ' +  key + ', // ' + this.functions[key]);
         }
         this.outputRawString('    NO_MORE_FUNCTIONS');
         this.outputRawString('};');
@@ -275,8 +276,6 @@ function CodeGen(f) {
         });
     };
 
-
-
     this.isNumber = function isNumber(num) {
         if (typeof num == 'number') return true;
         return (typeof num == 'string' && !isNaN(parseInt(num)));
@@ -314,7 +313,7 @@ function CodeGen(f) {
 
     // returns the function index for CALL
     this.getFunctionIndex = function (id) {
-        if (this.functions[id]) {
+        if (this.functions[id] != undefined) {
             return this.functions[id];
         } else {
             this.functions[id] = this.nextFunctionIndex++;

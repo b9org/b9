@@ -1,6 +1,6 @@
-	#include "b9.h"
+#include "b9.h"
 
-Instruction program[] = {
+Instruction b9main[] = {
 	decl (0,8),		// (args,temps)  assume max 8 temps
 	decl (0,0),		// 0: space for JIT address
 	decl (0,0),		// 1: space for JIT address
@@ -59,7 +59,7 @@ Instruction call_add[] = {
 	createInstruction(NO_MORE_BYTECODES, 0)};	//  end of function
 
 	Instruction *b9_exported_functions[] = {
-	    program,
+	    b9main,
 	    call_sub,
 	    call_add,
 	};

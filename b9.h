@@ -109,6 +109,7 @@ public:
     int operandStack = 1;
 
     const char *name = nullptr;
+    void *library = nullptr;
 
 };
 
@@ -126,10 +127,12 @@ typedef StackElement (*Interpret_3_args) (ExecutionContext* context, Instruction
  
 /* B9 Interpreter */
 void b9_jit_init();
+int parseArguments(ExecutionContext *context, int argc, char *argv[]);
 
-bool loadProgram(ExecutionContext *context, const char *programName);
+bool loadLibrary(ExecutionContext *context, const char *libraryName);
+Instruction *getFunctionAddress(ExecutionContext *context, const char *functionName);
 StackElement interpret(ExecutionContext* context, Instruction* program);
-StackElement timeProgram(ExecutionContext *context, int programIndex, int loopCount, long* runningTime);
+StackElement timeFunction(ExecutionContext *context, Instruction *function, int loopCount, long* runningTime);
 
 void b9PrintStack(ExecutionContext *context);
 

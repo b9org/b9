@@ -1,10 +1,10 @@
 #include "b9.h"
 
-#include <dlfcn.h>
-#include <sys/time.h>
-#include <stdlib.h>
 #include <cstring>
+#include <dlfcn.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <sys/time.h>
 
 /* Byte Code Implementations */
 
@@ -228,7 +228,7 @@ int
 getFunctionCount(ExecutionContext *context)
 {
     int functionIndex = 0;
-    while(context->functions[functionIndex] != NO_MORE_FUNCTIONS) {
+    while (context->functions[functionIndex] != NO_MORE_FUNCTIONS) {
         functionIndex++;
     }
     return functionIndex;
@@ -244,7 +244,7 @@ void
 removeAllGeneratedCode(ExecutionContext *context)
 {
     int functionIndex = 0;
-    while(context->functions[functionIndex] != NO_MORE_FUNCTIONS) {
+    while (context->functions[functionIndex] != NO_MORE_FUNCTIONS) {
         removeGeneratedCode(context, functionIndex);
         functionIndex++;
     }
@@ -254,7 +254,7 @@ void
 generateAllCode(ExecutionContext *context)
 {
     int functionIndex = 0;
-    while(context->functions[functionIndex] != NO_MORE_FUNCTIONS) {
+    while (context->functions[functionIndex] != NO_MORE_FUNCTIONS) {
         generateCode(context->functions[functionIndex], context);
         functionIndex++;
     }
@@ -266,16 +266,21 @@ resetContext(ExecutionContext *context)
     context->stackPointer = context->stack;
 }
 
-
 bool
-loadProgram(ExecutionContext *context, const char *programName)
+loadLibrary(ExecutionContext *context, const char *libraryName)
 {
-    char sharelib[128];
-    if (context->verbose){
-        printf("Loading \"%s\"\n", programName);
-    } 
-    snprintf(sharelib, sizeof(sharelib), "./%s", programName);
+    if (context->library != nullptr) {
+        printf("Error loading %s: context already has a library loaded", libraryName);
+        return false;
+    }
 
+    char sharelib[128];
+    if (context->verbose) {
+        printf("Loading \"%s\"\n", libraryName);
+    }
+    snprintf(sharelib, sizeof(sharelib), "./%s", libraryName);
+
+    /* Open the shared object */
     dlerror();
     void *handle = dlopen(sharelib, RTLD_NOW);
     char *error = dlerror();
@@ -283,41 +288,59 @@ loadProgram(ExecutionContext *context, const char *programName)
         printf("%s\n", error);
         return false;
     }
+    context->library = handle;
+
+    /* Get the symbol table */
     Instruction **table = (Instruction **)dlsym(handle, "b9_exported_functions");
     error = dlerror();
     if (error) {
         printf("%s\n", error);
         return false;
     }
-
     context->functions = table;
 
     return true;
 }
 
-StackElement
-runProgram(ExecutionContext *context, int functionIndex)
+Instruction *
+getFunctionAddress(ExecutionContext *context, const char *functionName)
 {
-    if (context->stackPointer != context->stack) { 
-        printf ("runProgram: Warning Stack not Empty (%ld elements)\n", context->stackPointer-context->stack);
-        printf ("Possibly a prior run left items on stack, resetting the stack to a clean point.\n");
+    if (context->library == nullptr) {
+        printf("Error function %s: context already has a library loaded", functionName);
+        return nullptr;
+    }
+
+    Instruction *function = (Instruction *)dlsym(context->library, functionName);
+    char *error = dlerror();
+    if (error) {
+        printf("%s\n", error);
+        return nullptr;
+    }
+
+    return function;
+}
+
+StackElement
+runFunction(ExecutionContext *context, Instruction *function)
+{
+    if (context->stackPointer != context->stack) {
+        printf("runProgram: Warning Stack not Empty (%ld elements)\n", context->stackPointer - context->stack);
+        printf("Possibly a prior run left items on stack, resetting the stack to a clean point.\n");
         resetContext(context);
     }
 
-    Instruction *func = context->functions[functionIndex];
-
     /* Push random arguments to send to the program */
-    int nargs = progArgCount(*func);
+    int nargs = progArgCount(*function);
     for (int i = 0; i < nargs; i++) {
         int arg = 100 - (i * 10);
         printf("Pushing args %d: %d\n", i, arg);
         push(context, arg);
     }
 
-    StackElement result = interpret(context, func);
+    StackElement result = interpret(context, function);
 
-    if (context->stackPointer != context->stack) { 
-        printf ("runProgram: Warning Stack not Empty after running program (%ld elements)\n", context->stackPointer-context->stack);
+    if (context->stackPointer != context->stack) {
+        printf("runProgram: Warning Stack not Empty after running program (%ld elements)\n", context->stackPointer - context->stack);
         resetContext(context);
     }
 
@@ -325,14 +348,14 @@ runProgram(ExecutionContext *context, int functionIndex)
 }
 
 StackElement
-timeProgram(ExecutionContext *context, int programIndex, int loopCount, long* runningTime)
+timeFunction(ExecutionContext *context, Instruction *function, int loopCount, long *runningTime)
 {
     struct timeval timeBefore, timeAfter, timeResult;
     StackElement result;
 
     gettimeofday(&timeBefore, NULL);
     while (loopCount--) {
-        result = runProgram(context, programIndex);
+        result = runFunction(context, function);
     }
     gettimeofday(&timeAfter, NULL);
 
@@ -340,4 +363,65 @@ timeProgram(ExecutionContext *context, int programIndex, int loopCount, long* ru
     *runningTime = (timeResult.tv_sec * 1000 + (timeResult.tv_usec / 1000));
 
     return result;
+}
+
+int
+parseArguments(ExecutionContext *context, int argc, char *argv[])
+{
+    char *mainFunction = "b9main";
+
+    /* Command Line Arguments */
+    for (int i = 1; i < argc; i++) {
+        char *name = argv[i];
+
+        if (!strcmp(name, "-help")) {
+            printf("-loop run the program a certain number of times");
+            continue;
+        }
+
+        if (!strcmp(name, "-loop")) {
+            context->loopCount = atoi(argv[i + 1]);
+            i++;
+            continue;
+        }
+
+        if (!strcmp(name, "-verbose")) {
+            context->verbose = 1;
+            continue;
+        }
+
+        if (!strcmp(name, "-debug")) {
+            context->debug++;
+            printf("debug is %d \n", context->debug);
+            continue;
+        }
+
+        if (!strcmp(name, "-directcall")) {
+            context->directCall = atoi(argv[i + 1]);
+            i++;
+            continue;
+        }
+
+        if (!strcmp(name, "-passparameters")) {
+            context->passParameters = atoi(argv[i + 1]);
+            i++;
+            continue;
+        }
+
+        if (!strcmp(name, "-operandstack")) {
+            context->operandStack = atoi(argv[i + 1]);
+            i++;
+            continue;
+        }
+
+        if (!strcmp(name, "-program")) {
+            mainFunction = argv[i + 1];
+            i++;
+            continue;
+        }
+
+        context->name = name;
+        continue;
+    }
+    return 0;
 }

@@ -494,8 +494,6 @@ void B9Method::handle_bc_jmp_le(TR::BytecodeBuilder* builder,
     int next_bc_index = bytecodeIndex + delta;
     TR::BytecodeBuilder* jumpTo = bytecodeBuilderTable[next_bc_index];
     left = builder->Sub(left, builder->ConstInt64(1));
-
-    left = builder->Sub(left, builder->ConstInt64(1));
     builder->IfCmpGreaterThan(jumpTo, right, left); //swap and do a greaterthan
     builder->AddFallThroughBuilder(nextBuilder);
 }

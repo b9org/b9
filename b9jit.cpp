@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <cstring>
 
 #include "Jit.hpp"
 #include "ilgen/BytecodeBuilder.hpp"
@@ -349,7 +350,7 @@ bool B9Method::generateILForBytecode(TR::BytecodeBuilder** bytecodeBuilderTable,
 
     // printf("generating index=%d bc=%s(%d) param=%d \n", bytecodeIndex, b9_bytecodename(bytecode), bytecode, getParameterFromInstruction(instruction));
 
-    if (context->debug) {
+    if (context->debug == 2) {
         QCOMMIT(builder);
         builder->Call("printVMState", 4, builder->Load("context"),
             builder->ConstInt64(bytecodeIndex),
@@ -490,9 +491,9 @@ void B9Method::handle_bc_jmp_le(TR::BytecodeBuilder* builder,
 
     int next_bc_index = bytecodeIndex + delta;
     TR::BytecodeBuilder* jumpTo = bytecodeBuilderTable[next_bc_index];
+    left = builder->Sub(left, builder->ConstInt64(1));
 
     builder->IfCmpGreaterThan(jumpTo, right, left); //swap and do a greaterthan
-
     builder->AddFallThroughBuilder(nextBuilder);
 }
 

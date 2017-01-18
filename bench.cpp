@@ -67,5 +67,5 @@ static Instruction program[] = {
  Instruction *b9_exported_functions[] = {
     program,   // 0
     fib_function,    // 1 
-    };
+};
  

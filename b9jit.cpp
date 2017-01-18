@@ -233,7 +233,6 @@ long computeNumberOfBytecodes(Instruction* program)
         program++;
         result++;
     }
-    // printf("bytecodeCount = %d\n", result);
     return result;
 }
 
@@ -348,9 +347,9 @@ bool B9Method::generateILForBytecode(TR::BytecodeBuilder** bytecodeBuilderTable,
 
     bool handled = true;
 
-    // printf("generating index=%d bc=%s(%d) param=%d \n", bytecodeIndex, b9_bytecodename(bytecode), bytecode, getParameterFromInstruction(instruction));
 
     if (context->debug == 2) {
+        printf("generating index=%d bc=%s(%d) param=%d \n", bytecodeIndex, b9_bytecodename(bytecode), bytecode, getParameterFromInstruction(instruction));
         QCOMMIT(builder);
         builder->Call("printVMState", 4, builder->Load("context"),
             builder->ConstInt64(bytecodeIndex),
@@ -410,8 +409,8 @@ bool B9Method::generateILForBytecode(TR::BytecodeBuilder** bytecodeBuilderTable,
                 int len = strlen(signature) + 16;
                 char* nameToCall = (char*)malloc(len); // need to free later
                 snprintf(nameToCall, len, "%s_%p", signature, tocall);
+                int argsCount = progArgCount(*tocall);
                 if (tocall != program) {
-                    int argsCount = progArgCount(*tocall);
                     DefineFunction((char*)nameToCall, (char*)__FILE__,
                         nameToCall, (void*)*slotForJitAddress, Int64, 2 + argsCount,
                         executionContextType, int32PointerType,
@@ -419,15 +418,18 @@ bool B9Method::generateILForBytecode(TR::BytecodeBuilder** bytecodeBuilderTable,
                         stackElementType, stackElementType, stackElementType, stackElementType);
                 }
                 if (context->passParameters) {
-                    int argsCount = progArgCount(*program);
-                    if (argsCount > 8)
+                    if (argsCount > 8) {
                         printf("ERROR Need to add handlers for more parameters\n");
+                        break;
+                    }
+
                     TR::IlValue* p[8];
                     memset(p, 0, sizeof(p));
                     int popInto = argsCount;
                     while (popInto--) {
                         p[popInto] = pop(builder);
                     }
+
                     TR::IlValue* result = builder->Call(nameToCall, 2 + argsCount, builder->Load("context"), builder->ConstAddress(tocall),
                         p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7]);
                     push(builder, result);

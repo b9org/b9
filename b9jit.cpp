@@ -242,7 +242,7 @@ bool B9Method::buildIL()
     bool success = true;
 
     OMR::VirtualMachineRegisterInStruct* stackTop = new OMR::VirtualMachineRegisterInStruct(this, "executionContextType", "context", "stackPointer", "SP");
-    OMR::VirtualMachineOperandStack* stack = new OMR::VirtualMachineOperandStack(this, 32, stackElementPointerType, stackTop);
+    OMR::VirtualMachineOperandStack* stack = new OMR::VirtualMachineOperandStack(this, 32, stackElementPointerType, stackTop, true, 0);
     B9VirtualMachineState* vms = new B9VirtualMachineState(stack, stackTop);
     setVMState(vms);
 

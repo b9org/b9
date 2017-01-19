@@ -24,7 +24,7 @@ pop(ExecutionContext *context)
 void
 bc_call(ExecutionContext *context, Parameter value)
 {
-    Instruction *program = context->functions[value];
+    Instruction *program = context->functions[value].program;
     StackElement result = interpret(context, program);
     push(context, result);
 }
@@ -142,21 +142,25 @@ bc_sub(ExecutionContext *context)
 
 StackElement
 interpret_0(ExecutionContext *context, Instruction *program) {
+ 
     return interpret( context,  program);
 }
 StackElement
 interpret_1(ExecutionContext *context, Instruction *program, StackElement p1) {
+   
     push (context, p1);
     return interpret( context,  program);
 }
 StackElement
 interpret_2(ExecutionContext *context, Instruction *program, StackElement p1, StackElement p2) {
+   
     push (context, p1);
     push (context, p2);
     return interpret( context,  program);
 }
 StackElement
 interpret_3(ExecutionContext *context, Instruction *program, StackElement p1, StackElement p2, StackElement p3 ) {
+ 
     push (context, p1);
     push (context, p2);
     push (context, p3);
@@ -306,22 +310,21 @@ hasJITAddress(Instruction *p)
 uint64_t
 getJitAddress(ExecutionContext *context, int functionIndex)
 {
-    Instruction *p = context->functions[functionIndex];
-    return *getJitAddressSlot(p);
+    return context->functions[functionIndex].jitAddress; 
 }
 
 void
-setJitAddress(ExecutionContext *context, int functionIndex, uint64_t value)
+setJitAddress(ExecutionContext *context, int32_t functionIndex, uint64_t value)
 {
-    Instruction *p = context->functions[functionIndex];
-    setJitAddressSlot(p, value);
+  context->functions[functionIndex].jitAddress = value; 
+  setJitAddressSlot(context->functions[functionIndex].program,   value);
 }
 
 int
 getFunctionCount(ExecutionContext *context)
 {
     int functionIndex = 0;
-    while (context->functions[functionIndex] != NO_MORE_FUNCTIONS) {
+    while (context->functions[functionIndex].name != NO_MORE_FUNCTIONS) {
         functionIndex++;
     }
     return functionIndex;
@@ -330,14 +333,16 @@ getFunctionCount(ExecutionContext *context)
 void
 removeGeneratedCode(ExecutionContext *context, int functionIndex)
 {
-    setJitAddressSlot(context->functions[functionIndex], 0);
+   context->functions[functionIndex].jitAddress = 0;
+   setJitAddressSlot(context->functions[functionIndex].program, 0);
+
 }
 
 void
 removeAllGeneratedCode(ExecutionContext *context)
 {
     int functionIndex = 0;
-    while (context->functions[functionIndex] != NO_MORE_FUNCTIONS) {
+    while (context->functions[functionIndex].name != NO_MORE_FUNCTIONS) {
         removeGeneratedCode(context, functionIndex);
         functionIndex++;
     }
@@ -347,8 +352,8 @@ void
 generateAllCode(ExecutionContext *context)
 {
     int functionIndex = 0;
-    while (context->functions[functionIndex] != NO_MORE_FUNCTIONS) {
-        generateCode(context->functions[functionIndex], context);
+    while (context->functions[functionIndex].name != NO_MORE_FUNCTIONS) {
+        generateCode(context, functionIndex);
         functionIndex++;
     }
 }
@@ -384,13 +389,21 @@ loadLibrary(ExecutionContext *context, const char *libraryName)
     context->library = handle;
 
     /* Get the symbol table */
-    Instruction **table = (Instruction **)dlsym(handle, "b9_exported_functions");
+    struct ExportedFunctionData *table = (struct ExportedFunctionData *)dlsym(handle, "b9_exported_functions");
     error = dlerror();
     if (error) {
         printf("%s\n", error);
         return false;
     }
     context->functions = table;
+    printf ("found %p for function\n", table);
+
+    int functionIndex = 0;
+    while (table[functionIndex].name != NO_MORE_FUNCTIONS) { 
+        printf ("Name %s, prog %p, jit %p \n", table[functionIndex].name, 
+            table[functionIndex].program, table[functionIndex].jitAddress);
+        functionIndex++;
+    } 
 
     return true;
 }

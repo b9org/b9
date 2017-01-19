@@ -87,6 +87,11 @@ progTmpCount(Instruction a)
     return a & 0xFFFF;
 }
 
+struct ExportedFunctionData {
+    const char * name;
+    Instruction *program;
+    uint64_t jitAddress;
+};
 /* VM State */
 
 class ExecutionContext
@@ -102,7 +107,7 @@ public:
     StackElement stack[1000];
     StackElement* stackPointer;
     StackElement* stackEnd; 
-    Instruction **functions;
+    struct ExportedFunctionData *functions;
 
     /* Command Line Parameters */
     int loopCount = 1;
@@ -147,11 +152,23 @@ StackElement timeFunction(ExecutionContext *context, Instruction *function, int 
 void b9PrintStack(ExecutionContext *context);
 
 bool hasJITAddress(Instruction *p);
-void generateCode(Instruction* program, ExecutionContext *context);
+void generateCode(ExecutionContext *context, int32_t functionIndex);
 void generateAllCode(ExecutionContext *context);
 void removeAllGeneratedCode(ExecutionContext *context);
+void
+setJitAddress(ExecutionContext *context, int32_t functionIndex, uint64_t value);
 
 void push(ExecutionContext *context, StackElement value);
 StackElement pop(ExecutionContext *context);
+
+
+StackElement
+interpret_0(ExecutionContext *context, Instruction *program);
+StackElement
+interpret_1(ExecutionContext *context, Instruction *program, StackElement p1);
+StackElement
+interpret_2(ExecutionContext *context, Instruction *program, StackElement p1, StackElement p2);
+StackElement
+interpret_3(ExecutionContext *context, Instruction *program, StackElement p1, StackElement p2, StackElement p3 );
 
 #endif

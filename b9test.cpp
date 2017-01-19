@@ -43,7 +43,7 @@ validateFibResult(ExecutionContext *context)
     for (i = 0; i <= 12; i++) {
         runFib(context, i);
     }
-    generateCode(context->functions[0], context);
+    generateCode(context, 0); // fib is program 0
     for (i = 0; i <= 12; i++) {
         runFib(context, i);
     }

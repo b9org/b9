@@ -107,36 +107,30 @@ void b9_jit_init()
     initializeJit();
 }
 
-void generateCode(Instruction* program, ExecutionContext* context)
+void generateCode(ExecutionContext* context, int32_t functionIndex)
 {
     TR::TypeDictionary types;
+    Instruction* program = context->functions[functionIndex].program;
     // todo pass in context->functions
-    B9Method methodBuilder(&types, program, context);
+    B9Method methodBuilder(&types, functionIndex, context);
     uint8_t* entry = 0;
     int rc = (*compileMethodBuilder)(&methodBuilder, &entry);
     if (0 == rc) {
-        uint64_t* slotForJitAddress = (uint64_t*)&program[1];
-        *slotForJitAddress = (uint64_t)entry;
+        setJitAddress(context,  functionIndex, (uint64_t) entry); 
     } else {
         printf("Failed to compile method\n");
     }
 }
 
-B9Method::B9Method(TR::TypeDictionary* types, Instruction* program, ExecutionContext* context)
+B9Method::B9Method(TR::TypeDictionary* types, int32_t programIndex, ExecutionContext* context)
     : MethodBuilder(types)
-    , program(program)
+    , program(context->functions[programIndex].program)
     , context(context)
 {
     DefineLine(LINETOSTR(__LINE__));
-    DefineFile(__FILE__);
+    DefineFile(__FILE__); 
 
-    const char* signature = "jit";
-    int len = strlen(signature) + 16;
-    char* methodName = (char*)malloc(len);
-    snprintf(methodName, len, "%s_%p", signature, program);
-    // printf("Generating from %p -> <%s>\n", program, methodName);
-
-    DefineName(methodName);
+    DefineName(context->functions[programIndex].name);
     if (sizeof(StackElement) == 2) {
         stackElementType = Int16;
         stackElementPointerType = types->PointerTo(stackElementType);
@@ -212,6 +206,30 @@ void B9Method::defineFunctions()
     DefineFunction((char*)"printStack", (char*)__FILE__, "printStack", (void*)&b9PrintStack, NoType, 1, Int64);
     DefineFunction((char*)"interpret", (char*)__FILE__, "interpret", (void*)&interpret, Int64, 2,
         executionContextType, int32PointerType);
+    int functionIndex = 0;
+    while (context->functions[functionIndex].name != NO_MORE_FUNCTIONS) {
+        if (context->functions[functionIndex].jitAddress) {
+            DefineFunction( 
+                context->functions[functionIndex].name, 
+                (char*)__FILE__,
+                context->functions[functionIndex].name, 
+                (void*)context->functions[functionIndex].jitAddress, 
+                Int64,   
+                progArgCount(*context->functions[functionIndex].program) , 
+                stackElementType, stackElementType, stackElementType, stackElementType,
+                stackElementType, stackElementType, stackElementType, stackElementType);
+        }
+
+        functionIndex++;
+    }
+    DefineFunction((char*)"interpret_0", (char*)__FILE__, "interpret_0", (void*)&interpret_0, Int64, 2,
+        executionContextType, int32PointerType);
+    DefineFunction((char*)"interpret_1", (char*)__FILE__, "interpret_1", (void*)&interpret_1, Int64, 3,
+        executionContextType, int32PointerType, stackElementType);
+    DefineFunction((char*)"interpret_2", (char*)__FILE__, "interpret_2", (void*)&interpret_2, Int64, 4,
+        executionContextType, int32PointerType, stackElementType, stackElementType);
+    DefineFunction((char*)"interpret_3", (char*)__FILE__, "interpret_3", (void*)&interpret_3, Int64, 5,
+        executionContextType, int32PointerType, stackElementType, stackElementType, stackElementType);
 }
 
 #define QSTACK(b)  (((B9VirtualMachineState*)(b)->vmState())->_stack)
@@ -239,13 +257,19 @@ long computeNumberOfBytecodes(Instruction* program)
 
 bool B9Method::buildIL()
 {
+    if (context->operandStack) {
+        this->Store("localContext", this->ConstAddress(context));
+        OMR::VirtualMachineRegisterInStruct* stackTop = new OMR::VirtualMachineRegisterInStruct(this, "executionContextType", "localContext", "stackPointer", "SP");
+        OMR::VirtualMachineOperandStack* stack = new OMR::VirtualMachineOperandStack(this, 32, stackElementPointerType, stackTop, true, 0);
+        B9VirtualMachineState* vms = new B9VirtualMachineState(stack, stackTop);
+        setVMState(vms);
+    } else {
+        setVMState(new OMR::VirtualMachineState());
+    }
+
     TR::BytecodeBuilder** bytecodeBuilderTable = nullptr;
     bool success = true;
-
-    
-
     long numberOfBytecodes = computeNumberOfBytecodes(program);
-
     long tableSize = sizeof(TR::BytecodeBuilder*) * numberOfBytecodes;
     bytecodeBuilderTable = (TR::BytecodeBuilder**)malloc(tableSize);
     if (NULL == bytecodeBuilderTable) {
@@ -263,17 +287,6 @@ bool B9Method::buildIL()
     }
     TR::BytecodeBuilder* builder = bytecodeBuilderTable[METHOD_FIRST_BC_OFFSET];
     //printf("builder %p\n", builder);
-
-    if (context->operandStack) {
-        this->Store("localContext", this->ConstAddress(context));
-        OMR::VirtualMachineRegisterInStruct* stackTop = new OMR::VirtualMachineRegisterInStruct(this, "executionContextType", "localContext", "stackPointer", "SP");
-        OMR::VirtualMachineOperandStack* stack = new OMR::VirtualMachineOperandStack(this, 32, stackElementPointerType, stackTop, true, 0);
-        B9VirtualMachineState* vms = new B9VirtualMachineState(stack, stackTop);
-        setVMState(vms);
-    } else {
-        setVMState(new OMR::VirtualMachineState());
-    }
-
     AppendBuilder(builder);
  
     if (context->passParameters) {
@@ -425,54 +438,52 @@ bool B9Method::generateILForBytecode(TR::BytecodeBuilder** bytecodeBuilderTable,
     } break;
     case CALL: {
         int callindex = getParameterFromInstruction(instruction);
-        Instruction* tocall = context->functions[callindex];
-        if (context->directCall) { 
-            uint64_t* slotForJitAddress = (uint64_t*)&tocall[1];
-            if (tocall == program || *slotForJitAddress != 0) {
-                const char* signature = "jit";
-                int len = strlen(signature) + 16;
-                char* nameToCall = (char*)malloc(len); // need to free later
-                snprintf(nameToCall, len, "%s_%p", signature, tocall);
+        Instruction* tocall = context->functions[callindex].program;
+        if (context->directCall) {  
                 int argsCount = progArgCount(*tocall);
-                if (tocall != program) {
-                    DefineFunction((char*)nameToCall, (char*)__FILE__,
-                        nameToCall, (void*)*slotForJitAddress, Int64, 2 + argsCount,
-                        executionContextType, int32PointerType,
-                        stackElementType, stackElementType, stackElementType, stackElementType,
-                        stackElementType, stackElementType, stackElementType, stackElementType);
+                const char *interpretName[] = { 
+                    "interpret_0",
+                    "interpret_1",
+                    "interpret_2",
+                    "interpret_3"
+                };
+                const char* nameToCall = interpretName[argsCount];
+                bool interp = true;
+                if (tocall == program || context->functions[callindex].jitAddress != 0) { 
+                    nameToCall = context->functions[callindex].name; 
+                    interp = false;
                 }
                 if (context->passParameters) {
                     if (argsCount > 8) {
                         printf("ERROR Need to add handlers for more parameters\n");
                         break;
                     }
-
                     TR::IlValue* p[8];
                     memset(p, 0, sizeof(p));
                     int popInto = argsCount;
                     while (popInto--) {
                         p[popInto] = pop(builder);
                     }
-
-                    TR::IlValue* result = builder->Call(nameToCall, 
-                    //2 + argsCount, builder->ConstAddress(context), builder->ConstAddress(tocall),
-                   argsCount, 
-                        p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7]);
-                    push(builder, result);
+                    if (interp) {
+                        TR::IlValue* result = builder->Call(nameToCall, 2+argsCount, 
+                        builder->ConstAddress(context), builder->ConstAddress(tocall),
+                            p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7]);
+                        push(builder, result);
+                    } else {
+                        TR::IlValue* result = builder->Call(nameToCall, argsCount, p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7]);
+                        push(builder, result);
+                    }
                 } else {
+                    TR::IlValue* result;
                     QCOMMIT(builder);
-                    TR::IlValue* result = builder->Call(nameToCall, 
-                    // 2, builder->ConstAddress(context), builder->ConstAddress(tocall));
-                    0);
+                    if (interp) {
+                        result = builder->Call(nameToCall, 2, builder->ConstAddress(context), builder->ConstAddress(tocall));
+                    } else {
+                        result = builder->Call(nameToCall, 0);
+                    }
                     QRELOAD_DROP(builder, progArgCount(*tocall));
                     push(builder, result);
-                }
-            } else { // no address known in direct call, so dispatch intepreter
-                QCOMMIT(builder);
-                TR::IlValue* result = builder->Call("interpret", 2, builder->ConstAddress(context), builder->ConstAddress(tocall));
-                QRELOAD_DROP(builder, progArgCount(*tocall));
-                push(builder, result);
-            }
+                } 
         } else {
             // only use interpreter to dispatch the calls
             QCOMMIT(builder);

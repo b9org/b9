@@ -1,11 +1,9 @@
 #ifndef b9_h_
 #define b9_h_
 
-#include <cstring>
-#include <cstdio>
-#include <cstddef>
-
 #include <cstdint>
+#include <cstring>
+
 /* Bytecodes */
 
 /**
@@ -48,6 +46,42 @@ typedef int64_t StackElement;
 #define JMPLE               0x9
 #define JMP                 0xA
 
+static constexpr ByteCode
+getByteCodeFromInstruction(Instruction instruction)
+{
+    return (instruction >> 24);
+}
+
+static constexpr Parameter
+getParameterFromInstruction(Instruction instruction)
+{ 
+    return instruction & 0x800000 ? instruction | 0xFF000000: instruction & 0xFFFFFF;
+}
+
+static constexpr Instruction
+createInstruction(ByteCode byteCode, Parameter parameter)
+{
+    return byteCode << 24 | (parameter & 0xFFFFFF);
+}
+
+static constexpr Instruction
+decl(uint16_t argCount, uint16_t tmpCount)
+{
+    return argCount << 16 | tmpCount;
+}
+
+static constexpr uint16_t
+progArgCount(Instruction a)
+{
+    return a >> 16;
+}
+
+static constexpr uint16_t
+progTmpCount(Instruction a)
+{
+    return a & 0xFFFF;
+}
+
 /* VM State */
 
 class ExecutionContext
@@ -75,9 +109,9 @@ public:
     int operandStack = 1;
 
     const char *name = nullptr;
+    void *library = nullptr;
 
 };
-
 
 typedef StackElement (*Interpret) (ExecutionContext* context, Instruction* program);
  
@@ -91,54 +125,23 @@ typedef StackElement (*Interpret_2_args) (ExecutionContext* context, Instruction
 typedef StackElement (*Interpret_3_args) (ExecutionContext* context, Instruction* program,
     StackElement p1, StackElement p2,  StackElement p3);
  
-
-StackElement interpret(ExecutionContext* context, Instruction* program);
-void generateCode(Instruction* program, ExecutionContext *context);
+/* B9 Interpreter */
 void b9_jit_init();
+int parseArguments(ExecutionContext *context, int argc, char *argv[]);
 
-/* Instruction Helpers */
+bool loadLibrary(ExecutionContext *context, const char *libraryName);
+Instruction *getFunctionAddress(ExecutionContext *context, const char *functionName);
+StackElement interpret(ExecutionContext* context, Instruction* program);
+StackElement timeFunction(ExecutionContext *context, Instruction *function, int loopCount, long* runningTime);
 
-#define decl(argCount, tmpCount) (argCount << 16 | tmpCount)
-#define progArgCount(a) (a >> 16)
-#define progTmpCount(a) (a & 0xFFFF)
+void b9PrintStack(ExecutionContext *context);
 
+bool hasJITAddress(Instruction *p);
+void generateCode(Instruction* program, ExecutionContext *context);
+void generateAllCode(ExecutionContext *context);
+void removeAllGeneratedCode(ExecutionContext *context);
 
-constexpr ByteCode
-getByteCodeFromInstruction(Instruction instruction)
-{
-    return (instruction >> 24);
-}
-
-constexpr Parameter
-getParameterFromInstruction(Instruction instruction)
-{ 
-    return instruction & 0x800000 ? instruction | 0xFF000000: instruction & 0xFFFFFF;
-}
-
-constexpr Instruction
-createInstruction(ByteCode byteCode, Parameter parameter)
-{
-    return byteCode << 24 | (parameter & 0xFFFFFF);
-}
-
-// constexpr Instruction
-// decl(uint16_t argCount, uint16_t tmpCount)
-// {
-//     return argCount << 16 | tmpCount;
-// }
-
-// constexpr uint16_t
-// progArgCount(Instruction a)
-// {
-//     return a >> 16;
-// }
-
-// constexpr uint16_t
-// progTmpCount(Instruction a)
-// {
-//     return a & 0xFFFF;
-// }
-
-extern void b9PrintStack(ExecutionContext *context);
+void push(ExecutionContext *context, StackElement value);
+StackElement pop(ExecutionContext *context);
 
 #endif

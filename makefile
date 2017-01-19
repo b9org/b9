@@ -2,8 +2,9 @@ default: all
 
 all: b9 $(b9_programs)
 
-programs = b9
-b9_objects = main.o b9jit.o
+programs = b9 b9test
+b9_objects = main.o b9jit.o b9.o
+b9test_objects = b9.o b9jit.o b9test.o
 b9_programs = program.so bench.so test.so
 
 omr_srcdir := ./omr
@@ -15,7 +16,8 @@ LINK=-ldl -lm $(LIB)
 cflags = -std=c++11 -fPIC -fno-rtti
 b9: cflags+=-I./omr/compiler/ 
 b9jit.o: cflags+=-I$(IJIT) -I$(IJIT1)
-b9: $(b9_objects)
+
+$(foreach program,$(programs),$(eval $(program): $($(program)_objects)))
 
 %.cpp: %.src
 	node b9.js $^ > $@
@@ -42,8 +44,9 @@ program: b9
 bench: b9 bench.so
 	./b9
 
-test: b9 test.so
+test: b9 test.so b9test $(b9_programs)
 	./b9 test.so
+	./b9test
 
 clean:
 	$(RM) b9

@@ -58,9 +58,10 @@ Instruction call_add[] = {
 	createInstruction(RETURN,0),	//  forced = false
 	createInstruction(NO_MORE_BYTECODES, 0)};	//  end of function
 
-	Instruction *b9_exported_functions[] = {
-	    b9main,
-	    call_sub,
-	    call_add,
+	struct ExportedFunctionData b9_exported_functions[] = {
+		{  "b9main", b9main, 0},
+		{  "call_sub", call_sub, 0},
+		{  "call_add", call_add, 0}, 
+		{  0,0,0}  
 	};
 

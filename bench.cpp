@@ -33,11 +33,14 @@ Instruction fib_function[] = {
     createInstruction(NO_MORE_BYTECODES, 0)};
 
 Instruction b9main[] = {
-    decl(0, 1),
+    decl(0, 2),
     decl(0, 0),
     decl(0, 0),
     createInstruction(PUSH_CONSTANT, 200000), 
     createInstruction(POP_INTO_VAR, 0), // t = 200000
+ 
+    createInstruction(PUSH_FROM_VAR, 0),
+    createInstruction(POP_INTO_VAR, 1),  
 
     // if (t <= 0)  jmp exit
     // loop test
@@ -58,12 +61,13 @@ Instruction b9main[] = {
     createInstruction(JMP, -11), // 8
 
     // exit
-    createInstruction(PUSH_CONSTANT, 999),
+    createInstruction(PUSH_FROM_VAR, 1),
     createInstruction(RETURN, 0),
     createInstruction(NO_MORE_BYTECODES, 0)};
 
 /* Byte Code Program */
- Instruction *b9_exported_functions[] = {
-    fib_function,    // 0 
-    b9main,          // 1
+	struct ExportedFunctionData b9_exported_functions[] = {
+		{  "fib_function", fib_function, 0},
+		{  "b9main", b9main, 0}, 
+		{  0,0,0}   
 };

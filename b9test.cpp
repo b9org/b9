@@ -43,7 +43,7 @@ validateFibResult(ExecutionContext *context)
     for (i = 0; i <= 12; i++) {
         runFib(context, i);
     }
-    generateCode(context->functions[0], context);
+    generateCode(context, 0); // fib is program 0
     for (i = 0; i <= 12; i++) {
         runFib(context, i);
     }
@@ -58,16 +58,15 @@ benchMarkFib(ExecutionContext *context)
     if (!loadLibrary(context, "./bench.so")) {
         return 0;
     }
-
-    StackElement result = 0;
+ 
 
     /* make sure everything is not-jit'd for this initial bench
      * allows you to put examples above, tests etc, and not influence this
      * benchmark compare interpreted vs JIT'd */
     //  removeAllGeneratedCode(context);
 
-    int LOOP = 200000;
-    printf("Running %d loops, interpreted -> ", LOOP);
+    StackElement LOOP_INTERP = -1;
+    StackElement LOOP_JIT = -1;
 
     long timeInterp = 0;
     long timeJIT = 0;
@@ -75,35 +74,36 @@ benchMarkFib(ExecutionContext *context)
         struct timeval tval_before, tval_after, tval_result;
         gettimeofday(&tval_before, NULL);
 
-        result = interpret(context, context->functions[0]);
+       LOOP_INTERP  = interpret(context, context->functions[0].program);
 
         gettimeofday(&tval_after, NULL);
         timersub(&tval_after, &tval_before, &tval_result);
 
-        printf(" result is: %lld\n", result);
+        printf("# of loops run: %lld\n", LOOP_INTERP);
         timeInterp = (tval_result.tv_sec * 1000 + (tval_result.tv_usec / 1000));
     }
 
     /* Generate code for fib functions */
     // temp, only do fib for now, some issue in loops jit
-    generateCode(context->functions[1], context);
-
-    printf("Running %d loops, compiled -> ", LOOP);
+    generateCode(context, 1); 
 
     {
         struct timeval tval_before, tval_after, tval_result;
         gettimeofday(&tval_before, NULL);
 
-        result = interpret(context, context->functions[0]);
+        LOOP_JIT = interpret(context, context->functions[0].program);
 
         gettimeofday(&tval_after, NULL);
         timersub(&tval_after, &tval_before, &tval_result);
 
-        printf(" result is: %lld\n", result);
+        printf("# of loops run: %lld\n", LOOP_JIT);
         timeJIT = (tval_result.tv_sec * 1000 + (tval_result.tv_usec / 1000));
     }
+    if (LOOP_JIT != LOOP_INTERP) {
+        printf ("Invalid Benchmark jit loop count != interpreter loop count\n");
+    }
 
-    printf("Time for %d iterations Interp %ld ms JIT %ld ms\n", LOOP, timeInterp, timeJIT);
+    printf("Time for %d iterations Interp %ld ms JIT %ld ms\n", LOOP_JIT, timeInterp, timeJIT);
     printf("JIT speedup = %f\n", timeInterp * 1.0 / timeJIT);
 
     return 0;

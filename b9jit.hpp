@@ -74,7 +74,18 @@ private:
     void
     handle_bc_jmp(TR::BytecodeBuilder *builder, TR::BytecodeBuilder **bytecodeBuilderTable, long bytecodeIndex);
     void
+    handle_bc_jmp_eq(TR::BytecodeBuilder *builder, TR::BytecodeBuilder **bytecodeBuilderTable, long bytecodeIndex, TR::BytecodeBuilder *nextBuilder);
+    void
+    handle_bc_jmp_neq(TR::BytecodeBuilder *builder, TR::BytecodeBuilder **bytecodeBuilderTable, long bytecodeIndex, TR::BytecodeBuilder *nextBuilder);
+    void
+    handle_bc_jmp_lt(TR::BytecodeBuilder *builder, TR::BytecodeBuilder **bytecodeBuilderTable, long bytecodeIndex, TR::BytecodeBuilder *nextBuilder);
+    void
     handle_bc_jmp_le(TR::BytecodeBuilder *builder, TR::BytecodeBuilder **bytecodeBuilderTable, long bytecodeIndex, TR::BytecodeBuilder *nextBuilder);
+    void
+    handle_bc_jmp_gt(TR::BytecodeBuilder *builder, TR::BytecodeBuilder **bytecodeBuilderTable, long bytecodeIndex, TR::BytecodeBuilder *nextBuilder);
+    void
+    handle_bc_jmp_ge(TR::BytecodeBuilder *builder, TR::BytecodeBuilder **bytecodeBuilderTable, long bytecodeIndex, TR::BytecodeBuilder *nextBuilder);
+
 };
 
 #endif

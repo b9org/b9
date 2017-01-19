@@ -580,11 +580,12 @@ function CodeGen(f) {
     };
 
     this.genJmpForCompare = function (code) {
-        if (code == "<=") instruction = "JMPGT ";
-        if (code == "<") instruction = "JMPGE ";
-        if (code == ">") instruction = "JMPLE ";
-        if (code == ">=") instruction = "JMPLT ";
-        if (code == "==") instruction = "JMPEQ ";
+        if (code == "==") instruction = "JMP_NEQ ";
+        if (code == "!=") instruction = "JMP_EQ ";
+        if (code == "<=") instruction = "JMP_GT ";
+        if (code == "<") instruction = "JMP_GE ";
+        if (code == ">") instruction = "JMP_LE ";
+        if (code == ">=") instruction = "JMP_LT ";
         return instruction;
     };
 

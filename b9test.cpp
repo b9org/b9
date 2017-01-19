@@ -50,100 +50,80 @@ validateFibResult(ExecutionContext *context)
     removeAllGeneratedCode(context);
 }
 
-int
-benchMarkFib(ExecutionContext *context)
-{
-    /* Load the fib program into the context, and validate that
-     * the fib functions return the correct result */
-    if (!loadLibrary(context, "./bench.so")) {
-        return 0;
-    }
-
-    StackElement result = 0;
-
-    /* make sure everything is not-jit'd for this initial bench
-     * allows you to put examples above, tests etc, and not influence this
-     * benchmark compare interpreted vs JIT'd */
-    //  removeAllGeneratedCode(context);
-
-    int LOOP = 200000;
-    printf("Running %d loops, interpreted -> ", LOOP);
-
-    long timeInterp = 0;
-    long timeJIT = 0;
-    {
-        struct timeval tval_before, tval_after, tval_result;
-        gettimeofday(&tval_before, NULL);
-
-        result = interpret(context, context->functions[0]);
-
-        gettimeofday(&tval_after, NULL);
-        timersub(&tval_after, &tval_before, &tval_result);
-
-        printf(" result is: %lld\n", result);
-        timeInterp = (tval_result.tv_sec * 1000 + (tval_result.tv_usec / 1000));
-    }
-
-    /* Generate code for fib functions */
-    // temp, only do fib for now, some issue in loops jit
-    generateCode(context->functions[1], context);
-
-    printf("Running %d loops, compiled -> ", LOOP);
-
-    {
-        struct timeval tval_before, tval_after, tval_result;
-        gettimeofday(&tval_before, NULL);
-
-        result = interpret(context, context->functions[0]);
-
-        gettimeofday(&tval_after, NULL);
-        timersub(&tval_after, &tval_before, &tval_result);
-
-        printf(" result is: %lld\n", result);
-        timeJIT = (tval_result.tv_sec * 1000 + (tval_result.tv_usec / 1000));
-    }
-
-    printf("Time for %d iterations Interp %ld ms JIT %ld ms\n", LOOP, timeInterp, timeJIT);
-    printf("JIT speedup = %f\n", timeInterp * 1.0 / timeJIT);
-
-    return 0;
-}
-
 bool
 test_validateFibResult(ExecutionContext *context)
 {
-
-    if (!loadLibrary(context, "./bench.so")) {
-        return 0;
-    }
+    // if (!loadLibrary(context, "./bench.so")) {
+    //     return 0;
+    // }
     validateFibResult(context);
-    return true;
-}
-
-bool
-test_benchMarkFib()
-{
-    ExecutionContext context;
-    if (!loadLibrary(&context, "./bench.so")) {
-        return 0;
-    }
-    benchMarkFib(&context);
     return true;
 }
 
 /* Main Loop */
 
+bool
+run_test(ExecutionContext *context, const char *testName)
+{
+
+    if (context->debug >= 1) {
+        printf("Test \"%s\": starting\n", testName);
+    }
+    Instruction *func = getFunctionAddress(context, testName);
+    const char *mode = hasJITAddress(func) ? "JIT" : "Interpreted";
+    if (func == nullptr) {
+        printf ("Mode %s, Test \"%s\": failed,  failed to load function\n", mode, testName);
+        return false;
+    }
+    int result = interpret(context, func);
+    if (!result) {
+        printf ("Mode %s, Test \"%s\": failed, returned %X\n", mode, testName, result);
+    } else {
+        if (context->debug >= 1) {
+            printf("Mode %s, Test \"%s\": success, returned %X\n", mode, testName, result);
+        }
+    }
+}
+
 int
 main(int argc, char *argv[])
 {
-    ExecutionContext context;
+    ExecutionContext stackContext;
+    ExecutionContext *context = &stackContext;
+
     b9_jit_init();
 
-    parseArguments(&context, argc, argv);
+    parseArguments(context, argc, argv);
 
     bool result = true;
-    result &= test_validateFibResult(&context);
-    // result &= test_benchMarkFib();
+
+    if (!loadLibrary(context, "test.so")) {
+        return 0;
+    }
+
+    test_validateFibResult(context);
+
+    run_test(context, "test_add");
+    run_test(context, "test_sub");
+    run_test(context, "test_equal");
+    run_test(context, "test_greaterThan");
+    run_test(context, "test_greaterThanOrEqual");
+    run_test(context, "test_lessThan");
+    run_test(context, "test_lessThanOrEqual");
+    run_test(context, "test_call");
+    run_test(context, "test_while");
+
+    generateAllCode(context);
+
+    run_test(context, "test_add");
+    run_test(context, "test_sub");
+    run_test(context, "test_equal");
+    run_test(context, "test_greaterThan");
+    run_test(context, "test_greaterThanOrEqual");
+    run_test(context, "test_lessThan");
+    run_test(context, "test_lessThanOrEqual");
+    run_test(context, "test_call");
+    run_test(context, "test_while");
 
     if (result) {
         return EXIT_SUCCESS;

@@ -43,8 +43,13 @@ typedef int64_t StackElement;
 #define ADD                 0x6
 #define CALL                0x7
 #define RETURN              0x8
-#define JMPLE               0x9
-#define JMP                 0xA
+#define JMP                 0x9
+#define JMP_EQ              0xA
+#define JMP_NEQ             0xB
+#define JMP_GT              0xC
+#define JMP_GE              0xD
+#define JMP_LE              0xE
+#define JMP_LT              0xF
 
 static constexpr ByteCode
 getByteCodeFromInstruction(Instruction instruction)

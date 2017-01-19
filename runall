@@ -1,18 +1,18 @@
+make bench.so
+make program.so
+make test.so
 
 # run each of the test and samples in the four modes
-make test.so
 ./b9  -loop 1000000 -directcall 0  -passparameters 0 -operandstack 0 test.so
 ./b9  -loop 1000000 -directcall 1  -passparameters 0 -operandstack 0 test.so
 ./b9  -loop 1000000 -directcall 1  -passparameters 1 -operandstack 0 test.so
 ./b9  -loop 1000000 -directcall 1  -passparameters 1 -operandstack 1 test.so
 
-make program.so
 ./b9   -loop 100 -directcall 0  -passparameters 0 -operandstack 0 program.so
 ./b9   -loop 100 -directcall 1  -passparameters 0 -operandstack 0 program.so
 ./b9   -loop 100 -directcall 1  -passparameters 1 -operandstack 0 program.so
 ./b9   -loop 100 -directcall 1  -passparameters 1 -operandstack 1 program.so
 
-make bench.so
 ./b9 -directcall 0  -passparameters 0 -operandstack 0
 ./b9 -directcall 1  -passparameters 0 -operandstack 0
 ./b9 -directcall 1  -passparameters 1 -operandstack 0 

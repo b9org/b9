@@ -86,6 +86,29 @@ bc_sub(ExecutionContext *context)
 /* ByteCode Interpreter */
 
 StackElement
+interpret_0(ExecutionContext *context, Instruction *program) {
+    return interpret( context,  program);
+}
+StackElement
+interpret_1(ExecutionContext *context, Instruction *program, StackElement p1) {
+    push (context, p1);
+    return interpret( context,  program);
+}
+StackElement
+interpret_2(ExecutionContext *context, Instruction *program, StackElement p1, StackElement p2) {
+    push (context, p1);
+    push (context, p2);
+    return interpret( context,  program);
+}
+StackElement
+interpret_3(ExecutionContext *context, Instruction *program, StackElement p1, StackElement p2, StackElement p3 ) {
+    push (context, p1);
+    push (context, p2);
+    push (context, p3);
+    return interpret( context,  program);
+} 
+
+StackElement
 interpret(ExecutionContext *context, Instruction *program)
 {
     uint64_t *address = (uint64_t *)(&program[1]);
@@ -96,26 +119,26 @@ interpret(ExecutionContext *context, Instruction *program)
             //printf("about to call jit args %d\n", argsCount);
             switch (argsCount) {
             case 0: {
-                Interpret jitedcode = (Interpret)*address;
-                result = (*jitedcode)(context, program);
+                JIT_0_args jitedcode = (JIT_0_args)*address;
+                result = (*jitedcode)();
             } break;
             case 1: {
-                Interpret_1_args jitedcode = (Interpret_1_args)*address;
+                JIT_1_args jitedcode = (JIT_1_args)*address;
                 StackElement p1 = pop(context);
-                result = (*jitedcode)(context, program, p1);
+                result = (*jitedcode)( p1);
             } break;
             case 2: {
-                Interpret_2_args jitedcode = (Interpret_2_args)*address;
+                JIT_2_args jitedcode = (JIT_2_args)*address;
                 StackElement p2 = pop(context);
                 StackElement p1 = pop(context);
-                result = (*jitedcode)(context, program, p1, p2);
+                result = (*jitedcode)(p1, p2);
             } break;
             case 3: {
-                Interpret_3_args jitedcode = (Interpret_3_args)*address;
+                JIT_3_args jitedcode = (JIT_3_args)*address;
                 StackElement p3 = pop(context);
                 StackElement p2 = pop(context);
                 StackElement p1 = pop(context);
-                result = (*jitedcode)(context, program, p1, p2, p3);
+                result = (*jitedcode)(p1, p2, p3);
             } break;
             default:
                 printf("Need to add handlers for more parameters\n");

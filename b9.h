@@ -124,7 +124,12 @@ typedef StackElement (*Interpret_2_args) (ExecutionContext* context, Instruction
     StackElement p1, StackElement p2);
 typedef StackElement (*Interpret_3_args) (ExecutionContext* context, Instruction* program,
     StackElement p1, StackElement p2,  StackElement p3);
- 
+
+typedef StackElement (*JIT_0_args)();
+typedef StackElement (*JIT_1_args)(StackElement p1);
+typedef StackElement (*JIT_2_args)(StackElement p1, StackElement p2);
+typedef StackElement (*JIT_3_args)(StackElement p1, StackElement p2, StackElement p3);
+
 /* B9 Interpreter */
 void b9_jit_init();
 int parseArguments(ExecutionContext *context, int argc, char *argv[]);

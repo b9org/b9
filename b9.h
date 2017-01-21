@@ -117,6 +117,7 @@ public:
     int directCall = 1;
     int passParameters = 1;
     int operandStack = 1;
+    int inlineDepthAllowed = 1;
 
     const char *name = nullptr;
     void *library = nullptr;

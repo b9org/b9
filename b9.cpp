@@ -395,15 +395,14 @@ loadLibrary(ExecutionContext *context, const char *libraryName)
         printf("%s\n", error);
         return false;
     }
-    context->functions = table;
-    printf ("found %p for function\n", table);
+    context->functions = table; 
 
-    int functionIndex = 0;
-    while (table[functionIndex].name != NO_MORE_FUNCTIONS) { 
-        printf ("Name %s, prog %p, jit %p \n", table[functionIndex].name, 
-            table[functionIndex].program, table[functionIndex].jitAddress);
-        functionIndex++;
-    } 
+    // int functionIndex = 0;
+    // while (table[functionIndex].name != NO_MORE_FUNCTIONS) { 
+    //     printf ("Name %s, prog %p, jit %p \n", table[functionIndex].name, 
+    //         table[functionIndex].program, table[functionIndex].jitAddress);
+    //     functionIndex++;
+    // } 
 
     return true;
 }
@@ -491,10 +490,19 @@ parseArguments(ExecutionContext *context, int argc, char *argv[])
             continue;
         }
 
+        if (!strcmp(name, "-inline")) {
+            context->inlineDepthAllowed = atoi(argv[i + 1]); 
+            printf ("Allowing Inlining of %d levels \n",  context->inlineDepthAllowed );
+            i++;
+            continue;
+        }
+
         if (!strcmp(name, "-verbose")) {
             context->verbose = 1;
             continue;
         }
+
+        
 
         if (!strcmp(name, "-debug")) {
             context->debug++;

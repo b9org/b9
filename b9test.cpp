@@ -18,6 +18,7 @@ runFib(ExecutionContext *context, int value)
     Instruction *func = getFunctionAddress(context, "fib_function");
     if (func == nullptr) {
         printf("Fail: failed to load fib function\n");
+        return;
     }
 
     const char *mode = hasJITAddress(func) ? "JIT" : "Interpreted";
@@ -70,11 +71,11 @@ run_test(ExecutionContext *context, const char *testName)
         printf("Test \"%s\": starting\n", testName);
     }
     Instruction *func = getFunctionAddress(context, testName);
-    const char *mode = hasJITAddress(func) ? "JIT" : "Interpreted";
     if (func == nullptr) {
-        printf ("Mode %s, Test \"%s\": failed,  failed to load function\n", mode, testName);
+        printf ("Test \"%s\": failed,  failed to load function\n", testName);
         return false;
     }
+    const char *mode = hasJITAddress(func) ? "JIT" : "Interpreted";
     int result = interpret(context, func);
     if (!result) {
         printf ("Mode %s, Test \"%s\": failed, returned %X\n", mode, testName, result);
@@ -103,27 +104,20 @@ main(int argc, char *argv[])
 
     test_validateFibResult(context);
 
-    run_test(context, "test_add");
-    run_test(context, "test_sub");
-    run_test(context, "test_equal");
-    run_test(context, "test_greaterThan");
-    run_test(context, "test_greaterThanOrEqual");
-    run_test(context, "test_lessThan");
-    run_test(context, "test_lessThanOrEqual");
-    run_test(context, "test_call");
-    run_test(context, "test_while");
+    int count;
+    for (count =0; count < 2; count++) {  
+        run_test(context, "test_add");
+        run_test(context, "test_sub");
+        run_test(context, "test_equal");
+        run_test(context, "test_greaterThan");
+        run_test(context, "test_greaterThanOrEqual");
+        run_test(context, "test_lessThan");
+        run_test(context, "test_lessThanOrEqual");
+        run_test(context, "test_call");
+        run_test(context, "test_while");
 
-    generateAllCode(context);
-
-    run_test(context, "test_add");
-    run_test(context, "test_sub");
-    run_test(context, "test_equal");
-    run_test(context, "test_greaterThan");
-    run_test(context, "test_greaterThanOrEqual");
-    run_test(context, "test_lessThan");
-    run_test(context, "test_lessThanOrEqual");
-    run_test(context, "test_call");
-    run_test(context, "test_while");
+        generateAllCode(context); // first time interpreted, second time JIT
+    }  
 
     if (result) {
         return EXIT_SUCCESS;

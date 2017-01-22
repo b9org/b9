@@ -411,7 +411,7 @@ Instruction *
 getFunctionAddress(ExecutionContext *context, const char *functionName)
 {
     if (context->library == nullptr) {
-        printf("Error function %s: context already has a library loaded", functionName);
+        printf("Error function %s: context has no library loaded", functionName);
         return nullptr;
     }
 

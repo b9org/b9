@@ -2,7 +2,7 @@
 
 # Do not set the language to c++, this over rides our environment variable CXX
 # below.
-language: ruby
+language: C
 
 sudo: false
 git:

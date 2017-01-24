@@ -38,10 +38,20 @@ b9_bytecodename(ByteCode bc)
         return "CALL";
     if (bc == RETURN)
         return "RETURN";
-    if (bc == JMPLE)
-        return "JMPLE";
     if (bc == JMP)
         return "JMP";
+    if (bc == JMP_EQ)
+        return "JMP_EQ";
+    if (bc == JMP_NEQ)
+        return "JMP_NEQ";
+    if (bc == JMP_GT)
+        return "JMP_GT";
+    if (bc == JMP_GE)
+        return "JMP_GE";
+    if (bc == JMP_LE)
+        return "JMP_LE";
+    if (bc == JMP_LT)
+        return "JMP_LT";
     return "unknown bc";
 }
 
@@ -114,21 +124,20 @@ void generateCode(ExecutionContext* context, int32_t functionIndex)
     // todo pass in context->functions
     B9Method methodBuilder(&types, functionIndex, context);
     uint8_t* entry = 0;
-    // printf("Start gen code\n");
-    int rc = (*compileMethodBuilder)(&methodBuilder,  &entry);
+    int rc = (*compileMethodBuilder)(&methodBuilder, &entry);
     if (0 == rc) {
-        // printf("Compiled success address = <%p>\n", entry);
         setJitAddress(context,  functionIndex, (uint64_t) entry); 
     } else {
-        printf("Failed to compile");
+        printf("Failed to compile method\n");
     }
-    // printf("Done gen code\n");
 }
 
 B9Method::B9Method(TR::TypeDictionary* types, int32_t programIndex, ExecutionContext* context)
     : MethodBuilder(types)
-    , program(context->functions[programIndex].program)
     , context(context)
+    , topLevelProgramIndex(programIndex) 
+    , maxInlineDepth(context->inlineDepthAllowed)
+    , firstArgumentIndex(0)
 {
     DefineLine(LINETOSTR(__LINE__));
     DefineFile(__FILE__); 
@@ -148,21 +157,28 @@ B9Method::B9Method(TR::TypeDictionary* types, int32_t programIndex, ExecutionCon
     }
 
     DefineReturnType(stackElementType);
-
     defineStructures(types);
-    defineParameters();
-    defineLocals();
+    defineParameters(context->functions[topLevelProgramIndex].program);
+    if (context->operandStack) {  // hack for topLevel
+        DefineLocal("localContext", executionContextType);
+    }
+ 
+    defineLocals(context->functions[topLevelProgramIndex].program); 
     defineFunctions();
 
     AllLocalsHaveBeenDefined();
 }
 
-static const char* argsAndTempNames[] = { "arg0", "arg1", "arg2", "arg3", "arg4", "arg5", "arg6", "arg7", "arg8", "arg9" };
+static const char* argsAndTempNames[] = {
+    "arg00", "arg01", "arg02", "arg03", "arg04", "arg05", "arg06", "arg07", "arg08", "arg09",
+    "arg10", "arg11", "arg12", "arg13", "arg14", "arg15", "arg16", "arg17", "arg18", "arg19",
+    "arg20", "arg21", "arg22", "arg23", "arg24", "arg25", "arg26", "arg27", "arg28", "arg29",
+    "arg30", "arg31", "arg32"
+};
+#define MAX_ARGS_TEMPS_AVAIL sizeof (argsAndTempNames) / sizeof (argsAndTempNames[0])
 
-void B9Method::defineParameters()
-{
-    // DefineParameter("context", executionContextType);
-    // DefineParameter("program", int32PointerType);
+void B9Method::defineParameters(Instruction *program)
+{ 
     if (context->passParameters) {
         int argsCount = progArgCount(*program);
         for (int i = 0; i < argsCount; i++) {
@@ -171,16 +187,20 @@ void B9Method::defineParameters()
     }
 }
 
-void B9Method::defineLocals()
-{
 
-    if (context->operandStack) {
-        DefineLocal("localContext", executionContextType);
+// for locals we pre-define all the locals we could use, for the toplevel 
+// and all the inlined names which are simply referenced via a skew to reach past callers functions args/temps
+void B9Method::defineLocals(Instruction *program)
+{
+    int argsCount = progArgCount(*program); 
+    int tempCount = progTmpCount(*program); 
+    int topLevelLocals = argsCount + tempCount;
+
+    if (context->debug >= 2) {
+        printf("CREATING %d topLevel with %lu slots for inlining \n", topLevelLocals, MAX_ARGS_TEMPS_AVAIL - topLevelLocals);
     }
-    int argsCount = progArgCount(*program);
-    int tempCount = progTmpCount(*program);
     if (context->passParameters) {
-        for (int i = argsCount; i < argsCount + tempCount; i++) {
+        for (uint32_t i = argsCount; i < MAX_ARGS_TEMPS_AVAIL; i++) {
             DefineLocal(argsAndTempNames[i], stackElementType);
         }
     } else {
@@ -222,7 +242,6 @@ void B9Method::defineFunctions()
                 stackElementType, stackElementType, stackElementType, stackElementType,
                 stackElementType, stackElementType, stackElementType, stackElementType);
         }
-
         functionIndex++;
     }
     DefineFunction((char*)"interpret_0", (char*)__FILE__, "interpret_0", (void*)&interpret_0, Int64, 2,
@@ -258,6 +277,74 @@ long computeNumberOfBytecodes(Instruction* program)
     return result;
 }
 
+bool B9Method::inlineProgramIntoBuilder (  
+    int32_t programIndex, 
+    bool isTopLevel,
+    TR::BytecodeBuilder* currentBuilder,
+    TR::BytecodeBuilder* jumpToBuilderForInlinedReturn)
+{
+    bool success = true;
+    maxInlineDepth--;
+    Instruction *program = context->functions[programIndex].program;
+
+    TR::BytecodeBuilder** bytecodeBuilderTable = nullptr;
+    long numberOfBytecodes = computeNumberOfBytecodes(program);
+    long tableSize = sizeof(TR::BytecodeBuilder*) * numberOfBytecodes;
+    bytecodeBuilderTable = (TR::BytecodeBuilder**)malloc(tableSize);
+    if (NULL == bytecodeBuilderTable) {
+        maxInlineDepth++;
+        return false;
+    }
+    memset(bytecodeBuilderTable, 0, tableSize);
+
+    long i  = METHOD_FIRST_BC_OFFSET;
+    while (i < numberOfBytecodes) {
+        ByteCode bc = getByteCodeFromInstruction(program[i]);
+        createBuilderForBytecode(bytecodeBuilderTable, bc, i);
+        i += 1;
+    }
+    TR::BytecodeBuilder* builder = bytecodeBuilderTable[METHOD_FIRST_BC_OFFSET]; 
+
+    if (isTopLevel) { 
+        AppendBuilder(builder);
+    } else { 
+        currentBuilder->AddFallThroughBuilder(builder);
+    }
+
+    if (isTopLevel) {
+        // only initialize locals if top level, inlines will be stored into from parent.
+        if (context->passParameters) {
+            int argsCount = progArgCount(*program);
+            int tempCount = progTmpCount(*program);
+            for (int i = argsCount; i < argsCount + tempCount; i++) {
+                storeVarIndex(builder, i, builder->ConstInt64(0)); // init all temps to zero
+            }
+        } else {
+            // arguments are &sp[-number_of_args]
+            // temps are pushes onto the stack to &sp[number_of_temps]
+            TR::IlValue* sp = builder->LoadIndirect("executionContextType", "stackPointer", builder->ConstAddress(context));
+            TR::IlValue* args = builder->IndexAt(stackElementPointerType, sp, builder->ConstInt32(0 - progArgCount(*program)));
+            builder->Store("returnSP", args);
+            TR::IlValue* newSP = builder->IndexAt(stackElementPointerType, sp, builder->ConstInt32(progTmpCount(*program)));
+            builder->StoreIndirect("executionContextType", "stackPointer", builder->ConstAddress(context), newSP);
+        }
+    }
+
+    i = METHOD_FIRST_BC_OFFSET;
+    while (i < numberOfBytecodes) {
+        Instruction bc = getByteCodeFromInstruction(program[i]);
+        if (!generateILForBytecode(bytecodeBuilderTable,  program,  bc, i, jumpToBuilderForInlinedReturn)) {
+            success = false;
+            break;
+        }
+        i += 1;
+    }
+    free((void*)bytecodeBuilderTable);
+    maxInlineDepth++;
+    return success;
+}
+
+
 bool B9Method::buildIL()
 {
     if (context->operandStack) {
@@ -268,62 +355,21 @@ bool B9Method::buildIL()
         setVMState(vms);
     } else {
         setVMState(new OMR::VirtualMachineState());
-    }
-
-    TR::BytecodeBuilder** bytecodeBuilderTable = nullptr;
-    bool success = true;
-    long numberOfBytecodes = computeNumberOfBytecodes(program);
-    long tableSize = sizeof(TR::BytecodeBuilder*) * numberOfBytecodes;
-    bytecodeBuilderTable = (TR::BytecodeBuilder**)malloc(tableSize);
-    if (NULL == bytecodeBuilderTable) {
-        return false;
-    }
-    memset(bytecodeBuilderTable, 0, tableSize);
-
-    long i;
-
-    i = METHOD_FIRST_BC_OFFSET;
-    while (i < numberOfBytecodes) {
-        ByteCode bc = getByteCodeFromInstruction(program[i]);
-        createBuilderForBytecode(bytecodeBuilderTable, bc, i);
-        i += 1;
-    }
-    TR::BytecodeBuilder* builder = bytecodeBuilderTable[METHOD_FIRST_BC_OFFSET];
-    //printf("builder %p\n", builder);
-    AppendBuilder(builder);
- 
-    if (context->passParameters) {
-        int argsCount = progArgCount(*program);
-        int tempCount = progTmpCount(*program);
-        for (int i = argsCount; i < argsCount + tempCount; i++) {
-            storeVarIndex(builder, i, builder->ConstInt64(0)); // init all temps to zero
-        }
-    } else {
-        // arguments are &sp[-number_of_args]
-        // temps are pushes onto the stack to &sp[number_of_temps]
-        TR::IlValue* sp = builder->LoadIndirect("executionContextType", "stackPointer", builder->ConstAddress(context));
-        TR::IlValue* args = builder->IndexAt(stackElementPointerType, sp, builder->ConstInt32(0 - progArgCount(*program)));
-        builder->Store("returnSP", args);
-        TR::IlValue* newSP = builder->IndexAt(stackElementPointerType, sp, builder->ConstInt32(progTmpCount(*program)));
-        builder->StoreIndirect("executionContextType", "stackPointer", builder->ConstAddress(context), newSP);
-    }
-
-    i = METHOD_FIRST_BC_OFFSET;
-    while (i < numberOfBytecodes) {
-        Instruction bc = getByteCodeFromInstruction(program[i]);
-        if (!generateILForBytecode(bytecodeBuilderTable, bc, i)) {
-            success = false;
-            break;
-        }
-        i += 1;
-    }
-    free((void*)bytecodeBuilderTable);
-    return success;
+    } 
+    return inlineProgramIntoBuilder (topLevelProgramIndex, true);  
 }
 
 TR::IlValue*
 B9Method::loadVarIndex(TR::BytecodeBuilder* builder, int varindex)
 {
+    if (firstArgumentIndex > 0) {
+        if (context->debug >= 2) {
+            printf("loadVarIndex varindex adjusted = %d %d\n", varindex,firstArgumentIndex );
+        }
+          
+        varindex += firstArgumentIndex;
+    }
+
     if (context->passParameters) {
         return builder->Load(argsAndTempNames[varindex]);
     } else {
@@ -337,6 +383,12 @@ B9Method::loadVarIndex(TR::BytecodeBuilder* builder, int varindex)
 
 void B9Method::storeVarIndex(TR::BytecodeBuilder* builder, int varindex, TR::IlValue* value)
 {
+    if (firstArgumentIndex > 0) {
+        if (context->debug >= 2) {
+            printf("storeVarIndex varindex adjusted = %d %d\n", varindex,firstArgumentIndex );
+        }
+        varindex += firstArgumentIndex;
+    }
     if (context->passParameters) {
         builder->Store(argsAndTempNames[varindex], value);
         return;
@@ -349,13 +401,14 @@ void B9Method::storeVarIndex(TR::BytecodeBuilder* builder, int varindex, TR::IlV
     }
 }
 
-bool B9Method::generateILForBytecode(TR::BytecodeBuilder** bytecodeBuilderTable,
-    uint8_t bytecode, long bytecodeIndex)
+bool B9Method::generateILForBytecode(
+    TR::BytecodeBuilder** bytecodeBuilderTable,
+    Instruction *program,
+    uint8_t bytecode, long bytecodeIndex,
+    TR::BytecodeBuilder* jumpToBuilderForInlinedReturn)
 {
     TR::BytecodeBuilder* builder = bytecodeBuilderTable[bytecodeIndex];
-
     Instruction instruction = program[bytecodeIndex];
-
     assert(bytecode == getByteCodeFromInstruction(instruction));
 
     if (NULL == builder) {
@@ -365,16 +418,21 @@ bool B9Method::generateILForBytecode(TR::BytecodeBuilder** bytecodeBuilderTable,
 
     long numberOfBytecodes = computeNumberOfBytecodes(program);
     TR::BytecodeBuilder* nextBytecodeBuilder = nullptr;
-    long nextBytecodeIndex = bytecodeIndex + 1;
+    int32_t nextBytecodeIndex = bytecodeIndex + 1;
     if (nextBytecodeIndex < numberOfBytecodes) {
         nextBytecodeBuilder = bytecodeBuilderTable[nextBytecodeIndex];
     }
 
     bool handled = true;
 
+    if (context->debug >= 2) {
+        if (jumpToBuilderForInlinedReturn) {
+            printf("INLINED METHOD: skew %d return bc will jump to %p: ", firstArgumentIndex, jumpToBuilderForInlinedReturn);
+        }
+        printf("generating index=%d bc=%s(%d) param=%d \n", bytecodeIndex, b9_bytecodename(bytecode), bytecode, getParameterFromInstruction(instruction));
+    }
 
     if (context->debug == 2) {
-        printf("generating index=%d bc=%s(%d) param=%d \n", bytecodeIndex, b9_bytecodename(bytecode), bytecode, getParameterFromInstruction(instruction));
         QCOMMIT(builder);
         builder->Call("printVMState", 4, builder->ConstAddress(context),
             builder->ConstInt64(bytecodeIndex),
@@ -395,11 +453,15 @@ bool B9Method::generateILForBytecode(TR::BytecodeBuilder** bytecodeBuilderTable,
             builder->AddFallThroughBuilder(nextBytecodeBuilder);
         break;
     case RETURN: {
-        auto result = pop(builder);
-        if (!context->passParameters) {  
+        if (jumpToBuilderForInlinedReturn) { 
+            builder -> Goto (jumpToBuilderForInlinedReturn);
+        } else {
+            auto result = pop(builder);
+            if (!context->passParameters) {
                 builder->StoreIndirect("executionContextType", "stackPointer", builder->ConstAddress(context), builder->Load("returnSP"));
-        } 
-        builder->Return(result);
+            }
+            builder->Return(result);
+        }
     } break;
     case DROP:
         drop(builder);
@@ -407,10 +469,25 @@ bool B9Method::generateILForBytecode(TR::BytecodeBuilder** bytecodeBuilderTable,
             builder->AddFallThroughBuilder(nextBytecodeBuilder);
         break;
     case JMP:
-        handle_bc_jmp(builder, bytecodeBuilderTable, bytecodeIndex);
+        handle_bc_jmp(builder, bytecodeBuilderTable, program,bytecodeIndex);
         break;
-    case JMPLE:
-        handle_bc_jmp_le(builder, bytecodeBuilderTable, bytecodeIndex, nextBytecodeBuilder);
+    case JMP_EQ:
+        handle_bc_jmp_eq(builder, bytecodeBuilderTable, program,bytecodeIndex, nextBytecodeBuilder);
+        break;
+    case JMP_NEQ:
+        handle_bc_jmp_neq(builder, bytecodeBuilderTable, program,bytecodeIndex, nextBytecodeBuilder);
+        break;
+    case JMP_LT:
+        handle_bc_jmp_lt(builder, bytecodeBuilderTable, program,bytecodeIndex, nextBytecodeBuilder);
+        break;
+    case JMP_LE:
+        handle_bc_jmp_le(builder, bytecodeBuilderTable, program,bytecodeIndex, nextBytecodeBuilder);
+        break;
+    case JMP_GT:
+        handle_bc_jmp_gt(builder, bytecodeBuilderTable, program,bytecodeIndex, nextBytecodeBuilder);
+        break;
+    case JMP_GE:
+        handle_bc_jmp_ge(builder, bytecodeBuilderTable, program,bytecodeIndex, nextBytecodeBuilder);
         break;
     case SUB:
         handle_bc_sub(builder, nextBytecodeBuilder);
@@ -442,6 +519,32 @@ bool B9Method::generateILForBytecode(TR::BytecodeBuilder** bytecodeBuilderTable,
                     interp = false;
                 }
                 if (context->passParameters) {
+                if (maxInlineDepth >= 0 && !interp ) { // && tocall == program) {
+                        int32_t save = firstArgumentIndex;
+                        int32_t skipLocals = progArgCount(*program) + progTmpCount(*program);
+                        int32_t spaceNeeded = progArgCount(*tocall) + progTmpCount(*tocall);
+                        firstArgumentIndex += skipLocals; 
+                        // no need to define locals here the outer program registered all locals
+                        // it means some locals will be reused which will affect liveness of a variable
+                        if ((firstArgumentIndex+spaceNeeded) < MAX_ARGS_TEMPS_AVAIL) {
+                            // printf("INLINING RECURSION ONLY  old skew %d, new skew = %d\n", save, firstArgumentIndex);
+                            int storeInto = progArgCount(*tocall); 
+                            while (storeInto-- > 0) { 
+                                // printf("Storing temp %d into dest variable \n", storeInto);
+                                storeVarIndex(builder, storeInto, pop(builder)); // firstArgumentIndex is added in storeVarIndex
+                            }
+                            bool result = inlineProgramIntoBuilder(callindex, false, builder, nextBytecodeBuilder);
+                            if (!result) {
+                                printf("Failed inlineProgramIntoBuilder\n");
+                                return result;
+                            }
+                            //printf("SETTING SKEW BACK from %d to %d\n", firstArgumentIndex, save);
+                           firstArgumentIndex = save;
+                            break;
+                        } else { 
+                           printf("SKIP INLINE DUE TO EXCESSIVE TEMPS NEEDED\n");
+                        }
+                    }
                     if (argsCount > 8) {
                         printf("ERROR Need to add handlers for more parameters\n");
                         break;
@@ -497,7 +600,8 @@ bool B9Method::generateILForBytecode(TR::BytecodeBuilder** bytecodeBuilderTable,
  * GENERATE CODE FOR BYTECODES
  *************************************************/
 
-void B9Method::handle_bc_jmp(TR::BytecodeBuilder* builder, TR::BytecodeBuilder** bytecodeBuilderTable, long bytecodeIndex)
+void B9Method::handle_bc_jmp(TR::BytecodeBuilder* builder, TR::BytecodeBuilder** bytecodeBuilderTable, 
+    Instruction *program,long bytecodeIndex)
 {
     Instruction instruction = program[bytecodeIndex];
     StackElement delta = getParameterFromInstruction(instruction) + 1;
@@ -506,8 +610,62 @@ void B9Method::handle_bc_jmp(TR::BytecodeBuilder* builder, TR::BytecodeBuilder**
     builder->Goto(destBuilder);
 }
 
+void B9Method::handle_bc_jmp_eq(TR::BytecodeBuilder* builder,
+    TR::BytecodeBuilder** bytecodeBuilderTable,
+    Instruction *program,
+    long bytecodeIndex,
+    TR::BytecodeBuilder* nextBuilder)
+{
+    Instruction instruction = program[bytecodeIndex];
+    StackElement delta = getParameterFromInstruction(instruction) + 1;
+    int next_bc_index = bytecodeIndex + delta;
+    TR::BytecodeBuilder* jumpTo = bytecodeBuilderTable[next_bc_index];
+
+    TR::IlValue* right = pop(builder);
+    TR::IlValue* left = pop(builder);
+
+    builder->IfCmpEqual(jumpTo, left, right);
+    builder->AddFallThroughBuilder(nextBuilder);
+}
+
+void B9Method::handle_bc_jmp_neq(TR::BytecodeBuilder* builder,
+    TR::BytecodeBuilder** bytecodeBuilderTable,
+    Instruction *program,
+    long bytecodeIndex,
+    TR::BytecodeBuilder* nextBuilder)
+{
+    Instruction instruction = program[bytecodeIndex];
+    StackElement delta = getParameterFromInstruction(instruction) + 1;
+    int next_bc_index = bytecodeIndex + delta;
+    TR::BytecodeBuilder* jumpTo = bytecodeBuilderTable[next_bc_index];
+
+    TR::IlValue* right = pop(builder);
+    TR::IlValue* left = pop(builder);
+
+    builder->IfCmpNotEqual(jumpTo, left, right);
+    builder->AddFallThroughBuilder(nextBuilder);
+}
+
+void B9Method::handle_bc_jmp_lt(TR::BytecodeBuilder* builder,
+    TR::BytecodeBuilder** bytecodeBuilderTable,
+    Instruction *program,
+    long bytecodeIndex,
+    TR::BytecodeBuilder* nextBuilder)
+{
+    Instruction instruction = program[bytecodeIndex];
+    StackElement delta = getParameterFromInstruction(instruction) + 1;
+    int next_bc_index = bytecodeIndex + delta;
+    TR::BytecodeBuilder* jumpTo = bytecodeBuilderTable[next_bc_index];
+
+    TR::IlValue* right = pop(builder);
+    TR::IlValue* left = pop(builder);
+
+    builder->IfCmpLessThan(jumpTo, left, right);
+    builder->AddFallThroughBuilder(nextBuilder);
+}
 void B9Method::handle_bc_jmp_le(TR::BytecodeBuilder* builder,
     TR::BytecodeBuilder** bytecodeBuilderTable,
+    Instruction *program,
     long bytecodeIndex,
     TR::BytecodeBuilder* nextBuilder)
 {
@@ -522,6 +680,41 @@ void B9Method::handle_bc_jmp_le(TR::BytecodeBuilder* builder,
     TR::BytecodeBuilder* jumpTo = bytecodeBuilderTable[next_bc_index];
     left = builder->Sub(left, builder->ConstInt64(1));
     builder->IfCmpGreaterThan(jumpTo, right, left); //swap and do a greaterthan
+    builder->AddFallThroughBuilder(nextBuilder);
+}
+void B9Method::handle_bc_jmp_gt(TR::BytecodeBuilder* builder,
+    TR::BytecodeBuilder** bytecodeBuilderTable,
+    Instruction *program,
+    long bytecodeIndex,
+    TR::BytecodeBuilder* nextBuilder)
+{
+    Instruction instruction = program[bytecodeIndex];
+    StackElement delta = getParameterFromInstruction(instruction) + 1;
+    int next_bc_index = bytecodeIndex + delta;
+    TR::BytecodeBuilder* jumpTo = bytecodeBuilderTable[next_bc_index];
+
+    TR::IlValue* right = pop(builder);
+    TR::IlValue* left = pop(builder);
+
+    builder->IfCmpGreaterThan(jumpTo, left, right);
+    builder->AddFallThroughBuilder(nextBuilder);
+}
+void B9Method::handle_bc_jmp_ge(TR::BytecodeBuilder* builder,
+    TR::BytecodeBuilder** bytecodeBuilderTable,
+    Instruction *program,
+    long bytecodeIndex,
+    TR::BytecodeBuilder* nextBuilder)
+{
+    Instruction instruction = program[bytecodeIndex];
+    StackElement delta = getParameterFromInstruction(instruction) + 1;
+    int next_bc_index = bytecodeIndex + delta;
+    TR::BytecodeBuilder* jumpTo = bytecodeBuilderTable[next_bc_index];
+
+    TR::IlValue* right = pop(builder);
+    TR::IlValue* left = pop(builder);
+
+    left = builder->Sub(left, builder->ConstInt64(1));
+    builder->IfCmpLessThan(jumpTo, right, left); //swap and do a lessThan
     builder->AddFallThroughBuilder(nextBuilder);
 }
 

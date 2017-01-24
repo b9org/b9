@@ -10,7 +10,7 @@ Instruction fib_function[] = {
     // so converted to jump if 3 <= arg1
     createInstruction(PUSH_CONSTANT, 3),
     createInstruction(PUSH_FROM_VAR, 0),
-    createInstruction(JMPLE, 2), // SKIP 2 instructions
+    createInstruction(JMP_LE, 2), // SKIP 2 instructions
 
     // return 1;
     createInstruction(PUSH_CONSTANT, 1), // 1
@@ -46,7 +46,7 @@ Instruction b9main[] = {
     // loop test
     createInstruction(PUSH_FROM_VAR, 0),
     createInstruction(PUSH_CONSTANT, 0),
-    createInstruction(JMPLE, 8), // SKIP to past the JMP
+    createInstruction(JMP_LE, 8), // SKIP to past the JMP
 
     createInstruction(PUSH_CONSTANT, 12), // 1
     createInstruction(CALL, 0),           // 2 

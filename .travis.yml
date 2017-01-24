@@ -11,14 +11,13 @@ addons:
     sources:
        - ubuntu-toolchain-r-test
     packages:
-       - clang-3.4
+       - g++-5
 
 os:
   - linux
 
-# omr will not compile with clang
 env:
-    - CXX=clang++
+  - CXX=g++-5
 
 # omr compiles with gcc, so ccache works for it
 cache: ccache

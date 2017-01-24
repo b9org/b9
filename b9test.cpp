@@ -18,6 +18,7 @@ runFib(ExecutionContext *context, int value)
     Instruction *func = getFunctionAddress(context, "fib_function");
     if (func == nullptr) {
         printf("Fail: failed to load fib function\n");
+        return;
     }
 
     const char *mode = hasJITAddress(func) ? "JIT" : "Interpreted";
@@ -50,100 +51,73 @@ validateFibResult(ExecutionContext *context)
     removeAllGeneratedCode(context);
 }
 
-int
-benchMarkFib(ExecutionContext *context)
-{
-    /* Load the fib program into the context, and validate that
-     * the fib functions return the correct result */
-    if (!loadLibrary(context, "./bench.so")) {
-        return 0;
-    }
- 
-
-    /* make sure everything is not-jit'd for this initial bench
-     * allows you to put examples above, tests etc, and not influence this
-     * benchmark compare interpreted vs JIT'd */
-    //  removeAllGeneratedCode(context);
-
-    StackElement LOOP_INTERP = -1;
-    StackElement LOOP_JIT = -1;
-
-    long timeInterp = 0;
-    long timeJIT = 0;
-    {
-        struct timeval tval_before, tval_after, tval_result;
-        gettimeofday(&tval_before, NULL);
-
-       LOOP_INTERP  = interpret(context, context->functions[0].program);
-
-        gettimeofday(&tval_after, NULL);
-        timersub(&tval_after, &tval_before, &tval_result);
-
-        printf("# of loops run: %lld\n", LOOP_INTERP);
-        timeInterp = (tval_result.tv_sec * 1000 + (tval_result.tv_usec / 1000));
-    }
-
-    /* Generate code for fib functions */
-    // temp, only do fib for now, some issue in loops jit
-    generateCode(context, 1); 
-
-    {
-        struct timeval tval_before, tval_after, tval_result;
-        gettimeofday(&tval_before, NULL);
-
-        LOOP_JIT = interpret(context, context->functions[0].program);
-
-        gettimeofday(&tval_after, NULL);
-        timersub(&tval_after, &tval_before, &tval_result);
-
-        printf("# of loops run: %lld\n", LOOP_JIT);
-        timeJIT = (tval_result.tv_sec * 1000 + (tval_result.tv_usec / 1000));
-    }
-    if (LOOP_JIT != LOOP_INTERP) {
-        printf ("Invalid Benchmark jit loop count != interpreter loop count\n");
-    }
-
-    printf("Time for %d iterations Interp %ld ms JIT %ld ms\n", LOOP_JIT, timeInterp, timeJIT);
-    printf("JIT speedup = %f\n", timeInterp * 1.0 / timeJIT);
-
-    return 0;
-}
-
 bool
 test_validateFibResult(ExecutionContext *context)
 {
-
-    if (!loadLibrary(context, "./bench.so")) {
-        return 0;
-    }
+    // if (!loadLibrary(context, "./bench.so")) {
+    //     return 0;
+    // }
     validateFibResult(context);
-    return true;
-}
-
-bool
-test_benchMarkFib()
-{
-    ExecutionContext context;
-    if (!loadLibrary(&context, "./bench.so")) {
-        return 0;
-    }
-    benchMarkFib(&context);
     return true;
 }
 
 /* Main Loop */
 
+bool
+run_test(ExecutionContext *context, const char *testName)
+{
+
+    if (context->debug >= 1) {
+        printf("Test \"%s\": starting\n", testName);
+    }
+    Instruction *func = getFunctionAddress(context, testName);
+    if (func == nullptr) {
+        printf ("Test \"%s\": failed,  failed to load function\n", testName);
+        return false;
+    }
+    const char *mode = hasJITAddress(func) ? "JIT" : "Interpreted";
+    int result = interpret(context, func);
+    if (!result) {
+        printf ("Mode %s, Test \"%s\": failed, returned %X\n", mode, testName, result);
+    } else {
+        if (context->debug >= 1) {
+            printf("Mode %s, Test \"%s\": success, returned %X\n", mode, testName, result);
+        }
+    }
+}
+
 int
 main(int argc, char *argv[])
 {
-    ExecutionContext context;
+    ExecutionContext stackContext;
+    ExecutionContext *context = &stackContext;
+
     b9_jit_init();
 
-    parseArguments(&context, argc, argv);
+    parseArguments(context, argc, argv);
 
     bool result = true;
-    result &= test_validateFibResult(&context);
-    // result &= test_benchMarkFib();
+
+    if (!loadLibrary(context, "test.so")) {
+        return 0;
+    }
+
+    test_validateFibResult(context);
+
+    int count;
+    for (count =0; count < 2; count++) {  
+        run_test(context, "test_add");
+        run_test(context, "test_sub");
+        run_test(context, "test_equal");
+        run_test(context, "test_greaterThan");
+        run_test(context, "test_greaterThanOrEqual");
+        run_test(context, "test_lessThan");
+        run_test(context, "test_lessThanOrEqual");
+        run_test(context, "test_call");
+        run_test(context, "test_while");
+
+        generateAllCode(context); // first time interpreted, second time JIT
+    }  
 
     if (result) {
         return EXIT_SUCCESS;

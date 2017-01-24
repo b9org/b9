@@ -54,7 +54,62 @@ bc_push_constant(ExecutionContext *context, Parameter value)
 }
 
 Parameter
-bc_jmple(ExecutionContext *context, Parameter delta)
+bc_jmp_eq(ExecutionContext *context, Parameter delta)
+{
+    StackElement right = pop(context);
+    StackElement left = pop(context);
+    if (left == right) {
+        return delta;
+    }
+    return 0;
+}
+
+Parameter
+bc_jmp_neq(ExecutionContext *context, Parameter delta)
+{
+    StackElement right = pop(context);
+    StackElement left = pop(context);
+    if (left != right) {
+        return delta;
+    }
+    return 0;
+}
+
+Parameter
+bc_jmp_gt(ExecutionContext *context, Parameter delta)
+{
+    StackElement right = pop(context);
+    StackElement left = pop(context);
+    if (left > right) {
+        return delta;
+    }
+    return 0;
+}
+
+Parameter
+bc_jmp_ge(ExecutionContext *context, Parameter delta)
+{
+    StackElement right = pop(context);
+    StackElement left = pop(context);
+    if (left >= right) {
+        return delta;
+    }
+    return 0;
+}
+
+Parameter
+bc_jmp_lt(ExecutionContext *context, Parameter delta)
+{
+    StackElement right = pop(context);
+    StackElement left = pop(context);
+    if (left < right) {
+        return delta;
+    }
+    return 0;
+}
+
+Parameter
+bc_jmp_le(ExecutionContext *context, Parameter delta)
 {
     StackElement right = pop(context);
     StackElement left = pop(context);
@@ -179,8 +234,26 @@ interpret(ExecutionContext *context, Instruction *program)
         case SUB:
             bc_sub(context);
             break;
-        case JMPLE:
-            instructionPointer += bc_jmple(context, getParameterFromInstruction(*instructionPointer));
+        case JMP:
+            instructionPointer += getParameterFromInstruction(*instructionPointer);
+            break;
+        case JMP_EQ:
+            instructionPointer += bc_jmp_eq(context, getParameterFromInstruction(*instructionPointer));
+            break;
+        case JMP_NEQ:
+            instructionPointer += bc_jmp_neq(context, getParameterFromInstruction(*instructionPointer));
+            break;
+        case JMP_GT:
+            instructionPointer += bc_jmp_gt(context, getParameterFromInstruction(*instructionPointer));
+            break;
+        case JMP_GE:
+            instructionPointer += bc_jmp_ge(context, getParameterFromInstruction(*instructionPointer));
+            break;
+        case JMP_LT:
+            instructionPointer += bc_jmp_lt(context, getParameterFromInstruction(*instructionPointer));
+            break;
+        case JMP_LE:
+            instructionPointer += bc_jmp_le(context, getParameterFromInstruction(*instructionPointer));
             break;
         case CALL:
             bc_call(context, getParameterFromInstruction(*instructionPointer));
@@ -190,9 +263,6 @@ interpret(ExecutionContext *context, Instruction *program)
             break;
         case POP_INTO_VAR:
             bc_pop_into_arg(context, args, getParameterFromInstruction(*instructionPointer));
-            break;
-        case JMP:
-            instructionPointer += getParameterFromInstruction(*instructionPointer);
             break;
         case RETURN:
             StackElement result = *(context->stackPointer - 1);
@@ -325,15 +395,14 @@ loadLibrary(ExecutionContext *context, const char *libraryName)
         printf("%s\n", error);
         return false;
     }
-    context->functions = table;
-    printf ("found %p for function\n", table);
+    context->functions = table; 
 
-    int functionIndex = 0;
-    while (table[functionIndex].name != NO_MORE_FUNCTIONS) { 
-        printf ("Name %s, prog %p, jit %p \n", table[functionIndex].name, 
-            table[functionIndex].program, table[functionIndex].jitAddress);
-        functionIndex++;
-    } 
+    // int functionIndex = 0;
+    // while (table[functionIndex].name != NO_MORE_FUNCTIONS) { 
+    //     printf ("Name %s, prog %p, jit %p \n", table[functionIndex].name, 
+    //         table[functionIndex].program, table[functionIndex].jitAddress);
+    //     functionIndex++;
+    // } 
 
     return true;
 }
@@ -342,7 +411,7 @@ Instruction *
 getFunctionAddress(ExecutionContext *context, const char *functionName)
 {
     if (context->library == nullptr) {
-        printf("Error function %s: context already has a library loaded", functionName);
+        printf("Error function %s: context has no library loaded", functionName);
         return nullptr;
     }
 
@@ -421,10 +490,19 @@ parseArguments(ExecutionContext *context, int argc, char *argv[])
             continue;
         }
 
+        if (!strcmp(name, "-inline")) {
+            context->inlineDepthAllowed = atoi(argv[i + 1]); 
+            printf ("Allowing Inlining of %d levels \n",  context->inlineDepthAllowed );
+            i++;
+            continue;
+        }
+
         if (!strcmp(name, "-verbose")) {
             context->verbose = 1;
             continue;
         }
+
+        
 
         if (!strcmp(name, "-debug")) {
             context->debug++;

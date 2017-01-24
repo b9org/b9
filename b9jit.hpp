@@ -28,22 +28,36 @@ protected:
     TR::IlType *int16PointerType;
 
 private:
-    Instruction *program;
     ExecutionContext *context;
+    int32_t topLevelProgramIndex;
+    int32_t maxInlineDepth;
+    int32_t firstArgumentIndex;
+    
 
     void
     defineFunctions();
     void
     defineStructures(TR::TypeDictionary *types);
     void
-    defineLocals();
+    defineLocals(Instruction *program);
     void
-    defineParameters();
+    defineParameters(Instruction *program);
 
     void
     createBuilderForBytecode(TR::BytecodeBuilder **bytecodeBuilderTable, uint8_t bytecode, int64_t bytecodeIndex);
     bool
-    generateILForBytecode(TR::BytecodeBuilder **bytecodeBuilderTable, uint8_t bytecode, long bytecodeIndex);
+    generateILForBytecode(
+            TR::BytecodeBuilder **bytecodeBuilderTable,
+            Instruction *program,
+            uint8_t bytecode, 
+            long bytecodeIndex,
+            TR::BytecodeBuilder* jumpToBuilderForInlinedReturn);
+
+    bool inlineProgramIntoBuilder(
+        int32_t programIndex,
+        bool isTopLevel,
+        TR::BytecodeBuilder* currentBuilder = 0,
+        TR::BytecodeBuilder* jumpToBuilderForInlinedReturn = 0);
 
     TR::IlValue *
     pop(TR::BytecodeBuilder *builder);
@@ -72,9 +86,20 @@ private:
     void
     handle_bc_call(TR::BytecodeBuilder *builder, TR::BytecodeBuilder *nextBuilder);
     void
-    handle_bc_jmp(TR::BytecodeBuilder *builder, TR::BytecodeBuilder **bytecodeBuilderTable, long bytecodeIndex);
+    handle_bc_jmp(TR::BytecodeBuilder *builder, TR::BytecodeBuilder **bytecodeBuilderTable, Instruction *program, long bytecodeIndex);
     void
-    handle_bc_jmp_le(TR::BytecodeBuilder *builder, TR::BytecodeBuilder **bytecodeBuilderTable, long bytecodeIndex, TR::BytecodeBuilder *nextBuilder);
+    handle_bc_jmp_eq(TR::BytecodeBuilder *builder, TR::BytecodeBuilder **bytecodeBuilderTable,  Instruction *program, long bytecodeIndex, TR::BytecodeBuilder *nextBuilder);
+    void
+    handle_bc_jmp_neq(TR::BytecodeBuilder *builder, TR::BytecodeBuilder **bytecodeBuilderTable, Instruction *program, long bytecodeIndex, TR::BytecodeBuilder *nextBuilder);
+    void
+    handle_bc_jmp_lt(TR::BytecodeBuilder *builder, TR::BytecodeBuilder **bytecodeBuilderTable, Instruction *program, long bytecodeIndex, TR::BytecodeBuilder *nextBuilder);
+    void
+    handle_bc_jmp_le(TR::BytecodeBuilder *builder, TR::BytecodeBuilder **bytecodeBuilderTable, Instruction *program, long bytecodeIndex, TR::BytecodeBuilder *nextBuilder);
+    void
+    handle_bc_jmp_gt(TR::BytecodeBuilder *builder, TR::BytecodeBuilder **bytecodeBuilderTable, Instruction *program, long bytecodeIndex, TR::BytecodeBuilder *nextBuilder);
+    void
+    handle_bc_jmp_ge(TR::BytecodeBuilder *builder, TR::BytecodeBuilder **bytecodeBuilderTable, Instruction *program, long bytecodeIndex, TR::BytecodeBuilder *nextBuilder);
+
 };
 
 #endif

@@ -1,6 +1,8 @@
-# Do not set the language for c++, 
-# this over rides our environment variable CXX below.
-#language: c++
+# .travis.yml
+
+# Do not set the language to c++, this over rides our environment variable CXX
+# below.
+language: C
 
 sudo: false
 git:
@@ -17,10 +19,13 @@ os:
   - linux
 
 env:
-  - CXX=g++-5
+  - CXX="ccache g++-5"
 
-# omr compiles with gcc, so ccache works for it
-cache: ccache
+# OMR compiles with g++, so ccache works for it
+cache:
+  ccache: true
+  directories:
+    - node_modules
 
 install:
     - npm install

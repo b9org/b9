@@ -1,18 +1,26 @@
-[![Build Status](https://api.travis-ci.org/youngar/Base9.svg?branch=master)](https://travis-ci.org/eclipse/omr)
+[![Build Status](https://api.travis-ci.org/youngar/Base9.svg?branch=master)](https://travis-ci.org/youngar/Base9)
 
 Cloning
 -------
-To quickly clone the source code, use:
+To clone the source code, use:
 ```
-git clone --recursive --shallow-submodule --depth=1 https://github.com/youngar/Base9
+git clone https://github.com/youngar/Base9
 ```
 
 Building
 --------
 You may not need to disable warnings as errors to build.
 ```
-cd omr && ./configure --disable-warnings-as-errors
-make -C omr/jitbuilder
 make
+```
+
+To run tests, use:
+```
+make test
+```
+
+To run the benchmark, use:
+```
+make bench
 ```
 

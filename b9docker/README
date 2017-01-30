@@ -1,0 +1,11 @@
+This is the dockerfile to create a ready to run dev image for Base9
+The image pulls and compiles the base OMR and Base9 source code
+
+This is useful for running courses on using OMR or trying out example code.
+
+To build it, run the build command in the shell script called build (sh build) 
+or the docker command directly (docker build -t b9docker .).
+
+run the docker image with "docker run -it b9docker"
+
+If you want the initialization to run anything special, instructions, samples you can change the "go" file

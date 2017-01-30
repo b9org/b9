@@ -1,0 +1,20 @@
+cd /tutorial/Base9
+echo  Eclipse OMR Base 9 Docker Image
+echo ---------------------------------------------------------------------------
+echo Base9 Demo VM and JITBuilder examples
+echo make bench to run the Base9 Benchmark Demo
+echo make test to run the Base9 Test 
+echo make program to run the sample
+echo sh runall to bench and run all the samples in all the modes
+echo
+echo b9.h contains the bytecode definitions and some structs you need
+echo main.cpp contains the interpreter
+echo b9jit.cpp and b9jit.hpp contains the JITBuilder example compiler
+echo
+echo have fun !
+
+/bin/bash 
+
+
+
+

@@ -713,8 +713,9 @@ void B9Method::handle_bc_jmp_ge(TR::BytecodeBuilder* builder,
     TR::IlValue* right = pop(builder);
     TR::IlValue* left = pop(builder);
 
-    left = builder->Sub(left, builder->ConstInt64(1));
-    builder->IfCmpLessThan(jumpTo, right, left); //swap and do a lessThan
+    // if (left >= right) jump is converted to if (left > (right-1) jump  
+    right = builder->Sub(right, builder->ConstInt64(1));
+    builder->IfCmpGreaterThan(jumpTo, left, right); 
     builder->AddFallThroughBuilder(nextBuilder);
 }
 

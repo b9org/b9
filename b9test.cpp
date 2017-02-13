@@ -44,7 +44,15 @@ validateFibResult(ExecutionContext *context)
     for (i = 0; i <= 12; i++) {
         runFib(context, i);
     }
-    generateCode(context, 0); // fib is program 0
+    // search for fib_function by name and force it to be compiled
+    int functionIndex = 0;
+    while (context->functions[functionIndex].name != NO_MORE_FUNCTIONS) {
+            const char * fibfunc = "fib_function";
+            if (strncmp(fibfunc, context->functions[functionIndex].name, strlen(fibfunc)) == 0) {
+                generateCode(context, functionIndex);  
+            }
+            functionIndex++;
+    }
     for (i = 0; i <= 12; i++) {
         runFib(context, i);
     }
@@ -67,7 +75,7 @@ bool
 run_test(ExecutionContext *context, const char *testName)
 {
 
-    if (context->debug >= 1) {
+    if (context->debug >= 2) {
         printf("Test \"%s\": starting\n", testName);
     }
     Instruction *func = getFunctionAddress(context, testName);
@@ -105,19 +113,19 @@ main(int argc, char *argv[])
     test_validateFibResult(context);
 
     int count;
-    for (count =0; count < 2; count++) {  
-        run_test(context, "test_add");
-        run_test(context, "test_sub");
-        run_test(context, "test_equal");
-        run_test(context, "test_greaterThan");
-        run_test(context, "test_greaterThanOrEqual");
-        run_test(context, "test_lessThan");
-        run_test(context, "test_lessThanOrEqual");
-        run_test(context, "test_call");
-        run_test(context, "test_while");
+    for (count = 0; count < 2; count++) {
 
+        // run all tests in the program which start with test_
+        struct ExportedFunctionData* functions = context->functions;
+        int functionIndex = 0;
+        while (functions[functionIndex].name != NO_MORE_FUNCTIONS) {
+            if (strncmp("test_", functions[functionIndex].name, 5) == 0) {
+                run_test(context, functions[functionIndex].name);
+            }
+            functionIndex++;
+        }
         generateAllCode(context); // first time interpreted, second time JIT
-    }  
+    }
 
     if (result) {
         return EXIT_SUCCESS;

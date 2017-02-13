@@ -46,7 +46,7 @@ bench: b9 bench.so
 
 test: b9 test.so b9test $(b9_programs)
 	./b9 test.so
-	./b9test -debug -debug 
+	./b9test  
 
 clean:
 	$(RM) b9

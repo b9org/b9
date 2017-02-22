@@ -1,4 +1,10 @@
 
+primitive("b9test", "void", "string");
+
+function b9puts(a) {
+    b9test(a);
+}
+
 // main, no args for b9 entry point
 function fib(arg) {
 	if (3 > arg)
@@ -8,7 +14,8 @@ function fib(arg) {
 }
 
 function b9main() {
-	var a = 100; 
+	var a = 100;
+    b9puts("hi");
 	while (a > 0) {
 		a = a - 1;
 		fib(12);

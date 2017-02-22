@@ -13,7 +13,7 @@ IJIT1 = $(IJIT)/compiler
 LIB=$(omr_srcdir)/jitbuilder/release/libjitbuilder.a
 LINK=-ldl -lm $(LIB)
 
-cflags = -std=c++11 -fPIC -fno-rtti
+cflags = -std=c++11 -fPIC -fno-rtti -rdynamic
 b9: cflags+=-I./omr/compiler/ 
 b9jit.o: cflags+=-I$(IJIT) -I$(IJIT1)
 

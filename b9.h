@@ -50,6 +50,8 @@ typedef int64_t StackElement;
 #define JMP_GE              0xD
 #define JMP_LE              0xE
 #define JMP_LT              0xF
+#define PUSH_STRING         0x10
+#define PRIMITIVE           0x11
 
 static constexpr ByteCode
 getByteCodeFromInstruction(Instruction instruction)
@@ -87,11 +89,21 @@ progTmpCount(Instruction a)
     return a & 0xFFFF;
 }
 
+class ExecutionContext;
+typedef StackElement (*CallPrimitive)(ExecutionContext *context);
+
+struct PrimitiveData {
+    const char * name;
+    CallPrimitive *address;
+};
+
 struct ExportedFunctionData {
     const char * name;
     Instruction *program;
     uint64_t jitAddress;
 };
+
+
 /* VM State */
 
 class ExecutionContext
@@ -101,13 +113,15 @@ public:
         : stackPointer(this->stack),
          stackEnd(&stack[ (sizeof (stack)/sizeof(StackElement)) - 16])
     {
-        std::memset(stack, 0, sizeof(stack)); 
+        std::memset(stack, 0, sizeof(stack));
     }
 
     StackElement stack[1000];
     StackElement* stackPointer;
     StackElement* stackEnd; 
     struct ExportedFunctionData *functions;
+    struct PrimitiveData *primitives;
+    const char ** stringTable;
 
     /* Command Line Parameters */
     int loopCount = 1;
@@ -123,6 +137,7 @@ public:
     void *library = nullptr;
 
 };
+
 
 typedef StackElement (*Interpret) (ExecutionContext* context, Instruction* program);
  
@@ -171,5 +186,13 @@ StackElement
 interpret_2(ExecutionContext *context, Instruction *program, StackElement p1, StackElement p2);
 StackElement
 interpret_3(ExecutionContext *context, Instruction *program, StackElement p1, StackElement p2, StackElement p3 );
+
+
+/* Debug Helpers */
+void
+b9PrintStack(ExecutionContext *context);
+
+const char *
+b9ByteCodeName(ByteCode bc);
 
 #endif

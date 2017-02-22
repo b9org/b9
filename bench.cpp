@@ -1,5 +1,5 @@
 #include "b9.h"
- 
+
 Instruction fib_function[] = {
     // one argument, 0 temps
     decl(1, 0),
@@ -38,7 +38,7 @@ Instruction b9main[] = {
     decl(0, 0),
     createInstruction(PUSH_CONSTANT, 200000), 
     createInstruction(POP_INTO_VAR, 0), // t = 200000
- 
+
     createInstruction(PUSH_FROM_VAR, 0),
     createInstruction(POP_INTO_VAR, 1),  
 
@@ -66,8 +66,16 @@ Instruction b9main[] = {
     createInstruction(NO_MORE_BYTECODES, 0)};
 
 /* Byte Code Program */
-	struct ExportedFunctionData b9_exported_functions[] = {
-		{  "fib_function", fib_function, 0},
-		{  "b9main", b9main, 0}, 
-		{  0,0,0}   
+struct ExportedFunctionData b9_exported_functions[] = {
+    {  "fib_function", fib_function, 0},
+    {  "b9main", b9main, 0},
+    {  0,0,0}
 };
+
+const char *  b9_exported_strings[] = {
+0};
+
+PrimitiveData b9_primitives[] = {
+    {0, 0}
+};
+

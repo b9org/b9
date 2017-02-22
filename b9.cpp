@@ -1,5 +1,6 @@
 #include "b9.h"
 
+#include <cassert>
 #include <cstring>
 #include <dlfcn.h>
 #include <stdio.h>
@@ -30,6 +31,28 @@ bc_call(ExecutionContext *context, Parameter value)
 }
 
 void
+bc_primitive(ExecutionContext *context, Parameter value)
+{
+    CallPrimitive *primitive = context->primitives[value].address;
+    if (primitive == nullptr) {
+        const char *name = context->primitives[value].name;
+        if (context->debug >= 1) {
+            printf("!!! loading primitive %d \"%s\"\n", primitive, name);
+        }
+
+        *(void **)(&primitive) = dlsym(RTLD_DEFAULT, name);
+        const char *error = dlerror();
+        if (error) {
+            printf("%s\n", error);
+            return;
+        }
+
+        context->primitives[value].address = primitive;
+    }
+    (*context->primitives[value].address)(context);
+}
+
+void
 bc_push_from_arg(ExecutionContext *context, StackElement *args, Parameter offset)
 {
     push(context, args[offset]);
@@ -51,6 +74,12 @@ void
 bc_push_constant(ExecutionContext *context, Parameter value)
 {
     push(context, value);
+}
+
+void
+bc_push_string(ExecutionContext *context, Parameter value)
+{
+    push(context, (StackElement) context->stringTable[value]);
 }
 
 Parameter
@@ -225,6 +254,9 @@ interpret(ExecutionContext *context, Instruction *program)
         case PUSH_CONSTANT:
             bc_push_constant(context, getParameterFromInstruction(*instructionPointer));
             break;
+        case PUSH_STRING:
+            bc_push_string(context, getParameterFromInstruction(*instructionPointer));
+            break;
         case DROP:
             bc_drop(context);
             break;
@@ -264,10 +296,17 @@ interpret(ExecutionContext *context, Instruction *program)
         case POP_INTO_VAR:
             bc_pop_into_arg(context, args, getParameterFromInstruction(*instructionPointer));
             break;
-        case RETURN:
+        case RETURN: {
             StackElement result = *(context->stackPointer - 1);
             context->stackPointer = args;
             return result;
+            break;
+            }
+        case PRIMITIVE:
+            bc_primitive(context, getParameterFromInstruction(*instructionPointer));
+            break;
+        default :
+            assert(false);
             break;
         }
         instructionPointer++;
@@ -275,18 +314,6 @@ interpret(ExecutionContext *context, Instruction *program)
     return *(context->stackPointer - 1);
 }
 
-void
-b9PrintStack(ExecutionContext *context)
-{
-
-    StackElement *base = context->stack;
-    printf("------\n");
-    while (base < context->stackPointer) {
-        printf("%p: Stack[%ld] = %lld\n", base, base - context->stack, *base);
-        base++;
-    }
-    printf("^^^^^^^^^^^^^^^^^\n");
-}
 
 uint64_t *
 getJitAddressSlot(Instruction *p)
@@ -397,12 +424,32 @@ loadLibrary(ExecutionContext *context, const char *libraryName)
     }
     context->functions = table; 
 
-    // int functionIndex = 0;
-    // while (table[functionIndex].name != NO_MORE_FUNCTIONS) { 
-    //     printf ("Name %s, prog %p, jit %p \n", table[functionIndex].name, 
-    //         table[functionIndex].program, table[functionIndex].jitAddress);
-    //     functionIndex++;
-    // } 
+    /* Get the string table */
+    PrimitiveData *primitives = (struct PrimitiveData *) dlsym(handle, "b9_primitives");
+    error = dlerror();
+    if (error) {
+        printf("%s\n", error);
+        return false;
+    }
+    context->primitives  = primitives;
+
+    /* Get the string table */
+    const char **stringTable = (const char **) dlsym(handle, "b9_exported_strings");
+    error = dlerror();
+    if (error) {
+        printf("%s\n", error);
+        return false;
+    }
+    context->stringTable  = stringTable; 
+
+    if (context->debug > 0) {
+      int functionIndex = 0;
+      while (table[functionIndex].name != NO_MORE_FUNCTIONS) { 
+        printf ("Name %s, prog %p, jit %p \n", table[functionIndex].name, 
+            table[functionIndex].program, table[functionIndex].jitAddress);
+        functionIndex++;
+      } 
+    }
 
     return true;
 }
@@ -538,4 +585,55 @@ parseArguments(ExecutionContext *context, int argc, char *argv[])
         continue;
     }
     return 0;
+}
+
+/* Debug Helpers */
+
+const char *
+b9ByteCodeName(ByteCode bc)
+{
+    if (bc == PUSH_CONSTANT)
+        return "PUSH_CONSTANT";
+    if (bc == DROP)
+        return "DROP";
+    if (bc == PUSH_FROM_VAR)
+        return "PUSH_FROM_VAR";
+    if (bc == POP_INTO_VAR)
+        return "POP_INTO_VAR";
+    if (bc == SUB)
+        return "SUB";
+    if (bc == ADD)
+        return "ADD";
+    if (bc == CALL)
+        return "CALL";
+    if (bc == RETURN)
+        return "RETURN";
+    if (bc == JMP)
+        return "JMP";
+    if (bc == JMP_EQ)
+        return "JMP_EQ";
+    if (bc == JMP_NEQ)
+        return "JMP_NEQ";
+    if (bc == JMP_GT)
+        return "JMP_GT";
+    if (bc == JMP_GE)
+        return "JMP_GE";
+    if (bc == JMP_LE)
+        return "JMP_LE";
+    if (bc == JMP_LT)
+        return "JMP_LT";
+    return "unknown bc";
+}
+
+void
+b9PrintStack(ExecutionContext *context)
+{
+
+    StackElement *base = context->stack;
+    printf("------\n");
+    while (base < context->stackPointer) {
+        printf("%p: Stack[%ld] = %lld\n", base, base - context->stack, *base);
+        base++;
+    }
+    printf("^^^^^^^^^^^^^^^^^\n");
 }

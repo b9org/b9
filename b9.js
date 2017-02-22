@@ -89,6 +89,10 @@ function CodeGen(f) {
     // all the functions you compile in this file. 
     this.functions = {}
     this.nextFunctionIndex = 0;
+    this.strings = {}
+    this.nextStringIndex = 0;
+    this.primitives = {}
+    this.nextPrimitiveIndex = 0;
 
     this.labels = new Object();
     this.instructionIndex = 0;
@@ -115,13 +119,41 @@ function CodeGen(f) {
         throw "No Continue Destination Set, Invalid Break Statement";
     }
 
-    this.gencall = function (name, args, comment) {
+    this.declarePrimitive = function(primitiveName, returnType, arguments, comment) {
+        var primitive = this.primitives[primitiveName];
+        if (this.primitives[primitiveName] == undefined) {
+            primitive = {"name": primitiveName,
+                         "returnType": returnType,
+                         "arguments": arguments,
+                         "index": this.nextPrimitiveIndex++
+            }
+        }
+        this.primitives[primitiveName] = primitive;
+    }
+
+    this.genPrimitive = function(primitiveName, args, comment) {
+        var primitive = this.primitives[primitiveName];
+        if (this.primitives[primitiveName] != undefined) {
+            this.outputInstruction("PRIMITIVE", primitive.index, 'Calling native: ' + primitive.name);
+            return true;
+        }
+        return false;
+    }
+
+    this.genCall = function (name, args, comment) {
+        this.outputInstruction("CALL", this.getFunctionIndex(name), "Calling: " + name);
+    }
+
+    this.genCallOrPrimitive = function(name, args, comment) {
         if (name == "") {
             throw "Invalid Call with no name to call ";
-        } else {
-            this.outputInstruction("CALL", this.getFunctionIndex(name), "Offset of: " + name);
         }
+        if (this.genPrimitive(name, args)) {
+            return;
+        }
+        this.genCall(name, args, comment);
     }
+
     this.outputRawString = function (s) {
         this.outputLines.push({ "text": s });
     }
@@ -172,18 +204,46 @@ function CodeGen(f) {
 
     this.handleHeaders = function () {
         this.outputRawString('#include "b9.h"');
-    };
+
+        // var out = this.primitives;
+        // for (key in out) {
+        //     var arguments = out[key].arguments;
+        //     var returnType = out[key].returnType;
+        //     this.outputRawString('extern "C" '+ returnType + " " + key + "(");
+        //     for (arg in arguments) {
+        //         this.outputRawString(arg + ", ");
+        //     }
+
+        // }
+    }
 
     this.handleFooters = function () {
         var out = this.functions;
-
-        this.outputRawString('struct ExportedFunctionData  b9_exported_functions[] = {');
+        this.outputRawString('struct ExportedFunctionData b9_exported_functions[] = {');
         for (key in out) {
-            var init = '    {' + '"' + key + '",' +  key + ',0},';
+            var init = '    {' + '"' + key + '", ' +  key + ', 0},';
             this.outputRawString(init, '// ' + this.functions[key]);
         }
-        this.outputRawString('    {NO_MORE_FUNCTIONS,0,0}');
+        this.outputRawString('    {NO_MORE_FUNCTIONS, 0, 0}');
         this.outputRawString('};');
+        this.outputRawString('');
+
+        var out = this.strings;
+        this.outputRawString('const char *  b9_exported_strings[] = {');
+        for (key in out) {
+            this.outputRawString('"' + key + '",');
+        }
+        this.outputRawString('0};');
+        this.outputRawString('');
+
+        var out = this.primitives;
+        this.outputRawString('PrimitiveData b9_primitives[] = {');
+        for (key in out) {
+            this.outputRawString('    {"' + key + '", 0},');
+        }
+        this.outputRawString('    {0, 0}');
+        this.outputRawString('};');
+        this.outputRawString('');
     };
 
     this.handle = function (element) {
@@ -279,13 +339,21 @@ function CodeGen(f) {
     };
 
     this.isNumber = function isNumber(num) {
-        if (typeof num == 'number') return true;
-        return (typeof num == 'string' && !isNaN(parseInt(num)));
+        return typeof num == "number";
+    };
+
+    this.isString = function isString(num) {
+        return typeof num == 'string';
     };
 
     this.pushconstant = function (constant) {
         if (this.isNumber(constant)) {
             this.outputInstruction("PUSH_CONSTANT", constant, " number constant " + (constant - 0));
+            this.currentFunction.pushN(1);
+            return;
+        }
+        if (this.isString(constant)) {
+            this.outputInstruction("PUSH_STRING", this.getStringIndex(constant), " string constant <" + constant + ">");
             this.currentFunction.pushN(1);
             return;
         }
@@ -320,6 +388,15 @@ function CodeGen(f) {
         } else {
             this.functions[id] = this.nextFunctionIndex++;
             return this.functions[id];
+        }
+    }
+
+    this.getStringIndex = function (id) {
+        if (this.strings[id] != undefined) {
+            return this.strings[id];
+        } else {
+            this.strings[id] = this.nextStringIndex;
+            return this.strings[id];
         }
     }
 
@@ -427,11 +504,18 @@ function CodeGen(f) {
             element.isParameter = true;
         });
 
+
+        if (decl.callee.name == "primitive") {
+            // primitive does not "handleAll(decl.arguments);"
+            this.declarePrimitive(decl.arguments[0].value, decl.arguments[1].value,  decl.arguments.slice(2));
+            return;
+        }
+
         this.handleAll(decl.arguments);
         if (decl.callee.type == "Identifier") {
             var offset = this.currentFunction.variableOffset(decl.callee.name);
             if (offset.offset == undefined || offset.global == 1) {
-                this.gencall(decl.callee.name, decl.arguments.length);
+                this.genCallOrPrimitive(decl.callee.name, decl.arguments.length);
                 this.currentFunction.pushN(1 - decl.arguments.length);
                 return;
             } else {

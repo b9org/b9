@@ -3,8 +3,8 @@ default: all
 all: b9 $(b9_programs)
 
 programs = b9 b9test
-b9_objects = main.o b9jit.o b9.o
-b9test_objects = b9.o b9jit.o b9test.o
+b9_objects = main.o b9jit.o b9.o b9hash.o
+b9test_objects = b9.o b9jit.o b9test.o b9hash.o
 b9_programs = program.so bench.so test.so
 
 omr_srcdir := ./omr

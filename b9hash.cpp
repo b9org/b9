@@ -23,6 +23,11 @@ hashTableKey* addressFirstSlot(pHeap hashedTable)
     return (hashTableKey*)&hashedTable->d.pointer_slots[0];
 }
 
+bool hashTableKeyEquals(hashTableKey k1, hashTableKey k2) {
+  printf ("hashtable equals %p %p \n", k1, k2) ;
+  return !strcmp(keyToChar(k1),keyToChar(k2));
+}
+
 pHeap hashTable_allocate(int num_elements)
 {
     int grow = num_elements < 1024 ? 32 : 256;

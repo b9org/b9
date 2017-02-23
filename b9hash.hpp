@@ -27,15 +27,12 @@ typedef struct heap_allocated* pHeap;
 #define USE_C_STRING_AS_KEYS 0
 #if USE_C_STRING_AS_KEYS
 typedef const char * hashTableKey; 
-#define hashTableKeyEquals(k1, k2)  !strcmp(k1,k2)
-#define charStringToKey(k)   k
-#define keyToChar(k)  k 
+#define charStringToKey(k) k
+#define keyToChar(k) k 
 #else 
 typedef pHeap hashTableKey;
-#define hashTableKeyEquals(k1, k2)  !strcmp(keyToChar(k1),keyToChar(k2))
-#define charStringToKey(k)  allocateString (k)
-#define keyToChar(k)   (char*) addressFirstSlot((pHeap)(k))
-
+#define charStringToKey(k) allocateString (k)
+#define keyToChar(k) (char*) addressFirstSlot((pHeap)(k))
 #endif 
  
 pHeap hashTable_allocate(int num_elements);

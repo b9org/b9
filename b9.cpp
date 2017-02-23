@@ -33,6 +33,7 @@ void b9test(ExecutionContext* context)
 { 
     StackElement s = pop(context);
     printf("%s\n",keyToChar(s));
+    push(context, s);
 }
 
 void hashTableAllocate(ExecutionContext* context)

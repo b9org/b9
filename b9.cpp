@@ -30,14 +30,15 @@ bc_call(ExecutionContext *context, Parameter value)
     push(context, result);
 }
 
+
 void
 bc_primitive(ExecutionContext *context, Parameter value)
 {
-    CallPrimitive *primitive = context->primitives[value].address;
+    PrimitiveFunction *primitive = context->primitives[value].address;
     if (primitive == nullptr) {
         const char *name = context->primitives[value].name;
         if (context->debug >= 1) {
-            printf("!!! loading primitive %d \"%s\"\n", primitive, name);
+            printf("!!! loading primitive %d \"%s\"\n", value, name);
         }
 
         *(void **)(&primitive) = dlsym(RTLD_DEFAULT, name);
@@ -49,7 +50,7 @@ bc_primitive(ExecutionContext *context, Parameter value)
 
         context->primitives[value].address = primitive;
     }
-    (*context->primitives[value].address)(context);
+    (context->primitives[value].address)(context);
 }
 
 void

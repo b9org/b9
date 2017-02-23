@@ -92,6 +92,29 @@ run_test(ExecutionContext *context, const char *testName)
             printf("Mode %s, Test \"%s\": success, returned %X\n", mode, testName, result);
         }
     }
+    return result;
+}
+
+extern "C" PrimitiveFunction test_primitive_return_5;
+extern "C" void
+test_primitive_return_5(ExecutionContext *context) {
+    push(context,  5);
+}
+
+extern "C" PrimitiveFunction test_primitive_take_2;
+extern "C" void
+test_primitive_take_2(ExecutionContext *context) {
+    int a = pop(context);
+    int b = pop(context);
+    push(context, 0);
+}
+
+extern "C" PrimitiveFunction test_primitive_take_2_add;
+extern "C" void
+test_primitive_take_2_add(ExecutionContext *context) {
+    int a = pop(context);
+    int b = pop(context);
+    push(context, a + b);
 }
 
 int

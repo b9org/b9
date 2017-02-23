@@ -90,11 +90,14 @@ progTmpCount(Instruction a)
 }
 
 class ExecutionContext;
-typedef StackElement (*CallPrimitive)(ExecutionContext *context);
+extern "C" typedef void (PrimitiveFunction)(ExecutionContext *context);
+
+void
+bc_primitive(ExecutionContext *context, Parameter value);
 
 struct PrimitiveData {
     const char * name;
-    CallPrimitive *address;
+    PrimitiveFunction *address;
 };
 
 struct ExportedFunctionData {

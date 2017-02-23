@@ -128,14 +128,14 @@ void generateCode(ExecutionContext* context, int32_t functionIndex)
     if (0 == rc) {
         setJitAddress(context,  functionIndex, (uint64_t) entry); 
     } else {
-        printf("Failed to compile method\n");
+        printf("Failed to compile method \"%s\"\n", context->functions[functionIndex].name);
     }
 }
 
 B9Method::B9Method(TR::TypeDictionary* types, int32_t programIndex, ExecutionContext* context)
     : MethodBuilder(types)
     , context(context)
-    , topLevelProgramIndex(programIndex) 
+    , topLevelProgramIndex(programIndex)
     , maxInlineDepth(context->inlineDepthAllowed)
     , firstArgumentIndex(0)
 {
@@ -252,6 +252,8 @@ void B9Method::defineFunctions()
         executionContextType, int32PointerType, stackElementType, stackElementType);
     DefineFunction((char*)"interpret_3", (char*)__FILE__, "interpret_3", (void*)&interpret_3, Int64, 5,
         executionContextType, int32PointerType, stackElementType, stackElementType, stackElementType);
+    DefineFunction((char*)"bc_primitive", (char*)__FILE__, "bc_primitive", (void*)&bc_primitive, Int64, 2,
+            executionContextPointerType, Int32);
 }
 
 #define QSTACK(b)  (((B9VirtualMachineState*)(b)->vmState())->_stack)
@@ -501,10 +503,20 @@ bool B9Method::generateILForBytecode(
         if (nextBytecodeBuilder)
             builder->AddFallThroughBuilder(nextBytecodeBuilder);
     } break;
+    case PUSH_STRING: {
+            int index = getParameterFromInstruction(instruction);
+            push(builder,  builder->ConstAddress(&context->stringTable[index]));
+            builder->AddFallThroughBuilder(nextBytecodeBuilder);
+          } break;
+    //case PRIMITIVE: {
+    //      int index = getParameterFromInstruction(instruction);
+    //      push(builder,  builder->ConstAddress(&context->stringTable[index]));
+    //      builder->AddFallThroughBuilder(nextBytecodeBuilder);
+    //    } break;
     case CALL: {
         int callindex = getParameterFromInstruction(instruction);
         Instruction* tocall = context->functions[callindex].program;
-        if (context->directCall) {  
+        if (context->directCall) {
                 int argsCount = progArgCount(*tocall);
                 const char *interpretName[] = { 
                     "interpret_0",
@@ -742,6 +754,9 @@ void B9Method::drop(TR::BytecodeBuilder* builder)
     pop(builder);
 }
 
+void B9Method::handle_bc_push_string(TR::BytecodeBuilder* builder, TR::BytecodeBuilder* nextBuilder)
+{
+}
 
 TR::IlValue*
 B9Method::pop(TR::BytecodeBuilder* builder)

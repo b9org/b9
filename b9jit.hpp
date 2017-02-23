@@ -74,6 +74,8 @@ private:
     void
     handle_bc_push_constant(TR::BytecodeBuilder *builder, TR::BytecodeBuilder *nextBuilder);
     void
+    handle_bc_push_string(TR::BytecodeBuilder* builder, TR::BytecodeBuilder* nextBuilder);
+    void
     handle_bc_drop(TR::BytecodeBuilder *builder, TR::BytecodeBuilder *nextBuilder);
     void
     handle_bc_push_from_var(TR::BytecodeBuilder *builder, TR::BytecodeBuilder *nextBuilder);

@@ -395,7 +395,7 @@ function CodeGen(f) {
         if (this.strings[id] != undefined) {
             return this.strings[id];
         } else {
-            this.strings[id] = this.nextStringIndex;
+            this.strings[id] = this.nextStringIndex++;
             return this.strings[id];
         }
     }

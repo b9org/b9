@@ -1,8 +1,33 @@
 
 primitive("b9test", "void", "string");
 
+primitive("hashTableAllocate", "Int64");
+primitive("hashTablePut", "void", "string", "string");
+primitive("hashTableGet", "string", "string"); 
+
 function b9puts(a) {
     b9test(a);
+}
+
+function testHashmap( ) {
+    var ht = hashTableAllocate();
+	hashTablePut (ht, "hi", "mom");
+	var result = hashTableGet (ht, "hi");
+	b9puts(result);
+	hashTablePut (ht, "hi2", "mom2");
+	var result = hashTableGet (ht, "hi");
+	b9puts(result);
+	var result = hashTableGet (ht, "hi2");
+	b9puts(result);
+ 
+	hashTablePut (ht, "hi3", "mom3");
+	hashTablePut (ht, "hi4", "mom4");
+	hashTablePut (ht, "hi5", "mom5");
+	hashTablePut (ht, "hi6", "mom6");
+
+	var result = hashTableGet (ht, "hi6");
+	b9puts(result);
+
 }
 
 // main, no args for b9 entry point
@@ -15,7 +40,13 @@ function fib(arg) {
 
 function b9main() {
 	var a = 100;
+ 
+
+	testHashmap( );
+
+
     b9puts("hi");
+
 	while (a > 0) {
 		a = a - 1;
 		fib(12);

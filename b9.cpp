@@ -1,4 +1,5 @@
 #include "b9.h"
+#include "b9hash.hpp"
 
 #include <cassert>
 #include <cstring>
@@ -9,81 +10,140 @@
 
 /* Byte Code Implementations */
 
-void
-push(ExecutionContext *context, StackElement value)
+void push(ExecutionContext* context, StackElement value)
 {
     *context->stackPointer = value;
     ++(context->stackPointer);
 }
 
 StackElement
-pop(ExecutionContext *context)
+pop(ExecutionContext* context)
 {
     return *(--context->stackPointer);
 }
 
-void
-bc_call(ExecutionContext *context, Parameter value)
+void bc_call(ExecutionContext* context, Parameter value)
 {
-    Instruction *program = context->functions[value].program;
+    Instruction* program = context->functions[value].program;
     StackElement result = interpret(context, program);
     push(context, result);
 }
 
-void
-bc_primitive(ExecutionContext *context, Parameter value)
+void b9test(ExecutionContext* context)
+{ 
+    StackElement s = pop(context);
+    printf("%s\n",keyToChar(s));
+}
+
+void hashTableAllocate(ExecutionContext* context)
+{
+    pHeap p = hashTable_allocate(8);
+    if (context->debug >= 1) {
+        printf("IN hashTableAllocate %p\n", p);
+    }
+    push(context, (StackElement)p);
+}
+void hashTablePut(ExecutionContext* context)
+{
+    StackElement v = pop(context);
+    StackElement k = pop(context);
+    StackElement ht = pop(context);
+    if (context->debug >= 1) {
+        printf("IN hashTablePut %p %p(%s) %p(%s) \n", ht, k, k, v, v);
+    }
+
+    push(context, (StackElement)hashTable_put(context, (pHeap)ht, (hashTableKey)k, (hashTableKey)v));
+}
+
+void hashTableGet(ExecutionContext* context)
+{
+    StackElement k = pop(context);
+    StackElement ht = pop(context);
+    push (context, (StackElement) hashTable_get(context, (pHeap)ht, (hashTableKey) k));
+}
+
+struct prim_table {
+    const char* name; 
+    void (*func)(ExecutionContext* context);
+};
+static struct prim_table prim_to_address[] = {
+    { "hashTableAllocate",  hashTableAllocate },
+    { "hashTablePut",  hashTablePut },
+    { "hashTableGet",  hashTableGet },
+    { "b9test",  b9test },
+    
+    { 0, 0 }
+};
+
+void bc_primitive(ExecutionContext* context, Parameter value)
 {
     CallPrimitive *primitive = context->primitives[value].address;
     if (primitive == nullptr) {
-        const char *name = context->primitives[value].name;
+        const char* name = context->primitives[value].name;
         if (context->debug >= 1) {
             printf("!!! loading primitive %d \"%s\"\n", primitive, name);
         }
 
-        *(void **)(&primitive) = dlsym(RTLD_DEFAULT, name);
-        const char *error = dlerror();
+        *(void**)(&primitive) = dlsym(RTLD_DEFAULT, name);
+        const char* error = dlerror();
         if (error) {
-            printf("%s\n", error);
-            return;
+           // printf("%s\n", error);
+            primitive = 0;
+            int count = 0;
+            while (prim_to_address[count].name != 0) { 
+                if (!strcmp(prim_to_address[count].name, name)) {
+                  //  printf("running the function IN TABLE %s  %p\n", name, primitive);
+                     (*prim_to_address[count].func)( context);
+                     return;
+                }
+                count++;
+            } 
+            if (primitive == 0) {
+                printf("primitive missing %s\n", name);
+                return;
+            }
         }
 
+        printf("CACHE ADDRESS %s %p\n", name, primitive);
         context->primitives[value].address = primitive;
     }
-    (*context->primitives[value].address)(context);
+   // (*context->primitives[value].address)(context);
+        printf("CALL ADDRESS  %p\n", primitive);
+   b9test( context);
+        printf("CALL ADDRESS 2 %p\n", primitive);
+   primitive = (CallPrimitive *) b9test;
+        printf("CALL ADDRESS 3 %p\n", primitive);
+   (*primitive)(context);
+        printf("CALL ADDRESS 4 %p\n", primitive);
 }
 
-void
-bc_push_from_arg(ExecutionContext *context, StackElement *args, Parameter offset)
+void bc_push_from_arg(ExecutionContext* context, StackElement* args, Parameter offset)
 {
     push(context, args[offset]);
 }
 
-void
-bc_pop_into_arg(ExecutionContext *context, StackElement *args, Parameter offset)
+void bc_pop_into_arg(ExecutionContext* context, StackElement* args, Parameter offset)
 {
     args[offset] = pop(context);
 }
 
-void
-bc_drop(ExecutionContext *context)
+void bc_drop(ExecutionContext* context)
 {
     pop(context);
 }
 
-void
-bc_push_constant(ExecutionContext *context, Parameter value)
+void bc_push_constant(ExecutionContext* context, Parameter value)
 {
     push(context, value);
 }
 
-void
-bc_push_string(ExecutionContext *context, Parameter value)
+void bc_push_string(ExecutionContext* context, Parameter value)
 {
-    push(context, (StackElement) context->stringTable[value]);
+    push(context, (StackElement) charStringToKey(context->stringTable[value]));
 }
 
 Parameter
-bc_jmp_eq(ExecutionContext *context, Parameter delta)
+bc_jmp_eq(ExecutionContext* context, Parameter delta)
 {
     StackElement right = pop(context);
     StackElement left = pop(context);
@@ -94,7 +154,7 @@ bc_jmp_eq(ExecutionContext *context, Parameter delta)
 }
 
 Parameter
-bc_jmp_neq(ExecutionContext *context, Parameter delta)
+bc_jmp_neq(ExecutionContext* context, Parameter delta)
 {
     StackElement right = pop(context);
     StackElement left = pop(context);
@@ -105,7 +165,7 @@ bc_jmp_neq(ExecutionContext *context, Parameter delta)
 }
 
 Parameter
-bc_jmp_gt(ExecutionContext *context, Parameter delta)
+bc_jmp_gt(ExecutionContext* context, Parameter delta)
 {
     StackElement right = pop(context);
     StackElement left = pop(context);
@@ -116,7 +176,7 @@ bc_jmp_gt(ExecutionContext *context, Parameter delta)
 }
 
 Parameter
-bc_jmp_ge(ExecutionContext *context, Parameter delta)
+bc_jmp_ge(ExecutionContext* context, Parameter delta)
 {
     StackElement right = pop(context);
     StackElement left = pop(context);
@@ -127,7 +187,7 @@ bc_jmp_ge(ExecutionContext *context, Parameter delta)
 }
 
 Parameter
-bc_jmp_lt(ExecutionContext *context, Parameter delta)
+bc_jmp_lt(ExecutionContext* context, Parameter delta)
 {
     StackElement right = pop(context);
     StackElement left = pop(context);
@@ -138,7 +198,7 @@ bc_jmp_lt(ExecutionContext *context, Parameter delta)
 }
 
 Parameter
-bc_jmp_le(ExecutionContext *context, Parameter delta)
+bc_jmp_le(ExecutionContext* context, Parameter delta)
 {
     StackElement right = pop(context);
     StackElement left = pop(context);
@@ -148,8 +208,7 @@ bc_jmp_le(ExecutionContext *context, Parameter delta)
     return 0;
 }
 
-void
-bc_add(ExecutionContext *context)
+void bc_add(ExecutionContext* context)
 {
     StackElement right = pop(context);
     StackElement left = pop(context);
@@ -157,8 +216,7 @@ bc_add(ExecutionContext *context)
     push(context, result);
 }
 
-void
-bc_sub(ExecutionContext *context)
+void bc_sub(ExecutionContext* context)
 {
     StackElement right = pop(context);
     StackElement left = pop(context);
@@ -170,36 +228,40 @@ bc_sub(ExecutionContext *context)
 /* ByteCode Interpreter */
 
 StackElement
-interpret_0(ExecutionContext *context, Instruction *program) {
- 
-    return interpret( context,  program);
+interpret_0(ExecutionContext* context, Instruction* program)
+{
+
+    return interpret(context, program);
 }
 StackElement
-interpret_1(ExecutionContext *context, Instruction *program, StackElement p1) {
-   
-    push (context, p1);
-    return interpret( context,  program);
+interpret_1(ExecutionContext* context, Instruction* program, StackElement p1)
+{
+
+    push(context, p1);
+    return interpret(context, program);
 }
 StackElement
-interpret_2(ExecutionContext *context, Instruction *program, StackElement p1, StackElement p2) {
-   
-    push (context, p1);
-    push (context, p2);
-    return interpret( context,  program);
+interpret_2(ExecutionContext* context, Instruction* program, StackElement p1, StackElement p2)
+{
+
+    push(context, p1);
+    push(context, p2);
+    return interpret(context, program);
 }
 StackElement
-interpret_3(ExecutionContext *context, Instruction *program, StackElement p1, StackElement p2, StackElement p3 ) {
- 
-    push (context, p1);
-    push (context, p2);
-    push (context, p3);
-    return interpret( context,  program);
-} 
+interpret_3(ExecutionContext* context, Instruction* program, StackElement p1, StackElement p2, StackElement p3)
+{
+
+    push(context, p1);
+    push(context, p2);
+    push(context, p3);
+    return interpret(context, program);
+}
 
 StackElement
-interpret(ExecutionContext *context, Instruction *program)
+interpret(ExecutionContext* context, Instruction* program)
 {
-    uint64_t *address = (uint64_t *)(&program[1]);
+    uint64_t* address = (uint64_t*)(&program[1]);
     if (*address) {
         StackElement result = 0;
         if (context->passParameters) {
@@ -213,7 +275,7 @@ interpret(ExecutionContext *context, Instruction *program)
             case 1: {
                 JIT_1_args jitedcode = (JIT_1_args)*address;
                 StackElement p1 = pop(context);
-                result = (*jitedcode)( p1);
+                result = (*jitedcode)(p1);
             } break;
             case 2: {
                 JIT_2_args jitedcode = (JIT_2_args)*address;
@@ -243,8 +305,8 @@ interpret(ExecutionContext *context, Instruction *program)
     int tmps = progTmpCount(*program);
     //printf("Prog Arg Count %d, tmp count %d\n", nargs, tmps);
 
-    Instruction *instructionPointer = program + 3;
-    StackElement *args = context->stackPointer - nargs;
+    Instruction* instructionPointer = program + 3;
+    StackElement* args = context->stackPointer - nargs;
     context->stackPointer += tmps; // local storage for temps
 
     while (*instructionPointer != NO_MORE_BYTECODES) {
@@ -301,11 +363,11 @@ interpret(ExecutionContext *context, Instruction *program)
             context->stackPointer = args;
             return result;
             break;
-            }
+        }
         case PRIMITIVE:
             bc_primitive(context, getParameterFromInstruction(*instructionPointer));
             break;
-        default :
+        default:
             assert(false);
             break;
         }
@@ -314,41 +376,36 @@ interpret(ExecutionContext *context, Instruction *program)
     return *(context->stackPointer - 1);
 }
 
-
-uint64_t *
-getJitAddressSlot(Instruction *p)
+uint64_t*
+getJitAddressSlot(Instruction* p)
 {
-    return (uint64_t *)&p[1];
+    return (uint64_t*)&p[1];
 }
 
-void
-setJitAddressSlot(Instruction *p, uint64_t value)
+void setJitAddressSlot(Instruction* p, uint64_t value)
 {
-    uint64_t *slotForJitAddress = getJitAddressSlot(p);
+    uint64_t* slotForJitAddress = getJitAddressSlot(p);
     *getJitAddressSlot(p) = value;
 }
 
-bool
-hasJITAddress(Instruction *p)
+bool hasJITAddress(Instruction* p)
 {
     return *getJitAddressSlot(p) != 0;
 }
 
 uint64_t
-getJitAddress(ExecutionContext *context, int functionIndex)
+getJitAddress(ExecutionContext* context, int functionIndex)
 {
-    return context->functions[functionIndex].jitAddress; 
+    return context->functions[functionIndex].jitAddress;
 }
 
-void
-setJitAddress(ExecutionContext *context, int32_t functionIndex, uint64_t value)
+void setJitAddress(ExecutionContext* context, int32_t functionIndex, uint64_t value)
 {
-  context->functions[functionIndex].jitAddress = value; 
-  setJitAddressSlot(context->functions[functionIndex].program,   value);
+    context->functions[functionIndex].jitAddress = value;
+    setJitAddressSlot(context->functions[functionIndex].program, value);
 }
 
-int
-getFunctionCount(ExecutionContext *context)
+int getFunctionCount(ExecutionContext* context)
 {
     int functionIndex = 0;
     while (context->functions[functionIndex].name != NO_MORE_FUNCTIONS) {
@@ -357,16 +414,13 @@ getFunctionCount(ExecutionContext *context)
     return functionIndex;
 }
 
-void
-removeGeneratedCode(ExecutionContext *context, int functionIndex)
+void removeGeneratedCode(ExecutionContext* context, int functionIndex)
 {
-   context->functions[functionIndex].jitAddress = 0;
-   setJitAddressSlot(context->functions[functionIndex].program, 0);
-
+    context->functions[functionIndex].jitAddress = 0;
+    setJitAddressSlot(context->functions[functionIndex].program, 0);
 }
 
-void
-removeAllGeneratedCode(ExecutionContext *context)
+void removeAllGeneratedCode(ExecutionContext* context)
 {
     int functionIndex = 0;
     while (context->functions[functionIndex].name != NO_MORE_FUNCTIONS) {
@@ -375,8 +429,7 @@ removeAllGeneratedCode(ExecutionContext *context)
     }
 }
 
-void
-generateAllCode(ExecutionContext *context)
+void generateAllCode(ExecutionContext* context)
 {
     int functionIndex = 0;
     while (context->functions[functionIndex].name != NO_MORE_FUNCTIONS) {
@@ -385,14 +438,12 @@ generateAllCode(ExecutionContext *context)
     }
 }
 
-void
-resetContext(ExecutionContext *context)
+void resetContext(ExecutionContext* context)
 {
     context->stackPointer = context->stack;
 }
 
-bool
-loadLibrary(ExecutionContext *context, const char *libraryName)
+bool loadLibrary(ExecutionContext* context, const char* libraryName)
 {
     if (context->library != nullptr) {
         printf("Error loading %s: context already has a library loaded", libraryName);
@@ -407,8 +458,8 @@ loadLibrary(ExecutionContext *context, const char *libraryName)
 
     /* Open the shared object */
     dlerror();
-    void *handle = dlopen(sharelib, RTLD_NOW);
-    char *error = dlerror();
+    void* handle = dlopen(sharelib, RTLD_NOW);
+    char* error = dlerror();
     if (error) {
         printf("%s\n", error);
         return false;
@@ -416,54 +467,54 @@ loadLibrary(ExecutionContext *context, const char *libraryName)
     context->library = handle;
 
     /* Get the symbol table */
-    struct ExportedFunctionData *table = (struct ExportedFunctionData *)dlsym(handle, "b9_exported_functions");
+    struct ExportedFunctionData* table = (struct ExportedFunctionData*)dlsym(handle, "b9_exported_functions");
     error = dlerror();
     if (error) {
         printf("%s\n", error);
         return false;
     }
-    context->functions = table; 
+    context->functions = table;
 
     /* Get the string table */
-    PrimitiveData *primitives = (struct PrimitiveData *) dlsym(handle, "b9_primitives");
+    PrimitiveData* primitives = (struct PrimitiveData*)dlsym(handle, "b9_primitives");
     error = dlerror();
     if (error) {
         printf("%s\n", error);
         return false;
     }
-    context->primitives  = primitives;
+    context->primitives = primitives;
 
     /* Get the string table */
-    const char **stringTable = (const char **) dlsym(handle, "b9_exported_strings");
+    const char** stringTable = (const char**)dlsym(handle, "b9_exported_strings");
     error = dlerror();
     if (error) {
         printf("%s\n", error);
         return false;
     }
-    context->stringTable  = stringTable; 
+    context->stringTable = stringTable;
 
     if (context->debug > 0) {
-      int functionIndex = 0;
-      while (table[functionIndex].name != NO_MORE_FUNCTIONS) { 
-        printf ("Name %s, prog %p, jit %p \n", table[functionIndex].name, 
-            table[functionIndex].program, table[functionIndex].jitAddress);
-        functionIndex++;
-      } 
+        int functionIndex = 0;
+        while (table[functionIndex].name != NO_MORE_FUNCTIONS) {
+            printf("Name %s, prog %p, jit %p \n", table[functionIndex].name,
+                table[functionIndex].program, table[functionIndex].jitAddress);
+            functionIndex++;
+        }
     }
 
     return true;
 }
 
-Instruction *
-getFunctionAddress(ExecutionContext *context, const char *functionName)
+Instruction*
+getFunctionAddress(ExecutionContext* context, const char* functionName)
 {
     if (context->library == nullptr) {
         printf("Error function %s: context has no library loaded", functionName);
         return nullptr;
     }
 
-    Instruction *function = (Instruction *)dlsym(context->library, functionName);
-    char *error = dlerror();
+    Instruction* function = (Instruction*)dlsym(context->library, functionName);
+    char* error = dlerror();
     if (error) {
         printf("%s\n", error);
         return nullptr;
@@ -473,7 +524,7 @@ getFunctionAddress(ExecutionContext *context, const char *functionName)
 }
 
 StackElement
-runFunction(ExecutionContext *context, Instruction *function)
+runFunction(ExecutionContext* context, Instruction* function)
 {
     if (context->stackPointer != context->stack) {
         printf("runProgram: Warning Stack not Empty (%ld elements)\n", context->stackPointer - context->stack);
@@ -500,7 +551,7 @@ runFunction(ExecutionContext *context, Instruction *function)
 }
 
 StackElement
-timeFunction(ExecutionContext *context, Instruction *function, int loopCount, long *runningTime)
+timeFunction(ExecutionContext* context, Instruction* function, int loopCount, long* runningTime)
 {
     struct timeval timeBefore, timeAfter, timeResult;
     StackElement result;
@@ -517,14 +568,13 @@ timeFunction(ExecutionContext *context, Instruction *function, int loopCount, lo
     return result;
 }
 
-int
-parseArguments(ExecutionContext *context, int argc, char *argv[])
+int parseArguments(ExecutionContext* context, int argc, char* argv[])
 {
-    char *mainFunction = "b9main";
+    char* mainFunction = "b9main";
 
     /* Command Line Arguments */
     for (int i = 1; i < argc; i++) {
-        char *name = argv[i];
+        char* name = argv[i];
 
         if (!strcmp(name, "-help")) {
             printf("-loop run the program a certain number of times");
@@ -538,8 +588,8 @@ parseArguments(ExecutionContext *context, int argc, char *argv[])
         }
 
         if (!strcmp(name, "-inline")) {
-            context->inlineDepthAllowed = atoi(argv[i + 1]); 
-            printf ("Allowing Inlining of %d levels \n",  context->inlineDepthAllowed );
+            context->inlineDepthAllowed = atoi(argv[i + 1]);
+            printf("Allowing Inlining of %d levels \n", context->inlineDepthAllowed);
             i++;
             continue;
         }
@@ -548,8 +598,6 @@ parseArguments(ExecutionContext *context, int argc, char *argv[])
             context->verbose = 1;
             continue;
         }
-
-        
 
         if (!strcmp(name, "-debug")) {
             context->debug++;
@@ -589,7 +637,7 @@ parseArguments(ExecutionContext *context, int argc, char *argv[])
 
 /* Debug Helpers */
 
-const char *
+const char*
 b9ByteCodeName(ByteCode bc)
 {
     if (bc == PUSH_CONSTANT)
@@ -625,11 +673,10 @@ b9ByteCodeName(ByteCode bc)
     return "unknown bc";
 }
 
-void
-b9PrintStack(ExecutionContext *context)
+void b9PrintStack(ExecutionContext* context)
 {
 
-    StackElement *base = context->stack;
+    StackElement* base = context->stack;
     printf("------\n");
     while (base < context->stackPointer) {
         printf("%p: Stack[%ld] = %lld\n", base, base - context->stack, *base);

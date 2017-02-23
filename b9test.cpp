@@ -74,7 +74,6 @@ test_validateFibResult(ExecutionContext *context)
 bool
 run_test(ExecutionContext *context, const char *testName)
 {
-
     if (context->debug >= 2) {
         printf("Test \"%s\": starting\n", testName);
     }

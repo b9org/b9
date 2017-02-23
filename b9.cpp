@@ -22,21 +22,24 @@ pop(ExecutionContext* context)
     return *(--context->stackPointer);
 }
 
-void bc_call(ExecutionContext* context, Parameter value)
+void
+bc_call(ExecutionContext* context, Parameter value)
 {
     Instruction* program = context->functions[value].program;
     StackElement result = interpret(context, program);
     push(context, result);
 }
 
-void b9test(ExecutionContext* context)
-{ 
-    StackElement s = pop(context);
-    printf("%s\n",keyToChar(s));
-    push(context, s);
+extern "C" void
+b9_prim_puts(ExecutionContext* context)
+{
+   char * string = (char *) pop(context);
+   puts(string);
+   push(context, 0);
 }
 
-void hashTableAllocate(ExecutionContext* context)
+extern "C" void
+hashTableAllocate(ExecutionContext* context)
 {
     pHeap p = hashTable_allocate(8);
     if (context->debug >= 1) {
@@ -44,7 +47,9 @@ void hashTableAllocate(ExecutionContext* context)
     }
     push(context, (StackElement)p);
 }
-void hashTablePut(ExecutionContext* context)
+
+extern "C" void
+hashTablePut(ExecutionContext* context)
 {
     StackElement v = pop(context);
     StackElement k = pop(context);
@@ -56,24 +61,13 @@ void hashTablePut(ExecutionContext* context)
     push(context, (StackElement)hashTable_put(context, (pHeap)ht, (hashTableKey)k, (hashTableKey)v));
 }
 
-void hashTableGet(ExecutionContext* context)
+extern "C" void
+hashTableGet(ExecutionContext* context)
 {
     StackElement k = pop(context);
     StackElement ht = pop(context);
     push (context, (StackElement) hashTable_get(context, (pHeap)ht, (hashTableKey) k));
 }
-
-struct prim_table {
-    const char* name; 
-    void (*func)(ExecutionContext* context);
-};
-static struct prim_table prim_to_address[] = {
-    { "hashTableAllocate",  hashTableAllocate },
-    { "hashTablePut",  hashTablePut },
-    { "hashTableGet",  hashTableGet },
-    { "b9test",  b9test },
-    { 0, 0 }
-};
 
 void
 bc_primitive(ExecutionContext *context, Parameter value)
@@ -88,35 +82,13 @@ bc_primitive(ExecutionContext *context, Parameter value)
         *(void**)(&primitive) = dlsym(RTLD_DEFAULT, name);
         const char* error = dlerror();
         if (error) {
-           // printf("%s\n", error);
-            primitive = 0;
-            int count = 0;
-            while (prim_to_address[count].name != 0) { 
-                if (!strcmp(prim_to_address[count].name, name)) {
-                  //  printf("running the function IN TABLE %s  %p\n", name, primitive);
-                     (*prim_to_address[count].func)( context);
-                     return;
-                }
-                count++;
-            } 
-            if (primitive == 0) {
-                printf("primitive missing %s\n", name);
-                return;
-            }
+           printf("%s\n", error);
         }
 
         printf("CACHE ADDRESS %s %p\n", name, primitive);
         context->primitives[value].address = primitive;
     }
     (context->primitives[value].address)(context);
-   // (*context->primitives[value].address)(context);
-//        printf("CALL ADDRESS  %p\n", primitive);
-//   b9test( context);
-//        printf("CALL ADDRESS 2 %p\n", primitive);
-//   primitive = (CallPrimitive *) b9test;
-//        printf("CALL ADDRESS 3 %p\n", primitive);
-//   (*primitive)(context);
-//        printf("CALL ADDRESS 4 %p\n", primitive);
 }
 
 void bc_push_from_arg(ExecutionContext* context, StackElement* args, Parameter offset)

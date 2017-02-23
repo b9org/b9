@@ -1,12 +1,11 @@
 
-primitive("b9test", "void", "string");
-
+primitive("b9_prim_puts", "void", "string");
 primitive("hashTableAllocate", "Int64");
 primitive("hashTablePut", "void", "string", "string");
 primitive("hashTableGet", "string", "string"); 
 
 function b9puts(a) {
-    b9test(a);
+    b9_prim_puts(a);
 }
 
 function testHashmap( ) {

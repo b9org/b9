@@ -1,16 +1,3 @@
-primitive("b9_prim_print_string", "void", "string");
-primitive("b9_prim_print_number", "void", "int");
-primitive("hashTableAllocate", "Int64");
-primitive("hashTablePut", "void", "string", "string");
-primitive("hashTableGet", "string", "string");
-
-function b9PrintString(a) {
-    b9_prim_print_string(a);
-}
-
-function b9PrintNumber(a) {
-    b9_prim_print_number(a);
-}
 
 function b9main() {
     var a = 100;

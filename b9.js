@@ -10,7 +10,10 @@ args.forEach(function(arg) {
 });
 
 files.forEach(function(filename) {
-    var content = fs.readFileSync(filename, 'utf-8');
+    // Load the standard library
+
+    var content = fs.readFileSync("b9stdlib.src", 'utf-8');
+    content += fs.readFileSync(filename, 'utf-8');
     var parsed = esprima.parse(content);
     var codegen = new CodeGen(filename);
     codegen.handleHeaders();

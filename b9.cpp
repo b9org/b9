@@ -30,52 +30,6 @@ bc_call(ExecutionContext* context, Parameter value)
     push(context, result);
 }
 
-extern "C" void
-b9_prim_print_string(ExecutionContext* context)
-{
-   puts(string);
-   push(context, 0);
-}
-
-extern "C" void
-b9_prim_print_string(ExecutionContext* context)
-{
-   char * string = (char *) keyToChar(pop(context));
-   puts(string);
-   push(context, 0);
-}
-
-extern "C" void
-hashTableAllocate(ExecutionContext* context)
-{
-    pHeap p = hashTable_allocate(8);
-    if (context->debug >= 1) {
-        printf("IN hashTableAllocate %p\n", p);
-    }
-    push(context, (StackElement)p);
-}
-
-extern "C" void
-hashTablePut(ExecutionContext* context)
-{
-    StackElement v = pop(context);
-    StackElement k = pop(context);
-    StackElement ht = pop(context);
-    if (context->debug >= 1) {
-        printf("IN hashTablePut %p %p(%s) %p(%s) \n", ht, k, k, v, v);
-    }
-
-    push(context, (StackElement)hashTable_put(context, (pHeap)ht, (hashTableKey)k, (hashTableKey)v));
-}
-
-extern "C" void
-hashTableGet(ExecutionContext* context)
-{
-    StackElement k = pop(context);
-    StackElement ht = pop(context);
-    push (context, (StackElement) hashTable_get(context, (pHeap)ht, (hashTableKey) k));
-}
-
 void
 bc_primitive(ExecutionContext *context, Parameter value)
 {
@@ -616,6 +570,55 @@ int parseArguments(ExecutionContext* context, int argc, char* argv[])
         continue;
     }
     return 0;
+}
+
+/* B9 Primitives */
+
+extern "C" void
+b9_prim_print_number(ExecutionContext *context)
+{
+    int *number = (int *)pop(context);
+    printf("%d\n", number);
+    push(context, 0);
+}
+
+extern "C" void
+b9_prim_print_string(ExecutionContext* context)
+{
+   char * string = (char *) keyToChar(pop(context));
+   puts(string);
+   push(context, 0);
+}
+
+extern "C" void
+b9_prim_hash_table_allocate(ExecutionContext* context)
+{
+    pHeap p = hashTable_allocate(8);
+    if (context->debug >= 1) {
+        printf("IN hashTableAllocate %p\n", p);
+    }
+    push(context, (StackElement)p);
+}
+
+extern "C" void
+b9_prim_hash_table_put(ExecutionContext* context)
+{
+    StackElement v = pop(context);
+    StackElement k = pop(context);
+    StackElement ht = pop(context);
+    if (context->debug >= 1) {
+        printf("IN hashTablePut %p %p(%s) %p(%s) \n", ht, k, k, v, v);
+    }
+
+    push(context, (StackElement)hashTable_put(context, (pHeap)ht, (hashTableKey)k, (hashTableKey)v));
+}
+
+extern "C" void
+b9_prim_hash_table_get(ExecutionContext* context)
+{
+    StackElement k = pop(context);
+    StackElement ht = pop(context);
+    push (context, (StackElement) hashTable_get(context, (pHeap)ht, (hashTableKey) k));
 }
 
 /* Debug Helpers */

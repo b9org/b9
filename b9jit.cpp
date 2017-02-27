@@ -19,45 +19,9 @@
 #include "b9.h"
 #include "b9jit.hpp"
 
-const char*
-b9_bytecodename(ByteCode bc)
-{
-    if (bc == PUSH_CONSTANT)
-        return "PUSH_CONSTANT";
-    if (bc == DROP)
-        return "DROP";
-    if (bc == PUSH_FROM_VAR)
-        return "PUSH_FROM_VAR";
-    if (bc == POP_INTO_VAR)
-        return "POP_INTO_VAR";
-    if (bc == SUB)
-        return "SUB";
-    if (bc == ADD)
-        return "ADD";
-    if (bc == CALL)
-        return "CALL";
-    if (bc == RETURN)
-        return "RETURN";
-    if (bc == JMP)
-        return "JMP";
-    if (bc == JMP_EQ)
-        return "JMP_EQ";
-    if (bc == JMP_NEQ)
-        return "JMP_NEQ";
-    if (bc == JMP_GT)
-        return "JMP_GT";
-    if (bc == JMP_GE)
-        return "JMP_GE";
-    if (bc == JMP_LE)
-        return "JMP_LE";
-    if (bc == JMP_LT)
-        return "JMP_LT";
-    return "unknown bc";
-}
-
 void printVMState(ExecutionContext* context, int64_t pc, ByteCode bytecode, Parameter param)
 {
-    printf("Executing at pc %lld, bc is (%d, %s), param is (%d)\n", pc, bytecode, b9_bytecodename(bytecode), param);
+    printf("Executing at pc %lld, bc is (%d, %s), param is (%d)\n", pc, bytecode, b9ByteCodeName(bytecode), param);
     b9PrintStack(context);
 }
 
@@ -265,7 +229,7 @@ void B9Method::defineFunctions()
 
 void B9Method::createBuilderForBytecode(TR::BytecodeBuilder** bytecodeBuilderTable, uint8_t bytecode, int64_t bytecodeIndex)
 {
-    TR::BytecodeBuilder* newBuilder = OrphanBytecodeBuilder(bytecodeIndex, (char*)b9_bytecodename(bytecode));
+    TR::BytecodeBuilder* newBuilder = OrphanBytecodeBuilder(bytecodeIndex, (char*)b9ByteCodeName(bytecode));
     //printf("Created bytecodebuilder index=%d bc=%d param=%d %p\n", bytecodeIndex, bytecode, getParameterFromInstruction(program[bytecodeIndex]), newBuilder);
     bytecodeBuilderTable[bytecodeIndex] = newBuilder;
 }
@@ -433,7 +397,7 @@ bool B9Method::generateILForBytecode(
         if (jumpToBuilderForInlinedReturn) {
             printf("INLINED METHOD: skew %d return bc will jump to %p: ", firstArgumentIndex, jumpToBuilderForInlinedReturn);
         }
-        printf("generating index=%d bc=%s(%d) param=%d \n", bytecodeIndex, b9_bytecodename(bytecode), bytecode, getParameterFromInstruction(instruction));
+        printf("generating index=%d bc=%s(%d) param=%d \n", bytecodeIndex, b9ByteCodeName(bytecode), bytecode, getParameterFromInstruction(instruction));
     }
 
     if (context->debug == 2) {

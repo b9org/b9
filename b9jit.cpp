@@ -503,11 +503,11 @@ bool B9Method::generateILForBytecode(
         if (nextBytecodeBuilder)
             builder->AddFallThroughBuilder(nextBytecodeBuilder);
     } break;
-    case PUSH_STRING: {
-            int index = getParameterFromInstruction(instruction);
-            push(builder,  builder->ConstAddress(&context->stringTable[index]));
-            builder->AddFallThroughBuilder(nextBytecodeBuilder);
-          } break;
+    // case PUSH_STRING: {
+    //         int index = getParameterFromInstruction(instruction);
+    //         push(builder,  builder->ConstAddress(&context->stringTable[index]));
+    //         builder->AddFallThroughBuilder(nextBytecodeBuilder);
+    //       } break;
     //case PRIMITIVE: {
     //      int index = getParameterFromInstruction(instruction);
     //      push(builder,  builder->ConstAddress(&context->stringTable[index]));

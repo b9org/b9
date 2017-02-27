@@ -33,7 +33,7 @@ bc_call(ExecutionContext* context, Parameter value)
 extern "C" void
 b9_prim_puts(ExecutionContext* context)
 {
-   char * string = (char *) pop(context);
+   char * string = (char *) keyToChar(pop(context));
    puts(string);
    push(context, 0);
 }

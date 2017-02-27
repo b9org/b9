@@ -55,7 +55,7 @@ pHeap allocateString(const char* s)
 hashTableKey hashTable_get(ExecutionContext* context, pHeap hashTable, hashTableKey key)
 {
     hashTableKey* kv_start = addressFirstSlot(hashTable);
-    hashTableKey* kv_end = kv_start + hashTable->size;
+    hashTableKey* kv_end = (hashTableKey*) (((char*)kv_start) + hashTable->size);
     int num_pairs = (kv_end - kv_start) / 2;
     int start = djb2hash(keyToChar(key)) % num_pairs;
     hashTableKey* kv_hashed_start = kv_start + (start * 2);
@@ -81,7 +81,7 @@ hashTableKey hashTable_get(ExecutionContext* context, pHeap hashTable, hashTable
 void * hashTable_put(ExecutionContext* context, pHeap hashTable, hashTableKey key, hashTableKey value)
 {
     hashTableKey* kv_start = addressFirstSlot(hashTable);
-    hashTableKey* kv_end = kv_start + hashTable->size;
+    hashTableKey* kv_end = (hashTableKey*) (((char*)kv_start) + hashTable->size);
     int num_elements = (kv_end - kv_start);
     int num_pairs = num_elements / 2;
     int start = djb2hash(keyToChar(key)) % num_pairs;

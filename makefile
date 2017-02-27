@@ -39,7 +39,7 @@ program: b9
 	node b9.js program.src > program.cpp
 	cat program.cpp
 	$(CXX) -std=c++11 -shared -o program.so program.cpp
-	./b9 program.so
+	./b9 -debug program.so
 
 bench: b9 bench.so
 	./b9

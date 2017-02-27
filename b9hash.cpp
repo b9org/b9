@@ -24,7 +24,6 @@ hashTableKey* addressFirstSlot(pHeap hashedTable)
 }
 
 bool hashTableKeyEquals(hashTableKey k1, hashTableKey k2) {
-  printf ("hashtable equals %p %p \n", k1, k2) ;
   return !strcmp(keyToChar(k1),keyToChar(k2));
 }
 

@@ -85,7 +85,9 @@ bc_primitive(ExecutionContext *context, Parameter value)
            printf("%s\n", error);
         }
 
-        printf("CACHE ADDRESS %s %p\n", name, primitive);
+        if (context->debug >= 1) {
+           printf("cache address %s %p\n", name, primitive);
+        }
         context->primitives[value].address = primitive;
     }
     (context->primitives[value].address)(context);

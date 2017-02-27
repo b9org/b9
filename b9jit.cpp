@@ -128,7 +128,9 @@ void generateCode(ExecutionContext* context, int32_t functionIndex)
     if (0 == rc) {
         setJitAddress(context,  functionIndex, (uint64_t) entry); 
     } else {
-        printf("Failed to compile method \"%s\"\n", context->functions[functionIndex].name);
+        if (context-> debug >= 1) {
+            printf("Failed to compile method \"%s\"\n", context->functions[functionIndex].name);
+        }
     }
 }
 
@@ -600,7 +602,9 @@ bool B9Method::generateILForBytecode(
 
     } break;
     default:
-        printf(" genIlForByteCode Failed, unrecognized byte code :%d\n", bytecode);
+        if (context->debug >= 1) {
+            printf(" genIlForByteCode Failed, unrecognized byte code :%d\n", bytecode);
+        }
         handled = false;
         break;
     }

@@ -1,74 +1,30 @@
-
-primitive("b9_prim_puts", "void", "string");
+primitive("b9_prim_print_string", "void", "string");
+primitive("b9_prim_print_number", "void", "int");
 primitive("hashTableAllocate", "Int64");
 primitive("hashTablePut", "void", "string", "string");
-primitive("hashTableGet", "string", "string"); 
+primitive("hashTableGet", "string", "string");
 
-function b9puts(a) {
-    b9_prim_puts(a);
+function b9PrintString(a) {
+    b9_prim_print_string(a);
 }
 
-function testHashmap( ) {
-    var ht = hashTableAllocate();
-	hashTablePut (ht, "hi", "mom");
-	var result = hashTableGet (ht, "hi");
-	b9puts(result);
-	hashTablePut (ht, "hi2", "mom2");
-	var result = hashTableGet (ht, "hi");
-	b9puts(result);
-	var result = hashTableGet (ht, "hi2");
-	b9puts(result);
- 
-	hashTablePut (ht, "hi3", "mom3");
-	hashTablePut (ht, "hi4", "mom4");
-	hashTablePut (ht, "hi5", "mom5");
-	hashTablePut (ht, "hi6", "mom6");
+function b9PrintNumber(a) {
+    b9_prim_print_number(a);
+}
 
-	var result = hashTableGet (ht, "hi6");
-	b9puts(result);
+function b9main() {
+    var a = 100;
+    var b = 20;
+    b9PrintString("a + b =");
+    b9PrintNumber(a + b);
 
+    return fib(12);
 }
 
 // main, no args for b9 entry point
 function fib(arg) {
-	if (3 > arg)
-	return 1;
-
-	return fib(arg - 1) + fib(arg - 2);
+    if (3 > arg)
+    return 1;
+    return fib(arg - 1) + fib(arg - 2);
 }
 
-function b9main() {
-	var a = 100;
- 
-
-	testHashmap( );
-
-
-    b9puts("hi");
-
-	while (a > 0) {
-		a = a - 1;
-		fib(12);
-	}
-}
-
-function call_sub(a,b) {
-	var c = a-b;
-	return c; 
-}
-
-function call_add(a,b) {
-	var c = a+b;
-	return c;
-}
-
-// test a while loop, should return repeatCount * 2
-function test_while(repeatCount) { 
-	var result = 0;
-	var a = repeatCount; 
-	while (a > 0) {
-		a = a - 1;
-		result = result + 2;
-	}
-	return result;
-}

@@ -40,14 +40,14 @@ pHeap hashTable_allocate(int num_elements)
 
 pHeap allocateString(const char* s)
 {
-    int stringSize = strlen(s);
+    int stringSize = strlen(s) + 1; /* +1 for NULL terminator */
     int allocSize = stringSize + heap_sizeofheader;
-    pHeap heapString = (pHeap)heap_allocate(context, allocSize); 
+    pHeap heapString = (pHeap)heap_allocate(context, allocSize);
     heapString->size = allocSize;
     heapString->type = 0;
     char *dest = (char*) addressFirstSlot(heapString);
     memcpy (dest, s, stringSize);
-    dest[stringSize] = 0;
+    dest[stringSize] = 0; /* Null terminate the string */
     return heapString;
 }
 

@@ -61,7 +61,7 @@ getByteCodeFromInstruction(Instruction instruction)
 
 static constexpr Parameter
 getParameterFromInstruction(Instruction instruction)
-{ 
+{
     return instruction & 0x800000 ? instruction | 0xFF000000: instruction & 0xFFFFFF;
 }
 

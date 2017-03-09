@@ -53,7 +53,7 @@ format:
 	clang-format -i $(wildcard *.cpp *.hpp)
 
 tidy:
-	clang-tidy -checks="*" $(wildcard *.cpp *.hpp)
+	clang-tidy -extra-arg="$(cxxflags)" $(wildcard *.cpp *.hpp)
 
 .PHONY: program bench test clean format tidy
 

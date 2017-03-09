@@ -2,58 +2,52 @@ default: all
 
 all: b9 $(b9_programs)
 
-programs = b9 b9test
+executables = b9 b9test
 b9_objects = main.o b9jit.o b9.o b9hash.o
 b9test_objects = b9.o b9jit.o b9test.o b9hash.o
 b9_programs = program.so bench.so test.so
 
-omr_srcdir := ./omr
-IJIT = $(omr_srcdir)/jitbuilder/release/include
-IJIT1 = $(IJIT)/compiler
-LIB=$(omr_srcdir)/jitbuilder/release/libjitbuilder.a
-LINK=-ldl -lm $(LIB)
+omr_dir := ./omr
+jitbuilder_dir := $(omr_dir)/jitbuilder/release
+jitbuilder_includes := -I$(jitbuilder_dir)/include -I$(jitbuilder_dir)/include/compiler
+jitbuilder_lib := $(jitbuilder_dir)/libjitbuilder.a
 
-cflags = -std=c++11 -fPIC -fno-rtti -rdynamic
-b9: cflags+=-I./omr/compiler/ 
-b9jit.o: cflags+=-I$(IJIT) -I$(IJIT1)
+ldflags := -ldl -lm $(jitbuilder_lib)
+cxxflags = -std=c++11 -fPIC -fno-rtti -rdynamic $(jitbuilder_includes)
 
-$(foreach program,$(programs),$(eval $(program): $($(program)_objects)))
+$(foreach program,$(executables),$(eval $(program): $($(program)_objects)))
 
 %.cpp: %.src
 	node b9.js $^ > $@
 
-%.o : %.cpp
-	$(CXX) -o $@ -c $< $(cflags) $(CFLAGS)
+%.o : %.cpp $(jitbuilder_lib)
+	$(CXX) -o $@ -c $< $(cxxflags) $(CXXFLAGS)
 
 %.so: %.o
-	$(CXX) -std=c++11 -shared -o $@ $^ $(CFLAGS)
+	$(CXX) -shared -o $@ $^ $(LDFLAGS)
 
-$(programs): $(LIB)
-	$(CXX) -o $@ -lm $^ -ldl $(cflags) $(CFLAGS) $(LINK)
+$(executables):
+	$(CXX) -o $@ $^ $(cxxflags) $(CXXFLAGS) $(ldflags) $(LDFLAGS)
 
-$(LIB): $(omr_srcdir)
-	(cd $(omr_srcdir)/; ./configure)
-	(cd $(omr_srcdir)/jitbuilder; make)
+$(jitbuilder_lib): $(omr_dir)
+	(cd $(omr_dir)/; ./configure)
+	(cd $(omr_dir)/jitbuilder; make)
 
-program: b9
-	node b9.js program.src > program.cpp
+program: program.so program.cpp
 	cat program.cpp
-	$(CXX) -std=c++11 -shared -o program.so program.cpp
 	./b9 -debug program.so
 
 bench: b9 bench.so
-	./b9
+	./b9 bench.so
 
 test: b9 test.so b9test $(b9_programs)
 	./b9 test.so
-	./b9test  
+	./b9test
 
 clean:
-	$(RM) b9
+	$(RM) $(executables)
 	$(RM) $(b9_objects)
 	$(RM) $(b9_programs)
 
-$(omr_srcdir):
-	if [ -d ../omr ]; then ln -s ../omr ./omr; else git clone https://github.com/jduimovich/omr.git; fi
-
 .PHONY: program bench test clean
+

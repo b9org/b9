@@ -49,5 +49,11 @@ clean:
 	$(RM) $(b9_objects)
 	$(RM) $(b9_programs)
 
-.PHONY: program bench test clean
+format:
+	clang-format -i $(wildcard *.cpp *.hpp)
+
+tidy:
+	clang-tidy -checks="*" $(wildcard *.cpp *.hpp)
+
+.PHONY: program bench test clean format tidy
 

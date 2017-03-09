@@ -15,56 +15,64 @@ namespace om {
 #define fail 0b11
 
 class Address {
-    public:
-    Address (uint8_t *address) : address_(address) {}
+ public:
+  Address(uint8_t *address) : address_(address) {}
 
-    template <typename Type> constexpr Type to();
-    private:
-    uint8_t* address_;
+  template <typename Type>
+  constexpr Type to();
+
+ private:
+  uint8_t *address_;
 };
 
-template <typename Type> constexpr Type Address::to() {
-    return reinterpret_cast<Type>(address_);
+template <typename Type>
+constexpr Type Address::to() {
+  return reinterpret_cast<Type>(address_);
 }
 
 class Value {
-public:
-    static Value *toValue(void *);
-    bool isObject();
+ public:
+  static Value *toValue(void *);
+  bool isObject();
 
-    /* Implementation */
+  /* Implementation */
 
-private:
-    uint64_t flags_;
+ private:
+  uint64_t flags_;
 };
-
 
 // Cell
 // Anything that can be GC'ed
 
 class Cell {
-public:
-    uint32_t eyeCatcher_ = eyeCatcher;
-    uint32_t flags_;
-    uint32_t size_;
+ public:
+  uint32_t eyeCatcher_ = eyeCatcher;
+  uint32_t flags_;
+  uint32_t size_;
 
-    static const uint32_t eyeCatcher = 0x8d8d8d8d;
+  static const uint32_t eyeCatcher = 0x8d8d8d8d;
 
-protected:
-    Cell() = default;
+ protected:
+  Cell() = default;
 };
 
 // Allocator API
 class MemoryContext;
 
 class MallocAllocator {
-public:
-    template <typename Type> static Type allocate(MemoryContext *context) { return static_cast<Type>(malloc(sizeof(Type))); }
-    template <typename Type> static Type allocate(MemoryContext *context, size_t size) { return static_cast<Type>(size); }
-private:
-    MallocAllocator() = delete;
-};
+ public:
+  template <typename Type>
+  static Type allocate(MemoryContext *context) {
+    return static_cast<Type>(malloc(sizeof(Type)));
+  }
+  template <typename Type>
+  static Type allocate(MemoryContext *context, size_t size) {
+    return static_cast<Type>(size);
+  }
 
+ private:
+  MallocAllocator() = delete;
+};
 
 using DefaultAllocator = MallocAllocator;
 
@@ -73,109 +81,103 @@ using DefaultAllocator = MallocAllocator;
 class Shape;
 
 class ObjectHeader {
-public:
-    Cell cell_;
-    Shape *shape_;
+ public:
+  Cell cell_;
+  Shape *shape_;
 };
 
 class Object {
-public:
-    template <typename Allocator = DefaultAllocator> Object(MemoryContext *memoryContext, Shape *shape)
-    {
-        objectHeader_ = Allocator::allocate(memoryContext, getSize());
-        objectHeader_->shape_ = shape;
-        objectHeader_->cell_.flags_ = 0x0;
-        objectHeader_->cell_.size_ = getSize();
-    }
+ public:
+  template <typename Allocator = DefaultAllocator>
+  Object(MemoryContext *memoryContext, Shape *shape) {
+    objectHeader_ = Allocator::allocate(memoryContext, getSize());
+    objectHeader_->shape_ = shape;
+    objectHeader_->cell_.flags_ = 0x0;
+    objectHeader_->cell_.size_ = getSize();
+  }
 
-    ~Object() {
-        // Do nothing
-    }
+  ~Object() {
+    // Do nothing
+  }
 
-    Shape * getShape() { return objectHeader_->shape_; }
-    size_t getSize() { return objectHeader_->cell_.size_; }
+  Shape *getShape() { return objectHeader_->shape_; }
+  size_t getSize() { return objectHeader_->cell_.size_; }
 
-private:
-    ObjectHeader *objectHeader_;
+ private:
+  ObjectHeader *objectHeader_;
 };
 
 /* class Symbol; */
 typedef uintptr_t Symbol;
 
 class SlotDescriptor {
-private:
-    Symbol name_;
+ private:
+  Symbol name_;
 };
-
 
 typedef uint64_t Slot;
 
 class Shape final : public Object {
-public:
+ public:
+  intptr_t getSlotCount();
+  Slot slot_;
 
-    intptr_t getSlotCount ();
-    Slot slot_;
-private:
-    SlotDescriptor slots_[0];
-
+ private:
+  SlotDescriptor slots_[0];
 };
 
 typedef uintptr_t Bytes;
 
 class Heap {
-public:
-    bool init() { return true; }
-    //Address allocate(Bytes size) {
-    //    return static_cast<Address>(malloc(size));
-    //}
-private:
+ public:
+  bool init() { return true; }
+  // Address allocate(Bytes size) {
+  //    return static_cast<Address>(malloc(size));
+  //}
+ private:
 };
 
-
 class MemoryContext {
-public:
-    MemoryContext() = default;
+ public:
+  MemoryContext() = default;
 
-    bool init(Heap &heap) {
-        heap_ = heap;
-        return true;
-    }
+  bool init(Heap &heap) {
+    heap_ = heap;
+    return true;
+  }
 
-    Object *allocate() {
-        return nullptr;
-    }
+  Object *allocate() { return nullptr; }
 
-    Heap &heap_;
+  Heap &heap_;
 
-private:
+ private:
 };
 
 class Runtime {
-public:
-    bool init(Heap &heap) {
-        heap_ = heap;
+ public:
+  bool init(Heap &heap) {
+    heap_ = heap;
 
-        // Allocate first shape
-        baseShape_ = Runtime::createBaseShape(&heap);
+    // Allocate first shape
+    baseShape_ = Runtime::createBaseShape(&heap);
 
-        return true;
-    }
+    return true;
+  }
 
-private:
-    Heap &heap_;
-    Shape *baseShape_;
+ private:
+  Heap &heap_;
+  Shape *baseShape_;
 
-    static Shape* createBaseShape(Heap *heap) {
-        Bytes size = sizeof(Shape);
-        Shape *shape; // = heap->allocate(size);
+  static Shape *createBaseShape(Heap *heap) {
+    Bytes size = sizeof(Shape);
+    Shape *shape;  // = heap->allocate(size);
 
-        //shape->
-        return shape;
-    }
+    // shape->
+    return shape;
+  }
 };
-
 }
 
-} // namespace b9
+}  // namespace b9
 
-#endif // B9OBJECT_HPP_
+#endif  // B9OBJECT_HPP_

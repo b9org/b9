@@ -1,4 +1,5 @@
 #include "b9.h"
+#include "b9object.hpp"
 #include "b9hash.hpp"
 
 #include <cassert>
@@ -507,7 +508,7 @@ timeFunction(ExecutionContext* context, Instruction* function, int loopCount, lo
 
 int parseArguments(ExecutionContext* context, int argc, char* argv[])
 {
-    char* mainFunction = "b9main";
+    const char* mainFunction = "b9main";
 
     /* Command Line Arguments */
     for (int i = 1; i < argc; i++) {

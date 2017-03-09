@@ -1,124 +1,12 @@
 
-#include "b9.h"
-
 #ifndef B9_HASH_INCL
 #define B9_HASH_INCL
 
+#include <cassert>
 #include <cstdlib>
 
-namespace b9 {
-namespace om {
-class Value {
-public:
-    static Value *toValue(void *);
-    bool isObject();
+#include "b9.h"
 
-    /* Implementation */
-
-private:
-    uint64_t flags_;
-};
-
-// Anything that can be GC'ed
-class Cell {
-public:
-    uint32_t eyeCatcher_;
-    uint32_t flags_;
-    uint32_t size_;
-
-protected:
-    Cell() = default;
-};
-
-
-class Shape;
-
-class Object : public Cell {
-public:
-    Shape * getShape() { return shape_; }
-
-private:
-    Shape *shape_;
-
-};
-
-/* class Symbol; */
-typedef uintptr_t Symbol;
-
-class SlotDescriptor {
-private:
-    Symbol name_;
-};
-
-class Shape final : public Object {
-public:
-    intptr_t getSlotCount ();
-    Slot
-private:
-    SlotDescriptor slots_[0];
-
-};
-
-typedef uint8_t * Address;
-typedef uintptr_t Bytes;
-
-class Heap {
-public:
-    bool init() { return true; }
-    Address allocate(Bytes size) {
-        return static_cast<Address>(malloc(size));
-    }
-private:
-};
-
-class Allocator {
-public:
-    static Object *allocate();
-
-private:
-};
-
-class MemoryContext {
-public:
-    MemoryContext() = default;
-
-    bool init(Heap &heap) {
-        heap_ = heap;
-    }
-
-    Object *allocate() {
-    }
-
-    Heap &heap_;
-
-private:
-};
-
-class Runtime {
-public:
-    bool init(Heap &heap) {
-        heap_ = heap;
-
-        // Allocate first shape
-        baseShape_ = Runtime::createBaseShape(&heap);
-    }
-
-private:
-    Heap &heap_;
-    Shape *baseShape;
-
-    static void createBaseShape(Heap *heap) {
-        Bytes size = sizeof(Shape);
-        Shape *shape = heap->allocate(size);
-
-        shape->
-        return shape;
-    }
-};
-
-}
-
-} // namespace b9
 
 typedef void* allocated_from_heap;
 
@@ -161,10 +49,3 @@ pHeap allocateString(const char* s);
 
 #endif
 
-
-
-
-
-
-
-kkkzzzz

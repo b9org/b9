@@ -1,14 +1,5 @@
-
-
 #ifndef B9_JIT_INCL
 #define B9_JIT_INCL
-
-namespace TR {
-class IlBuilder;
-class BytecodeBuilder;
-class TypeDictionary;
-class IlType;
-}
 
 class B9Method : public TR::MethodBuilder {
  public:

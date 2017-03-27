@@ -91,6 +91,8 @@ run_test(ExecutionContext *context, const char *testName)
             printf("Mode %s, Test \"%s\": success, returned %X\n", mode, testName, result);
         }
     }
+ 
+
     return result;
 }
 
@@ -135,6 +137,9 @@ main(int argc, char *argv[])
     test_validateFibResult(context);
 
     int count;
+    int passed = 0;
+    int failed = 0;
+
     for (count = 0; count < 2; count++) {
 
         // run all tests in the program which start with test_
@@ -142,13 +147,20 @@ main(int argc, char *argv[])
         int functionIndex = 0;
         while (functions[functionIndex].name != NO_MORE_FUNCTIONS) {
             if (strncmp("test_", functions[functionIndex].name, 5) == 0) {
-                run_test(context, functions[functionIndex].name);
+                if (run_test(context, functions[functionIndex].name)) { 
+                    passed++;
+                } else { 
+                    failed++;
+                }
             }
             functionIndex++;
         }
         generateAllCode(context); // first time interpreted, second time JIT
     }
 
+    double percent = (passed*100.0/(passed+failed));
+
+    printf ("B9 Tests  %4.1f %% Passed. Total tests %d. Passed (%d) Failed (%d) \n", percent, passed+failed, passed, failed);
     if (result) {
         return EXIT_SUCCESS;
     } else {

@@ -439,24 +439,14 @@ bool B9Method::generateILForBytecode(
     case JMP:
         handle_bc_jmp(builder, bytecodeBuilderTable, program,bytecodeIndex);
         break;
-    case JMP_EQ:
-        handle_bc_jmp_eq(builder, bytecodeBuilderTable, program,bytecodeIndex, nextBytecodeBuilder);
-        break;
+    case JMP_EQ: 
     case JMP_NEQ:
-        handle_bc_jmp_neq(builder, bytecodeBuilderTable, program,bytecodeIndex, nextBytecodeBuilder);
-        break;
     case JMP_LT:
-        handle_bc_jmp_lt(builder, bytecodeBuilderTable, program,bytecodeIndex, nextBytecodeBuilder);
-        break;
     case JMP_LE:
-        handle_bc_jmp_le(builder, bytecodeBuilderTable, program,bytecodeIndex, nextBytecodeBuilder);
-        break;
     case JMP_GT:
-        handle_bc_jmp_gt(builder, bytecodeBuilderTable, program,bytecodeIndex, nextBytecodeBuilder);
-        break;
     case JMP_GE:
-        handle_bc_jmp_ge(builder, bytecodeBuilderTable, program,bytecodeIndex, nextBytecodeBuilder);
-        break;
+        handle_bc_jmp_condition(builder, bytecodeBuilderTable, program,bytecodeIndex, nextBytecodeBuilder);
+        break; 
     case SUB:
         handle_bc_sub(builder, nextBytecodeBuilder);
         break;
@@ -590,112 +580,42 @@ void B9Method::handle_bc_jmp(TR::BytecodeBuilder* builder, TR::BytecodeBuilder**
     builder->Goto(destBuilder);
 }
 
-void B9Method::handle_bc_jmp_eq(TR::BytecodeBuilder* builder,
+void B9Method::handle_bc_jmp_condition(TR::BytecodeBuilder* builder,
     TR::BytecodeBuilder** bytecodeBuilderTable,
-    Instruction *program,
+    Instruction *program,  
     long bytecodeIndex,
     TR::BytecodeBuilder* nextBuilder)
 {
     Instruction instruction = program[bytecodeIndex];
+    ByteCode bytecode = getByteCodeFromInstruction(instruction);
     StackElement delta = getParameterFromInstruction(instruction) + 1;
     int next_bc_index = bytecodeIndex + delta;
     TR::BytecodeBuilder* jumpTo = bytecodeBuilderTable[next_bc_index];
 
     TR::IlValue* right = pop(builder);
     TR::IlValue* left = pop(builder);
-
-    builder->IfCmpEqual(jumpTo, left, right);
-    builder->AddFallThroughBuilder(nextBuilder);
-}
-
-void B9Method::handle_bc_jmp_neq(TR::BytecodeBuilder* builder,
-    TR::BytecodeBuilder** bytecodeBuilderTable,
-    Instruction *program,
-    long bytecodeIndex,
-    TR::BytecodeBuilder* nextBuilder)
-{
-    Instruction instruction = program[bytecodeIndex];
-    StackElement delta = getParameterFromInstruction(instruction) + 1;
-    int next_bc_index = bytecodeIndex + delta;
-    TR::BytecodeBuilder* jumpTo = bytecodeBuilderTable[next_bc_index];
-
-    TR::IlValue* right = pop(builder);
-    TR::IlValue* left = pop(builder);
-
-    builder->IfCmpNotEqual(jumpTo, left, right);
-    builder->AddFallThroughBuilder(nextBuilder);
-}
-
-void B9Method::handle_bc_jmp_lt(TR::BytecodeBuilder* builder,
-    TR::BytecodeBuilder** bytecodeBuilderTable,
-    Instruction *program,
-    long bytecodeIndex,
-    TR::BytecodeBuilder* nextBuilder)
-{
-    Instruction instruction = program[bytecodeIndex];
-    StackElement delta = getParameterFromInstruction(instruction) + 1;
-    int next_bc_index = bytecodeIndex + delta;
-    TR::BytecodeBuilder* jumpTo = bytecodeBuilderTable[next_bc_index];
-
-    TR::IlValue* right = pop(builder);
-    TR::IlValue* left = pop(builder);
-
-    builder->IfCmpLessThan(jumpTo, left, right);
-    builder->AddFallThroughBuilder(nextBuilder);
-}
-void B9Method::handle_bc_jmp_le(TR::BytecodeBuilder* builder,
-    TR::BytecodeBuilder** bytecodeBuilderTable,
-    Instruction *program,
-    long bytecodeIndex,
-    TR::BytecodeBuilder* nextBuilder)
-{
-    Instruction instruction = program[bytecodeIndex];
-
-    StackElement delta = getParameterFromInstruction(instruction) + 1;
-
-    TR::IlValue* right = pop(builder);
-    TR::IlValue* left = pop(builder);
-
-    int next_bc_index = bytecodeIndex + delta;
-    TR::BytecodeBuilder* jumpTo = bytecodeBuilderTable[next_bc_index];
-    left = builder->Sub(left, builder->ConstInt64(1));
-    builder->IfCmpGreaterThan(jumpTo, right, left); //swap and do a greaterthan
-    builder->AddFallThroughBuilder(nextBuilder);
-}
-void B9Method::handle_bc_jmp_gt(TR::BytecodeBuilder* builder,
-    TR::BytecodeBuilder** bytecodeBuilderTable,
-    Instruction *program,
-    long bytecodeIndex,
-    TR::BytecodeBuilder* nextBuilder)
-{
-    Instruction instruction = program[bytecodeIndex];
-    StackElement delta = getParameterFromInstruction(instruction) + 1;
-    int next_bc_index = bytecodeIndex + delta;
-    TR::BytecodeBuilder* jumpTo = bytecodeBuilderTable[next_bc_index];
-
-    TR::IlValue* right = pop(builder);
-    TR::IlValue* left = pop(builder);
-
-    builder->IfCmpGreaterThan(jumpTo, left, right);
-    builder->AddFallThroughBuilder(nextBuilder);
-}
-void B9Method::handle_bc_jmp_ge(TR::BytecodeBuilder* builder,
-    TR::BytecodeBuilder** bytecodeBuilderTable,
-    Instruction *program,
-    long bytecodeIndex,
-    TR::BytecodeBuilder* nextBuilder)
-{
-    Instruction instruction = program[bytecodeIndex];
-    StackElement delta = getParameterFromInstruction(instruction) + 1;
-    int next_bc_index = bytecodeIndex + delta;
-    TR::BytecodeBuilder* jumpTo = bytecodeBuilderTable[next_bc_index];
-
-    TR::IlValue* right = pop(builder);
-    TR::IlValue* left = pop(builder);
-
-    // if (left >= right) jump is converted to if (left > (right-1) jump  
-    right = builder->Sub(right, builder->ConstInt64(1));
-    builder->IfCmpGreaterThan(jumpTo, left, right); 
+    switch (bytecode) {
+    case JMP_EQ:
+        builder->IfCmpEqual(jumpTo, left, right);
+        break;
+    case JMP_NEQ:
+        builder->IfCmpNotEqual(jumpTo, left, right);
+        break;
+    case JMP_LT:
+        builder->IfCmpLessThan(jumpTo, left, right);
+        break;
+    case JMP_LE:
+        builder->IfCmpLessOrEqual(jumpTo, left, right);
+        break;
+    case JMP_GT:
+        builder->IfCmpGreaterThan(jumpTo, left, right);
+        break;
+    case JMP_GE:
+        builder->IfCmpGreaterOrEqual(jumpTo, left, right);
+        break;
+    default:
+        break;
+    }
     builder->AddFallThroughBuilder(nextBuilder);
 }
 

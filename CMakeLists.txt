@@ -9,7 +9,7 @@ enable_testing()
 # Add additional cmake modules
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules")
 
-find_package(Omr REQUIRED COMPONENTS JitBuilder)
+find_package(Omr COMPONENTS REQUIRED JitBuilder)
 
 # libb9
 add_library(libb9 SHARED
@@ -37,9 +37,10 @@ add_custom_target(programs)
 function(add_b9_program program)
     add_custom_command(
         OUTPUT "${program}.cpp"
-        COMMAND node "b9.js" "${program}.src" >"${CMAKE_CURRENT_BINARY_DIR}/${program}.cpp"
-        DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/b9.js"
-        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+        COMMAND node "${CMAKE_SOURCE_DIR}/b9.js"
+            "${CMAKE_CURRENT_SOURCE_DIR}/${program}.src"
+            >"${program}.cpp"
+        DEPENDS "${CMAKE_SOURCE_DIR}/b9.js"
     )
     add_library("${program}" SHARED "${program}.cpp")
     target_link_libraries("${program}" libb9)

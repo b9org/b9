@@ -32,7 +32,7 @@ $(programs): $(LIB)
 	$(CXX) -o $@ -lm $^ -ldl $(cflags) $(CFLAGS) $(LINK)
 
 $(LIB): $(omr_srcdir)
-	(cd $(omr_srcdir)/; ./configure)
+	(cd $(omr_srcdir)/; sh ./configure)
 	(cd $(omr_srcdir)/jitbuilder; make)
 
 program: b9

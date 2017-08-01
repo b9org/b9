@@ -179,10 +179,12 @@ void B9Method::defineStructures(TR::TypeDictionary* types)
     int64PointerType = types->PointerTo(Int64);
     int32PointerType = types->PointerTo(Int32);
     int16PointerType = types->PointerTo(Int16);
+    TR::IlType * pstackElementPointerType = types->PointerTo(stackElementPointerType);
+
 
     executionContextType = types->DefineStruct("executionContextType");
     types->DefineField("executionContextType", "stack", stackElementPointerType, offsetof(struct ExecutionContext, stack));
-    types->DefineField("executionContextType", "stackPointer", stackElementPointerType, offsetof(struct ExecutionContext, stackPointer));
+    types->DefineField("executionContextType", "stackPointer", pstackElementPointerType, offsetof(struct ExecutionContext, stackPointer));
     types->DefineField("executionContextType", "functions", int64PointerType, offsetof(struct ExecutionContext, functions));
     types->CloseStruct("executionContextType");
 
@@ -323,7 +325,7 @@ bool B9Method::buildIL()
         setVMState(vms);
     } else {
         setVMState(new OMR::VirtualMachineState());
-    } 
+    }
     return inlineProgramIntoBuilder (topLevelProgramIndex, true);  
 }
 

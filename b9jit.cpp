@@ -1,3 +1,6 @@
+#include "base9.hpp"
+
+#if defined(B9JIT)
 
 #include <assert.h>
 #include <dlfcn.h>
@@ -16,17 +19,22 @@
 #include "ilgen/VirtualMachineRegister.hpp"
 #include "ilgen/VirtualMachineRegisterInStruct.hpp"
 
-#include "b9.h"
+#include "b9core.hpp"
 #include "b9jit.hpp"
 
-void printVMState(ExecutionContext *context, int64_t pc, ByteCode bytecode,
-                  Parameter param) {
-  printf("Executing at pc %lld, bc is (%d, %s), param is (%d)\n", pc, bytecode,
-         b9ByteCodeName(bytecode), param);
-  b9PrintStack(context);
-}
+namespace b9 {
 
-class B9VirtualMachineState : public OMR::VirtualMachineState {
+// TODO make this generic
+//void printVMState(ExecutionContext *context, int64_t pc, ByteCode bytecode,
+//                  Parameter param) {
+//  printf("Executing at pc %lld, bc is (%d, %s), param is (%d)\n", pc, bytecode,
+//         b9ByteCodeName(bytecode), param);
+//  b9PrintStack(context);
+//}
+
+// Simulates all state of the virtual machine state while compiled code is
+// running. It simulates the stack and the pointer to the top of the stack.
+class VirtualMachineState : public OMR::VirtualMachineState {
  public:
   B9VirtualMachineState()
       : OMR::VirtualMachineState(), _stack(NULL), _stackTop(NULL) {}
@@ -62,8 +70,6 @@ class B9VirtualMachineState : public OMR::VirtualMachineState {
   OMR::VirtualMachineRegister *_stackTop;
 };
 
-void b9_jit_init() { initializeJit(); }
-
 void generateCode(ExecutionContext *context, int32_t functionIndex) {
   TR::TypeDictionary types;
   Instruction *program = context->functions[functionIndex].program;
@@ -88,6 +94,7 @@ B9Method::B9Method(TR::TypeDictionary *types, int32_t programIndex,
       topLevelProgramIndex(programIndex),
       maxInlineDepth(context->inlineDepthAllowed),
       firstArgumentIndex(0) {
+
   DefineLine(LINETOSTR(__LINE__));
   DefineFile(__FILE__);
 
@@ -772,3 +779,7 @@ void B9Method::push(TR::BytecodeBuilder *builder, TR::IlValue *value) {
                            builder->ConstAddress(context), newSP);
   }
 }
+
+} // namespace b9
+
+#endif // defined(B9JIT)

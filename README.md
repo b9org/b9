@@ -9,8 +9,10 @@ git clone https://github.com/youngar/Base9
 
 Building
 --------
-You may not need to disable warnings as errors to build.
+
 ```
+make -C ./omr/jitbuilder
+cmake .
 make
 ```
 

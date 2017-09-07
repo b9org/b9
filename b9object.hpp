@@ -2,7 +2,7 @@
 #ifndef B9OBJECT_HPP_
 #define B9OBJECT_HPP_
 
-#include "b9.h"
+#include "base9.hpp"
 
 #include <stdlib.h>
 
@@ -19,16 +19,16 @@ class Address {
   Address(uint8_t *address) : address_(address) {}
 
   template <typename Type>
-  constexpr Type to();
+  // constexpr Type to();
 
  private:
   uint8_t *address_;
 };
 
-template <typename Type>
-constexpr Type Address::to() {
-  return reinterpret_cast<Type>(address_);
-}
+// template <typename Type>
+// constexpr Type Address::to() {
+//   return reinterpret_cast<Type>(address_);
+// }
 
 class Value {
  public:

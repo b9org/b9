@@ -1,6 +1,10 @@
 #ifndef B9_JIT_INCL
 #define B9_JIT_INCL
 
+#include "Base9.hpp"
+
+namespace b9 {
+
 class B9Method : public TR::MethodBuilder {
  public:
   B9Method(TR::TypeDictionary *types, int32_t programIndex,
@@ -91,5 +95,7 @@ class B9Method : public TR::MethodBuilder {
                         Instruction *program, long bytecodeIndex,
                         TR::BytecodeBuilder *nextBuilder);
 };
+
+} // namespace b9
 
 #endif

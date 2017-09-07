@@ -1,13 +1,15 @@
 
-#include <ctype.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cctype>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <time.h>
 #include <unistd.h>
 
-#include "b9.h"
+#include "base9.hpp"
 #include "b9hash.hpp"
+
+namespace b9 {
 
 static unsigned long djb2hash(const char *str) {
   unsigned long hash = 5381;
@@ -105,3 +107,5 @@ void *hashTable_put(ExecutionContext *context, pHeap hashTable,
   hashTable_put(context, newht, key, value);
   return newht;
 }
+
+} // namespace b9

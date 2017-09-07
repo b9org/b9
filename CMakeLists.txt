@@ -4,6 +4,10 @@ project(base9
     LANGUAGES CXX
     VERSION 0.1)
 
+set (CMAKE_CXX_STANDARD 11)
+set (EXPORT_COMPILE_COMMANDS 1)
+set (CMAKE_CXX_COMPILER clang++)
+
 enable_testing()
 
 # Add additional cmake modules
@@ -13,10 +17,12 @@ find_package(Omr COMPONENTS REQUIRED JitBuilder)
 
 # libb9
 add_library(libb9 SHARED
-    b9.h
-    b9.cpp
+    base9.hpp
+    b9core.cpp
     b9hash.cpp
-    b9jit.cpp)
+    )
+#b9jit.cpp
+
 target_include_directories(libb9 PUBLIC ${CMAKE_SOURCE_DIR})
 target_link_libraries(libb9 dl Omr::JitBuilder)
 
@@ -26,10 +32,10 @@ add_executable(b9
 target_link_libraries(b9 libb9)
 
 # b9test
-add_executable(b9test
-    b9test.cpp)
-target_link_libraries(b9test libb9)
-add_test(NAME b9test COMMAND b9test)
+#add_executable(b9test
+#    b9test.cpp)
+#target_link_libraries(b9test libb9)
+#add_test(NAME b9test COMMAND b9test)
 
 # b9 programs
 add_custom_target(programs)

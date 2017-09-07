@@ -5,7 +5,9 @@
 #include <cassert>
 #include <cstdlib>
 
-#include "b9.h"
+#include "base9.hpp"
+
+namespace b9 {
 
 typedef void *allocated_from_heap;
 
@@ -49,5 +51,7 @@ void *hashTable_put(ExecutionContext *context, pHeap hashTable,
 
 hashTableKey *addressFirstSlot(pHeap hashedTable);
 pHeap allocateString(const char *s);
+
+} // namespace b9
 
 #endif

@@ -49,7 +49,7 @@ function FunctionContext(codegen, outer) {
     }
     this.removeUnusedTOS = function(expected) {
         if (this.pushcount > expected) {
-            this.codegen.outputInstruction("DROP", 0, "// unused TOS, drop return result to get to expected ");
+            this.codegen.outputInstruction("ByteCode::drop", 0, "// unused TOS, drop return result to get to expected ");
             this.pushN(-1);
         }
     };
@@ -138,14 +138,14 @@ function CodeGen(f) {
     this.genPrimitive = function(primitiveName, args, comment) {
         var primitive = this.primitives[primitiveName];
         if (this.primitives[primitiveName] != undefined) {
-            this.outputInstruction("PRIMITIVE", primitive.index, 'Calling native: ' + primitive.name);
+            this.outputInstruction("ByteCode::primitiveCall", primitive.index, 'Calling native: ' + primitive.name);
             return true;
         }
         return false;
     }
 
     this.genCall = function(name, args, comment) {
-        this.outputInstruction("CALL", this.getFunctionIndex(name), "Calling: " + name);
+        this.outputInstruction("ByteCode::functionCall", this.getFunctionIndex(name), "Calling: " + name);
     }
 
     this.genCallOrPrimitive = function(name, args, comment) {
@@ -189,7 +189,7 @@ function CodeGen(f) {
             if (typeof(param) == "function") computedParm = param(instruction);
             var out = " I:" + instruction.instructionIndex + " S:" + instruction.stack + " " + comment;
             return gen.outputInstructionText(
-                "createInstruction(" + bc + "," + computedParm + "),",
+                "Instructions::create(" + bc + "," + computedParm + "),",
                 out,
                 true);
         };
@@ -207,7 +207,8 @@ function CodeGen(f) {
     };
 
     this.handleHeaders = function() {
-        this.outputRawString('#include "b9.h"');
+        this.outputRawString('#include "base9.hpp"');
+        this.outputRawString('using namespace b9;');
 
         // var out = this.primitives;
         // for (key in out) {
@@ -266,11 +267,11 @@ function CodeGen(f) {
     this.flowControlBreakContinue = function(breakLabel, continueLabel, location, body) {
         var saveBreak = this.currentBreak;
         this.currentBreak = function() {
-            this.outputInstruction("JMP", this.deltaForLabel(breakLabel), "break in " + location);
+            this.outputInstruction("ByteCode::jmp", this.deltaForLabel(breakLabel), "break in " + location);
         }
         var saveContinue = this.currentContinue;
         this.currentContinue = function() {
-            this.outputInstruction("JMP", this.deltaForLabel(continueLabel), "continue in " + location);
+            this.outputInstruction("ByteCode::jmp", this.deltaForLabel(continueLabel), "continue in " + location);
         }
 
         body.call(this);
@@ -286,7 +287,7 @@ function CodeGen(f) {
             var element = expressions[i];
             this.handle(element);
             if (i != (expressions.length - 1) || droplast)
-                this.outputInstruction("DROP", 0, "// This is for -Constant");
+                this.outputInstruction("ByteCode::drop", 0, "// This is for -Constant");
         };
 
     }
@@ -294,7 +295,7 @@ function CodeGen(f) {
     this.handleUnaryExpression = function(decl) {
         // console.log ("handleUnaryExpression " + JSON.stringify (decl));  
         if (decl.operator == '-' && decl.argument.type == 'Literal') {
-            this.outputInstruction("PUSH_CONSTANT", 0 - decl.argument.value, "// This is for -Constant");
+            this.outputInstruction("ByteCode::intPushConstant", 0 - decl.argument.value, "// This is for -Constant");
             this.currentFunction.pushN(1);
             return;
         }
@@ -305,13 +306,13 @@ function CodeGen(f) {
         if (decl.operator == "-") {
             this.pushconstant(0);
             this.handle(decl.argument);
-            this.outputInstruction("SUB", 0, "// This is for -Constant");
+            this.outputInstruction("ByteCode::intSub", 0, "// This is for -Constant");
             ""
             return;
         }
         if (decl.operator == "!") {
             this.handle(decl.argument);
-            this.outputInstruction("NOT", 0, "// This is for !");
+            this.outputInstruction("ByteCode::intNot", 0, "// This is for !");
             return;
         }
         throw "halt", "Error - No Handler For Type: " + decl;
@@ -337,7 +338,7 @@ function CodeGen(f) {
                 this.handle(decl.body);
                 decl.needResult = false;
                 this.placeLabel(loopContinue);
-                this.outputInstruction("JMP", this.deltaForLabel(loopTest), "WHILE ");
+                this.outputInstruction("ByteCode::jmp", this.deltaForLabel(loopTest), "WHILE ");
                 this.placeLabel(loopEnd);
             });
         });
@@ -353,12 +354,12 @@ function CodeGen(f) {
 
     this.pushconstant = function(constant) {
         if (this.isNumber(constant)) {
-            this.outputInstruction("PUSH_CONSTANT", constant, " number constant " + (constant - 0));
+            this.outputInstruction("ByteCode::intPushConstant", constant, " number constant " + (constant - 0));
             this.currentFunction.pushN(1);
             return;
         }
         if (this.isString(constant)) {
-            this.outputInstruction("PUSH_STRING", this.getStringIndex(constant), " string constant <" + constant + ">");
+            //this.outputInstruction("PUSH_STRING", this.getStringIndex(constant), " string constant <" + constant + ">");
             this.currentFunction.pushN(1);
             return;
         }
@@ -371,7 +372,7 @@ function CodeGen(f) {
         if (offset.offset == undefined) {
             throw "Invalid Variable Name";
         } else {
-            this.outputInstruction("PUSH_FROM_VAR", offset.offset, "variable " + varname);
+            this.outputInstruction("ByteCode::pushFromVar", offset.offset, "variable " + varname);
         }
         this.currentFunction.pushN(1);
     }
@@ -379,7 +380,7 @@ function CodeGen(f) {
     this.popvar = function(varname) {
         var offset = this.currentFunction.variableOffset(varname);
         if (offset.index == 0) {
-            this.outputInstruction("POP_INTO_VAR", offset.offset, "variable " + varname);
+            this.outputInstruction("ByteCode::popIntoVar", offset.offset, "variable " + varname);
         } else {
             throw "Invalid Variable Name";
         }
@@ -462,21 +463,26 @@ function CodeGen(f) {
         this.outputRawString("");
         this.handle(decl.body);
         this.genReturn(true);
-        this.outputRawString("createInstruction(NO_MORE_BYTECODES, 0)};", " end of function");
+        this.genEndOfByteCodes();
+
         this.outputRawString("");
 
         this.currentFunction = save;
     };
 
     this.genReturn = function(forced) {
-        if (this.prevInstruction.bc == "RETURN") {
+        if (this.prevInstruction.bc == "ByteCode::functionReturn") {
             return;
         }
         if (this.currentFunction.pushcount == 0) {
-            this.outputInstruction("PUSH_CONSTANT", 0, " Generate Free Return");
+            this.outputInstruction("ByteCode::intPushConstant", 0, " Generate Free Return");
         }
-        this.outputInstruction("RETURN", 0, " forced = " + forced);
+        this.outputInstruction("ByteCode::functionReturn", 0, " forced = " + forced);
     };
+
+    this.genEndOfByteCodes = function() {
+        this.outputRawString("Instructions::create(ByteCodes::fromByte(NO_MORE_BYTECODES), 0)};", " end of function");
+    }
 
     this.processDeferred = function() {
         var todo = this.deferred.shift();;
@@ -566,7 +572,7 @@ function CodeGen(f) {
                 this.handle(decl.right);
             }
             if (decl.needResult === true) {
-                this.outputInstruction("DUP", 0, "// to be implemented as example in class");
+                this.outputInstruction("ByteCode::dup", 0, "// to be implemented as example in class");
             }
             this.popvar(decl.left.name);
             if (decl.isParameter == true) {
@@ -644,7 +650,7 @@ function CodeGen(f) {
                     var expected = this.currentFunction.pushcount;
                     this.handle(decl.update);
                     this.currentFunction.removeUnusedTOS(expected);
-                    this.outputInstruction("JMP", this.deltaForLabel(loopTest), "FOR LOOP");
+                    this.outputInstruction("ByteCode::jmp", this.deltaForLabel(loopTest), "FOR LOOP");
                     this.placeLabel(loopEnd);
                 });
             });
@@ -656,11 +662,11 @@ function CodeGen(f) {
             this.pushvar(decl.argument.name);
             this.pushconstant(1);
             if (decl.operator == "++") {
-                this.outputInstruction("ADD", 0, "// generating var++");
+                this.outputInstruction("ByteCode::intAdd", 0, "// generating var++");
                 this.currentFunction.pushN(-1); // pop 2, push 1
             }
             if (decl.operator == "--") {
-                this.outputInstruction("SUB", 0, "// generating var--");
+                this.outputInstruction("ByteCode::intSub", 0, "// generating var--");
                 this.currentFunction.pushN(-1); // pop 2, push 1
             }
             this.popvar(decl.argument.name);
@@ -670,12 +676,12 @@ function CodeGen(f) {
     };
 
     this.genJmpForCompare = function(code) {
-        if (code == "==") instruction = "JMP_NEQ ";
-        if (code == "!=") instruction = "JMP_EQ ";
-        if (code == "<=") instruction = "JMP_GT ";
-        if (code == "<") instruction = "JMP_GE ";
-        if (code == ">") instruction = "JMP_LE ";
-        if (code == ">=") instruction = "JMP_LT ";
+        if (code == "==") instruction = "ByteCode::intJmpNe";
+        if (code == "!=") instruction = "ByteCode::intJmpEq";
+        if (code == "<=") instruction = "ByteCode::intJmpGt";
+        if (code == "<") instruction = "ByteCode::intJmpGe";
+        if (code == ">") instruction = "ByteCode::intJmpLe";
+        if (code == ">=") instruction = "ByteCode::intJmpLt";
         return instruction;
     };
 
@@ -703,7 +709,7 @@ function CodeGen(f) {
                 // you only have a false if there is code
                 // so you only jump if there is code to jump around 
                 if (this.prevInstruction.bc != "RETURN") {
-                    this.outputInstruction("JMP", this.deltaForLabel(labelEnd), "SKIP AROUND THE FALSE CODE BLOCK");
+                    this.outputInstruction("ByteCode::jmp", this.deltaForLabel(labelEnd), "SKIP AROUND THE FALSE CODE BLOCK");
                 }
                 this.placeLabel(labelF);
                 this.handle(decl.alternate);
@@ -726,22 +732,22 @@ function CodeGen(f) {
         this.handle(decl.left);
         this.handle(decl.right);
         if (decl.operator == "-") {
-            this.outputInstruction("SUB", 0, "");
+            this.outputInstruction("ByteCode::intSub", 0, "");
             this.currentFunction.pushN(-1); // pop 2, push 1
             return decl.operator;
         }
         if (decl.operator == "+") {
-            this.outputInstruction("ADD", 0, "");
+            this.outputInstruction("ByteCode::intAdd", 0, "");
             this.currentFunction.pushN(-1); // pop 2, push 1
             return decl.operator;
         }
         if (decl.operator == "*") {
-            this.outputInstruction("MUL", 0, "");
+            this.outputInstruction("ByteCode::intMul", 0, "");
             this.currentFunction.pushN(-1); // pop 2, push 1
             return decl.operator;
         }
         if (decl.operator == "/") {
-            this.outputInstruction("DIV", 0, "");
+            this.outputInstruction("ByteCode::intDiv", 0, "");
             this.currentFunction.pushN(-1); // pop 2, push 1
             return decl.operator;
         }

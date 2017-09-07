@@ -156,7 +156,7 @@ int parseArguments(ExecutionContext *context, int argc, char *argv[]);
 
 Instruction *getFunctionAddress(ExecutionContext *context, const char *functionName);
 //StackElement interpret(ExecutionContext* context, Instruction* program);
-StackElement timeFunction(ExecutionContext *context, Instruction *function, int loopCount, long* runningTime);
+StackElement timeFunction(VirtualMachine *virtualMachine, Instruction *function, int loopCount, long* runningTime);
 
 void b9PrintStack(ExecutionContext *context);
 

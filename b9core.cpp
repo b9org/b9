@@ -539,19 +539,19 @@ StackElement VirtualMachine::runFunction(Instruction *function) {
   return result;
 }
 
-// StackElement timeFunction(ExecutionContext *context, Instruction *function,
-//                           int loopCount, long *runningTime) {
-//   struct timeval timeBefore, timeAfter, timeResult;
-//   StackElement result;
-//   gettimeofday(&timeBefore, NULL);
-//   while (loopCount--) {
-//     result = runFunction(context, function);
-//   }
-//   gettimeofday(&timeAfter, NULL);
-//   timersub(&timeAfter, &timeBefore, &timeResult);
-//   *runningTime = (timeResult.tv_sec * 1000 + (timeResult.tv_usec / 1000));
-//   return result;
-// }
+StackElement timeFunction(VirtualMachine *virtualMachine, Instruction *function,
+                          int loopCount, long *runningTime) {
+  struct timeval timeBefore, timeAfter, timeResult;
+  StackElement result;
+  gettimeofday(&timeBefore, NULL);
+  while (loopCount--) {
+    result = virtualMachine->runFunction(function);
+  }
+  gettimeofday(&timeAfter, NULL);
+  timersub(&timeAfter, &timeBefore, &timeResult);
+  *runningTime = (timeResult.tv_sec * 1000 + (timeResult.tv_usec / 1000));
+  return result;
+}
 
 //
 // Base9 Primitives

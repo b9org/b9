@@ -16,7 +16,6 @@
 namespace b9 {
 
 void ExecutionContext::push(StackElement value) {
-  // TODO make sure this is correct
   *(stackPointer_++) = value;
 }
 
@@ -45,9 +44,9 @@ void ExecutionContext::drop() { pop(); }
 
 void ExecutionContext::intPushConstant(Parameter value) { push(value); }
 
-// void ExecutionContext::bc_push_string(Parameter value) {
-//   push((StackElement)charStringToKey(stringTable[value]));
-// }
+void ExecutionContext::strPushConstant(Parameter value) {
+  push((StackElement) virtualMachine_->getString(value));
+}
 
 Parameter ExecutionContext::intJmpEq(Parameter delta) {
   StackElement right = pop();
@@ -353,15 +352,13 @@ StackElement ExecutionContext::interpret(Instruction *program) {
 
   while (*instructionPointer != NO_MORE_BYTECODES) {
     // b9PrintStack(context);
-    // printf("about to run %d %d\n",
-    // getByteCodeFromInstruction(*instructionPointer),
-    // Instructions::getParameter(*instructionPointer));
+    // std::cout << "instruction call " << std::hex << (int) ByteCodes::toByte(Instructions::getByteCode(*instructionPointer)) << std::endl;
     switch (Instructions::getByteCode(*instructionPointer)) {
       case ByteCode::intPushConstant:
         intPushConstant(Instructions::getParameter(*instructionPointer));
         break;
-      case ByteCode::strConstant:
-        // bc_??( Instructions::getParameter(*instructionPointer));
+      case ByteCode::strPushConstant:
+        strPushConstant(Instructions::getParameter(*instructionPointer));
         break;
       case ByteCode::drop:
         drop();
@@ -466,6 +463,10 @@ PrimitiveFunction *VirtualMachine::getPrimitive(uint64_t index) {
 
 Instruction *VirtualMachine::getFunction(uint64_t index) {
   return functions_[index].program;
+}
+
+const char *VirtualMachine::getString(int index) {
+  return stringTable_[index];
 }
 
 #if defined(B9JIT)

@@ -359,7 +359,7 @@ function CodeGen(f) {
             return;
         }
         if (this.isString(constant)) {
-            //this.outputInstruction("PUSH_STRING", this.getStringIndex(constant), " string constant <" + constant + ">");
+            this.outputInstruction("ByteCode::strPushConstant", this.getStringIndex(constant), " string constant <" + constant + ">");
             this.currentFunction.pushN(1);
             return;
         }

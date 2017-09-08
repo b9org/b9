@@ -32,7 +32,7 @@ typedef struct heap_allocated *pHeap;
   (sizeof(struct heap_allocated) - sizeof(_slots_union_))
 #define heap_allocate(context, bytesize) malloc(bytesize)
 
-#define USE_C_STRING_AS_KEYS 0
+#define USE_C_STRING_AS_KEYS 1
 #if USE_C_STRING_AS_KEYS
 typedef const char *hashTableKey;
 #define charStringToKey(k) k

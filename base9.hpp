@@ -43,6 +43,8 @@ class ExecutionContext {
   Parameter intJmpLt(Parameter delta);
   Parameter intJmpLe(Parameter delta);
 
+  void strPushConstant(Parameter value);
+
   // Reset the stack and other internal data
   void reset();
 
@@ -78,6 +80,7 @@ public:
     Instruction* getFunction(uint64_t index);
     PrimitiveFunction* getPrimitive(uint64_t index);
 
+    const char *getString(int index);
 
 private:
     ExecutionContext executionContext_;

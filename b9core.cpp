@@ -596,37 +596,4 @@ extern "C" void b9_prim_hash_table_get(ExecutionContext *context) {
   context->push( (StackElement)hashTable_get(context, (pHeap)ht, (hashTableKey)k));
 }
 
-/* Debug Helpers */
-
-// TODO probably want to delete these
-
-// const char *b9ByteCodeName(ByteCode bc) {
-//   if (bc == PUSH_CONSTANT) return "PUSH_CONSTANT";
-//   if (bc == DROP) return "DROP";
-//   if (bc == PUSH_FROM_VAR) return "PUSH_FROM_VAR";
-//   if (bc == POP_INTO_VAR) return "POP_INTO_VAR";
-//   if (bc == SUB) return "SUB";
-//   if (bc == ADD) return "ADD";
-//   if (bc == CALL) return "CALL";
-//   if (bc == RETURN) return "RETURN";
-//   if (bc == JMP) return "JMP";
-//   if (bc == JMP_EQ) return "JMP_EQ";
-//   if (bc == JMP_NEQ) return "JMP_NEQ";
-//   if (bc == JMP_GT) return "JMP_GT";
-//   if (bc == JMP_GE) return "JMP_GE";
-//   if (bc == JMP_LE) return "JMP_LE";
-//   if (bc == JMP_LT) return "JMP_LT";
-//   return "unknown bc";
-// }
-
-// void b9PrintStack(ExecutionContext *context) {
-//   StackElement *base = context->stack;
-//   printf("------\n");
-//   while (base < context->stackPointer) {
-//     printf("%p: Stack[%ld] = %lld\n", base, base - context->stack, *base);
-//     base++;
-//   }
-//   printf("^^^^^^^^^^^^^^^^^\n");
-// }
-
 }  // namespace b9

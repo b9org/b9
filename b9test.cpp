@@ -9,6 +9,8 @@ int fib(int n) {
   return fib(n - 1) + fib(n - 2);
 }
 
+#if 0
+
 void runFib(ExecutionContext *context, int value) {
   Instruction *func = getFunctionAddress(context, "fib_function");
   if (func == nullptr) {
@@ -141,3 +143,5 @@ int main(int argc, char *argv[]) {
     return EXIT_FAILURE;
   }
 }
+
+#endif

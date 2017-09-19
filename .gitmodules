@@ -1,3 +1,6 @@
 [submodule "omr"]
 	path = omr
 	url = https://github.com/eclipse/omr
+[submodule "googletest"]
+	path = googletest
+	url = https://github.com/google/googletest.git

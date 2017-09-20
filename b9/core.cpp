@@ -191,10 +191,9 @@ bool VirtualMachine::loadLibrary() {
 
   if (this->debug_ > 0) {
     int functionIndex = 0;
-    while (functions_[functionIndex].name != NO_MORE_FUNCTIONS) {
-      printf("Name %s, prog %p, jit %lu \n", functions_[functionIndex].name,
-             functions_[functionIndex].program,
-             functions_[functionIndex].jitAddress);
+    while (functions_[functionIndex].name_ != NO_MORE_BYTECODES) {
+      ExportedFunctionData data = functions_[functionIndex];
+      std::cout << "Name: " << data.name_ << " byteCodes: " << data.byteCodes_;
       functionIndex++;
     }
   }
@@ -462,7 +461,7 @@ PrimitiveFunction *VirtualMachine::getPrimitive(uint64_t index) {
 }
 
 Instruction *VirtualMachine::getFunction(uint64_t index) {
-  return functions_[index].program;
+  return functions_[index].byteCodes_;
 }
 
 const char *VirtualMachine::getString(int index) {

@@ -1,6 +1,7 @@
 #ifndef b9core_hpp_
 #define b9core_hpp_
 
+#include <string>
 #include <cstdint>
 
 namespace b9 {
@@ -124,10 +125,12 @@ struct PrimitiveData {
     PrimitiveFunction *address;
 };
 
-struct ExportedFunctionData {
-    const char * name;
-    Instruction *program;
-    uint64_t jitAddress;
+class ExportedFunctionData {
+public:
+    const char* name_ ;
+    uint32_t nargs_;
+    Instruction *byteCodes_;
+    uint64_t jitAddress_;
 };
 
 //typedef StackElement (*Interpret) (ExecutionContext* context, Instruction* program);

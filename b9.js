@@ -11,7 +11,6 @@ args.forEach(function(arg) {
 
 files.forEach(function(filename) {
     // Load the standard library
-
     var content = fs.readFileSync(__dirname + "/b9stdlib.src", 'utf-8');
     content += fs.readFileSync(filename, 'utf-8');
     var parsed = esprima.parse(content);
@@ -22,7 +21,6 @@ files.forEach(function(filename) {
     codegen.handleFooters();
 
     codegen.outputProgram();
-
 });
 
 function FunctionContext(codegen, outer) {
@@ -41,12 +39,14 @@ function FunctionContext(codegen, outer) {
     this.getsavedcontext = function() {
         return this.outer;
     };
+
     this.pushN = function(count) {
         this.pushcount += count;
         if (this.pushcount > this.maxstack) {
             this.maxstack = this.pushcount;
         }
     }
+
     this.removeUnusedTOS = function(expected) {
         if (this.pushcount > expected) {
             this.codegen.outputInstruction("ByteCode::drop", 0, "// unused TOS, drop return result to get to expected ");
@@ -84,16 +84,20 @@ function FunctionContext(codegen, outer) {
 function CodeGen(f) {
 
     this.filename = f;
+
     // number labels globally 
     this.label = 0;
+
     // functions get compiled all at the end, so all global definitions can be known
     this.deferred = [];
 
-    // all the functions you compile in this file. 
+    // all the function specifications
     this.functions = {}
     this.nextFunctionIndex = 0;
+
     this.strings = {}
     this.nextStringIndex = 0;
+
     this.primitives = {}
     this.nextPrimitiveIndex = 0;
 
@@ -102,6 +106,7 @@ function CodeGen(f) {
     this.outputLines = [];
 
     this.globals = Object.create(null);
+
     this.currentFunction = new FunctionContext(this, this.currentFunction); // top level function
     this.currentFunction.isTopLevel = true;
 
@@ -224,12 +229,13 @@ function CodeGen(f) {
 
     this.handleFooters = function() {
         var out = this.functions;
+
         this.outputRawString('struct ExportedFunctionData b9_exported_functions[] = {');
         for (key in out) {
-            var init = '    {' + '"' + key + '", ' + key + ', 0},';
+            var init = '    {' + '"' + key + '", ' + out[key].nargs + ', ' + key + ', 0},';
             this.outputRawString(init, '// ' + this.functions[key]);
         }
-        this.outputRawString('    {NO_MORE_FUNCTIONS, 0, 0}');
+        this.outputRawString('    {NO_MORE_FUNCTIONS, 0, 0, 0}');
         this.outputRawString('};');
         this.outputRawString('');
 
@@ -370,7 +376,7 @@ function CodeGen(f) {
     this.pushvar = function(varname) {
         var offset = this.currentFunction.variableOffset(varname);
         if (offset.offset == undefined) {
-            throw "Invalid Variable Name";
+            throw "Invalid Variable Name " + varname;
         } else {
             this.outputInstruction("ByteCode::pushFromVar", offset.offset, "variable " + varname);
         }
@@ -387,15 +393,6 @@ function CodeGen(f) {
         this.currentFunction.pushN(-1);
     }
 
-    // returns the function index for CALL
-    this.getFunctionIndex = function(id) {
-        if (this.functions[id] != undefined) {
-            return this.functions[id];
-        } else {
-            this.functions[id] = this.nextFunctionIndex++;
-            return this.functions[id];
-        }
-    }
 
     this.getStringIndex = function(id) {
         if (this.strings[id] != undefined) {
@@ -407,8 +404,27 @@ function CodeGen(f) {
     }
 
     this.declareFunction = function(id, decl) {
-        var save;
+        var newFunction = {index: this.nextFunctionIndex++, name: id, nargs: -1};
+        this.functions[id] = newFunction;
+    };
 
+    this.getFunctionDeclaration = function (id) {
+        if (this.functions[id] == undefined) {
+            this.declareFunction(id);
+        }
+        return this.functions[id];
+    };
+
+    // Returns the function index for CALL If the function has not been
+    // declared yet, it creates a stub declaration for the function.
+    this.getFunctionIndex = function(id) {
+        return this.getFunctionDeclaration(id).index;
+    }
+
+    this.genFunctionDefinition = function(id, decl) {
+
+        // Save the context of the function
+        var save;
         if (decl.functionScope) {
             save = this.currentFunction;
             this.currentFunction = decl.functionScope;
@@ -416,8 +432,14 @@ function CodeGen(f) {
             save = this.currentFunction;
             this.currentFunction = new FunctionContext(this, undefined); // this.currentFunction); 
         }
-
         currentFunction = this.currentFunction;
+
+        this.instructionIndex = 0;
+
+        functionDecl = this.getFunctionDeclaration(id);
+        functionDecl.nargs = decl.params.length;
+
+        // calculate the number of parameters
         var index = 0;
         decl.params.forEach(function(element) {
             currentFunction.args[element.name] = index;
@@ -425,44 +447,37 @@ function CodeGen(f) {
         });
         currentFunction.argcount = index;
 
-        /* This will make sure the current function has a valid index */
-        this.getFunctionIndex(id);
 
-        if (decl.isTopLevel) {
-            this.instructionIndex = 0;
-            this.outputRawString("Instruction " + id + "[] = {", "", false);
+        this.outputRawString("Instruction " + id + "[] = {", "", false);
 
-            var declArgsAndTemps = new Object();
-            var fThis = this;
-            var func = fThis.currentFunction;
-            declArgsAndTemps.computeText = function() {
-                return fThis.outputInstructionText(
-                    "decl (" + decl.params.length + "," + func.tempcount + "),",
-                    "args:" + decl.params.length + " temps:" + func.tempcount,
-                    true);
-            };
-            this.outputLines.push(declArgsAndTemps);
+        var declArgsAndTemps = new Object();
+        var fThis = this;
+        var func = fThis.currentFunction;
+        declArgsAndTemps.computeText = function() {
+            return fThis.outputInstructionText(
+                "decl (" + decl.params.length + "," + func.tempcount + "),",
+                "args: " + decl.params.length + " temps:" + func.tempcount,
+                true);
+        };
+        this.outputLines.push(declArgsAndTemps);
 
-            // this.outputRawString(this.outputInstructionText(
-            //     "decl (" + decl.params.length + ",8),",
-            //     "args and temps",
-            //     true));
 
-            this.outputRawString(this.outputInstructionText(
-                "decl (0,0),",
-                "0: space for JIT address",
-                true));
-            this.outputRawString(this.outputInstructionText(
-                "decl (0,0),",
-                "0: space for JIT address",
-                true));
+        // Output two empty slots for the JIT address
+        this.outputRawString(this.outputInstructionText(
+            "decl (0,0),",
+            "0: space for JIT address",
+            true));
+        this.outputRawString(this.outputInstructionText(
+            "decl (0,0),",
+            "0: space for JIT address",
+            true));
 
-        } else {
-            throw "Only supports top level functions for now";
-        }
         this.outputRawString("");
+
         this.handle(decl.body);
+
         this.genReturn(true);
+
         this.genEndOfByteCodes();
 
         this.outputRawString("");
@@ -482,23 +497,27 @@ function CodeGen(f) {
 
     this.genEndOfByteCodes = function() {
         this.outputRawString("Instructions::create(ByteCodes::fromByte(NO_MORE_BYTECODES), 0)};", " end of function");
-    }
+    };
 
     this.processDeferred = function() {
-        var todo = this.deferred.shift();;
+        var todo = this.deferred.shift();
         while (todo) {
-            this.declareFunction(todo.id.name, todo);
+            this.genFunctionDefinition(todo.id.name, todo)
             todo = this.deferred.shift();
         }
     };
 
     this.handleFunctionDeclaration = function(decl) {
+        // TODO handle non top-level functions
+        // Note that forward declaration of functions does not specify the
+        // number of formal arguemnts the function takes.
         if (this.currentFunction.isTopLevel) {
             decl.isTopLevel = true;
             this.currentFunction.declareGlobal(decl.id.name);
         } else {
             throw "Only supports top level functions for now";
         }
+
         this.deferred.push(decl);
     };
 
@@ -514,7 +533,6 @@ function CodeGen(f) {
         decl.arguments.forEach(function(element) {
             element.isParameter = true;
         });
-
 
         if (decl.callee.name == "primitive") {
             // primitive does not "handleAll(decl.arguments);"
@@ -558,7 +576,6 @@ function CodeGen(f) {
     };
 
     this.handleAssignmentExpression = function(decl) {
-        //console.log("// assignment " + JSON.stringify(decl));
 
         if (decl.left.type == "Identifier") {
             var op = this.updateOpToInstruction[decl.operator];
@@ -588,7 +605,6 @@ function CodeGen(f) {
     };
 
     this.handleVariableDeclarator = function(decl) {
-        //     console.log (JSON.stringify (decl));
         if (this.currentFunction.isTopLevel) {
             this.currentFunction.declareGlobal(decl.id.name);
         } else {
@@ -602,7 +618,6 @@ function CodeGen(f) {
     };
 
     this.handleBlockStatement = function(decl) {
-        // console.log ("HANDLE BLOCK " + JSON.stringify (decl));
         this.handleAll(decl.body);
     };
 
@@ -616,7 +631,6 @@ function CodeGen(f) {
     this.handleEmptyStatement = function(decl) {}
 
     this.handleForStatement = function(decl) {
-        //  console.log (JSON.stringify (decl));
         var loopTest = "@loopTest" + this.label;
         //   var loopBody = "@loopBody" + this.label;
         var loopEnd = "@loopEnd" + this.label;

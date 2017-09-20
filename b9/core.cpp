@@ -190,11 +190,9 @@ bool VirtualMachine::loadLibrary() {
   this->stringTable_ = stringTable;
 
   if (this->debug_ > 0) {
-    int functionIndex = 0;
-    while (functions_[functionIndex].name_ != NO_MORE_BYTECODES) {
-      ExportedFunctionData data = functions_[functionIndex];
-      std::cout << "Name: " << data.name_ << " byteCodes: " << data.byteCodes_;
-      functionIndex++;
+    for (int i = 0; i < functions_->functionCount_; i++) {
+      FunctionSpecification *functionSpec = functions_->functionTable_ + i;
+      std::cout << "Name: " << functionSpec->name_ << " byteCodes: " << functionSpec->byteCodes_;
     }
   }
 
@@ -461,7 +459,7 @@ PrimitiveFunction *VirtualMachine::getPrimitive(uint64_t index) {
 }
 
 Instruction *VirtualMachine::getFunction(uint64_t index) {
-  return functions_[index].byteCodes_;
+  return functions_->functionTable_[index].byteCodes_;
 }
 
 const char *VirtualMachine::getString(int index) {

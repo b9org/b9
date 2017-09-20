@@ -125,12 +125,18 @@ struct PrimitiveData {
     PrimitiveFunction *address;
 };
 
-class ExportedFunctionData {
+class FunctionSpecification {
 public:
     const char* name_ ;
     uint32_t nargs_;
     Instruction *byteCodes_;
     uint64_t jitAddress_;
+};
+
+class ExportedFunctionData {
+public:
+    int functionCount_;
+    FunctionSpecification *functionTable_;
 };
 
 //typedef StackElement (*Interpret) (ExecutionContext* context, Instruction* program);

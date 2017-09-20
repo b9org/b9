@@ -230,12 +230,17 @@ function CodeGen(f) {
     this.handleFooters = function() {
         var out = this.functions;
 
-        this.outputRawString('struct ExportedFunctionData b9_exported_functions[] = {');
+        this.outputRawString('FunctionSpecification funcSpecs[] = {');
         for (key in out) {
-            var init = '    {' + '"' + key + '", ' + out[key].nargs + ', ' + key + ', 0},';
+            var init =       '            {' + '"' + key + '", ' + out[key].nargs + ', ' + key + ', 0},';
             this.outputRawString(init, '// ' + this.functions[key]);
         }
-        this.outputRawString('    {NO_MORE_FUNCTIONS, 0, 0, 0}');
+        this.outputRawString('};');
+        this.outputRawString('');
+
+        this.outputRawString('ExportedFunctionData b9_exported_functions = {');
+        this.outputRawString('    ' + Object.keys(this.functions).length + ', // function count');
+        this.outputRawString('    funcSpecs');
         this.outputRawString('};');
         this.outputRawString('');
 

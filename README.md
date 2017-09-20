@@ -1,28 +1,47 @@
 [![Build Status](https://api.travis-ci.org/youngar/Base9.svg?branch=master)](https://travis-ci.org/youngar/Base9)
 
-Cloning
--------
-To clone the source code, use:
-```
+# Building Base9
+
+## Grab the source
+
+clone this repository using git:
+
+```sh
 git clone https://github.com/youngar/Base9
+cd Base9
 ```
 
-Building
---------
+## Building
 
-```
-make -C ./omr/jitbuilder
-cmake .
-make
+### Set up the build directory
+
+Create a build directory and configure the build. Base9 and OMR use Cmake.
+We suggest using the ninja generator.
+
+```sh
+# Inside the Base9 directory
+mkdir build && cd build
+cmake -G Ninja ..
 ```
 
-To run tests, use:
+### Build it!
+
+```sh
+# Inside the build directory
+ninja -j2
 ```
-make test
+
+## Testing
+
+To run the base9 tests, run:
+```sh
+# Inside the build directory
+ctest -V
 ```
+
+## Benchmarking
 
 To run the benchmark, use:
 ```
-make bench
+ninja bench
 ```
-

@@ -1,7 +1,7 @@
-#include "base9.hpp"
+#include <b9.hpp>
 
-#include "b9core.hpp"
-#include "b9hash.hpp"
+#include <b9/core.hpp>
+#include <b9/hash.hpp>
 
 #include "Jit.hpp"
 

@@ -1,3 +1,5 @@
+#include <b9.hpp>
+#include <b9/hash.hpp>
 
 #include <cctype>
 #include <cstdio>
@@ -5,9 +7,6 @@
 #include <cstring>
 #include <time.h>
 #include <unistd.h>
-
-#include "base9.hpp"
-#include "b9hash.hpp"
 
 namespace b9 {
 

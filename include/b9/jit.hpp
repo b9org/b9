@@ -1,7 +1,7 @@
 #ifndef B9_JIT_INCL
 #define B9_JIT_INCL
 
-#include "Base9.hpp"
+#include <B9.hpp>
 
 namespace b9 {
 

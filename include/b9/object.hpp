@@ -2,7 +2,7 @@
 #ifndef B9OBJECT_HPP_
 #define B9OBJECT_HPP_
 
-#include "base9.hpp"
+#include <b9.hpp>
 
 #include <stdlib.h>
 

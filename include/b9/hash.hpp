@@ -2,10 +2,10 @@
 #ifndef B9_HASH_INCL
 #define B9_HASH_INCL
 
+#include <b9.hpp>
+
 #include <cassert>
 #include <cstdlib>
-
-#include "base9.hpp"
 
 namespace b9 {
 

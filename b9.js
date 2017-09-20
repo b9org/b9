@@ -207,7 +207,7 @@ function CodeGen(f) {
     };
 
     this.handleHeaders = function() {
-        this.outputRawString('#include "base9.hpp"');
+        this.outputRawString('#include <b9.hpp>');
         this.outputRawString('using namespace b9;');
 
         // var out = this.primitives;

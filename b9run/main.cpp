@@ -1,8 +1,8 @@
+#include <b9.hpp>
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-
-#include "base9.hpp"
 
 int main(int argc, char *argv[]) {
 

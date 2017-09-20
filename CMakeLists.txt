@@ -16,34 +16,44 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/Modules)
 
 find_package(Omr COMPONENTS REQUIRED JitBuilder)
 
-# libb9
+# b9 lib
 
 add_library(b9 SHARED
-	base9.hpp
-	b9core.cpp
-	b9hash.cpp
-	# b9jit.cpp
+	b9/core.cpp
+	b9/hash.cpp
+	b9/jit.cpp
 )
 
-target_include_directories(b9 PUBLIC ${CMAKE_SOURCE_DIR})
-
-target_link_libraries(b9 dl Omr::JitBuilder)
-
-# b9
-
-add_executable(base9
-	main.cpp
+target_include_directories(b9
+	PUBLIC
+		include/
 )
 
-target_link_libraries(base9 b9)
+target_link_libraries(b9
+	PUBLIC
+		dl
+		Omr::JitBuilder
+)
 
-# b9test
+# b9run exe
+
+add_executable(b9run
+	b9run/main.cpp
+)
+
+target_link_libraries(b9run b9)
+
+# b9test exe
 
 add_executable(b9test
-	b9test.cpp
+	b9test/b9test.cpp
 )
 
-target_link_libraries(b9test gtest_main)
+target_link_libraries(b9test
+	PUBLIC
+		b9
+		gtest_main
+)
 
 add_test(b9test b9test)
 

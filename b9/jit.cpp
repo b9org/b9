@@ -1,15 +1,9 @@
-#include "base9.hpp"
+#include <b9.hpp>
 
 #if defined(B9JIT)
 
-#include <assert.h>
-#include <dlfcn.h>
-#include <errno.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <cstring>
+#include <b9/core.hpp>
+#include <b9/jit.hpp>
 
 #include "Jit.hpp"
 #include "ilgen/BytecodeBuilder.hpp"
@@ -19,8 +13,14 @@
 #include "ilgen/VirtualMachineRegister.hpp"
 #include "ilgen/VirtualMachineRegisterInStruct.hpp"
 
-#include "b9core.hpp"
-#include "b9jit.hpp"
+#include <assert.h>
+#include <dlfcn.h>
+#include <errno.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <cstring>
 
 namespace b9 {
 

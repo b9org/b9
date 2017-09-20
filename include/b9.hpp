@@ -1,7 +1,7 @@
 #ifndef base9_hpp_
 #define base9_hpp_
 
-#include "b9core.hpp"
+#include <b9/core.hpp>
 
 #include <string>
 #include <cstring>

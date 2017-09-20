@@ -1,20 +1,40 @@
 cmake_minimum_required(VERSION 3.2)
 
-project(base9
-	LANGUAGES CXX
-	VERSION 0.1)
+list(APPEND CMAKE_MODULE_PATH
+	cmake/Modules
+	${CMAKE_CURRENT_LIST_DIR}/omr/cmake/modules/
+)
 
-set(CMAKE_CXX_STANDARD 11)
+project(base9
+	LANGUAGES C CXX
+	VERSION 0.1
+)
+
+include(OmrPlatform)
+
+# Global Configuration
+
+omr_platform_global_setup()
+
+set(CMAKE_CXX_STANDARD 14)
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS true)
 
 enable_testing()
+
+# OMR Configuration
+
+set(OMR_COMPILER   ON  CACHE INTERNAL "Enable the Compiler.")
+set(OMR_JITBUILDER ON  CACHE INTERNAL "We use OMR's jitbuilder tool for the b9 JIT")
+set(OMR_GC         ON CACHE INTERNAL "We don't use the GC in b9 (yet)")
+set(OMR_FVTEST     OFF CACHE INTERNAL "Disable OMR's internal test suite, it's incompatible with b9")
+set(OMR_WARNINGS_AS_ERRORS OFF CACHE INTERNAL "OMR doesn't compile cleanly on my laptop :p")
+
+# Subdirectories
+
+add_subdirectory(omr)
+
 add_subdirectory(googletest)
-
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/Modules)
-
-# Find OMR
-
-find_package(Omr COMPONENTS REQUIRED JitBuilder)
 
 # b9 lib
 
@@ -32,7 +52,7 @@ target_include_directories(b9
 target_link_libraries(b9
 	PUBLIC
 		dl
-		Omr::JitBuilder
+		jitbuilder
 )
 
 # b9run exe

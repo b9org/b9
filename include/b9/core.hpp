@@ -7,7 +7,6 @@
 namespace b9 {
 
 #define NO_MORE_BYTECODES 0x0
-#define NO_MORE_FUNCTIONS 0x0
 
 // ByteCodes
 

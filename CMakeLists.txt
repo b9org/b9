@@ -30,52 +30,27 @@ set(OMR_GC         ON CACHE INTERNAL "We don't use the GC in b9 (yet)")
 set(OMR_FVTEST     OFF CACHE INTERNAL "Disable OMR's internal test suite, it's incompatible with b9")
 set(OMR_WARNINGS_AS_ERRORS OFF CACHE INTERNAL "OMR doesn't compile cleanly on my laptop :p")
 
+# B9 basic configuration library
+
+add_library(b9interface INTERFACE)
+
+target_include_directories(b9interface
+	INTERFACE
+		include
+		${CMAKE_CURRENT_BINARY_DIR}/include
+)
+
 # Subdirectories
 
 add_subdirectory(omr)
 
 add_subdirectory(googletest)
 
-# b9 lib
+add_subdirectory(b9)
 
-add_library(b9 SHARED
-	b9/core.cpp
-	b9/hash.cpp
-	b9/jit.cpp
-)
+add_subdirectory(b9run)
 
-target_include_directories(b9
-	PUBLIC
-		include/
-)
-
-target_link_libraries(b9
-	PUBLIC
-		dl
-		jitbuilder
-)
-
-# b9run exe
-
-add_executable(b9run
-	b9run/main.cpp
-)
-
-target_link_libraries(b9run b9)
-
-# b9test exe
-
-add_executable(b9test
-	b9test/b9test.cpp
-)
-
-target_link_libraries(b9test
-	PUBLIC
-		b9
-		gtest_main
-)
-
-add_test(b9test b9test)
+add_subdirectory(b9test)
 
 # b9 programs
 

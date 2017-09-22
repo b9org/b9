@@ -33,7 +33,6 @@ TEST_F(InterpreterTest, test_add){
   ASSERT_TRUE(virtualMachine_.runFunction(function));
 }
 
-// TODO enable these tests
 TEST_F(InterpreterTest, test_sub) {
   b9::Instruction *function = virtualMachine_.getFunctionAddress("test_sub");
   ASSERT_TRUE(virtualMachine_.runFunction(function));

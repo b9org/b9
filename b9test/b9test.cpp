@@ -28,6 +28,16 @@ protected:
   }
 };
 
+TEST_F(InterpreterTest, test_return_true) {
+  b9::Instruction *function = virtualMachine_.getFunctionAddress("test_return_true");
+  ASSERT_TRUE(virtualMachine_.runFunction(function));
+}
+
+TEST_F(InterpreterTest, test_return_false) {
+  b9::Instruction *function = virtualMachine_.getFunctionAddress("test_return_false");
+  ASSERT_FALSE(virtualMachine_.runFunction(function));
+}
+
 TEST_F(InterpreterTest, test_add){
   b9::Instruction *function = virtualMachine_.getFunctionAddress("test_add");
   ASSERT_TRUE(virtualMachine_.runFunction(function));

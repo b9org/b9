@@ -20,7 +20,7 @@ protected:
   virtual void SetUp() {
 
     virtualMachine_.initialize();
-    ASSERT_TRUE(virtualMachine_.loadLibrary("libinterpreter_testd.so"));
+    ASSERT_TRUE(virtualMachine_.loadLibrary("libinterpreter_test.so"));
   }
 
   virtual void TearDown() {

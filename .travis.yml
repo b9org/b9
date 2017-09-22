@@ -36,4 +36,4 @@ script:
     - cmake ..
     - make -j8
     - make programs
-    - ctest
+    - ctest --output-on-failure

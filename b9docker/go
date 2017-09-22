@@ -12,9 +12,7 @@ echo main.cpp contains the interpreter
 echo b9jit.cpp and b9jit.hpp contains the JITBuilder example compiler
 echo
 echo have fun !
+echo 
 
-/bin/bash 
-
-
-
+exec /bin/bash
 

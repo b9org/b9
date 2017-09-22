@@ -695,7 +695,7 @@ function CodeGen(f) {
     };
 
     this.genJmpForCompare = function(code) {
-        if (code == "==") instruction = "ByteCode::intJmpNe";
+        if (code == "==") instruction = "ByteCode::intJmpNeq";
         if (code == "!=") instruction = "ByteCode::intJmpEq";
         if (code == "<=") instruction = "ByteCode::intJmpGt";
         if (code == "<") instruction = "ByteCode::intJmpGe";

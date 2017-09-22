@@ -40,20 +40,6 @@ target_include_directories(b9interface
 		${CMAKE_CURRENT_BINARY_DIR}/include
 )
 
-# Subdirectories
-
-add_subdirectory(omr)
-
-add_subdirectory(googletest)
-
-add_subdirectory(b9)
-
-add_subdirectory(b9run)
-
-add_subdirectory(b9test)
-
-# b9 programs
-
 add_custom_target(programs)
 
 function(add_b9_program program)
@@ -69,4 +55,17 @@ function(add_b9_program program)
 	add_dependencies(programs "${program}")
 endfunction(add_b9_program)
 
+# Subdirectories
+
+add_subdirectory(omr)
+
+add_subdirectory(googletest)
+
+add_subdirectory(b9)
+
+add_subdirectory(b9run)
+
+add_subdirectory(b9test)
+
+# b9 programs
 add_b9_program(program)

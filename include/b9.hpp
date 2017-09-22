@@ -72,6 +72,7 @@ public:
     bool shutdown();
     bool parseArguments(int argc, char *argv[]);
     bool loadLibrary();
+    bool loadLibrary(std::string libraryName);
 
     Instruction *getFunctionAddress(const char *functionName);
     StackElement runFunction(Instruction *function);

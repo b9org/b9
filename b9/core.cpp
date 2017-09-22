@@ -122,7 +122,6 @@ void ExecutionContext::intSub() {
 bool VirtualMachine::initialize() {
   /* Default to run bench.so */
   if (name_ == nullptr) {
-    printf("No program was passed to b9, Running default benchmark for b9.\n");
     name_ = "./bench.so";
   }
 
@@ -135,7 +134,22 @@ bool VirtualMachine::initialize() {
   return true;
 }
 
-bool VirtualMachine::loadLibrary() {
+bool VirtualMachine::shutdown() {
+
+#if defined(B9JIT)
+  shutdownJit();
+#endif  // defined(B9JIT)
+
+  return true;
+}
+
+bool VirtualMachine::loadLibrary()
+{
+  return loadLibrary(name_);
+}
+
+bool VirtualMachine::loadLibrary(std::string libraryName)
+{
   // we only support loading one library for now
   if (library_ != nullptr) {
     std::cout << "Error loading %s: context already has a library loaded"
@@ -145,9 +159,9 @@ bool VirtualMachine::loadLibrary() {
 
   char sharelib[128];
   if (verbose_) {
-    std::cout << "Loading " << name_;
+    std::cout << "Loading " << libraryName;
   }
-  snprintf(sharelib, sizeof(sharelib), "./%s", name_);
+  snprintf(sharelib, sizeof(sharelib), "./%s", libraryName.c_str());
 
   /* Open the shared object */
   dlerror();
@@ -265,7 +279,6 @@ bool VirtualMachine::parseArguments(int argc, char *argv[]) {
 
   /* Default to run bench.so */
   if (name_ == nullptr) {
-    printf("No program was passed to b9, Running default benchmark for b9.\n");
     name_ = "./bench.so";
   }
 

@@ -4,10 +4,133 @@
 #include <stdlib.h>
 #include <sys/time.h>
 
+#include <gtest/gtest.h>
+
 int fib(int n) {
   if (n < 3) return 1;
   return fib(n - 1) + fib(n - 2);
 }
+
+namespace b9 {
+namespace test {
+
+class InterpreterTest : public ::testing::Test {
+protected:
+  VirtualMachine virtualMachine_;
+  virtual void SetUp() {
+
+    virtualMachine_.initialize();
+    ASSERT_TRUE(virtualMachine_.loadLibrary("libinterpreter_testd.so"));
+  }
+
+  virtual void TearDown() {
+    ASSERT_TRUE(virtualMachine_.shutdown());
+  }
+};
+
+TEST_F(InterpreterTest, test_add){
+  b9::Instruction *function = virtualMachine_.getFunctionAddress("test_add");
+  ASSERT_TRUE(virtualMachine_.runFunction(function));
+}
+
+// TODO enable these tests
+TEST_F(InterpreterTest, test_sub) {
+  b9::Instruction *function = virtualMachine_.getFunctionAddress("test_sub");
+  ASSERT_TRUE(virtualMachine_.runFunction(function));
+}
+
+TEST_F(InterpreterTest, test_equal) {
+  b9::Instruction *function = virtualMachine_.getFunctionAddress("test_equal");
+  ASSERT_TRUE(virtualMachine_.runFunction(function));
+}
+
+TEST_F(InterpreterTest, test_equal_1) {
+  b9::Instruction *function = virtualMachine_.getFunctionAddress("test_equal_1");
+  ASSERT_TRUE(virtualMachine_.runFunction(function));
+}
+
+TEST_F(InterpreterTest, test_greaterThan) {
+  b9::Instruction *function = virtualMachine_.getFunctionAddress("test_greaterThan");
+  ASSERT_TRUE(virtualMachine_.runFunction(function));
+}
+
+TEST_F(InterpreterTest, test_greaterThan_1) {
+  b9::Instruction *function = virtualMachine_.getFunctionAddress("test_greaterThan_1");
+  ASSERT_TRUE(virtualMachine_.runFunction(function));
+}
+
+TEST_F(InterpreterTest, test_greaterThanOrEqual) {
+  b9::Instruction *function = virtualMachine_.getFunctionAddress("test_greaterThanOrEqual");
+  ASSERT_TRUE(virtualMachine_.runFunction(function));
+}
+
+TEST_F(InterpreterTest, test_greaterThanOrEqual_1) {
+  b9::Instruction *function = virtualMachine_.getFunctionAddress("test_greaterThanOrEqual_1");
+  ASSERT_TRUE(virtualMachine_.runFunction(function));
+}
+
+TEST_F(InterpreterTest, test_greaterThanOrEqual_2) {
+  b9::Instruction *function = virtualMachine_.getFunctionAddress("test_greaterThanOrEqual_2");
+  ASSERT_TRUE(virtualMachine_.runFunction(function));
+}
+
+TEST_F(InterpreterTest, test_lessThan) {
+  b9::Instruction *function = virtualMachine_.getFunctionAddress("test_lessThan");
+  ASSERT_TRUE(virtualMachine_.runFunction(function));
+}
+
+TEST_F(InterpreterTest, test_lessThan_1) {
+  b9::Instruction *function = virtualMachine_.getFunctionAddress("test_lessThan_1");
+  ASSERT_TRUE(virtualMachine_.runFunction(function));
+}
+
+TEST_F(InterpreterTest, test_lessThan_2) {
+  b9::Instruction *function = virtualMachine_.getFunctionAddress("test_lessThan_2");
+  ASSERT_TRUE(virtualMachine_.runFunction(function));
+}
+
+TEST_F(InterpreterTest, test_lessThan_3) {
+  b9::Instruction *function = virtualMachine_.getFunctionAddress("test_lessThan_3");
+  ASSERT_TRUE(virtualMachine_.runFunction(function));
+}
+
+TEST_F(InterpreterTest, test_lessThanOrEqual) {
+  b9::Instruction *function = virtualMachine_.getFunctionAddress("test_lessThanOrEqual");
+  ASSERT_TRUE(virtualMachine_.runFunction(function));
+}
+
+TEST_F(InterpreterTest, test_lessThanOrEqual_1) {
+  b9::Instruction *function = virtualMachine_.getFunctionAddress("test_lessThanOrEqual_1");
+  ASSERT_TRUE(virtualMachine_.runFunction(function));
+}
+
+TEST_F(InterpreterTest, test_call) {
+  b9::Instruction *function = virtualMachine_.getFunctionAddress("test_call");
+  ASSERT_TRUE(virtualMachine_.runFunction(function));
+}
+
+TEST_F(InterpreterTest, test_string_declare_string_var) {
+  b9::Instruction *function = virtualMachine_.getFunctionAddress("test_string_declare_string_var");
+  ASSERT_TRUE(virtualMachine_.runFunction(function));
+}
+
+TEST_F(InterpreterTest, helper_test_string_return_string) {
+  b9::Instruction *function = virtualMachine_.getFunctionAddress("helper_test_string_return_string");
+  ASSERT_TRUE(virtualMachine_.runFunction(function));
+}
+
+TEST_F(InterpreterTest, test_string_return_string) {
+  b9::Instruction *function = virtualMachine_.getFunctionAddress("test_string_return_string");
+  ASSERT_TRUE(virtualMachine_.runFunction(function));
+}
+
+TEST_F(InterpreterTest, test_while) {
+  b9::Instruction *function = virtualMachine_.getFunctionAddress("test_while");
+  ASSERT_TRUE(virtualMachine_.runFunction(function));
+}
+
+} // namespace test
+} // namespace b9
 
 #if 0
 
@@ -61,87 +184,6 @@ bool test_validateFibResult(ExecutionContext *context) {
   // }
   validateFibResult(context);
   return true;
-}
-
-/* Main Loop */
-
-bool run_test(ExecutionContext *context, const char *testName) {
-  if (context->debug >= 2) {
-    printf("Test \"%s\": starting\n", testName);
-  }
-  Instruction *func = getFunctionAddress(context, testName);
-  if (func == nullptr) {
-    printf("Test \"%s\": failed,  failed to load function\n", testName);
-    return false;
-  }
-  const char *mode = hasJITAddress(func) ? "JIT" : "Interpreted";
-  int result = interpret(context, func);
-  if (!result) {
-    printf("Mode %s, Test \"%s\": failed, returned %X\n", mode, testName,
-           result);
-  } else {
-    if (context->debug >= 1) {
-      printf("Mode %s, Test \"%s\": success, returned %X\n", mode, testName,
-             result);
-    }
-  }
-  return result;
-}
-
-extern "C" PrimitiveFunction test_primitive_return_5;
-extern "C" void test_primitive_return_5(ExecutionContext *context) {
-  push(context, 5);
-}
-
-extern "C" PrimitiveFunction test_primitive_take_2;
-extern "C" void test_primitive_take_2(ExecutionContext *context) {
-  int a = pop(context);
-  int b = pop(context);
-  push(context, 0);
-}
-
-extern "C" PrimitiveFunction test_primitive_take_2_add;
-extern "C" void test_primitive_take_2_add(ExecutionContext *context) {
-  int a = pop(context);
-  int b = pop(context);
-  push(context, a + b);
-}
-
-int main(int argc, char *argv[]) {
-  ExecutionContext stackContext;
-  ExecutionContext *context = &stackContext;
-
-  b9_jit_init();
-
-  parseArguments(context, argc, argv);
-
-  bool result = true;
-
-  if (!loadLibrary(context, "test.so")) {
-    return 0;
-  }
-
-  test_validateFibResult(context);
-
-  int count;
-  for (count = 0; count < 2; count++) {
-    // run all tests in the program which start with test_
-    struct ExportedFunctionData *functions = context->functions;
-    int functionIndex = 0;
-    while (functions[functionIndex].name != NO_MORE_FUNCTIONS) {
-      if (strncmp("test_", functions[functionIndex].name, 5) == 0) {
-        run_test(context, functions[functionIndex].name);
-      }
-      functionIndex++;
-    }
-    generateAllCode(context);  // first time interpreted, second time JIT
-  }
-
-  if (result) {
-    return EXIT_SUCCESS;
-  } else {
-    return EXIT_FAILURE;
-  }
 }
 
 #endif

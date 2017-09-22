@@ -5,6 +5,7 @@
 language: C
 
 sudo: false
+
 git:
     depth: 1
 
@@ -31,6 +32,8 @@ install:
     - npm install
 
 script:
-    - make test
-    - make bench
-    - make program
+    - mkdir build && cd build
+    - cmake ..
+    - make -j8
+    - make programs
+    - ctest

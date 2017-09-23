@@ -202,10 +202,3 @@ function test_while() {
     return 1;
 }
 
-function fib_function(a) {
-    if (a < 3) {
-        return 1;
-    } else {
-        return fib_function(a - 1) + fib_function(a - 2);
-    }
-}

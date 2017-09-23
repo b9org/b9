@@ -67,5 +67,7 @@ add_subdirectory(b9run)
 
 add_subdirectory(b9test)
 
+add_subdirectory(programs)
+
 # b9 programs
 add_b9_program(program)

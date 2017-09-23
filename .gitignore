@@ -4,6 +4,9 @@ omr
 node_modules
 build
 
+# clang
+compile_commands.json
+
 ### C++ ###
 # Prerequisites
 *.d

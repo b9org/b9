@@ -12,8 +12,6 @@
 #include <ostream>
 #include <string>
 
-#undef B9JIT
-
 namespace b9 {
 
 struct JitConfig {
@@ -24,7 +22,8 @@ struct JitConfig {
 };
 
 struct VirtualMachineConfig {
-  JitConfig jit;
+  JitConfig jitConfig;
+  bool jitEnabled;
   bool debug = false;
   bool verbose = false;
 };
@@ -103,4 +102,4 @@ class VirtualMachine {
 
 }  // namespace b9
 
-#endif  // B9_HPP_
+#endif // B9_HPP_

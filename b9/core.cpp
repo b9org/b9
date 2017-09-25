@@ -118,20 +118,20 @@ void ExecutionContext::intSub() {
 /// ExecutionContext
 
 bool VirtualMachine::initialize() {
-#if defined(B9JIT)
-  if (!initializeJit()) {
-    return false;
+
+  if (cfg_.jitEnabled) {
+    if (!initializeJit()) {
+      return false;
+    }
   }
-#endif  // defined(B9JIT)
 
   return true;
 }
 
 bool VirtualMachine::shutdown() {
-#if defined(B9JIT)
-  shutdownJit();
-#endif  // defined(B9JIT)
-
+  if (cfg_.jitEnabled) {
+    shutdownJit();
+  }
   return true;
 }
 

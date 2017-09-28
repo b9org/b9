@@ -48,7 +48,7 @@ function(add_b9_program program)
 		COMMAND node "${CMAKE_SOURCE_DIR}/b9.js"
 			"${CMAKE_CURRENT_SOURCE_DIR}/${program}.src"
 			>"${program}.cpp"
-		DEPENDS "${CMAKE_SOURCE_DIR}/b9.js" "${CMAKE_CURRENT_SOURCE_DIR}/${program}.src"
+		DEPENDS "${CMAKE_SOURCE_DIR}/js_compiler/compile.js" "${CMAKE_CURRENT_SOURCE_DIR}/${program}.src"
 	)
 	add_library("${program}" SHARED "${program}.cpp")
 	target_link_libraries("${program}" b9)
@@ -67,5 +67,6 @@ add_subdirectory(b9run)
 
 add_subdirectory(b9test)
 
-add_subdirectory(programs)
+add_subdirectory(js_programs)
 
+# add_subdirectory(js_compiler)

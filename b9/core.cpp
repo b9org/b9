@@ -120,10 +120,6 @@ void ExecutionContext::intSub() {
 /// ExecutionContext
 
 bool VirtualMachine::initialize() {
-  /* Default to run bench.so */
-  if (name_ == nullptr) {
-    name_ = "./bench.so";
-  }
 
 #if defined(B9JIT)
   if (!initializeJit()) {
@@ -208,78 +204,6 @@ bool VirtualMachine::loadLibrary(std::string libraryName)
       FunctionSpecification *functionSpec = functions_->functionTable_ + i;
       std::cout << "Name: " << functionSpec->name_ << " byteCodes: " << functionSpec->byteCodes_;
     }
-  }
-
-  return true;
-}
-
-bool VirtualMachine::parseArguments(int argc, char *argv[]) {
-  const char *mainFunction = "b9main";
-
-  /* Command Line Arguments */
-  for (int i = 1; i < argc; i++) {
-    char *name = argv[i];
-
-    if (!strcmp(name, "-help")) {
-      printf("-loop run the program a certain number of times");
-      continue;
-    }
-
-    if (!strcmp(name, "-loop")) {
-      loopCount_ = atoi(argv[i + 1]);
-      i++;
-      continue;
-    }
-
-    if (!strcmp(name, "-inline")) {
-      inlineDepthAllowed_ = atoi(argv[i + 1]);
-      printf("Allowing Inlining of %d levels \n", inlineDepthAllowed_);
-      i++;
-      continue;
-    }
-
-    if (!strcmp(name, "-verbose")) {
-      verbose_ = 1;
-      continue;
-    }
-
-    if (!strcmp(name, "-debug")) {
-      debug_++;
-      printf("debug is %d \n", debug_);
-      continue;
-    }
-
-    if (!strcmp(name, "-directcall")) {
-      directCall_ = atoi(argv[i + 1]);
-      i++;
-      continue;
-    }
-
-    if (!strcmp(name, "-passparameters")) {
-      passParameters_ = atoi(argv[i + 1]);
-      i++;
-      continue;
-    }
-
-    if (!strcmp(name, "-operandstack")) {
-      operandStack_ = atoi(argv[i + 1]);
-      i++;
-      continue;
-    }
-
-    if (!strcmp(name, "-program")) {
-      mainFunction = argv[i + 1];
-      i++;
-      continue;
-    }
-
-    name_ = name;
-    continue;
-  }
-
-  /* Default to run bench.so */
-  if (name_ == nullptr) {
-    name_ = "./bench.so";
   }
 
   return true;

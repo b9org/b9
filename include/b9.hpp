@@ -2,13 +2,29 @@
 #define base9_hpp_
 
 #include <b9/core.hpp>
+#include <b9/callstyle.hpp>
 
+#include <ostream>
 #include <string>
 #include <cstring>
+#include <map>
 
 #undef B9JIT
 
 namespace b9 {
+
+struct JitConfig {
+    CallStyle callStyle = CallStyle::interpreter;
+    std::size_t maxInlineDepth = 0;
+    bool verbose = false;
+    bool debug = false;
+};
+
+struct VirtualMachineConfig {
+    JitConfig jit;
+    bool debug = false;
+    bool verbose = false;
+};
 
 class VirtualMachine;
 
@@ -59,18 +75,21 @@ class ExecutionContext {
   VirtualMachine *virtualMachine_;
 };
 
+class Module {};
+
+using FunctionTable = std::map<const char*, Function*>;
+
 class VirtualMachine
 {
 public:
-    VirtualMachine()
-      :
+    VirtualMachine(const VirtualMachineConfig& cfg)
+    : cfg_{cfg},
       executionContext_{this}
     {
     }
 
     bool initialize();
     bool shutdown();
-    bool parseArguments(int argc, char *argv[]);
     bool loadLibrary();
     bool loadLibrary(std::string libraryName);
 
@@ -83,27 +102,17 @@ public:
 
     const char *getString(int index);
 
+
 private:
+    VirtualMachineConfig cfg_;
     ExecutionContext executionContext_;
-
-    struct ExportedFunctionData *functions_;
-    struct PrimitiveData *primitives_;
-    const char ** stringTable_;
-
-    /* Command Line Parameters */
-    int loopCount_ = 1;
-    int verbose_ = 0;
-    int debug_ = 0;
-
-    int directCall_ = 1;
-    int passParameters_ = 1;
-    int operandStack_ = 1;
-    int inlineDepthAllowed_ = 1;
-
-    const char *name_ = nullptr;
-    void *library_ = nullptr;
+    FunctionTable functionTable_;
+    ExportedFunctionData* functions_;
+    PrimitiveData* primitives_;
+    const char** stringTable_;
 };
 
 } // namespace b9
-#endif
+
+#endif // 
 

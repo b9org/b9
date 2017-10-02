@@ -119,14 +119,6 @@ extern "C" typedef void (PrimitiveFunction)(VirtualMachine *virtualMachine);
 void
 bc_primitive(VirtualMachine *context, Parameter value);
 
-class FunctionSpecification {
-public:
-    const char* name_ ;
-    uint32_t nargs_;
-    Instruction *byteCodes_;
-    uint64_t jitAddress_;
-};
-
 //typedef StackElement (*Interpret) (ExecutionContext* context, Instruction* program);
 
 #if defined(B9JIT)
@@ -134,6 +126,9 @@ public:
 // define C callable Interpret API for each arg call 
 // if args are passed to the function, they are not passed 
 // on the intepreter stack
+
+typedef StackElement (*interpret_n_args) (ExecutionContext* context, Instruction* program, ...);
+
 typedef StackElement (*Interpret_0_args) (ExecutionContext* context, Instruction* program);
 typedef StackElement (*Interpret_1_args) (ExecutionContext* context, Instruction* program, StackElement p1);
 typedef StackElement (*Interpret_2_args) (ExecutionContext* context, Instruction* program, 

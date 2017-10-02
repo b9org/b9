@@ -1,78 +1,65 @@
 #include <b9/loader.hpp>
-#include <b9/binaryformat.hpp>
+#include <dlfcn.h>
 
 namespace b9 {
 
-std::shared_ptr<Module> Loader::module(const char* n) {
+DlLoader::DlLoader(bool debug) : debug_{debug} {}
 
-  std::shared_ptr<Module> module{};
+std::shared_ptr<Module> DlLoader::loadModule(const std::string& name) const {
+	auto module = std::make_shared<Module>();
+	auto handle = openLibrary(name);
+	loadFunctions(module, handle);
+	loadStrings(module, handle);
+	loadPrimitives(module, handle);
+	return module;
+}
 
-  dlerror(); // clear error
+void* DlLoader::openLibrary(const std::string& name) const {
+	auto n = "./" + name;
+	auto handle = dlopen(n.c_str(), RTLD_NOW);
+	auto msg = dlerror();
+	if (msg) throw DlException{msg};
+	return handle;
+};
 
-  const std::string name{};
-  name += "./";
-  name += n;
+void DlLoader::loadFunctions(const std::shared_ptr<Module>& module, void* const handle) const {
+	auto table = loadSymbol<const DlFunctionTable>(handle, "b9_function_table");
+	for (std::size_t i = 0; i < table->length; i++) {
+		module->functions.push_back(&table->functions[i]);
+	}
+}
 
-  // open the module library
+void DlLoader::loadPrimitives(const std::shared_ptr<Module>& module, void* handle) const {
+	auto table = loadSymbol<const DlPrimitiveTable>(handle, "b9_primitive_table");
+	for (std::size_t i = 0; i < table->length; i++) {
+		auto primitive = loadSymbol<PrimitiveFunction>(RTLD_DEFAULT, table->primitives[i]);
+		module->primitives.push_back(primitive);
+	}
+}
 
-  void* handle = dlopen(name.c_str(), RTLD_NOW);
-  char *error = dlerror();
+void DlLoader::loadStrings(const std::shared_ptr<Module>& module, void* handle) const {
+	auto table = loadSymbol<const DlStringTable>(handle, "b9_string_table");
+	for(std::size_t i = 0; table->length; i++) {
+		module->strings.push_back(table->strings[i]);
+	}
+}
 
-  if (error != nullptr) {
-    std::cerr "Failed to load" << n << ": "<< error << std::endl;
-    return nullptr;
-  }
+template <typename T>
+T* DlLoader::loadSymbol(void* handle, const char* symbol) const {
+	auto p = dlsym(handle, symbol);
+	auto msg = dlerror();
+	if (msg) throw DlException{msg};
+	return reinterpret_cast<T*>(p);
+};
 
-  // Get the symbol table
-
-  struct ExportedFunctionData *table =
-      (struct ExportedFunctionData *)dlsym(handle, "b9_exported_functions");
-  error = dlerror();
-  if (error) {
-    printf("%s\n", error);
-    return false;
-  }
-  functions_ = table;
-
-  // Get the primitive table
-
-  PrimitiveData *primitives =
-      (struct PrimitiveData *)dlsym(handle, "b9_primitives");
-  error = dlerror();
-  if (error) {
-    printf("%s\n", error);
-    return false;
-  }
-  primitives_ = primitives;
-
-  // Get the string table
-
-  const char **stringTable =
-      (const char **)dlsym(handle, "b9_exported_strings");
-  error = dlerror();
-  if (error) {
-    printf("%s\n", error);
-    return false;
-  }
-  this->stringTable_ = stringTable;
-
-  if (this->debug_ > 0) {
+#if 0
+DlLoader::debugDump()
+if (this->debug_ > 0) {
     for (int i = 0; i < functions_->functionCount_; i++) {
       FunctionSpecification *functionSpec = functions_->functionTable_ + i;
       std::cout << "Name: " << functionSpec->name_ << " byteCodes: " << functionSpec->byteCodes_;
     }
   }
+#endif // 0
 
-  return true;
-}
-
-Instruction* Module::function(const char * const name) const {
-	  Instruction* f = reinterpret_cast<Instruction *>(dlsym(library_, functionName));
-	  char *error = dlerror();
-	  if (error) {
-		printf("%s\n", error);
-		return nullptr;
-	  }
-	
-	  return function;
-}
+} // namespace b9

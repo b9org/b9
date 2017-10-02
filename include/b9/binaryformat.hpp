@@ -4,18 +4,10 @@
 #include <b9/core.hpp>
 
 namespace b9 {
+namespace bin {
 
-struct PrimitiveData {
-    const char * name;
-    PrimitiveFunction *address;
-};
 
-class ExportedFunctionData {
-public:
-    int functionCount_;
-    FunctionSpecification *functionTable_;
-};
-
+} // namespace bin
 } // namespace b9
 
 #endif // B9_BINARYFORMAT_HPP_

@@ -5,7 +5,6 @@
 
 #include "Jit.hpp"
 
-#include <dlfcn.h>
 #include <sys/time.h>
 #include <cassert>
 #include <cstdio>
@@ -135,76 +134,6 @@ bool VirtualMachine::shutdown() {
 #if defined(B9JIT)
   shutdownJit();
 #endif  // defined(B9JIT)
-
-  return true;
-}
-
-bool VirtualMachine::loadLibrary()
-{
-  return loadLibrary(name_);
-}
-
-bool VirtualMachine::loadLibrary(std::string libraryName)
-{
-  // we only support loading one library for now
-  if (library_ != nullptr) {
-    std::cout << "Error loading %s: context already has a library loaded"
-              << name_;
-    return false;
-  }
-
-  char sharelib[128];
-  if (verbose_) {
-    std::cout << "Loading " << libraryName;
-  }
-  snprintf(sharelib, sizeof(sharelib), "./%s", libraryName.c_str());
-
-  /* Open the shared object */
-  dlerror();
-  void *handle = dlopen(sharelib, RTLD_NOW);
-  char *error = dlerror();
-  if (error) {
-    printf("%s\n", error);
-    return false;
-  }
-  library_ = handle;
-
-  /* Get the symbol table */
-  struct ExportedFunctionData *table =
-      (struct ExportedFunctionData *)dlsym(handle, "b9_exported_functions");
-  error = dlerror();
-  if (error) {
-    printf("%s\n", error);
-    return false;
-  }
-  functions_ = table;
-
-  /* Get the primitive table */
-  PrimitiveData *primitives =
-      (struct PrimitiveData *)dlsym(handle, "b9_primitives");
-  error = dlerror();
-  if (error) {
-    printf("%s\n", error);
-    return false;
-  }
-  primitives_ = primitives;
-
-  /* Get the string table */
-  const char **stringTable =
-      (const char **)dlsym(handle, "b9_exported_strings");
-  error = dlerror();
-  if (error) {
-    printf("%s\n", error);
-    return false;
-  }
-  this->stringTable_ = stringTable;
-
-  if (this->debug_ > 0) {
-    for (int i = 0; i < functions_->functionCount_; i++) {
-      FunctionSpecification *functionSpec = functions_->functionTable_ + i;
-      std::cout << "Name: " << functionSpec->name_ << " byteCodes: " << functionSpec->byteCodes_;
-    }
-  }
 
   return true;
 }
@@ -376,27 +305,12 @@ void setJitAddress(ExecutionContext *context, int32_t functionIndex,
 
 #endif /* defined(B9JIT) */
 
-PrimitiveFunction *VirtualMachine::getPrimitive(uint64_t index) {
-  auto primitive = primitives_[index].address;
-  if (primitive == nullptr) {
-    const char *name = primitives_[index].name;
-
-    *(void **)(&primitive) = dlsym(RTLD_DEFAULT, name);
-    const char *error = dlerror();
-    if (error) {
-      printf("%s\n", error);
-    }
-
-    // if (this->debug >= 1) {
-    //   printf("cache address %s %p\n", name, primitive);
-    // }
-    primitives_[index].address = primitive;
-  }
-  return primitives_[index].address;
+PrimitiveFunction *VirtualMachine::getPrimitive(std::size_t index) {
+  return module_->primitives[index];
 }
 
-Instruction *VirtualMachine::getFunction(uint64_t index) {
-  return functions_->functionTable_[index].byteCodes_;
+Instruction *VirtualMachine::getFunction(std::size_t index) {
+  return module_->functions[index]->address;
 }
 
 const char *VirtualMachine::getString(int index) {
@@ -440,22 +354,6 @@ void ExecutionContext::reset() {
   programCounter_ = 0;
 }
 
-Instruction *VirtualMachine::getFunctionAddress(const char *functionName) {
-  if (library_ == nullptr) {
-    printf("Error function %s: context has no library loaded", functionName);
-    return nullptr;
-  }
-
-  Instruction *function = (Instruction *)dlsym(library_, functionName);
-  char *error = dlerror();
-  if (error) {
-    printf("%s\n", error);
-    return nullptr;
-  }
-
-  return function;
-}
-
 StackElement VirtualMachine::runFunction(Instruction *function) {
   executionContext_.reset();
 
@@ -494,7 +392,7 @@ StackElement timeFunction(VirtualMachine *virtualMachine, Instruction *function,
 
 extern "C" void b9_prim_print_number(ExecutionContext *context) {
   StackElement number = context->pop();
-  printf("%ld\n", number);
+  printf("%lld\n", number);
   context->push(0);
 }
 

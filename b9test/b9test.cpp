@@ -6,6 +6,7 @@
 
 #include <gtest/gtest.h>
 
+#if 0
 int fib(int n) {
   if (n < 3) return 1;
   return fib(n - 1) + fib(n - 2);
@@ -196,3 +197,5 @@ bool test_validateFibResult(ExecutionContext *context) {
 }
 
 #endif
+
+#endif // 0

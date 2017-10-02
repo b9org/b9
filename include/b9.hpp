@@ -1,8 +1,9 @@
-#ifndef base9_hpp_
-#define base9_hpp_
+#ifndef B9_HPP_
+#define B9_HPP_
 
 #include <b9/core.hpp>
 #include <b9/callstyle.hpp>
+#include <b9/module.hpp>
 
 #include <ostream>
 #include <string>
@@ -75,10 +76,6 @@ class ExecutionContext {
   VirtualMachine *virtualMachine_;
 };
 
-class Module {};
-
-using FunctionTable = std::map<const char*, Function*>;
-
 class VirtualMachine
 {
 public:
@@ -90,29 +87,23 @@ public:
 
     bool initialize();
     bool shutdown();
-    bool loadLibrary();
-    bool loadLibrary(std::string libraryName);
 
     Instruction *getFunctionAddress(const char *functionName);
     StackElement runFunction(Instruction *function);
 
     // private
-    Instruction* getFunction(uint64_t index);
-    PrimitiveFunction* getPrimitive(uint64_t index);
+    Instruction* getFunction(std::size_t index);
+    PrimitiveFunction* getPrimitive(std::size_t index);
 
     const char *getString(int index);
-
 
 private:
     VirtualMachineConfig cfg_;
     ExecutionContext executionContext_;
-    FunctionTable functionTable_;
-    ExportedFunctionData* functions_;
-    PrimitiveData* primitives_;
+    std::shared_ptr<Module> module_;
     const char** stringTable_;
 };
 
 } // namespace b9
 
-#endif // 
-
+#endif // B9_HPP_

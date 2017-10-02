@@ -44,12 +44,17 @@ add_custom_target(programs)
 
 function(add_b9_program program)
 	add_custom_command(
-		OUTPUT "${program}.cpp"
-		COMMAND node "${CMAKE_SOURCE_DIR}/b9.js"
+		OUTPUT
+			"${program}.cpp"
+		COMMAND
+			node "${CMAKE_SOURCE_DIR}/js_compiler/compile.js"
 			"${CMAKE_CURRENT_SOURCE_DIR}/${program}.src"
 			>"${program}.cpp"
-		DEPENDS "${CMAKE_SOURCE_DIR}/js_compiler/compile.js" "${CMAKE_CURRENT_SOURCE_DIR}/${program}.src"
+		DEPENDS
+			"${CMAKE_SOURCE_DIR}/js_compiler/compile.js"
+			"${CMAKE_CURRENT_SOURCE_DIR}/${program}.src"
 	)
+
 	add_library("${program}" SHARED "${program}.cpp")
 	target_link_libraries("${program}" b9)
 	add_dependencies(programs "${program}")

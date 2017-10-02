@@ -58,7 +58,7 @@ static bool parseArguments(RunConfig& cfg, const int argc, char* argv[]) {
     else if (strcmp(arg, "-verbose") == 0) {
       cfg.verbose = true;
       cfg.vm.verbose = true;
-      cfg.vm.jit.verbse = true;
+      cfg.vm.jit.verbose = true;
     }
     else if (strcmp(arg, "-debug") == 0) {
       cfg.vm.debug = true;

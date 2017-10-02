@@ -60,7 +60,7 @@ function(add_b9_program program)
 	add_dependencies(programs "${program}")
 	add_test(
 		NAME "run_${program}"
-		COMMAND b9run $<TARGET_FILE_NAME:${program}>
+		COMMAND b9run $<TARGET_FILE:${program}>
 	)
 endfunction(add_b9_program)
 

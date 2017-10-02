@@ -1,23 +1,24 @@
 #if !defined(B9_MODULE_HPP_)
 #define B9_MODULE_HPP_
 
+#include <b9/core.hpp>
+#include <cstdint>
+#include <vector>
+
 namespace b9 {
 
-struct FunctionEntry {
-	const Instruction* instructions;
-}
+/// Function specification. Metadata about a function.
+struct FunctionSpec {
+	void* jitAddress;
+	Instruction* address;
+	uint32_t nargs;
+};
 
-using FunctionMap = std::map<const char*, std::size_t>;
-using FunctionTable = std::vector<const FunctionEntry>;
-
-class Module {
-public:
-	/// Look up a function in this module.
-	Instruction* function(const char* const name) const;
-
-private:
-	std::map<const char*, const Function
-	std::vector<Instruction*
+/// An interpreter module.
+struct Module {
+	std::vector<const FunctionSpec*> functions;
+	std::vector<PrimitiveFunction*> primitives;
+	std::vector<const char*> strings;
 };
 
 } // namespace b9

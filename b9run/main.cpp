@@ -42,8 +42,10 @@ std::ostream& operator <<(std::ostream& out, const RunConfig& cfg) {
 
 /// Parse CLI arguments and set up the config.
 static bool parseArguments(RunConfig& cfg, const int argc, char* argv[]) {
-  /* Command Line Arguments */
-  for (int i = 1; i < argc; i++) {
+
+  std::size_t i = 1;
+
+  for (; i < argc; i++) {
     const char *arg = argv[i];
 
     if (strcmp(arg, "-help") == 0) {
@@ -57,6 +59,7 @@ static bool parseArguments(RunConfig& cfg, const int argc, char* argv[]) {
       cfg.vm.jit.maxInlineDepth = atoi(argv[++i]);
     }
     else if (strcmp(arg, "-verbose") == 0) {
+      std::cout << "verbose is enabled" << std::endl;
       cfg.verbose = true;
       cfg.vm.verbose = true;
       cfg.vm.jit.verbose = true;
@@ -85,13 +88,28 @@ static bool parseArguments(RunConfig& cfg, const int argc, char* argv[]) {
       cfg.mainFunction = argv[++i];
     }
     else if (strcmp(arg, "--") == 0) {
-      return true;
+      i++;
+      break;
     }
-    else {
+    else if (strcmp(arg, "-") == 0) {
       std::cerr << "Unrecognized option: " << arg << std::endl;
       return false;
     }
+    else {
+      break;
+    }
   }
+
+  // positional
+
+  if (i < argc) {
+    cfg.module = argv[i++];
+
+    if (i < argc) {
+      cfg.mainFunction = argv[i++];
+    }
+  }
+
   return true;
 }
 
@@ -152,11 +170,11 @@ static bool run(const RunConfig& cfg) {
 int main(int argc, char* argv[]) {
   RunConfig cfg;
 
-  if (parseArguments(cfg, argc, argv)) {
+  if (!parseArguments(cfg, argc, argv)) {
     exit(EXIT_FAILURE);
   }
 
-  if (cfg.vm.verbose) {
+  if (cfg.verbose) {
     std::cout << cfg << std::endl;
   }
 

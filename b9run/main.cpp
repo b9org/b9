@@ -1,4 +1,5 @@
 #include <b9.hpp>
+#include <b9/loader.hpp>
 #include <iostream>
 #include <cstdio>
 #include <cstdlib>
@@ -97,7 +98,9 @@ static bool parseArguments(RunConfig& cfg, const int argc, char* argv[]) {
 static bool run(const RunConfig& cfg) {
   b9::VirtualMachine virtualMachine{cfg.vm};
   virtualMachine.initialize();
-
+  b9::DlLoader loader(true);
+  auto module = loader.loadModule(cfg.module);
+  return true;
 #if 0
  b9::VirtualMachine virtualMachine;
   char sharelib[128];

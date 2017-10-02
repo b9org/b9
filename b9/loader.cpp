@@ -40,7 +40,7 @@ void DlLoader::loadPrimitives(const std::shared_ptr<Module>& module, void* handl
 
 void DlLoader::loadStrings(const std::shared_ptr<Module>& module, void* handle) const {
 	auto table = loadSymbol<const DlStringTable>(handle, "b9_string_table");
-	for(std::size_t i = 0; table->length; i++) {
+	for(std::size_t i = 0; i < table->length; i++) {
 		module->strings.push_back(table->strings[i]);
 	}
 }

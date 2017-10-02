@@ -58,6 +58,10 @@ function(add_b9_program program)
 	add_library("${program}" SHARED "${program}.cpp")
 	target_link_libraries("${program}" b9)
 	add_dependencies(programs "${program}")
+	add_test(
+		NAME "run_${program}"
+		COMMAND b9run $<TARGET_FILE_NAME:${program}>
+	)
 endfunction(add_b9_program)
 
 # Subdirectories

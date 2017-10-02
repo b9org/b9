@@ -9,11 +9,21 @@
 
 namespace b9 {
 
+struct DlFunctionEntry {
+	const Instruction* address;
+	std::uint32_t nargs;
+};
+
 /// Raw dynamic library function table. Directly embedded in a DL.
 /// The table is an array of FunctionSpec pointers which will be loaded into the module.
 struct DlFunctionTable {
 	std::size_t length;
-	const FunctionSpec* functions;
+	const DlFunctionEntry* functions;
+};
+
+struct DlPrimitiveEntry {
+	const char* name;
+	std::uint32_t nargs;
 };
 
 /// Raw dynamic library primitives table.
@@ -21,7 +31,7 @@ struct DlFunctionTable {
 /// corresponding address will be stored into the module primitives list.
 struct DlPrimitiveTable {
 	std::size_t length;
-	const char* const* primitives;
+	const DlPrimitiveEntry* primitives;
 };
 
 /// Raw dynamic library string table.
@@ -36,8 +46,7 @@ struct DlException : public std::runtime_error {
 	using std::runtime_error::runtime_error;
 };
 
-/// A module loader which reads modules from native dynamic libraries.
-/// The module loader is tricky. It uses 
+/// A loader which constructs modules from native dynamic libraries.
 class DlLoader {
 public:
 	DlLoader(bool debug = false);

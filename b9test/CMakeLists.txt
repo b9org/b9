@@ -10,5 +10,4 @@ target_link_libraries(b9test
 
 add_test(b9test b9test)
 
-add_b9_program(interpreter_test)
-
+# add_b9_program(interpreter_test)

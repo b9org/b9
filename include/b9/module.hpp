@@ -9,14 +9,17 @@ namespace b9 {
 
 /// Function specification. Metadata about a function.
 struct FunctionSpec {
+	constexpr FunctionSpec(const Instruction* address, std::uint32_t nargs, void* jitAddress = nullptr)
+		: jitAddress{jitAddress}, address{address}, nargs{nargs} {}
+
 	void* jitAddress;
-	Instruction* address;
-	uint32_t nargs;
+	const Instruction* address;
+	std::uint32_t nargs;
 };
 
 /// An interpreter module.
 struct Module {
-	std::vector<const FunctionSpec*> functions;
+	std::vector<FunctionSpec> functions;
 	std::vector<PrimitiveFunction*> primitives;
 	std::vector<const char*> strings;
 };

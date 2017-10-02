@@ -37,7 +37,7 @@ class ExecutionContext {
     std::memset(stack_, 0, sizeof(StackElement) * 1000);
   }
 
-  StackElement interpret(Instruction *program);
+  StackElement interpret(const Instruction *program);
 
   void push(StackElement value);
   StackElement pop();
@@ -92,7 +92,7 @@ public:
     StackElement runFunction(Instruction *function);
 
     // private
-    Instruction* getFunction(std::size_t index);
+    const Instruction* getFunction(std::size_t index);
     PrimitiveFunction* getPrimitive(std::size_t index);
 
     const char *getString(int index);

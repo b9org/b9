@@ -213,6 +213,8 @@ function CodeGen(f) {
 
     this.handleHeaders = function() {
         this.outputRawString('#include <b9.hpp>');
+        this.outputRawString('#include <b9/loader.hpp>');
+        this.outputRawString('');
         this.outputRawString('using namespace b9;');
 
         // var out = this.primitives;
@@ -230,34 +232,43 @@ function CodeGen(f) {
     this.handleFooters = function() {
         var out = this.functions;
 
-        this.outputRawString('FunctionSpecification funcSpecs[] = {');
+        this.outputRawString('static const DlFunctionEntry b9_functions[] = {');
         for (key in out) {
-            var init =       '            {' + '"' + key + '", ' + out[key].nargs + ', ' + key + ', 0},';
-            this.outputRawString(init, '// ' + this.functions[key]);
+            var s = '    {' + key + ', ' + out[key].nargs + '}, // ' + out[key];
+            this.outputRawString(s);
         }
         this.outputRawString('};');
         this.outputRawString('');
 
-        this.outputRawString('ExportedFunctionData b9_exported_functions = {');
-        this.outputRawString('    ' + Object.keys(this.functions).length + ', // function count');
-        this.outputRawString('    funcSpecs');
+        this.outputRawString('extern "C" DlFunctionTable b9_function_table = {');
+        this.outputRawString('    ' + Object.keys(out).length + ', b9_functions');
         this.outputRawString('};');
         this.outputRawString('');
 
         var out = this.strings;
-        this.outputRawString('const char *  b9_exported_strings[] = {');
+        this.outputRawString('static const char *  b9_strings[] = {');
         for (key in out) {
-            this.outputRawString('"' + key + '",');
+            this.outputRawString('    "' + key + '",');
         }
-        this.outputRawString('0};');
+        this.outputRawString('};');
+        this.outputRawString('');
+
+        this.outputRawString('extern "C" DlStringTable b9_string_table = {');
+        this.outputRawString('    ' + Object.keys(out).length + ', b9_strings');
+        this.outputRawString('};');
         this.outputRawString('');
 
         var out = this.primitives;
-        this.outputRawString('PrimitiveData b9_primitives[] = {');
+        this.outputRawString('DlPrimitiveEntry b9_primitives[] = {');
         for (key in out) {
             this.outputRawString('    {"' + key + '", 0},');
         }
         this.outputRawString('    {0, 0}');
+        this.outputRawString('};');
+        this.outputRawString('');
+
+        this.outputRawString('extern "C" DlPrimitiveTable b9_primitive_table = {');
+        this.outputRawString('    ' + Object.keys(out).length + ', b9_primitives');
         this.outputRawString('};');
         this.outputRawString('');
     };

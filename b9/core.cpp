@@ -2,6 +2,7 @@
 
 #include <b9/core.hpp>
 #include <b9/hash.hpp>
+#include <b9/loader.hpp>
 
 #include "Jit.hpp"
 
@@ -21,8 +22,8 @@ void ExecutionContext::push(StackElement value) {
 StackElement ExecutionContext::pop() { return *(--stackPointer_); }
 
 void ExecutionContext::functionCall(Parameter value) {
-  Instruction *program = virtualMachine_->getFunction(value);
-  StackElement result = interpret(program);
+  auto program = virtualMachine_->getFunction(value);
+  auto result = interpret(program);
   push(result);
 }
 
@@ -162,7 +163,7 @@ StackElement interpret_3(ExecutionContext *context, Instruction *program,
   return context->interpret(program);
 }
 
-StackElement ExecutionContext::interpret(Instruction *program) {
+StackElement ExecutionContext::interpret(const Instruction *program) {
 #if defined(B9JIT)
   uint64_t *address = (uint64_t *)(&program[1]);
   if (*address) {
@@ -209,7 +210,7 @@ StackElement ExecutionContext::interpret(Instruction *program) {
   int tmps = progTmpCount(*program);
   // printf("Prog Arg Count %d, tmp count %d\n", nargs, tmps);
 
-  Instruction *instructionPointer = program + 3;
+  const Instruction *instructionPointer = program + 3;
   StackElement *args = stackPointer_ - nargs;
   stackPointer_ += tmps;  // local storage for temps
 
@@ -309,8 +310,8 @@ PrimitiveFunction *VirtualMachine::getPrimitive(std::size_t index) {
   return module_->primitives[index];
 }
 
-Instruction *VirtualMachine::getFunction(std::size_t index) {
-  return module_->functions[index]->address;
+const Instruction *VirtualMachine::getFunction(std::size_t index) {
+  return module_->functions[index].address;
 }
 
 const char *VirtualMachine::getString(int index) {

@@ -25,14 +25,15 @@ void* DlLoader::openLibrary(const std::string& name) const {
 void DlLoader::loadFunctions(const std::shared_ptr<Module>& module, void* const handle) const {
 	auto table = loadSymbol<const DlFunctionTable>(handle, "b9_function_table");
 	for (std::size_t i = 0; i < table->length; i++) {
-		module->functions.push_back(&table->functions[i]);
+		auto& entry = table->functions[i];
+		module->functions.emplace_back(entry.address, entry.nargs);
 	}
 }
 
 void DlLoader::loadPrimitives(const std::shared_ptr<Module>& module, void* handle) const {
 	auto table = loadSymbol<const DlPrimitiveTable>(handle, "b9_primitive_table");
 	for (std::size_t i = 0; i < table->length; i++) {
-		auto primitive = loadSymbol<PrimitiveFunction>(RTLD_DEFAULT, table->primitives[i]);
+		auto primitive = loadSymbol<PrimitiveFunction>(RTLD_DEFAULT, table->primitives[i].name);
 		module->primitives.push_back(primitive);
 	}
 }

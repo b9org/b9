@@ -240,20 +240,20 @@ function CodeGen(f) {
         this.outputRawString('};');
         this.outputRawString('');
 
-        this.outputRawString('extern "C" DlFunctionTable b9_function_table = {');
+        this.outputRawString('DlFunctionTable b9_function_table = {');
         this.outputRawString('    ' + Object.keys(out).length + ', b9_functions');
         this.outputRawString('};');
         this.outputRawString('');
 
         var out = this.strings;
-        this.outputRawString('static const char *  b9_strings[] = {');
+        this.outputRawString('static const char *b9_strings[] = {');
         for (key in out) {
             this.outputRawString('    "' + key + '",');
         }
         this.outputRawString('};');
         this.outputRawString('');
 
-        this.outputRawString('extern "C" DlStringTable b9_string_table = {');
+        this.outputRawString('DlStringTable b9_string_table = {');
         this.outputRawString('    ' + Object.keys(out).length + ', b9_strings');
         this.outputRawString('};');
         this.outputRawString('');
@@ -267,7 +267,7 @@ function CodeGen(f) {
         this.outputRawString('};');
         this.outputRawString('');
 
-        this.outputRawString('extern "C" DlPrimitiveTable b9_primitive_table = {');
+        this.outputRawString('DlPrimitiveTable b9_primitive_table = {');
         this.outputRawString('    ' + Object.keys(out).length + ', b9_primitives');
         this.outputRawString('};');
         this.outputRawString('');

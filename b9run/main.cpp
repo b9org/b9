@@ -113,12 +113,42 @@ static bool parseArguments(RunConfig& cfg, const int argc, char* argv[]) {
   return true;
 }
 
-static bool run(const RunConfig& cfg) {
-  b9::VirtualMachine virtualMachine{cfg.vm};
-  virtualMachine.initialize();
-  b9::DlLoader loader(true);
+#if 0
+StackElement timeFunction(VirtualMachine *virtualMachine, Instruction *function,
+  int loopCount, long *runningTime) {
+struct timeval timeBefore, timeAfter, timeResult;
+StackElement result;
+gettimeofday(&timeBefore, NULL);
+while (loopCount--) {
+result = virtualMachine->runFunction(function);
+}
+gettimeofday(&timeAfter, NULL);
+timersub(&timeAfter, &timeBefore, &timeResult);
+*runningTime = (timeResult.tv_sec * 1000 + (timeResult.tv_usec / 1000));
+return result;
+}
+#endif // 0
+
+static void run(const RunConfig& cfg) {
+  b9::VirtualMachine vm{cfg.vm};
+  vm.initialize();
+
+  b9::DlLoader loader{true};
   auto module = loader.loadModule(cfg.module);
-  return true;
+
+  if (module->functions.size() == 0) {
+    throw b9::DlException{"Empty module"};
+  }
+
+  vm.load(module);
+  vm.run(module->functions.size() - 1); // run last defined function
+
+  // TODO: Find the correct function to start on.
+  // We want the user to be able to reference the function by name.
+  // We want the name to default to b9_main.
+  // Right now, we just run the last function, which happens to be b9 main
+  // This is pretty bad.
+
 #if 0
  b9::VirtualMachine virtualMachine;
   char sharelib[128];
@@ -178,9 +208,7 @@ int main(int argc, char* argv[]) {
     std::cout << cfg << std::endl;
   }
 
-  if (!run(cfg)) {
-    exit(EXIT_FAILURE);
-  }
+  run(cfg);
 
   exit(EXIT_SUCCESS);
 }

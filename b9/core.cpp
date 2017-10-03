@@ -22,14 +22,14 @@ void ExecutionContext::push(StackElement value) {
 StackElement ExecutionContext::pop() { return *(--stackPointer_); }
 
 void ExecutionContext::functionCall(Parameter value) {
-  auto program = virtualMachine_->getFunction(value);
-  auto result = interpret(program);
+  auto f = virtualMachine_->getFunction((std::size_t)value);
+  auto result = interpret(f);
   push(result);
 }
 
 void ExecutionContext::primitiveCall(Parameter value) {
   PrimitiveFunction *primitive = virtualMachine_->getPrimitive(value);
-  (*primitive)(virtualMachine_);
+  (*primitive)(this);
 }
 
 void ExecutionContext::pushFromVar(StackElement *args, Parameter offset) {
@@ -139,7 +139,13 @@ bool VirtualMachine::shutdown() {
   return true;
 }
 
+void VirtualMachine::load(std::shared_ptr<const Module> module) {
+  module_ = module;
+}
+
 /// ByteCode Interpreter
+
+#if 0
 
 StackElement interpret_0(ExecutionContext *context, Instruction *program) {
   return context->interpret(program);
@@ -163,7 +169,9 @@ StackElement interpret_3(ExecutionContext *context, Instruction *program,
   return context->interpret(program);
 }
 
-StackElement ExecutionContext::interpret(const Instruction *program) {
+#endif // 0
+
+StackElement ExecutionContext::interpret(const FunctionSpec* function) {
 #if defined(B9JIT)
   uint64_t *address = (uint64_t *)(&program[1]);
   if (*address) {
@@ -206,17 +214,17 @@ StackElement ExecutionContext::interpret(const Instruction *program) {
   }
 #endif  // defined(B9JIT)
 
-  int nargs = progArgCount(*program);
-  int tmps = progTmpCount(*program);
+  const auto tmps = 10; 
+
   // printf("Prog Arg Count %d, tmp count %d\n", nargs, tmps);
 
-  const Instruction *instructionPointer = program + 3;
-  StackElement *args = stackPointer_ - nargs;
-  stackPointer_ += tmps;  // local storage for temps
+  const Instruction* instructionPointer = function->address;
+  StackElement *args = stackPointer_ - function->nargs;
+  stackPointer_ += 10;  // TODO: tmp count!!!!VERY BAD!!
 
   while (*instructionPointer != NO_MORE_BYTECODES) {
     // b9PrintStack(context);
-    // std::cout << "instruction call " << std::hex << (int) ByteCodes::toByte(Instructions::getByteCode(*instructionPointer)) << std::endl;
+    // std::cerr << "instruction call " << std::hex << (int) ByteCodes::toByte(Instructions::getByteCode(*instructionPointer)) << std::endl;
     switch (Instructions::getByteCode(*instructionPointer)) {
       case ByteCode::intPushConstant:
         intPushConstant(Instructions::getParameter(*instructionPointer));
@@ -310,8 +318,8 @@ PrimitiveFunction *VirtualMachine::getPrimitive(std::size_t index) {
   return module_->primitives[index];
 }
 
-const Instruction *VirtualMachine::getFunction(std::size_t index) {
-  return module_->functions[index].address;
+const FunctionSpec* VirtualMachine::getFunction(std::size_t index) {
+  return &module_->functions[index];
 }
 
 const char *VirtualMachine::getString(int index) {
@@ -355,35 +363,25 @@ void ExecutionContext::reset() {
   programCounter_ = 0;
 }
 
-StackElement VirtualMachine::runFunction(Instruction *function) {
+StackElement VirtualMachine::run(const std::size_t functionIndex) {
   executionContext_.reset();
 
   /* Push random arguments to send to the program */
-  int nargs = progArgCount(*function);
-  for (int i = 0; i < nargs; i++) {
+  auto f = &module_->functions[functionIndex];
+
+  if (cfg_.verbose)
+    std::cout << "function: " << functionIndex << " nargs: " << f->nargs << std::endl;
+
+  for (std::size_t i = 0; i < f->nargs; i++) {
     int arg = 100 - (i * 10);
-    printf("Pushing args %d: %d\n", i, arg);
+    std::cout << "Pushing arg[" << i << "] = " << arg << std::endl;
     executionContext_.push(arg);
   }
 
-  StackElement result = executionContext_.interpret(function);
+  StackElement result = executionContext_.interpret(f);
 
   executionContext_.reset();
 
-  return result;
-}
-
-StackElement timeFunction(VirtualMachine *virtualMachine, Instruction *function,
-                          int loopCount, long *runningTime) {
-  struct timeval timeBefore, timeAfter, timeResult;
-  StackElement result;
-  gettimeofday(&timeBefore, NULL);
-  while (loopCount--) {
-    result = virtualMachine->runFunction(function);
-  }
-  gettimeofday(&timeAfter, NULL);
-  timersub(&timeAfter, &timeBefore, &timeResult);
-  *runningTime = (timeResult.tv_sec * 1000 + (timeResult.tv_usec / 1000));
   return result;
 }
 

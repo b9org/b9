@@ -10,6 +10,7 @@
 #include <string>
 #include <cstring>
 #include <map>
+#include <memory>
 
 #undef B9JIT
 
@@ -103,7 +104,6 @@ private:
     VirtualMachineConfig cfg_;
     ExecutionContext executionContext_;
     std::shared_ptr<const Module> module_;
-    const char** stringTable_;
 };
 
 } // namespace b9

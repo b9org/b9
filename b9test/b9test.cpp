@@ -198,4 +198,4 @@ bool test_validateFibResult(ExecutionContext *context) {
 
 #endif
 
-#endif // 0
+#endif  // 0

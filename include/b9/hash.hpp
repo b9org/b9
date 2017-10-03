@@ -52,6 +52,6 @@ void *hashTable_put(ExecutionContext *context, pHeap hashTable,
 hashTableKey *addressFirstSlot(pHeap hashedTable);
 pHeap allocateString(const char *s);
 
-} // namespace b9
+}  // namespace b9
 
 #endif

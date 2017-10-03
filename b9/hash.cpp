@@ -1,12 +1,12 @@
 #include <b9.hpp>
 #include <b9/hash.hpp>
 
+#include <time.h>
+#include <unistd.h>
 #include <cctype>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <time.h>
-#include <unistd.h>
 
 namespace b9 {
 
@@ -107,4 +107,4 @@ void *hashTable_put(ExecutionContext *context, pHeap hashTable,
   return newht;
 }
 
-} // namespace b9
+}  // namespace b9

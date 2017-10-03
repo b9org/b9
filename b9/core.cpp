@@ -323,7 +323,7 @@ const FunctionSpec* VirtualMachine::getFunction(std::size_t index) {
 }
 
 const char *VirtualMachine::getString(int index) {
-  return stringTable_[index];
+  return module_->strings[index];
 }
 
 #if defined(B9JIT)

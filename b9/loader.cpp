@@ -27,7 +27,7 @@ void DlLoader::loadFunctions(const std::shared_ptr<Module>& module,
   auto table = loadSymbol<const DlFunctionTable>(handle, "b9_function_table");
   for (std::size_t i = 0; i < table->length; i++) {
     auto& entry = table->functions[i];
-    module->functions.emplace_back(entry.address, entry.nargs);
+    module->functions.emplace_back(entry.name, entry.address, entry.nargs, entry.nregs);
   }
 }
 

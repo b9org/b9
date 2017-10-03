@@ -10,8 +10,10 @@
 namespace b9 {
 
 struct DlFunctionEntry {
+  const char* name;
   const Instruction* address;
   std::uint32_t nargs;
+  std::uint32_t nregs;
 };
 
 /// Raw dynamic library function table. Directly embedded in a DL.

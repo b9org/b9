@@ -231,10 +231,10 @@ function CodeGen(f) {
 
     this.handleFooters = function() {
         var out = this.functions;
-
         this.outputRawString('static const DlFunctionEntry b9_functions[] = {');
         for (key in out) {
-            var s = '    {' + key + ', ' + out[key].nargs + '}, // ' + out[key];
+            var s = '    { "' + key + '", ' + key + ', '
+                + out[key].nargs + ', ' + out[key].nregs + '}, // ' + out[key];
             this.outputRawString(s);
         }
         this.outputRawString('};');
@@ -454,6 +454,7 @@ function CodeGen(f) {
 
         functionDecl = this.getFunctionDeclaration(id);
         functionDecl.nargs = decl.params.length;
+        functionDecl.nregs = this.currentFunction.tempcount;
 
         // calculate the number of parameters
         var index = 0;

@@ -10,13 +10,20 @@ namespace b9 {
 /// Function specification. Metadata about a function.
 /// TODO: Indicate tmp space required.
 struct FunctionSpec {
-  constexpr FunctionSpec(const Instruction* address, std::uint32_t nargs,
-                         void* jitAddress = nullptr)
-      : jitAddress{jitAddress}, address{address}, nargs{nargs} {}
+  FunctionSpec(const std::string& name, const Instruction* address,
+               std::uint32_t nargs = 0, std::uint32_t nregs = 0,
+               void* jitAddress = nullptr)
+      : jitAddress{jitAddress},
+        address{address},
+        nargs{nargs},
+        nregs{nregs},
+        name{name} {}
 
   void* jitAddress;
   const Instruction* address;
   std::uint32_t nargs;
+  std::uint32_t nregs;
+  std::string name;
 };
 
 /// An interpreter module.

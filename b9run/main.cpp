@@ -197,7 +197,12 @@ int main(int argc, char* argv[]) {
     std::cout << cfg << std::endl;
   }
 
-  run(cfg);
+  try {
+    run(cfg);
+  } catch (const b9::DlException& e) {
+    std::cerr << e.what() << std::endl;
+    exit(EXIT_FAILURE);
+  }
 
   exit(EXIT_SUCCESS);
 }

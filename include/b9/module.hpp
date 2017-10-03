@@ -8,6 +8,7 @@
 namespace b9 {
 
 /// Function specification. Metadata about a function.
+/// TODO: Indicate tmp space required.
 struct FunctionSpec {
 	constexpr FunctionSpec(const Instruction* address, std::uint32_t nargs, void* jitAddress = nullptr)
 		: jitAddress{jitAddress}, address{address}, nargs{nargs} {}
@@ -18,6 +19,7 @@ struct FunctionSpec {
 };
 
 /// An interpreter module.
+/// TODO: Map names->Functions
 struct Module {
 	std::vector<FunctionSpec> functions;
 	std::vector<PrimitiveFunction*> primitives;

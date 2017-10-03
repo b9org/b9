@@ -1,6 +1,7 @@
 #ifndef B9_HPP_
 #define B9_HPP_
 
+#include <b9/bytecodes.hpp>
 #include <b9/core.hpp>
 #include <b9/callstyle.hpp>
 #include <b9/module.hpp>
@@ -37,7 +38,7 @@ class ExecutionContext {
     std::memset(stack_, 0, sizeof(StackElement) * 1000);
   }
 
-  StackElement interpret(const Instruction *program);
+  StackElement interpret(const FunctionSpec* function);
 
   void push(StackElement value);
   StackElement pop();
@@ -88,11 +89,12 @@ public:
     bool initialize();
     bool shutdown();
 
-    Instruction *getFunctionAddress(const char *functionName);
-    StackElement runFunction(Instruction *function);
+    /// Load a module into the VM.
+    void load(std::shared_ptr<const Module> module);
+    StackElement run(const std::size_t index);
 
     // private
-    const Instruction* getFunction(std::size_t index);
+    const FunctionSpec* getFunction(std::size_t index);
     PrimitiveFunction* getPrimitive(std::size_t index);
 
     const char *getString(int index);
@@ -100,7 +102,7 @@ public:
 private:
     VirtualMachineConfig cfg_;
     ExecutionContext executionContext_;
-    std::shared_ptr<Module> module_;
+    std::shared_ptr<const Module> module_;
     const char** stringTable_;
 };
 

@@ -469,24 +469,24 @@ function CodeGen(f) {
         var declArgsAndTemps = new Object();
         var fThis = this;
         var func = fThis.currentFunction;
-        declArgsAndTemps.computeText = function() {
-            return fThis.outputInstructionText(
-                "decl (" + decl.params.length + "," + func.tempcount + "),",
-                "args: " + decl.params.length + " temps:" + func.tempcount,
-                true);
-        };
-        this.outputLines.push(declArgsAndTemps);
+        // declArgsAndTemps.computeText = function() {
+        //     return fThis.outputInstructionText(
+        //         "decl (" + decl.params.length + "," + func.tempcount + "),",
+        //         "args: " + decl.params.length + " temps:" + func.tempcount,
+        //         true);
+        // };
+        // this.outputLines.push(declArgsAndTemps);
 
 
-        // Output two empty slots for the JIT address
-        this.outputRawString(this.outputInstructionText(
-            "decl (0,0),",
-            "0: space for JIT address",
-            true));
-        this.outputRawString(this.outputInstructionText(
-            "decl (0,0),",
-            "0: space for JIT address",
-            true));
+        // // Output two empty slots for the JIT address
+        // this.outputRawString(this.outputInstructionText(
+        //     "decl (0,0),",
+        //     "0: space for JIT address",
+        //     true));
+        // this.outputRawString(this.outputInstructionText(
+        //     "decl (0,0),",
+        //     "0: space for JIT address",
+        //     true));
 
         this.outputRawString("");
 

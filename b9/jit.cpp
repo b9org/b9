@@ -25,9 +25,10 @@
 namespace b9 {
 
 // TODO make this generic
-//void printVMState(ExecutionContext *context, int64_t pc, ByteCode bytecode,
+// void printVMState(ExecutionContext *context, int64_t pc, ByteCode bytecode,
 //                  Parameter param) {
-//  printf("Executing at pc %lld, bc is (%d, %s), param is (%d)\n", pc, bytecode,
+//  printf("Executing at pc %lld, bc is (%d, %s), param is (%d)\n", pc,
+//  bytecode,
 //         b9ByteCodeName(bytecode), param);
 //  b9PrintStack(context);
 //}
@@ -94,7 +95,6 @@ B9Method::B9Method(TR::TypeDictionary *types, int32_t programIndex,
       topLevelProgramIndex(programIndex),
       maxInlineDepth(context->inlineDepthAllowed),
       firstArgumentIndex(0) {
-
   DefineLine(LINETOSTR(__LINE__));
   DefineFile(__FILE__);
 
@@ -780,6 +780,6 @@ void B9Method::push(TR::BytecodeBuilder *builder, TR::IlValue *value) {
   }
 }
 
-} // namespace b9
+}  // namespace b9
 
-#endif // defined(B9JIT)
+#endif  // defined(B9JIT)

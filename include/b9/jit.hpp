@@ -96,6 +96,6 @@ class B9Method : public TR::MethodBuilder {
                         TR::BytecodeBuilder *nextBuilder);
 };
 
-} // namespace b9
+}  // namespace b9
 
 #endif

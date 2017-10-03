@@ -15,9 +15,7 @@
 
 namespace b9 {
 
-void ExecutionContext::push(StackElement value) {
-  *(stackPointer_++) = value;
-}
+void ExecutionContext::push(StackElement value) { *(stackPointer_++) = value; }
 
 StackElement ExecutionContext::pop() { return *(--stackPointer_); }
 
@@ -45,7 +43,7 @@ void ExecutionContext::drop() { pop(); }
 void ExecutionContext::intPushConstant(Parameter value) { push(value); }
 
 void ExecutionContext::strPushConstant(Parameter value) {
-  push((StackElement) virtualMachine_->getString(value));
+  push((StackElement)virtualMachine_->getString(value));
 }
 
 Parameter ExecutionContext::intJmpEq(Parameter delta) {
@@ -120,7 +118,6 @@ void ExecutionContext::intSub() {
 /// ExecutionContext
 
 bool VirtualMachine::initialize() {
-
 #if defined(B9JIT)
   if (!initializeJit()) {
     return false;
@@ -131,7 +128,6 @@ bool VirtualMachine::initialize() {
 }
 
 bool VirtualMachine::shutdown() {
-
 #if defined(B9JIT)
   shutdownJit();
 #endif  // defined(B9JIT)
@@ -169,9 +165,9 @@ StackElement interpret_3(ExecutionContext *context, Instruction *program,
   return context->interpret(program);
 }
 
-#endif // 0
+#endif  // 0
 
-StackElement ExecutionContext::interpret(const FunctionSpec* function) {
+StackElement ExecutionContext::interpret(const FunctionSpec *function) {
 #if defined(B9JIT)
   uint64_t *address = (uint64_t *)(&program[1]);
   if (*address) {
@@ -214,17 +210,19 @@ StackElement ExecutionContext::interpret(const FunctionSpec* function) {
   }
 #endif  // defined(B9JIT)
 
-  const auto tmps = 10; 
+  const auto tmps = 10;
 
   // printf("Prog Arg Count %d, tmp count %d\n", nargs, tmps);
 
-  const Instruction* instructionPointer = function->address;
+  const Instruction *instructionPointer = function->address;
   StackElement *args = stackPointer_ - function->nargs;
   stackPointer_ += 10;  // TODO: tmp count!!!!VERY BAD!!
 
   while (*instructionPointer != NO_MORE_BYTECODES) {
     // b9PrintStack(context);
-    // std::cerr << "instruction call " << std::hex << (int) ByteCodes::toByte(Instructions::getByteCode(*instructionPointer)) << std::endl;
+    // std::cerr << "instruction call " << std::hex << (int)
+    // ByteCodes::toByte(Instructions::getByteCode(*instructionPointer)) <<
+    // std::endl;
     switch (Instructions::getByteCode(*instructionPointer)) {
       case ByteCode::intPushConstant:
         intPushConstant(Instructions::getParameter(*instructionPointer));
@@ -253,16 +251,20 @@ StackElement ExecutionContext::interpret(const FunctionSpec* function) {
             intJmpNeq(Instructions::getParameter(*instructionPointer));
         break;
       case ByteCode::intJmpGt:
-        instructionPointer += intJmpGt(Instructions::getParameter(*instructionPointer));
+        instructionPointer +=
+            intJmpGt(Instructions::getParameter(*instructionPointer));
         break;
       case ByteCode::intJmpGe:
-        instructionPointer += intJmpGe(Instructions::getParameter(*instructionPointer));
+        instructionPointer +=
+            intJmpGe(Instructions::getParameter(*instructionPointer));
         break;
       case ByteCode::intJmpLt:
-        instructionPointer += intJmpLt(Instructions::getParameter(*instructionPointer));
+        instructionPointer +=
+            intJmpLt(Instructions::getParameter(*instructionPointer));
         break;
       case ByteCode::intJmpLe:
-        instructionPointer += intJmpLe(Instructions::getParameter(*instructionPointer));
+        instructionPointer +=
+            intJmpLe(Instructions::getParameter(*instructionPointer));
         break;
       case ByteCode::functionCall:
         functionCall(Instructions::getParameter(*instructionPointer));
@@ -318,7 +320,7 @@ PrimitiveFunction *VirtualMachine::getPrimitive(std::size_t index) {
   return module_->primitives[index];
 }
 
-const FunctionSpec* VirtualMachine::getFunction(std::size_t index) {
+const FunctionSpec *VirtualMachine::getFunction(std::size_t index) {
   return &module_->functions[index];
 }
 
@@ -370,7 +372,8 @@ StackElement VirtualMachine::run(const std::size_t functionIndex) {
   auto f = &module_->functions[functionIndex];
 
   if (cfg_.verbose)
-    std::cout << "function: " << functionIndex << " nargs: " << f->nargs << std::endl;
+    std::cout << "function: " << functionIndex << " nargs: " << f->nargs
+              << std::endl;
 
   for (std::size_t i = 0; i < f->nargs; i++) {
     int arg = 100 - (i * 10);
@@ -414,7 +417,7 @@ extern "C" void b9_prim_hash_table_put(ExecutionContext *context) {
   StackElement k = context->pop();
   StackElement ht = context->pop();
   // if (context->debug >= 1) {
-    // printf("IN hashTablePut %p %p(%s) %p(%s) \n", ht, k, k, v, v);
+  // printf("IN hashTablePut %p %p(%s) %p(%s) \n", ht, k, k, v, v);
   // }
 
   context->push((StackElement)hashTable_put(context, (pHeap)ht, (hashTableKey)k,
@@ -424,7 +427,8 @@ extern "C" void b9_prim_hash_table_put(ExecutionContext *context) {
 extern "C" void b9_prim_hash_table_get(ExecutionContext *context) {
   StackElement k = context->pop();
   StackElement ht = context->pop();
-  context->push( (StackElement)hashTable_get(context, (pHeap)ht, (hashTableKey)k));
+  context->push(
+      (StackElement)hashTable_get(context, (pHeap)ht, (hashTableKey)k));
 }
 
 }  // namespace b9

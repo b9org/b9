@@ -4,10 +4,7 @@
 #include <b9/core.hpp>
 
 namespace b9 {
-namespace bin {
+namespace bin {}  // namespace bin
+}  // namespace b9
 
-
-} // namespace bin
-} // namespace b9
-
-#endif // B9_BINARYFORMAT_HPP_
+#endif  // B9_BINARYFORMAT_HPP_

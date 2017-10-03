@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.2)
 
+find_program(NODE_EXECUTABLE
+	NAMES node nodejs
+)
+
 list(APPEND CMAKE_MODULE_PATH
 	cmake/Modules
 	${CMAKE_CURRENT_LIST_DIR}/omr/cmake/modules/
@@ -47,7 +51,7 @@ function(add_b9_program program)
 		OUTPUT
 			"${program}.cpp"
 		COMMAND
-			node "${CMAKE_SOURCE_DIR}/js_compiler/compile.js"
+			${NODE_EXECUTABLE} "${CMAKE_SOURCE_DIR}/js_compiler/compile.js"
 			"${CMAKE_CURRENT_SOURCE_DIR}/${program}.src"
 			>"${program}.cpp"
 		DEPENDS

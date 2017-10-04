@@ -4,6 +4,7 @@
 #include <b9/core.hpp>
 #include <cstdint>
 #include <vector>
+#include <stdexcept>
 
 namespace b9 {
 
@@ -30,6 +31,15 @@ struct Module {
   std::vector<FunctionSpec> functions;
   std::vector<PrimitiveFunction*> primitives;
   std::vector<const char*> strings;
+
+  std::size_t findFunction(const std::string& name) const {
+    for (std::size_t i = 0; i < functions.size(); i++) {
+      if (functions[i].name == name) {
+        return i;
+      }
+    }
+    throw std::invalid_argument{"Function argument not found" };
+  }
 };
 
 }  // namespace b9

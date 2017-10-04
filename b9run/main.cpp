@@ -57,7 +57,6 @@ static bool parseArguments(RunConfig& cfg, const int argc, char* argv[]) {
     } else if (strcmp(arg, "-inline") == 0) {
       cfg.vm.jit.maxInlineDepth = atoi(argv[++i]);
     } else if (strcmp(arg, "-verbose") == 0) {
-      std::cout << "verbose is enabled" << std::endl;
       cfg.verbose = true;
       cfg.vm.verbose = true;
       cfg.vm.jit.verbose = true;

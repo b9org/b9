@@ -363,6 +363,11 @@ void ExecutionContext::reset() {
   programCounter_ = 0;
 }
 
+// Arianne 
+StackElement VirtualMachine::run(const std::string& name) {
+  return run(module_->findFunction(name));  // call run(index)
+}
+
 StackElement VirtualMachine::run(const std::size_t functionIndex) {
   executionContext_.reset();
 

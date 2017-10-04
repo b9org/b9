@@ -75,9 +75,8 @@ static bool parseArguments(RunConfig& cfg, const int argc, char* argv[]) {
       } else if (strcmp("operandstack", callStyle) == 0) {
         cfg.vm.jit.callStyle = b9::CallStyle::operandStack;
       }
-    } else if (strcmp(arg, "-program") == 0) {
-      cfg.mainFunction = argv[++i];
-    } else if (strcmp(arg, "--") == 0) {
+    }
+    else if (strcmp(arg, "--") == 0) {
       i++;
       break;
     } else if (strcmp(arg, "-") == 0) {
@@ -113,7 +112,7 @@ static void run(const RunConfig& cfg) {
   }
 
   vm.load(module);
-  vm.run(module->functions.size() - 1);  // run last defined function
+  vm.run(cfg.mainFunction);  // run last defined function
 
   // TODO: Find the correct function to start on.
   // We want the user to be able to reference the function by name.

@@ -230,18 +230,19 @@ function CodeGen(f) {
     }
 
     this.handleFooters = function() {
-        var out = this.functions;
-        this.outputRawString('static const DlFunctionEntry b9_functions[] = {');
-        for (key in out) {
-            var s = '    { "' + key + '", ' + key + ', '
-                + out[key].nargs + ', ' + out[key].nregs + '}, // ' + out[key];
-            this.outputRawString(s);
-        }
-        this.outputRawString('};');
-        this.outputRawString('');
+        const functions = this.functions;
+        this.outputLines.push({"computeText": function () {
+            var function_table = 'static const DlFunctionEntry b9_functions[] = {\n'
+            for (name in functions) {
+                const f = functions[name];
+                function_table += '  { "' + name + '", ' + name + ', ' + f.nargs + ', ' + f.nregs + '}, // ' + f + "\n";
+            }
+            function_table += '};\n'
+            return function_table;
+        }});
 
         this.outputRawString('DlFunctionTable b9_function_table = {');
-        this.outputRawString('    ' + Object.keys(out).length + ', b9_functions');
+        this.outputRawString('    ' + Object.keys(functions).length + ', b9_functions');
         this.outputRawString('};');
         this.outputRawString('');
 
@@ -420,7 +421,7 @@ function CodeGen(f) {
     }
 
     this.declareFunction = function(id, decl) {
-        var newFunction = {index: this.nextFunctionIndex++, name: id, nargs: -1};
+        var newFunction = {index: this.nextFunctionIndex++, name: id, nargs: -1, nregs: -1};
         this.functions[id] = newFunction;
     };
 
@@ -454,7 +455,6 @@ function CodeGen(f) {
 
         functionDecl = this.getFunctionDeclaration(id);
         functionDecl.nargs = decl.params.length;
-        functionDecl.nregs = this.currentFunction.tempcount;
 
         // calculate the number of parameters
         var index = 0;
@@ -470,14 +470,6 @@ function CodeGen(f) {
         var declArgsAndTemps = new Object();
         var fThis = this;
         var func = fThis.currentFunction;
-        // declArgsAndTemps.computeText = function() {
-        //     return fThis.outputInstructionText(
-        //         "decl (" + decl.params.length + "," + func.tempcount + "),",
-        //         "args: " + decl.params.length + " temps:" + func.tempcount,
-        //         true);
-        // };
-        // this.outputLines.push(declArgsAndTemps);
-
 
         // // Output two empty slots for the JIT address
         // this.outputRawString(this.outputInstructionText(
@@ -498,6 +490,8 @@ function CodeGen(f) {
         this.genEndOfByteCodes();
 
         this.outputRawString("");
+
+        functionDecl.nregs = this.currentFunction.tempcount;
 
         this.currentFunction = save;
     };

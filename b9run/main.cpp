@@ -102,22 +102,6 @@ static bool parseArguments(RunConfig& cfg, const int argc, char* argv[]) {
   return true;
 }
 
-#if 0
-StackElement timeFunction(VirtualMachine *virtualMachine, Instruction *function,
-  int loopCount, long *runningTime) {
-struct timeval timeBefore, timeAfter, timeResult;
-StackElement result;
-gettimeofday(&timeBefore, NULL);
-while (loopCount--) {
-result = virtualMachine->runFunction(function);
-}
-gettimeofday(&timeAfter, NULL);
-timersub(&timeAfter, &timeBefore, &timeResult);
-*runningTime = (timeResult.tv_sec * 1000 + (timeResult.tv_usec / 1000));
-return result;
-}
-#endif  // 0
-
 static void run(const RunConfig& cfg) {
   b9::VirtualMachine vm{cfg.vm};
   vm.initialize();
@@ -138,52 +122,6 @@ static void run(const RunConfig& cfg) {
 // Right now, we just run the last function, which happens to be b9 main
 // This is pretty bad.
 
-#if 0
- b9::VirtualMachine virtualMachine;
-  char sharelib[128];
-
-  virtualMachine.initialize();
-
-  if (!virtualMachine.loadLibrary()) {
-    return EXIT_FAILURE;
-  }
-
-  b9::Instruction *function = virtualMachine.getFunctionAddress(mainFunction);
-  if (function == nullptr) {
-    return EXIT_FAILURE;
-  }
-
-  b9::StackElement resultInterp = 0;
-  b9::StackElement resultJit = 0;
-  long timeInterp = 0;
-  long timeJIT = 0;
-
-  
-  printf("Running Interpreted");
-  // printf(
-  //     "Options: DirectCall (%d), DirectParameterPassing (%d), "
-  //     "UseVMOperandStack (%d)\n",
-  //     virtualMachine.directCall_, virtualMachine.passParameters_, virtualMachine.operandStack_);
-
-  resultInterp =
-      timeFunction(&virtualMachine, function, 1,  &timeInterp);
-
-  printf("Running JIT looping %d times\n", 1);
-  //generateAllCode(&context);
-
-  //resultJit = timeFunction(&context, function, context.loopCount, &timeJIT);
-
-  printf("Result for Interp is %lld, resultJit is %lld\n", resultInterp, resultJit);
-
-  printf("Time for Interp %ld ms, JIT %ld ms\n", timeInterp, timeJIT);
-  printf("JIT speedup = %f\n", timeInterp * 1.0 / timeJIT);
-
-  if (resultInterp == resultJit) {
-    return EXIT_SUCCESS;
-  } else {
-    return EXIT_FAILURE;
-  }
-#endif  // 0
 }
 
 int main(int argc, char* argv[]) {

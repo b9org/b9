@@ -210,13 +210,11 @@ StackElement ExecutionContext::interpret(const FunctionSpec *function) {
   }
 #endif  // defined(B9JIT)
 
-  const auto tmps = 10;
-
   // printf("Prog Arg Count %d, tmp count %d\n", nargs, tmps);
 
   const Instruction *instructionPointer = function->address;
   StackElement *args = stackPointer_ - function->nargs;
-  stackPointer_ += 10;  // TODO: tmp count!!!!VERY BAD!!
+  stackPointer_ += function->nregs;
 
   while (*instructionPointer != NO_MORE_BYTECODES) {
     // b9PrintStack(context);

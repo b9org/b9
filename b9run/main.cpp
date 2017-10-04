@@ -37,9 +37,9 @@ struct RunConfig {
 std::ostream& operator<<(std::ostream& out, const RunConfig& cfg) {
   return out << "Loading:      " << cfg.module << std::endl
              << "Executing:    " << cfg.mainFunction << std::endl
+             << "Call Style:   " << cfg.vm.jit.callStyle << std::endl
              << "Looping:      " << cfg.loopCount << " times" << std::endl
-             << "Inline depth: " << cfg.vm.jit.maxInlineDepth << std::endl
-             << "Call Style:   " << cfg.vm.jit.callStyle;
+             << "Inline depth: " << cfg.vm.jit.maxInlineDepth;
 }
 
 /// Parse CLI arguments and set up the config.

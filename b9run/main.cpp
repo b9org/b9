@@ -200,7 +200,7 @@ int main(int argc, char* argv[]) {
   try {
     run(cfg);
   } catch (const b9::DlException& e) {
-    std::cerr << e.what() << std::endl;
+    std::cerr << "Failed to load module: " << e.what() << std::endl;
     exit(EXIT_FAILURE);
   }
 

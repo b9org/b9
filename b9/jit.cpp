@@ -23,15 +23,6 @@
 
 namespace b9 {
 
-// TODO make this generic
-// void printVMState(ExecutionContext *context, int64_t pc, ByteCode bytecode,
-//                  Parameter param) {
-//  printf("Executing at pc %lld, bc is (%d, %s), param is (%d)\n", pc,
-//  bytecode,
-//         b9ByteCodeName(bytecode), param);
-//  b9PrintStack(context);
-//}
-
 // Simulates all state of the virtual machine state while compiled code is
 // running. It simulates the stack and the pointer to the top of the stack.
 class VirtualMachineState : public OMR::VirtualMachineState {

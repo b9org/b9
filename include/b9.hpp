@@ -76,7 +76,6 @@ class ExecutionContext {
   VirtualMachine *virtualMachine_;
 };
 
-<<<<<<< HEAD
 class VirtualMachine {
  public:
   VirtualMachine(const VirtualMachineConfig &cfg)

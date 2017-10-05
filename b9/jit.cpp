@@ -1,7 +1,6 @@
 #include <b9.hpp>
 
-#if defined(B9JIT)
-
+#include <b9.hpp>
 #include <b9/core.hpp>
 #include <b9/jit.hpp>
 
@@ -37,10 +36,10 @@ namespace b9 {
 // running. It simulates the stack and the pointer to the top of the stack.
 class VirtualMachineState : public OMR::VirtualMachineState {
  public:
-  B9VirtualMachineState()
+  VirtualMachineState()
       : OMR::VirtualMachineState(), _stack(NULL), _stackTop(NULL) {}
 
-  B9VirtualMachineState(OMR::VirtualMachineOperandStack *stack,
+  VirtualMachineState(OMR::VirtualMachineOperandStack *stack,
                         OMR::VirtualMachineRegister *stackTop)
       : OMR::VirtualMachineState(), _stack(stack), _stackTop(stackTop) {}
 
@@ -55,14 +54,14 @@ class VirtualMachineState : public OMR::VirtualMachineState {
   }
 
   virtual VirtualMachineState *MakeCopy() {
-    B9VirtualMachineState *newState = new B9VirtualMachineState();
+    VirtualMachineState *newState = new VirtualMachineState();
     newState->_stack = (OMR::VirtualMachineOperandStack *)_stack->MakeCopy();
     newState->_stackTop = (OMR::VirtualMachineRegister *)_stackTop->MakeCopy();
     return newState;
   }
 
   virtual void MergeInto(VirtualMachineState *other, TR::IlBuilder *b) {
-    B9VirtualMachineState *otherState = (B9VirtualMachineState *)other;
+    VirtualMachineState *otherState = (VirtualMachineState *)other;
     _stack->MergeInto(otherState->_stack, b);
     _stackTop->MergeInto(otherState->_stackTop, b);
   }
@@ -71,11 +70,11 @@ class VirtualMachineState : public OMR::VirtualMachineState {
   OMR::VirtualMachineRegister *_stackTop;
 };
 
-void generateCode(ExecutionContext *context, int32_t functionIndex) {
+void VirtualMachine::generateCode(int32_t functionIndex) {
   TR::TypeDictionary types;
   Instruction *program = context->functions[functionIndex].program;
   // todo pass in context->functions
-  B9Method methodBuilder(&types, functionIndex, context);
+  Method methodBuilder(&types, functionIndex, context);
   uint8_t *entry = 0;
   int rc = (*compileMethodBuilder)(&methodBuilder, &entry);
   if (0 == rc) {
@@ -88,7 +87,7 @@ void generateCode(ExecutionContext *context, int32_t functionIndex) {
   }
 }
 
-B9Method::B9Method(TR::TypeDictionary *types, int32_t programIndex,
+Method::Method(TR::TypeDictionary *types, int32_t programIndex,
                    ExecutionContext *context)
     : MethodBuilder(types),
       context(context),
@@ -134,7 +133,7 @@ static const char *argsAndTempNames[] = {
 #define MAX_ARGS_TEMPS_AVAIL \
   sizeof(argsAndTempNames) / sizeof(argsAndTempNames[0])
 
-void B9Method::defineParameters(Instruction *program) {
+void Method::defineParameters(Instruction *program) {
   if (context->passParameters) {
     int argsCount = progArgCount(*program);
     for (int i = 0; i < argsCount; i++) {
@@ -146,7 +145,7 @@ void B9Method::defineParameters(Instruction *program) {
 // for locals we pre-define all the locals we could use, for the toplevel
 // and all the inlined names which are simply referenced via a skew to reach
 // past callers functions args/temps
-void B9Method::defineLocals(Instruction *program) {
+void Method::defineLocals(Instruction *program) {
   int argsCount = progArgCount(*program);
   int tempCount = progTmpCount(*program);
   int topLevelLocals = argsCount + tempCount;
@@ -164,7 +163,7 @@ void B9Method::defineLocals(Instruction *program) {
   }
 }
 
-void B9Method::defineStructures(TR::TypeDictionary *types) {
+void Method::defineStructures(TR::TypeDictionary *types) {
   int64PointerType = types->PointerTo(Int64);
   int32PointerType = types->PointerTo(Int32);
   int16PointerType = types->PointerTo(Int16);
@@ -182,7 +181,7 @@ void B9Method::defineStructures(TR::TypeDictionary *types) {
   executionContextPointerType = types->PointerTo(executionContextType);
 }
 
-void B9Method::defineFunctions() {
+void Method::defineFunctions() {
   DefineFunction((char *)"printVMState", (char *)__FILE__, "printVMState",
                  (void *)&printVMState, NoType, 4, Int64, Int64, Int64, Int64);
   DefineFunction((char *)"printStack", (char *)__FILE__, "printStack",
@@ -222,7 +221,7 @@ void B9Method::defineFunctions() {
                  Int32);
 }
 
-#define QSTACK(b) (((B9VirtualMachineState *)(b)->vmState())->_stack)
+#define QSTACK(b) (((VirtualMachineState *)(b)->vmState())->_stack)
 #define QCOMMIT(b) \
   if (context->operandStack) ((b)->vmState()->Commit(b));
 #define QRELOAD(b) \
@@ -230,11 +229,11 @@ void B9Method::defineFunctions() {
 #define QRELOAD_DROP(b, toDrop) \
   if (context->operandStack) QSTACK(builder)->Drop(builder, toDrop);
 
-void B9Method::createBuilderForBytecode(
+void Method::createBuilderForBytecode(
     TR::BytecodeBuilder **bytecodeBuilderTable, uint8_t bytecode,
     int64_t bytecodeIndex) {
   TR::BytecodeBuilder *newBuilder =
-      OrphanBytecodeBuilder(bytecodeIndex, (char *)b9ByteCodeName(bytecode));
+      OrphanBytecodeBuilder(bytecodeIndex, (char *)ByteCodeName(bytecode));
   // printf("Created bytecodebuilder index=%d bc=%d param=%d %p\n",
   // bytecodeIndex, bytecode,
   // getParameterFromInstruction(program[bytecodeIndex]), newBuilder);
@@ -251,7 +250,7 @@ long computeNumberOfBytecodes(Instruction *program) {
   return result;
 }
 
-bool B9Method::inlineProgramIntoBuilder(
+bool Method::inlineProgramIntoBuilder(
     int32_t programIndex, bool isTopLevel, TR::BytecodeBuilder *currentBuilder,
     TR::BytecodeBuilder *jumpToBuilderForInlinedReturn) {
   bool success = true;
@@ -325,7 +324,7 @@ bool B9Method::inlineProgramIntoBuilder(
   return success;
 }
 
-bool B9Method::buildIL() {
+bool Method::buildIL() {
   if (context->operandStack) {
     this->Store("localContext", this->ConstAddress(context));
     OMR::VirtualMachineRegisterInStruct *stackTop =
@@ -334,7 +333,7 @@ bool B9Method::buildIL() {
     OMR::VirtualMachineOperandStack *stack =
         new OMR::VirtualMachineOperandStack(this, 32, stackElementPointerType,
                                             stackTop, true, 0);
-    B9VirtualMachineState *vms = new B9VirtualMachineState(stack, stackTop);
+    VirtualMachineState *vms = new VirtualMachineState(stack, stackTop);
     setVMState(vms);
   } else {
     setVMState(new OMR::VirtualMachineState());
@@ -342,7 +341,7 @@ bool B9Method::buildIL() {
   return inlineProgramIntoBuilder(topLevelProgramIndex, true);
 }
 
-TR::IlValue *B9Method::loadVarIndex(TR::BytecodeBuilder *builder,
+TR::IlValue *Method::loadVarIndex(TR::BytecodeBuilder *builder,
                                     int varindex) {
   if (firstArgumentIndex > 0) {
     if (context->debug >= 2) {
@@ -365,7 +364,7 @@ TR::IlValue *B9Method::loadVarIndex(TR::BytecodeBuilder *builder,
   }
 }
 
-void B9Method::storeVarIndex(TR::BytecodeBuilder *builder, int varindex,
+void Method::storeVarIndex(TR::BytecodeBuilder *builder, int varindex,
                              TR::IlValue *value) {
   if (firstArgumentIndex > 0) {
     if (context->debug >= 2) {
@@ -385,7 +384,7 @@ void B9Method::storeVarIndex(TR::BytecodeBuilder *builder, int varindex,
   }
 }
 
-bool B9Method::generateILForBytecode(
+bool Method::generateILForBytecode(
     TR::BytecodeBuilder **bytecodeBuilderTable, Instruction *program,
     uint8_t bytecode, long bytecodeIndex,
     TR::BytecodeBuilder *jumpToBuilderForInlinedReturn) {
@@ -413,7 +412,7 @@ bool B9Method::generateILForBytecode(
              firstArgumentIndex, jumpToBuilderForInlinedReturn);
     }
     printf("generating index=%d bc=%s(%d) param=%d \n", bytecodeIndex,
-           b9ByteCodeName(bytecode), bytecode,
+           ByteCodeName(bytecode), bytecode,
            getParameterFromInstruction(instruction));
   }
 
@@ -621,7 +620,7 @@ bool B9Method::generateILForBytecode(
  * GENERATE CODE FOR BYTECODES
  *************************************************/
 
-void B9Method::handle_bc_jmp(TR::BytecodeBuilder *builder,
+void Method::handle_bc_jmp(TR::BytecodeBuilder *builder,
                              TR::BytecodeBuilder **bytecodeBuilderTable,
                              Instruction *program, long bytecodeIndex) {
   Instruction instruction = program[bytecodeIndex];
@@ -631,7 +630,7 @@ void B9Method::handle_bc_jmp(TR::BytecodeBuilder *builder,
   builder->Goto(destBuilder);
 }
 
-void B9Method::handle_bc_jmp_eq(TR::BytecodeBuilder *builder,
+void Method::handle_bc_jmp_eq(TR::BytecodeBuilder *builder,
                                 TR::BytecodeBuilder **bytecodeBuilderTable,
                                 Instruction *program, long bytecodeIndex,
                                 TR::BytecodeBuilder *nextBuilder) {
@@ -647,7 +646,7 @@ void B9Method::handle_bc_jmp_eq(TR::BytecodeBuilder *builder,
   builder->AddFallThroughBuilder(nextBuilder);
 }
 
-void B9Method::handle_bc_jmp_neq(TR::BytecodeBuilder *builder,
+void Method::handle_bc_jmp_neq(TR::BytecodeBuilder *builder,
                                  TR::BytecodeBuilder **bytecodeBuilderTable,
                                  Instruction *program, long bytecodeIndex,
                                  TR::BytecodeBuilder *nextBuilder) {
@@ -663,7 +662,7 @@ void B9Method::handle_bc_jmp_neq(TR::BytecodeBuilder *builder,
   builder->AddFallThroughBuilder(nextBuilder);
 }
 
-void B9Method::handle_bc_jmp_lt(TR::BytecodeBuilder *builder,
+void Method::handle_bc_jmp_lt(TR::BytecodeBuilder *builder,
                                 TR::BytecodeBuilder **bytecodeBuilderTable,
                                 Instruction *program, long bytecodeIndex,
                                 TR::BytecodeBuilder *nextBuilder) {
@@ -678,7 +677,7 @@ void B9Method::handle_bc_jmp_lt(TR::BytecodeBuilder *builder,
   builder->IfCmpLessThan(jumpTo, left, right);
   builder->AddFallThroughBuilder(nextBuilder);
 }
-void B9Method::handle_bc_jmp_le(TR::BytecodeBuilder *builder,
+void Method::handle_bc_jmp_le(TR::BytecodeBuilder *builder,
                                 TR::BytecodeBuilder **bytecodeBuilderTable,
                                 Instruction *program, long bytecodeIndex,
                                 TR::BytecodeBuilder *nextBuilder) {
@@ -695,7 +694,7 @@ void B9Method::handle_bc_jmp_le(TR::BytecodeBuilder *builder,
   builder->IfCmpGreaterThan(jumpTo, right, left);  // swap and do a greaterthan
   builder->AddFallThroughBuilder(nextBuilder);
 }
-void B9Method::handle_bc_jmp_gt(TR::BytecodeBuilder *builder,
+void Method::handle_bc_jmp_gt(TR::BytecodeBuilder *builder,
                                 TR::BytecodeBuilder **bytecodeBuilderTable,
                                 Instruction *program, long bytecodeIndex,
                                 TR::BytecodeBuilder *nextBuilder) {
@@ -710,7 +709,7 @@ void B9Method::handle_bc_jmp_gt(TR::BytecodeBuilder *builder,
   builder->IfCmpGreaterThan(jumpTo, left, right);
   builder->AddFallThroughBuilder(nextBuilder);
 }
-void B9Method::handle_bc_jmp_ge(TR::BytecodeBuilder *builder,
+void Method::handle_bc_jmp_ge(TR::BytecodeBuilder *builder,
                                 TR::BytecodeBuilder **bytecodeBuilderTable,
                                 Instruction *program, long bytecodeIndex,
                                 TR::BytecodeBuilder *nextBuilder) {
@@ -728,7 +727,7 @@ void B9Method::handle_bc_jmp_ge(TR::BytecodeBuilder *builder,
   builder->AddFallThroughBuilder(nextBuilder);
 }
 
-void B9Method::handle_bc_sub(TR::BytecodeBuilder *builder,
+void Method::handle_bc_sub(TR::BytecodeBuilder *builder,
                              TR::BytecodeBuilder *nextBuilder) {
   TR::IlValue *right = pop(builder);
   TR::IlValue *left = pop(builder);
@@ -737,7 +736,7 @@ void B9Method::handle_bc_sub(TR::BytecodeBuilder *builder,
   builder->AddFallThroughBuilder(nextBuilder);
 }
 
-void B9Method::handle_bc_add(TR::BytecodeBuilder *builder,
+void Method::handle_bc_add(TR::BytecodeBuilder *builder,
                              TR::BytecodeBuilder *nextBuilder) {
   TR::IlValue *right = pop(builder);
   TR::IlValue *left = pop(builder);
@@ -746,12 +745,12 @@ void B9Method::handle_bc_add(TR::BytecodeBuilder *builder,
   builder->AddFallThroughBuilder(nextBuilder);
 }
 
-void B9Method::drop(TR::BytecodeBuilder *builder) { pop(builder); }
+void Method::drop(TR::BytecodeBuilder *builder) { pop(builder); }
 
-void B9Method::handle_bc_push_string(TR::BytecodeBuilder *builder,
+void Method::handle_bc_push_string(TR::BytecodeBuilder *builder,
                                      TR::BytecodeBuilder *nextBuilder) {}
 
-TR::IlValue *B9Method::pop(TR::BytecodeBuilder *builder) {
+TR::IlValue *Method::pop(TR::BytecodeBuilder *builder) {
   if (context->operandStack) {
     return QSTACK(builder)->Pop(builder);
   } else {
@@ -765,7 +764,7 @@ TR::IlValue *B9Method::pop(TR::BytecodeBuilder *builder) {
   }
 }
 
-void B9Method::push(TR::BytecodeBuilder *builder, TR::IlValue *value) {
+void Method::push(TR::BytecodeBuilder *builder, TR::IlValue *value) {
   if (context->operandStack) {
     QSTACK(builder)->Push(builder, value);
   } else {
@@ -782,4 +781,3 @@ void B9Method::push(TR::BytecodeBuilder *builder, TR::IlValue *value) {
 
 }  // namespace b9
 
-#endif  // defined(B9JIT)

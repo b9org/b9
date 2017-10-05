@@ -70,12 +70,13 @@ class ExecutionContext {
 
   StackElement *stackBase_ = stack_;
   StackElement *stackPointer_ = stack_;
-  StackElement *stackEnd_ = &stack_[1000];
   Instruction *programCounter_ = 0;
 
+  StackElement *stackEnd_ = &stack_[1000];
   VirtualMachine *virtualMachine_;
 };
 
+<<<<<<< HEAD
 class VirtualMachine {
  public:
   VirtualMachine(const VirtualMachineConfig &cfg)
@@ -92,6 +93,12 @@ class VirtualMachine {
   const FunctionSpec *getFunction(std::size_t index);
   PrimitiveFunction *getPrimitive(std::size_t index);
 
+  void setJitAddress(uintptr_t functionIndex, uintptr_t value);
+  uint64_t getJitAddress(uintptr_t functionIndex);
+  intptr_t getFunctionCount();
+  void generateCode(int32_t functionIndex);
+  void generateAllCode();
+
   const char *getString(int index);
 
  private:
@@ -100,6 +107,6 @@ class VirtualMachine {
   std::shared_ptr<const Module> module_;
 };
 
-}  // namespace b9
+} // namespace b9
 
 #endif // B9_HPP_

@@ -44,7 +44,7 @@ void bc_primitive(VirtualMachine *context, Parameter value);
 // typedef StackElement (*Interpret) (ExecutionContext* context, Instruction*
 // program);
 
-#if defined(B9JIT)
+typedef StackElement (*Interpret) (ExecutionContext* context, Instruction* program);
 
 // define C callable Interpret API for each arg call
 // if args are passed to the function, they are not passed
@@ -70,8 +70,6 @@ typedef StackElement (*JIT_2_args)(StackElement p1, StackElement p2);
 typedef StackElement (*JIT_3_args)(StackElement p1, StackElement p2,
                                    StackElement p3);
 
-#endif  // defined(B9JIT)
-
 /* B9 Interpreter */
 int parseArguments(ExecutionContext *context, int argc, char *argv[]);
 
@@ -81,14 +79,14 @@ Instruction *getFunctionAddress(ExecutionContext *context,
 StackElement timeFunction(VirtualMachine *virtualMachine, Instruction *function,
                           int loopCount, long *runningTime);
 
-void b9PrintStack(ExecutionContext *context);
-
-bool hasJITAddress(Instruction *p);
-void generateCode(ExecutionContext *context, int32_t functionIndex);
-void generateAllCode(ExecutionContext *context);
-void removeAllGeneratedCode(ExecutionContext *context);
-void setJitAddress(ExecutionContext *context, int32_t functionIndex,
-                   uint64_t value);
+StackElement
+interpret_0(ExecutionContext *context, Instruction *program);
+StackElement
+interpret_1(ExecutionContext *context, Instruction *program, StackElement p1);
+StackElement
+interpret_2(ExecutionContext *context, Instruction *program, StackElement p1, StackElement p2);
+StackElement
+interpret_3(ExecutionContext *context, Instruction *program, StackElement p1, StackElement p2, StackElement p3 );
 
 StackElement interpret_0(ExecutionContext *context, Instruction *program);
 StackElement interpret_1(ExecutionContext *context, Instruction *program,

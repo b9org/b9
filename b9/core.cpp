@@ -168,13 +168,11 @@ StackElement interpret_3(ExecutionContext *context, Instruction *program,
 #endif  // 0
 
 StackElement ExecutionContext::interpret(const FunctionSpec *function) {
-#if defined(B9JIT)
   uint64_t *address = (uint64_t *)(&program[1]);
   if (*address) {
     StackElement result = 0;
-    if (context->passParameters) {
+    if (virtualMachine_->passParameters()) {
       int argsCount = progArgCount(*program);
-      // printf("about to call jit args %d\n", argsCount);
       switch (argsCount) {
         case 0: {
           JIT_0_args jitedcode = (JIT_0_args)*address;
@@ -182,20 +180,20 @@ StackElement ExecutionContext::interpret(const FunctionSpec *function) {
         } break;
         case 1: {
           JIT_1_args jitedcode = (JIT_1_args)*address;
-          StackElement p1 = pop(context);
+          StackElement p1 = pop();
           result = (*jitedcode)(p1);
         } break;
         case 2: {
           JIT_2_args jitedcode = (JIT_2_args)*address;
-          StackElement p2 = pop(context);
-          StackElement p1 = pop(context);
+          StackElement p2 = pop();
+          StackElement p1 = pop();
           result = (*jitedcode)(p1, p2);
         } break;
         case 3: {
           JIT_3_args jitedcode = (JIT_3_args)*address;
-          StackElement p3 = pop(context);
-          StackElement p2 = pop(context);
-          StackElement p1 = pop(context);
+          StackElement p3 = pop();
+          StackElement p2 = pop();
+          StackElement p1 = pop();
           result = (*jitedcode)(p1, p2, p3);
         } break;
         default:
@@ -203,12 +201,13 @@ StackElement ExecutionContext::interpret(const FunctionSpec *function) {
           break;
       }
     } else {
+      // Call the Jit'ed function, passing the parameters on the
+      // ExecutionContext stack.
       Interpret jitedcode = (Interpret)*address;
-      result = (*jitedcode)(context, program);
+      result = (*jitedcode)(this, program);
     }
     return result;
   }
-#endif  // defined(B9JIT)
 
   // printf("Prog Arg Count %d, tmp count %d\n", nargs, tmps);
 
@@ -292,7 +291,6 @@ StackElement ExecutionContext::interpret(const FunctionSpec *function) {
   return *(stackPointer_ - 1);
 }
 
-#if defined(B9JIT)
 uint64_t *getJitAddressSlot(Instruction *p) { return (uint64_t *)&p[1]; }
 
 void setJitAddressSlot(Instruction *p, uint64_t value) {
@@ -300,19 +298,13 @@ void setJitAddressSlot(Instruction *p, uint64_t value) {
   *getJitAddressSlot(p) = value;
 }
 
-bool hasJITAddress(Instruction *p) { return *getJitAddressSlot(p) != 0; }
-
-uint64_t VirtualMachine::getJitAddress(int functionIndex) {
-  return functions_[functionIndex].jitAddress;
+uint64_t VirtualMachine::getJitAddress(uintptr_t functionIndex) {
+  return functions_->getJitAddress(functionIndex);
 }
 
-void setJitAddress(ExecutionContext *context, int32_t functionIndex,
-                   uint64_t value) {
-  context->functions[functionIndex].jitAddress = value;
-  setJitAddressSlot(context->functions[functionIndex].program, value);
+void VirtualMachine::setJitAddress(uintptr_t functionIndex, uint64_t value) {
+  functions_->setJitAddress(functionIndex, value);
 }
-
-#endif /* defined(B9JIT) */
 
 PrimitiveFunction *VirtualMachine::getPrimitive(std::size_t index) {
   return module_->primitives[index];
@@ -326,37 +318,28 @@ const char *VirtualMachine::getString(int index) {
   return module_->strings[index];
 }
 
-#if defined(B9JIT)
-int getFunctionCount(ExecutionContext *context) {
-  int functionIndex = 0;
-  while (context->functions[functionIndex].name != NO_MORE_FUNCTIONS) {
-    functionIndex++;
-  }
-  return functionIndex;
+intptr_t VirtualMachine::getFunctionCount() {
+  return functions_->getCount();
 }
 
-void removeGeneratedCode(ExecutionContext *context, int functionIndex) {
-  context->functions[functionIndex].jitAddress = 0;
-  setJitAddressSlot(context->functions[functionIndex].program, 0);
-}
+// void removeGeneratedCode(ExecutionContext *context, int functionIndex) {
+//   context->functions[functionIndex].jitAddress = 0;
+//   setJitAddressSlot(context->functions[functionIndex].program, 0);
+// }
 
-void removeAllGeneratedCode(ExecutionContext *context) {
-  int functionIndex = 0;
-  while (context->functions[functionIndex].name != NO_MORE_FUNCTIONS) {
-    removeGeneratedCode(context, functionIndex);
-    functionIndex++;
-  }
-}
+// void removeAllGeneratedCode(ExecutionContext *context) {
+//   int functionIndex = 0;
+//   while (context->functions[functionIndex].name != NO_MORE_FUNCTIONS) {
+//     removeGeneratedCode(context, functionIndex);
+//     functionIndex++;
+//   }
+// }
 
-void generateAllCode(ExecutionContext *context) {
-  int functionIndex = 0;
-  while (context->functions[functionIndex].name != NO_MORE_FUNCTIONS) {
-    generateCode(context, functionIndex);
-    functionIndex++;
+void VirtualMachine::generateAllCode() {
+  for (int functionIndex = 0; functionIndex < functions_->getCount(); functionIndex++) {
+    generateCode(functionIndex);
   }
 }
-
-#endif /* defined(B9JIT) */
 
 void ExecutionContext::reset() {
   stackPointer_ = stack_;

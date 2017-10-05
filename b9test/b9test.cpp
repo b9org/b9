@@ -19,9 +19,8 @@ class InterpreterTest : public ::testing::Test {
 protected:
   VirtualMachine virtualMachine_;
   virtual void SetUp() {
-
     virtualMachine_.initialize();
-    ASSERT_TRUE(virtualMachine_.loadLibrary("libinterpreter_test.so"));
+    ASSERT_TRUE(virtualMachine_.loadLibrary("libinterpreter_testd.so"));
   }
 
   virtual void TearDown() {
@@ -142,60 +141,3 @@ TEST_F(InterpreterTest, test_while) {
 } // namespace test
 } // namespace b9
 
-#if 0
-
-void runFib(ExecutionContext *context, int value) {
-  Instruction *func = getFunctionAddress(context, "fib_function");
-  if (func == nullptr) {
-    printf("Fail: failed to load fib function\n");
-    return;
-  }
-
-  const char *mode = hasJITAddress(func) ? "JIT" : "Interpreted";
-
-  int validate = fib(value);
-
-  push(context, value);
-  StackElement result = interpret(context, func);
-
-  if (result == validate) {
-    if (context->debug >= 1) {
-      printf("Success: Mode <%s> fib %d returned %lld\n", mode, value, result);
-    }
-  } else {
-    printf("Fail: Mode <%s> fib %d returned %lld\n", mode, value, result);
-  }
-}
-
-void validateFibResult(ExecutionContext *context) {
-  int i;
-  for (i = 0; i <= 12; i++) {
-    runFib(context, i);
-  }
-  // search for fib_function by name and force it to be compiled
-  int functionIndex = 0;
-  while (context->functions[functionIndex].name != NO_MORE_FUNCTIONS) {
-    const char *fibfunc = "fib_function";
-    if (strncmp(fibfunc, context->functions[functionIndex].name,
-                strlen(fibfunc)) == 0) {
-      generateCode(context, functionIndex);
-    }
-    functionIndex++;
-  }
-  for (i = 0; i <= 12; i++) {
-    runFib(context, i);
-  }
-  removeAllGeneratedCode(context);
-}
-
-bool test_validateFibResult(ExecutionContext *context) {
-  // if (!loadLibrary(context, "./bench.so")) {
-  //     return 0;
-  // }
-  validateFibResult(context);
-  return true;
-}
-
-#endif
-
-#endif  // 0

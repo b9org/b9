@@ -111,8 +111,10 @@ static void run(const RunConfig& cfg) {
   }
 
   vm.load(module);
-  vm.run(cfg.mainFunction);
-
+  
+  for (std::size_t i = 0; i < cfg.loopCount; i++) {
+    vm.run(cfg.mainFunction);
+  }
 }
 
 int main(int argc, char* argv[]) {

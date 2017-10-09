@@ -9,6 +9,8 @@ clone this repository using git:
 ```sh
 git clone https://github.com/youngar/Base9
 cd Base9
+# Download sub-modules: googletest and omr
+git submodule update --init
 ```
 
 ## Building

@@ -68,10 +68,6 @@ add_subdirectory(b9)
 
 add_subdirectory(b9run)
 
-add_subdirectory(b9test)
+add_subdirectory(test)
 
 add_subdirectory(third_party)
-
-add_subdirectory(js_programs)
-
-# add_subdirectory(js_compiler)

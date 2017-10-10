@@ -26,6 +26,11 @@ struct FunctionSpec {
   std::string name;
 };
 
+/// Function not found exception.
+struct FunctionNotFoundException : public std::runtime_error {
+  using std::runtime_error::runtime_error;
+};
+
 /// An interpreter module.
 struct Module {
   std::vector<FunctionSpec> functions;
@@ -38,7 +43,7 @@ struct Module {
         return i;
       }
     }
-    throw std::invalid_argument{"Function argument not found" };
+    throw FunctionNotFoundException{name};
   }
 };
 

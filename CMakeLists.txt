@@ -6,7 +6,7 @@ find_program(NODE_EXECUTABLE
 
 list(APPEND CMAKE_MODULE_PATH
 	cmake/Modules
-	${CMAKE_CURRENT_LIST_DIR}/omr/cmake/modules/
+	${CMAKE_CURRENT_LIST_DIR}/third_party/omr/cmake/modules/
 )
 
 project(base9
@@ -64,15 +64,13 @@ endfunction(add_b9_program)
 
 # Subdirectories
 
-add_subdirectory(omr)
-
-add_subdirectory(googletest)
-
 add_subdirectory(b9)
 
 add_subdirectory(b9run)
 
 add_subdirectory(b9test)
+
+add_subdirectory(third_party)
 
 add_subdirectory(js_programs)
 

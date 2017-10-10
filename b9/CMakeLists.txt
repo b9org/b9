@@ -5,9 +5,13 @@ add_library(b9 SHARED
 	jit.cpp
 )
 
+target_include_directories(b9
+	PUBLIC
+		include/
+)
+
 target_link_libraries(b9
 	PUBLIC
-		b9interface
 		dl
 		jitbuilder
 )

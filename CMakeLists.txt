@@ -38,12 +38,6 @@ set(OMR_WARNINGS_AS_ERRORS OFF CACHE INTERNAL "OMR doesn't compile cleanly on my
 
 add_library(b9interface INTERFACE)
 
-target_include_directories(b9interface
-	INTERFACE
-		include
-		${CMAKE_CURRENT_BINARY_DIR}/include
-)
-
 add_custom_target(programs)
 
 function(add_b9_program program)

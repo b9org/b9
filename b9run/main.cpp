@@ -133,7 +133,7 @@ int main(int argc, char* argv[]) {
   } catch (const b9::DlException& e) {
     std::cerr << "Failed to load module: " << e.what() << std::endl;
     exit(EXIT_FAILURE);
-  } catch (const std::invalid_argument& e) {
+  } catch (const b9::FunctionNotFoundException& e) {
     std::cerr << "Failed to find function: " << e.what() << std::endl;
     exit(EXIT_FAILURE);
   }

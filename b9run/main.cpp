@@ -37,9 +37,9 @@ struct RunConfig {
 std::ostream& operator<<(std::ostream& out, const RunConfig& cfg) {
   return out << "Loading:      " << cfg.module << std::endl
              << "Executing:    " << cfg.mainFunction << std::endl
-             << "Call Style:   " << cfg.vm.jit.callStyle << std::endl
+             << "Call Style:   " << cfg.vm.jitConfig.callStyle << std::endl
              << "Looping:      " << cfg.loopCount << " times" << std::endl
-             << "Inline depth: " << cfg.vm.jit.maxInlineDepth;
+             << "Inline depth: " << cfg.vm.jitConfig.maxInlineDepth;
 }
 
 /// Parse CLI arguments and set up the config.
@@ -55,25 +55,25 @@ static bool parseArguments(RunConfig& cfg, const int argc, char* argv[]) {
     } else if (strcmp(arg, "-loop") == 0) {
       cfg.loopCount = atoi(argv[++i]);
     } else if (strcmp(arg, "-inline") == 0) {
-      cfg.vm.jit.maxInlineDepth = atoi(argv[++i]);
+      cfg.vm.jitConfig.maxInlineDepth = atoi(argv[++i]);
     } else if (strcmp(arg, "-verbose") == 0) {
       cfg.verbose = true;
       cfg.vm.verbose = true;
-      cfg.vm.jit.verbose = true;
+      cfg.vm.jitConfig.verbose = true;
     } else if (strcmp(arg, "-debug") == 0) {
       cfg.vm.debug = true;
-      cfg.vm.jit.debug = true;
+      cfg.vm.jitConfig.debug = true;
     } else if (strcmp(arg, "-callstyle") == 0) {
       i += 1;
       auto callStyle = argv[i];
       if (strcmp("interpreter", callStyle) == 0) {
-        cfg.vm.jit.callStyle = b9::CallStyle::interpreter;
+        cfg.vm.jitConfig.callStyle = b9::CallStyle::interpreter;
       } else if (strcmp("direct", callStyle) == 0) {
-        cfg.vm.jit.callStyle = b9::CallStyle::direct;
+        cfg.vm.jitConfig.callStyle = b9::CallStyle::direct;
       } else if (strcmp("passparameter", callStyle) == 0) {
-        cfg.vm.jit.callStyle = b9::CallStyle::passParameter;
+        cfg.vm.jitConfig.callStyle = b9::CallStyle::passParameter;
       } else if (strcmp("operandstack", callStyle) == 0) {
-        cfg.vm.jit.callStyle = b9::CallStyle::operandStack;
+        cfg.vm.jitConfig.callStyle = b9::CallStyle::operandStack;
       }
     } else if (strcmp(arg, "-program") == 0) {
       cfg.mainFunction = argv[++i];

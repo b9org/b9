@@ -4,6 +4,7 @@
 #include <b9/bytecodes.hpp>
 #include <b9/callstyle.hpp>
 #include <b9/core.hpp>
+#include <b9/jit.hpp>
 #include <b9/module.hpp>
 
 #include <cstring>
@@ -17,6 +18,7 @@ namespace b9 {
 struct JitConfig {
   CallStyle callStyle = CallStyle::interpreter;
   std::size_t maxInlineDepth = 0;
+  bool operandStack = true;
   bool verbose = false;
   bool debug = false;
 };
@@ -29,6 +31,11 @@ struct VirtualMachineConfig {
 };
 
 class VirtualMachine;
+
+struct Stack {
+  StackElement *stackBase;
+  StackElement *stackPointer;
+};
 
 class ExecutionContext {
  public:
@@ -65,13 +72,14 @@ class ExecutionContext {
   // Reset the stack and other internal data
   void reset();
 
- private:
+  // private
+  Stack stackFields = {stack_, stack_};
+
+private:
   StackElement stack_[1000];
-
-  StackElement *stackBase_ = stack_;
-  StackElement *stackPointer_ = stack_;
+  StackElement* &stackBase_ = stackFields.stackBase;
+  StackElement* &stackPointer_ = stackFields.stackPointer;
   Instruction *programCounter_ = 0;
-
   StackElement *stackEnd_ = &stack_[1000];
   VirtualMachine *virtualMachine_;
 };
@@ -79,7 +87,7 @@ class ExecutionContext {
 class VirtualMachine {
  public:
   VirtualMachine(const VirtualMachineConfig &cfg)
-      : cfg_{cfg}, executionContext_{this} {}
+      : cfg_{cfg}, executionContext_{this}, compiler_{this, cfg_.jitConfig} {}
 
   bool initialize();
   bool shutdown();
@@ -92,9 +100,10 @@ class VirtualMachine {
   const FunctionSpec *getFunction(std::size_t index);
   PrimitiveFunction *getPrimitive(std::size_t index);
 
-  void setJitAddress(uintptr_t functionIndex, uintptr_t value);
-  uint64_t getJitAddress(uintptr_t functionIndex);
-  intptr_t getFunctionCount();
+  void *getJitAddress(std::size_t functionIndex);
+  void setJitAddress(std::size_t functionIndex, void* value);
+
+  std::size_t getFunctionCount();
   void generateCode(int32_t functionIndex);
   void generateAllCode();
 
@@ -103,7 +112,10 @@ class VirtualMachine {
  private:
   VirtualMachineConfig cfg_;
   ExecutionContext executionContext_;
+  Compiler compiler_;
   std::shared_ptr<const Module> module_;
+
+  std::vector<void *> compiledFunctions_;
 };
 
 } // namespace b9

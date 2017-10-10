@@ -10,15 +10,12 @@ namespace b9 {
 /// Function specification. Metadata about a function.
 struct FunctionSpec {
   FunctionSpec(const std::string& name, const Instruction* address,
-               std::uint32_t nargs = 0, std::uint32_t nregs = 0,
-               void* jitAddress = nullptr)
-      : jitAddress{jitAddress},
-        address{address},
+               std::uint32_t nargs = 0, std::uint32_t nregs = 0)
+      : address{address},
         nargs{nargs},
         nregs{nregs},
         name{name} {}
 
-  void* jitAddress;
   const Instruction* address;
   std::uint32_t nargs;
   std::uint32_t nregs;

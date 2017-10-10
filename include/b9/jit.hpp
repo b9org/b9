@@ -2,20 +2,25 @@
 #define B9_JIT_INCL
 
 #include <b9.hpp>
+#include <b9/core.hpp>
 
 #include "ilgen/MethodBuilder.hpp"
+#include "ilgen/TypeDictionary.hpp"
 
 namespace b9 {
 
-class B9Method : public TR::MethodBuilder {
+class FunctionSpec;
+class JitConfig;
+
+class MethodBuilder : public TR::MethodBuilder {
  public:
-  B9Method(TR::TypeDictionary *types, int32_t programIndex,
-           ExecutionContext *context);
+  MethodBuilder(TR::TypeDictionary *types, VirtualMachine *virtualMachine, const JitConfig & config);
+
   virtual bool buildIL();
 
  protected:
-  TR::IlType *executionContextType;
-  TR::IlType *executionContextPointerType;
+  TR::IlType *stackType;
+  TR::IlType *stackPointerType;
   TR::IlType *stackElementType;
   TR::IlType *stackElementPointerType;
   TR::IlType *int64PointerType;
@@ -23,7 +28,7 @@ class B9Method : public TR::MethodBuilder {
   TR::IlType *int16PointerType;
 
  private:
-  ExecutionContext *context;
+  VirtualMachine *virtualMachine_;
   int32_t topLevelProgramIndex;
   int32_t maxInlineDepth;
   int32_t firstArgumentIndex;
@@ -96,6 +101,18 @@ class B9Method : public TR::MethodBuilder {
                         TR::BytecodeBuilder **bytecodeBuilderTable,
                         Instruction *program, long bytecodeIndex,
                         TR::BytecodeBuilder *nextBuilder);
+};
+
+class Compiler {
+public:
+  Compiler (VirtualMachine *virtualMachine, const JitConfig & jitConfig);
+  uint8_t *generateCode(const FunctionSpec & functionSpec);
+
+private:
+  TR::TypeDictionary types_;
+  VirtualMachine *virtualMachine_;
+  MethodBuilder methodBuilder_;
+  const JitConfig & jitConfig_;
 };
 
 }  // namespace b9

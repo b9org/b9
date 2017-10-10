@@ -1,6 +1,7 @@
 #include <b9.hpp>
 
 #include <b9.hpp>
+#include <b9/bytecodes.hpp>
 #include <b9/core.hpp>
 #include <b9/jit.hpp>
 
@@ -61,51 +62,66 @@ class VirtualMachineState : public OMR::VirtualMachineState {
   OMR::VirtualMachineRegister *_stackTop;
 };
 
-void VirtualMachine::generateCode(int32_t functionIndex) {
-  TR::TypeDictionary types;
-  Instruction *program = context->functions[functionIndex].program;
-  // todo pass in context->functions
-  Method methodBuilder(&types, functionIndex, context);
-  uint8_t *entry = 0;
-  int rc = (*compileMethodBuilder)(&methodBuilder, &entry);
-  if (0 == rc) {
-    setJitAddress(context, functionIndex, (uint64_t)entry);
-  } else {
-    if (context->debug >= 1) {
-      printf("Failed to compile method \"%s\"\n",
-             context->functions[functionIndex].name);
-    }
-  }
+Compiler::Compiler (VirtualMachine *virtualMachine, const JitConfig & jitConfig)
+: virtualMachine_(virtualMachine),
+  methodBuilder_(&types_, virtualMachine_, jitConfig),
+  jitConfig_(jitConfig)
+{
+
+  auto stackElementType = types_.toIlType<StackElement>();
+  auto stackElementPointerType = types_.PointerTo(stackElementType);
+
+  // Stack
+  types_.DefineStruct("Stack");
+  types_.DefineField("Stack", "stackBase", stackElementPointerType,
+                     offsetof(Stack, stackBase));
+  types_.DefineField("Stack", "stackPointer",
+                     stackElementPointerType,
+                     offsetof(Stack, stackPointer));
+  types_.CloseStruct("Stack");
 }
 
-Method::Method(TR::TypeDictionary *types, int32_t programIndex,
-                   ExecutionContext *context)
-    : MethodBuilder(types),
-      context(context),
-      topLevelProgramIndex(programIndex),
-      maxInlineDepth(context->inlineDepthAllowed),
+uint8_t *Compiler::generateCode(const FunctionSpec & functionSpec) {
+  //Instruction *program = context->functions[functionIndex].program;
+  //MethodBuilder methodBuilder(&types, functionIndex, context);
+  uint8_t *entry = nullptr;
+  int rc = compileMethodBuilder(&methodBuilder_, &entry);
+  if (rc != 0) {
+    // TODO print an error
+    //printf("Failed to compile method \"%d\"\n", functionIndex);
+  }
+
+  return entry;
+}
+
+MethodBuilder::MethodBuilder(TR::TypeDictionary *types, VirtualMachine *virtualMachine, const JitConfig &config)
+    : TR::MethodBuilder(types),
+      virtualMachine_(virtualMachine),
+      //topLevelProgramIndex(programIndex),
+      maxInlineDepth(config.maxInlineDepth),
       firstArgumentIndex(0) {
+
   DefineLine(LINETOSTR(__LINE__));
   DefineFile(__FILE__);
 
-  DefineName(context->functions[programIndex].name);
-  if (sizeof(StackElement) == 2) {
-    stackElementType = Int16;
-    stackElementPointerType = types->PointerTo(stackElementType);
-  }
-  if (sizeof(StackElement) == 4) {
-    stackElementType = Int32;
-    stackElementPointerType = types->PointerTo(stackElementType);
-  }
-  if (sizeof(StackElement) == 8) {
-    stackElementType = Int64;
-    stackElementPointerType = types->PointerTo(stackElementType);
-  }
+  // TODO
+  //DefineName(context->functions[programIndex].name);
+  DefineName("FIXME");
+
+  stackElementType = types->template toIlType<StackElement>();
+  stackElementPointerType = types->PointerTo(stackElementType);
 
   DefineReturnType(stackElementType);
-  defineStructures(types);
+
+  int64PointerType = types->PointerTo(Int64);
+  int32PointerType = types->PointerTo(Int32);
+  int16PointerType = types->PointerTo(Int16);
+  stackPointerType = types->LookupStruct("Stack");
+
   defineParameters(context->functions[topLevelProgramIndex].program);
-  if (context->operandStack) {  // hack for topLevel
+
+  if (config.operandStack){
+    // hack for topLevel
     DefineLocal("localContext", executionContextType);
   }
 
@@ -124,7 +140,7 @@ static const char *argsAndTempNames[] = {
 #define MAX_ARGS_TEMPS_AVAIL \
   sizeof(argsAndTempNames) / sizeof(argsAndTempNames[0])
 
-void Method::defineParameters(Instruction *program) {
+void MethodBuilder::defineParameters(Instruction *program) {
   if (context->passParameters) {
     int argsCount = progArgCount(*program);
     for (int i = 0; i < argsCount; i++) {
@@ -136,7 +152,7 @@ void Method::defineParameters(Instruction *program) {
 // for locals we pre-define all the locals we could use, for the toplevel
 // and all the inlined names which are simply referenced via a skew to reach
 // past callers functions args/temps
-void Method::defineLocals(Instruction *program) {
+void MethodBuilder::defineLocals(Instruction *program) {
   int argsCount = progArgCount(*program);
   int tempCount = progTmpCount(*program);
   int topLevelLocals = argsCount + tempCount;
@@ -154,25 +170,10 @@ void Method::defineLocals(Instruction *program) {
   }
 }
 
-void Method::defineStructures(TR::TypeDictionary *types) {
-  int64PointerType = types->PointerTo(Int64);
-  int32PointerType = types->PointerTo(Int32);
-  int16PointerType = types->PointerTo(Int16);
-
-  executionContextType = types->DefineStruct("executionContextType");
-  types->DefineField("executionContextType", "stack", stackElementPointerType,
-                     offsetof(struct ExecutionContext, stack));
-  types->DefineField("executionContextType", "stackPointer",
-                     stackElementPointerType,
-                     offsetof(struct ExecutionContext, stackPointer));
-  types->DefineField("executionContextType", "functions", int64PointerType,
-                     offsetof(struct ExecutionContext, functions));
-  types->CloseStruct("executionContextType");
-
-  executionContextPointerType = types->PointerTo(executionContextType);
+void MethodBuilder::defineStructures(TR::TypeDictionary *types) {
 }
 
-void Method::defineFunctions() {
+void MethodBuilder::defineFunctions() {
   DefineFunction((char *)"printVMState", (char *)__FILE__, "printVMState",
                  (void *)&printVMState, NoType, 4, Int64, Int64, Int64, Int64);
   DefineFunction((char *)"printStack", (char *)__FILE__, "printStack",
@@ -220,7 +221,7 @@ void Method::defineFunctions() {
 #define QRELOAD_DROP(b, toDrop) \
   if (context->operandStack) QSTACK(builder)->Drop(builder, toDrop);
 
-void Method::createBuilderForBytecode(
+void MethodBuilder::createBuilderForBytecode(
     TR::BytecodeBuilder **bytecodeBuilderTable, uint8_t bytecode,
     int64_t bytecodeIndex) {
   TR::BytecodeBuilder *newBuilder =
@@ -241,7 +242,7 @@ long computeNumberOfBytecodes(Instruction *program) {
   return result;
 }
 
-bool Method::inlineProgramIntoBuilder(
+bool MethodBuilder::inlineProgramIntoBuilder(
     int32_t programIndex, bool isTopLevel, TR::BytecodeBuilder *currentBuilder,
     TR::BytecodeBuilder *jumpToBuilderForInlinedReturn) {
   bool success = true;
@@ -315,7 +316,7 @@ bool Method::inlineProgramIntoBuilder(
   return success;
 }
 
-bool Method::buildIL() {
+bool MethodBuilder::buildIL() {
   if (context->operandStack) {
     this->Store("localContext", this->ConstAddress(context));
     OMR::VirtualMachineRegisterInStruct *stackTop =
@@ -332,7 +333,7 @@ bool Method::buildIL() {
   return inlineProgramIntoBuilder(topLevelProgramIndex, true);
 }
 
-TR::IlValue *Method::loadVarIndex(TR::BytecodeBuilder *builder,
+TR::IlValue *MethodBuilder::loadVarIndex(TR::BytecodeBuilder *builder,
                                     int varindex) {
   if (firstArgumentIndex > 0) {
     if (context->debug >= 2) {
@@ -355,7 +356,7 @@ TR::IlValue *Method::loadVarIndex(TR::BytecodeBuilder *builder,
   }
 }
 
-void Method::storeVarIndex(TR::BytecodeBuilder *builder, int varindex,
+void MethodBuilder::storeVarIndex(TR::BytecodeBuilder *builder, int varindex,
                              TR::IlValue *value) {
   if (firstArgumentIndex > 0) {
     if (context->debug >= 2) {
@@ -375,7 +376,7 @@ void Method::storeVarIndex(TR::BytecodeBuilder *builder, int varindex,
   }
 }
 
-bool Method::generateILForBytecode(
+bool MethodBuilder::generateILForBytecode(
     TR::BytecodeBuilder **bytecodeBuilderTable, Instruction *program,
     uint8_t bytecode, long bytecodeIndex,
     TR::BytecodeBuilder *jumpToBuilderForInlinedReturn) {
@@ -611,7 +612,7 @@ bool Method::generateILForBytecode(
  * GENERATE CODE FOR BYTECODES
  *************************************************/
 
-void Method::handle_bc_jmp(TR::BytecodeBuilder *builder,
+void MethodBuilder::handle_bc_jmp(TR::BytecodeBuilder *builder,
                              TR::BytecodeBuilder **bytecodeBuilderTable,
                              Instruction *program, long bytecodeIndex) {
   Instruction instruction = program[bytecodeIndex];
@@ -621,7 +622,7 @@ void Method::handle_bc_jmp(TR::BytecodeBuilder *builder,
   builder->Goto(destBuilder);
 }
 
-void Method::handle_bc_jmp_eq(TR::BytecodeBuilder *builder,
+void MethodBuilder::handle_bc_jmp_eq(TR::BytecodeBuilder *builder,
                                 TR::BytecodeBuilder **bytecodeBuilderTable,
                                 Instruction *program, long bytecodeIndex,
                                 TR::BytecodeBuilder *nextBuilder) {
@@ -637,7 +638,7 @@ void Method::handle_bc_jmp_eq(TR::BytecodeBuilder *builder,
   builder->AddFallThroughBuilder(nextBuilder);
 }
 
-void Method::handle_bc_jmp_neq(TR::BytecodeBuilder *builder,
+void MethodBuilder::handle_bc_jmp_neq(TR::BytecodeBuilder *builder,
                                  TR::BytecodeBuilder **bytecodeBuilderTable,
                                  Instruction *program, long bytecodeIndex,
                                  TR::BytecodeBuilder *nextBuilder) {
@@ -653,7 +654,7 @@ void Method::handle_bc_jmp_neq(TR::BytecodeBuilder *builder,
   builder->AddFallThroughBuilder(nextBuilder);
 }
 
-void Method::handle_bc_jmp_lt(TR::BytecodeBuilder *builder,
+void MethodBuilder::handle_bc_jmp_lt(TR::BytecodeBuilder *builder,
                                 TR::BytecodeBuilder **bytecodeBuilderTable,
                                 Instruction *program, long bytecodeIndex,
                                 TR::BytecodeBuilder *nextBuilder) {
@@ -668,7 +669,7 @@ void Method::handle_bc_jmp_lt(TR::BytecodeBuilder *builder,
   builder->IfCmpLessThan(jumpTo, left, right);
   builder->AddFallThroughBuilder(nextBuilder);
 }
-void Method::handle_bc_jmp_le(TR::BytecodeBuilder *builder,
+void MethodBuilder::handle_bc_jmp_le(TR::BytecodeBuilder *builder,
                                 TR::BytecodeBuilder **bytecodeBuilderTable,
                                 Instruction *program, long bytecodeIndex,
                                 TR::BytecodeBuilder *nextBuilder) {
@@ -685,7 +686,7 @@ void Method::handle_bc_jmp_le(TR::BytecodeBuilder *builder,
   builder->IfCmpGreaterThan(jumpTo, right, left);  // swap and do a greaterthan
   builder->AddFallThroughBuilder(nextBuilder);
 }
-void Method::handle_bc_jmp_gt(TR::BytecodeBuilder *builder,
+void MethodBuilder::handle_bc_jmp_gt(TR::BytecodeBuilder *builder,
                                 TR::BytecodeBuilder **bytecodeBuilderTable,
                                 Instruction *program, long bytecodeIndex,
                                 TR::BytecodeBuilder *nextBuilder) {
@@ -700,7 +701,7 @@ void Method::handle_bc_jmp_gt(TR::BytecodeBuilder *builder,
   builder->IfCmpGreaterThan(jumpTo, left, right);
   builder->AddFallThroughBuilder(nextBuilder);
 }
-void Method::handle_bc_jmp_ge(TR::BytecodeBuilder *builder,
+void MethodBuilder::handle_bc_jmp_ge(TR::BytecodeBuilder *builder,
                                 TR::BytecodeBuilder **bytecodeBuilderTable,
                                 Instruction *program, long bytecodeIndex,
                                 TR::BytecodeBuilder *nextBuilder) {
@@ -718,7 +719,7 @@ void Method::handle_bc_jmp_ge(TR::BytecodeBuilder *builder,
   builder->AddFallThroughBuilder(nextBuilder);
 }
 
-void Method::handle_bc_sub(TR::BytecodeBuilder *builder,
+void MethodBuilder::handle_bc_sub(TR::BytecodeBuilder *builder,
                              TR::BytecodeBuilder *nextBuilder) {
   TR::IlValue *right = pop(builder);
   TR::IlValue *left = pop(builder);
@@ -727,7 +728,7 @@ void Method::handle_bc_sub(TR::BytecodeBuilder *builder,
   builder->AddFallThroughBuilder(nextBuilder);
 }
 
-void Method::handle_bc_add(TR::BytecodeBuilder *builder,
+void MethodBuilder::handle_bc_add(TR::BytecodeBuilder *builder,
                              TR::BytecodeBuilder *nextBuilder) {
   TR::IlValue *right = pop(builder);
   TR::IlValue *left = pop(builder);
@@ -736,12 +737,12 @@ void Method::handle_bc_add(TR::BytecodeBuilder *builder,
   builder->AddFallThroughBuilder(nextBuilder);
 }
 
-void Method::drop(TR::BytecodeBuilder *builder) { pop(builder); }
+void MethodBuilder::drop(TR::BytecodeBuilder *builder) { pop(builder); }
 
-void Method::handle_bc_push_string(TR::BytecodeBuilder *builder,
+void MethodBuilder::handle_bc_push_string(TR::BytecodeBuilder *builder,
                                      TR::BytecodeBuilder *nextBuilder) {}
 
-TR::IlValue *Method::pop(TR::BytecodeBuilder *builder) {
+TR::IlValue *MethodBuilder::pop(TR::BytecodeBuilder *builder) {
   if (context->operandStack) {
     return QSTACK(builder)->Pop(builder);
   } else {
@@ -755,7 +756,7 @@ TR::IlValue *Method::pop(TR::BytecodeBuilder *builder) {
   }
 }
 
-void Method::push(TR::BytecodeBuilder *builder, TR::IlValue *value) {
+void MethodBuilder::push(TR::BytecodeBuilder *builder, TR::IlValue *value) {
   if (context->operandStack) {
     QSTACK(builder)->Push(builder, value);
   } else {
@@ -771,4 +772,3 @@ void Method::push(TR::BytecodeBuilder *builder, TR::IlValue *value) {
 }
 
 }  // namespace b9
-

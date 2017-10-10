@@ -168,10 +168,11 @@ StackElement interpret_3(ExecutionContext *context, Instruction *program,
 #endif  // 0
 
 StackElement ExecutionContext::interpret(const FunctionSpec *function) {
+#if 0
   uint64_t *address = (uint64_t *)(&program[1]);
   if (*address) {
     StackElement result = 0;
-    if (virtualMachine_->passParameters()) {
+    if (virtualMachine_->cfg_- {
       int argsCount = progArgCount(*program);
       switch (argsCount) {
         case 0: {
@@ -208,6 +209,7 @@ StackElement ExecutionContext::interpret(const FunctionSpec *function) {
     }
     return result;
   }
+#endif
 
   // printf("Prog Arg Count %d, tmp count %d\n", nargs, tmps);
 
@@ -298,12 +300,12 @@ void setJitAddressSlot(Instruction *p, uint64_t value) {
   *getJitAddressSlot(p) = value;
 }
 
-uint64_t VirtualMachine::getJitAddress(uintptr_t functionIndex) {
-  return functions_->getJitAddress(functionIndex);
+void *VirtualMachine::getJitAddress(std::size_t functionIndex) {
+  return compiledFunctions_[functionIndex];
 }
 
-void VirtualMachine::setJitAddress(uintptr_t functionIndex, uint64_t value) {
-  functions_->setJitAddress(functionIndex, value);
+void VirtualMachine::setJitAddress(std::size_t functionIndex, void* value) {
+  compiledFunctions_[functionIndex] = value;
 }
 
 PrimitiveFunction *VirtualMachine::getPrimitive(std::size_t index) {
@@ -318,8 +320,8 @@ const char *VirtualMachine::getString(int index) {
   return module_->strings[index];
 }
 
-intptr_t VirtualMachine::getFunctionCount() {
-  return functions_->getCount();
+std::size_t VirtualMachine::getFunctionCount() {
+  return module_->functions.size();
 }
 
 // void removeGeneratedCode(ExecutionContext *context, int functionIndex) {
@@ -336,8 +338,10 @@ intptr_t VirtualMachine::getFunctionCount() {
 // }
 
 void VirtualMachine::generateAllCode() {
-  for (int functionIndex = 0; functionIndex < functions_->getCount(); functionIndex++) {
-    generateCode(functionIndex);
+  std::size_t i = 0;
+  for (auto &functionSpec : module_->functions) {
+    auto func = compiler_.generateCode(functionSpec);
+    compiledFunctions_[i] = func;
   }
 }
 
@@ -375,7 +379,7 @@ StackElement VirtualMachine::run(const std::size_t functionIndex) {
 
 extern "C" void b9_prim_print_number(ExecutionContext *context) {
   StackElement number = context->pop();
-  printf("%lld\n", number);
+  std::cout << number;
   context->push(0);
 }
 

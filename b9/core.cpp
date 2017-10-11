@@ -222,65 +222,65 @@ StackElement ExecutionContext::interpret(const FunctionSpec *function) {
     // ByteCodes::toByte(Instructions::getByteCode(*instructionPointer)) <<
     // std::endl;
     switch (Instructions::getByteCode(*instructionPointer)) {
-      case ByteCode::intPushConstant:
+      case ByteCode::INT_PUSH_CONSTANT:
         intPushConstant(Instructions::getParameter(*instructionPointer));
         break;
-      case ByteCode::strPushConstant:
+      case ByteCode::STR_PUSH_CONSTANT:
         strPushConstant(Instructions::getParameter(*instructionPointer));
         break;
-      case ByteCode::drop:
+      case ByteCode::DROP:
         drop();
         break;
-      case ByteCode::intAdd:
+      case ByteCode::INT_ADD:
         intAdd();
         break;
-      case ByteCode::intSub:
+      case ByteCode::INT_SUB:
         intSub();
         break;
-      case ByteCode::jmp:
+      case ByteCode::JMP:
         instructionPointer += Instructions::getParameter(*instructionPointer);
         break;
-      case ByteCode::intJmpEq:
+      case ByteCode::INT_JMP_EQ:
         instructionPointer +=
             intJmpEq(Instructions::getParameter(*instructionPointer));
         break;
-      case ByteCode::intJmpNeq:
+      case ByteCode::INT_JMP_NEQ:
         instructionPointer +=
             intJmpNeq(Instructions::getParameter(*instructionPointer));
         break;
-      case ByteCode::intJmpGt:
+      case ByteCode::INT_JMP_GT:
         instructionPointer +=
             intJmpGt(Instructions::getParameter(*instructionPointer));
         break;
-      case ByteCode::intJmpGe:
+      case ByteCode::INT_JMP_GE:
         instructionPointer +=
             intJmpGe(Instructions::getParameter(*instructionPointer));
         break;
-      case ByteCode::intJmpLt:
+      case ByteCode::INT_JMP_LT:
         instructionPointer +=
             intJmpLt(Instructions::getParameter(*instructionPointer));
         break;
-      case ByteCode::intJmpLe:
+      case ByteCode::INT_JMP_LE:
         instructionPointer +=
             intJmpLe(Instructions::getParameter(*instructionPointer));
         break;
-      case ByteCode::functionCall:
+      case ByteCode::FUNCTION_CALL:
         functionCall(Instructions::getParameter(*instructionPointer));
         break;
-      case ByteCode::pushFromVar:
+      case ByteCode::PUSH_FROM_VAR:
         pushFromVar(args, Instructions::getParameter(*instructionPointer));
         break;
-      case ByteCode::popIntoVar:
+      case ByteCode::POP_INTO_VAR:
         // TODO bad name, push or pop?
         pushIntoVar(args, Instructions::getParameter(*instructionPointer));
         break;
-      case ByteCode::functionReturn: {
+      case ByteCode::FUNCTION_RETURN: {
         StackElement result = *(stackPointer_ - 1);
         stackPointer_ = args;
         return result;
         break;
       }
-      case ByteCode::primitiveCall:
+      case ByteCode::PRIMITIVE_CALL:
         primitiveCall(Instructions::getParameter(*instructionPointer));
         break;
       default:

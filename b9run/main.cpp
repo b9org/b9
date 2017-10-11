@@ -112,8 +112,9 @@ static void run(const RunConfig& cfg) {
 
   vm.load(module);
   
+  size_t functionIndex = module->findFunction(cfg.mainFunction);
   for (std::size_t i = 0; i < cfg.loopCount; i++) {
-    vm.run(cfg.mainFunction);
+    vm.run(functionIndex);
   }
 }
 

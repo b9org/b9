@@ -27,7 +27,7 @@ static const char* usage =
 /// The b9run program's global configuration.
 struct RunConfig {
   b9::VirtualMachineConfig vm;
-  const char* module = "program.so";
+  const char* moduleName = "program.so";
   const char* mainFunction = "b9main";
   std::size_t loopCount = 1;
   bool verbose = false;
@@ -35,7 +35,7 @@ struct RunConfig {
 
 /// Print the configuration summary.
 std::ostream& operator<<(std::ostream& out, const RunConfig& cfg) {
-  return out << "Loading:      " << cfg.module << std::endl
+  return out << "Loading:      " << cfg.moduleName << std::endl
              << "Executing:    " << cfg.mainFunction << std::endl
              << "Call Style:   " << cfg.vm.jit.callStyle << std::endl
              << "Looping:      " << cfg.loopCount << " times" << std::endl
@@ -89,7 +89,7 @@ static bool parseArguments(RunConfig& cfg, const int argc, char* argv[]) {
   // positional
 
   if (i < argc) {
-    cfg.module = argv[i++];
+    cfg.moduleName = argv[i++];
 
     if (i < argc) {
       cfg.mainFunction = argv[i++];
@@ -104,7 +104,7 @@ static void run(const RunConfig& cfg) {
   vm.initialize();
 
   b9::DlLoader loader{true};
-  auto module = loader.loadModule(cfg.module);
+  auto module = loader.loadModule(cfg.moduleName);
 
   if (module->functions.size() == 0) {
     throw b9::DlException{"Empty module"};

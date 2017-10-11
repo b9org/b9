@@ -14,7 +14,7 @@ class JitConfig;
 
 class MethodBuilder : public TR::MethodBuilder {
  public:
-  MethodBuilder(TR::TypeDictionary *types, VirtualMachine *virtualMachine, const JitConfig & config);
+  MethodBuilder(VirtualMachine *virtualMachine, TR::TypeDictionary *types, const JitConfig & config, const FunctionSpec & functionSpec, const Stack *stack);
 
   virtual bool buildIL();
 
@@ -29,17 +29,19 @@ class MethodBuilder : public TR::MethodBuilder {
 
  private:
   VirtualMachine *virtualMachine_;
+  TR::TypeDictionary *types_;
+  const JitConfig & config_;
+  const FunctionSpec & functionSpec_;
   int32_t topLevelProgramIndex;
   int32_t maxInlineDepth;
   int32_t firstArgumentIndex;
 
   void defineFunctions();
-  void defineStructures(TR::TypeDictionary *types);
-  void defineLocals(Instruction *program);
-  void defineParameters(Instruction *program);
+  void defineLocals(std::size_t nargs);
+  void defineParameters(std::size_t nargs);
 
   void createBuilderForBytecode(TR::BytecodeBuilder **bytecodeBuilderTable,
-                                uint8_t bytecode, int64_t bytecodeIndex);
+                                ByteCode bytecode, int64_t bytecodeIndex);
   bool generateILForBytecode(
       TR::BytecodeBuilder **bytecodeBuilderTable, Instruction *program,
       uint8_t bytecode, long bytecodeIndex,
@@ -111,7 +113,6 @@ public:
 private:
   TR::TypeDictionary types_;
   VirtualMachine *virtualMachine_;
-  MethodBuilder methodBuilder_;
   const JitConfig & jitConfig_;
 };
 

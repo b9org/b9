@@ -64,7 +64,6 @@ class VirtualMachineState : public OMR::VirtualMachineState {
 
 Compiler::Compiler (VirtualMachine *virtualMachine, const JitConfig & jitConfig)
 : virtualMachine_(virtualMachine),
-  methodBuilder_(&types_, virtualMachine_, jitConfig),
   jitConfig_(jitConfig)
 {
 
@@ -82,10 +81,11 @@ Compiler::Compiler (VirtualMachine *virtualMachine, const JitConfig & jitConfig)
 }
 
 uint8_t *Compiler::generateCode(const FunctionSpec & functionSpec) {
-  //Instruction *program = context->functions[functionIndex].program;
-  //MethodBuilder methodBuilder(&types, functionIndex, context);
+  // TODO get the stack
+  const Stack *stack = nullptr;
+  MethodBuilder methodBuilder(virtualMachine_, &types_, jitConfig_, functionSpec, stack);
   uint8_t *entry = nullptr;
-  int rc = compileMethodBuilder(&methodBuilder_, &entry);
+  int rc = compileMethodBuilder(&methodBuilder, &entry);
   if (rc != 0) {
     // TODO print an error
     //printf("Failed to compile method \"%d\"\n", functionIndex);
@@ -94,10 +94,13 @@ uint8_t *Compiler::generateCode(const FunctionSpec & functionSpec) {
   return entry;
 }
 
-MethodBuilder::MethodBuilder(TR::TypeDictionary *types, VirtualMachine *virtualMachine, const JitConfig &config)
+MethodBuilder::MethodBuilder(VirtualMachine *virtualMachine, TR::TypeDictionary *types, const JitConfig &config, const FunctionSpec & functionSpec, const Stack *stack)
     : TR::MethodBuilder(types),
       virtualMachine_(virtualMachine),
-      //topLevelProgramIndex(programIndex),
+      types_(types),
+      config_(config),
+      functionSpec_(functionSpec),
+      stack_(stack),
       maxInlineDepth(config.maxInlineDepth),
       firstArgumentIndex(0) {
 
@@ -116,16 +119,18 @@ MethodBuilder::MethodBuilder(TR::TypeDictionary *types, VirtualMachine *virtualM
   int64PointerType = types->PointerTo(Int64);
   int32PointerType = types->PointerTo(Int32);
   int16PointerType = types->PointerTo(Int16);
-  stackPointerType = types->LookupStruct("Stack");
+  stackType = types->LookupStruct("Stack");
+  stackPointerType = types->PointerTo(stackType);
 
-  defineParameters(context->functions[topLevelProgramIndex].program);
+  defineParameters(functionSpec.nargs);
 
   if (config.operandStack){
     // hack for topLevel
-    DefineLocal("localContext", executionContextType);
+    DefineLocal("stack", stackType);
   }
 
-  defineLocals(context->functions[topLevelProgramIndex].program);
+  defineLocals(functionSpec.nregs);
+
   defineFunctions();
 
   AllLocalsHaveBeenDefined();
@@ -140,29 +145,21 @@ static const char *argsAndTempNames[] = {
 #define MAX_ARGS_TEMPS_AVAIL \
   sizeof(argsAndTempNames) / sizeof(argsAndTempNames[0])
 
-void MethodBuilder::defineParameters(Instruction *program) {
-  if (context->passParameters) {
-    int argsCount = progArgCount(*program);
-    for (int i = 0; i < argsCount; i++) {
+void MethodBuilder::defineParameters(std::size_t argCount) {
+  if (config_.callStyle == CallStyle::passParameter) {
+    for (int i = 0; i < argCount; i++) {
       DefineParameter(argsAndTempNames[i], stackElementType);
     }
   }
 }
 
-// for locals we pre-define all the locals we could use, for the toplevel
-// and all the inlined names which are simply referenced via a skew to reach
-// past callers functions args/temps
-void MethodBuilder::defineLocals(Instruction *program) {
-  int argsCount = progArgCount(*program);
-  int tempCount = progTmpCount(*program);
-  int topLevelLocals = argsCount + tempCount;
-
-  if (context->debug >= 2) {
-    printf("CREATING %d topLevel with %lu slots for inlining \n",
-           topLevelLocals, MAX_ARGS_TEMPS_AVAIL - topLevelLocals);
-  }
-  if (context->passParameters) {
-    for (uint32_t i = argsCount; i < MAX_ARGS_TEMPS_AVAIL; i++) {
+void MethodBuilder::defineLocals(std::size_t argCount) {
+  if (config_.callStyle == CallStyle::passParameter) {
+    // for locals we pre-define all the locals we could use, for the toplevel
+    // and all the inlined names which are simply referenced via a skew to reach
+    // past callers functions args/temps
+    std::size_t totalArgCount = functionSpec_.nargs + functionSpec_.nregs;
+    for (std::size_t i = totalArgCount; i < MAX_ARGS_TEMPS_AVAIL; i++) {
       DefineLocal(argsAndTempNames[i], stackElementType);
     }
   } else {
@@ -170,47 +167,44 @@ void MethodBuilder::defineLocals(Instruction *program) {
   }
 }
 
-void MethodBuilder::defineStructures(TR::TypeDictionary *types) {
-}
-
 void MethodBuilder::defineFunctions() {
-  DefineFunction((char *)"printVMState", (char *)__FILE__, "printVMState",
-                 (void *)&printVMState, NoType, 4, Int64, Int64, Int64, Int64);
-  DefineFunction((char *)"printStack", (char *)__FILE__, "printStack",
-                 (void *)&b9PrintStack, NoType, 1, Int64);
-  DefineFunction((char *)"interpret", (char *)__FILE__, "interpret",
-                 (void *)&interpret, Int64, 2, executionContextType,
-                 int32PointerType);
-  int functionIndex = 0;
-  while (context->functions[functionIndex].name != NO_MORE_FUNCTIONS) {
-    if (context->functions[functionIndex].jitAddress) {
-      DefineFunction(context->functions[functionIndex].name, (char *)__FILE__,
-                     context->functions[functionIndex].name,
-                     (void *)context->functions[functionIndex].jitAddress,
-                     Int64,
-                     progArgCount(*context->functions[functionIndex].program),
-                     stackElementType, stackElementType, stackElementType,
-                     stackElementType, stackElementType, stackElementType,
-                     stackElementType, stackElementType);
-    }
-    functionIndex++;
-  }
-  DefineFunction((char *)"interpret_0", (char *)__FILE__, "interpret_0",
-                 (void *)&interpret_0, Int64, 2, executionContextType,
-                 int32PointerType);
-  DefineFunction((char *)"interpret_1", (char *)__FILE__, "interpret_1",
-                 (void *)&interpret_1, Int64, 3, executionContextType,
-                 int32PointerType, stackElementType);
-  DefineFunction((char *)"interpret_2", (char *)__FILE__, "interpret_2",
-                 (void *)&interpret_2, Int64, 4, executionContextType,
-                 int32PointerType, stackElementType, stackElementType);
-  DefineFunction((char *)"interpret_3", (char *)__FILE__, "interpret_3",
-                 (void *)&interpret_3, Int64, 5, executionContextType,
-                 int32PointerType, stackElementType, stackElementType,
-                 stackElementType);
-  DefineFunction((char *)"bc_primitive", (char *)__FILE__, "bc_primitive",
-                 (void *)&bc_primitive, Int64, 2, executionContextPointerType,
-                 Int32);
+  // DefineFunction((char *)"printVMState", (char *)__FILE__, "printVMState",
+  //                (void *)&printVMState, NoType, 4, Int64, Int64, Int64, Int64);
+  // DefineFunction((char *)"printStack", (char *)__FILE__, "printStack",
+  //                (void *)&b9PrintStack, NoType, 1, Int64);
+  // DefineFunction((char *)"interpret", (char *)__FILE__, "interpret",
+  //                (void *)&interpret, Int64, 2, executionContextType,
+  //                int32PointerType);
+  // int functionIndex = 0;
+  // while (context->functions[functionIndex].name != NO_MORE_FUNCTIONS) {
+  //   if (context->functions[functionIndex].jitAddress) {
+  //     DefineFunction(context->functions[functionIndex].name, (char *)__FILE__,
+  //                    context->functions[functionIndex].name,
+  //                    (void *)context->functions[functionIndex].jitAddress,
+  //                    Int64,
+  //                    progArgCount(*context->functions[functionIndex].program),
+  //                    stackElementType, stackElementType, stackElementType,
+  //                    stackElementType, stackElementType, stackElementType,
+  //                    stackElementType, stackElementType);
+  //   }
+  //   functionIndex++;
+  // }
+  // DefineFunction((char *)"interpret_0", (char *)__FILE__, "interpret_0",
+  //                (void *)&interpret_0, Int64, 2, executionContextType,
+  //                int32PointerType);
+  // DefineFunction((char *)"interpret_1", (char *)__FILE__, "interpret_1",
+  //                (void *)&interpret_1, Int64, 3, executionContextType,
+  //                int32PointerType, stackElementType);
+  // DefineFunction((char *)"interpret_2", (char *)__FILE__, "interpret_2",
+  //                (void *)&interpret_2, Int64, 4, executionContextType,
+  //                int32PointerType, stackElementType, stackElementType);
+  // DefineFunction((char *)"interpret_3", (char *)__FILE__, "interpret_3",
+  //                (void *)&interpret_3, Int64, 5, executionContextType,
+  //                int32PointerType, stackElementType, stackElementType,
+  //                stackElementType);
+  // DefineFunction((char *)"bc_primitive", (char *)__FILE__, "bc_primitive",
+  //                (void *)&bc_primitive, Int64, 2, executionContextPointerType,
+  //                Int32);
 }
 
 #define QSTACK(b) (((VirtualMachineState *)(b)->vmState())->_stack)
@@ -222,19 +216,19 @@ void MethodBuilder::defineFunctions() {
   if (context->operandStack) QSTACK(builder)->Drop(builder, toDrop);
 
 void MethodBuilder::createBuilderForBytecode(
-    TR::BytecodeBuilder **bytecodeBuilderTable, uint8_t bytecode,
+    TR::BytecodeBuilder **bytecodeBuilderTable, ByteCode bytecode,
     int64_t bytecodeIndex) {
   TR::BytecodeBuilder *newBuilder =
-      OrphanBytecodeBuilder(bytecodeIndex, (char *)ByteCodeName(bytecode));
+      // OrphanBytecodeBuilder(bytecodeIndex, (char *)b9ByteCodeName(bytecode));
+      OrphanBytecodeBuilder(bytecodeIndex);
   // printf("Created bytecodebuilder index=%d bc=%d param=%d %p\n",
   // bytecodeIndex, bytecode,
   // getParameterFromInstruction(program[bytecodeIndex]), newBuilder);
   bytecodeBuilderTable[bytecodeIndex] = newBuilder;
 }
 
-long computeNumberOfBytecodes(Instruction *program) {
-  long result = METHOD_FIRST_BC_OFFSET;
-  program += METHOD_FIRST_BC_OFFSET;
+long computeNumberOfBytecodes(const Instruction *program) {
+  long result = 0;
   while (*program != NO_MORE_BYTECODES) {
     program++;
     result++;
@@ -247,10 +241,10 @@ bool MethodBuilder::inlineProgramIntoBuilder(
     TR::BytecodeBuilder *jumpToBuilderForInlinedReturn) {
   bool success = true;
   maxInlineDepth--;
-  Instruction *program = context->functions[programIndex].program;
+  const Instruction *program = functionSpec_.address;
 
   TR::BytecodeBuilder **bytecodeBuilderTable = nullptr;
-  long numberOfBytecodes = computeNumberOfBytecodes(program);
+  long numberOfBytecodes = computeNumberOfBytecodes(functionSpec_.address);
   long tableSize = sizeof(TR::BytecodeBuilder *) * numberOfBytecodes;
   bytecodeBuilderTable = (TR::BytecodeBuilder **)malloc(tableSize);
   if (NULL == bytecodeBuilderTable) {
@@ -259,13 +253,13 @@ bool MethodBuilder::inlineProgramIntoBuilder(
   }
   memset(bytecodeBuilderTable, 0, tableSize);
 
-  long i = METHOD_FIRST_BC_OFFSET;
+  long i = 0;
   while (i < numberOfBytecodes) {
-    ByteCode bc = getByteCodeFromInstruction(program[i]);
+    ByteCode bc = Instructions::getByteCode(program[i]);
     createBuilderForBytecode(bytecodeBuilderTable, bc, i);
     i += 1;
   }
-  TR::BytecodeBuilder *builder = bytecodeBuilderTable[METHOD_FIRST_BC_OFFSET];
+  TR::BytecodeBuilder *builder = bytecodeBuilderTable[0];
 
   if (isTopLevel) {
     AppendBuilder(builder);
@@ -276,34 +270,32 @@ bool MethodBuilder::inlineProgramIntoBuilder(
   if (isTopLevel) {
     // only initialize locals if top level, inlines will be stored into from
     // parent.
-    if (context->passParameters) {
-      int argsCount = progArgCount(*program);
-      int tempCount = progTmpCount(*program);
-      for (int i = argsCount; i < argsCount + tempCount; i++) {
-        storeVarIndex(builder, i,
-                      builder->ConstInt64(0));  // init all temps to zero
+    if (config_.callStyle == CallStyle::passParameter) {
+      int argsCount = functionSpec_.nargs;
+      int regsCount = functionSpec_.nregs;
+      for (int i = argsCount; i < argsCount + regsCount; i++) {
+        storeVarIndex(builder, i, builder->ConstInt64(0));  // init all temps to zero
       }
     } else {
       // arguments are &sp[-number_of_args]
       // temps are pushes onto the stack to &sp[number_of_temps]
       TR::IlValue *sp =
-          builder->LoadIndirect("executionContextType", "stackPointer",
-                                builder->ConstAddress(context));
+          builder->LoadIndirect("stack", "stackPointer", builder->ConstAddress(stack_));
       TR::IlValue *args =
           builder->IndexAt(stackElementPointerType, sp,
-                           builder->ConstInt32(0 - progArgCount(*program)));
+                           builder->ConstInt32(0 - functionSpec_.nargs));
       builder->Store("returnSP", args);
       TR::IlValue *newSP =
           builder->IndexAt(stackElementPointerType, sp,
-                           builder->ConstInt32(progTmpCount(*program)));
-      builder->StoreIndirect("executionContextType", "stackPointer",
-                             builder->ConstAddress(context), newSP);
+                           builder->ConstInt32(functionSpec_.nregs));
+      builder->StoreIndirect("stackType", "stackPointer",
+                             builder->ConstAddress(stack_), newSP);
     }
   }
 
-  i = METHOD_FIRST_BC_OFFSET;
+  i = 0;
   while (i < numberOfBytecodes) {
-    Instruction bc = getByteCodeFromInstruction(program[i]);
+    Instruction bc = Instructions::getByteCode(program[i]);
     if (!generateILForBytecode(bytecodeBuilderTable, program, bc, i,
                                jumpToBuilderForInlinedReturn)) {
       success = false;
@@ -382,7 +374,7 @@ bool MethodBuilder::generateILForBytecode(
     TR::BytecodeBuilder *jumpToBuilderForInlinedReturn) {
   TR::BytecodeBuilder *builder = bytecodeBuilderTable[bytecodeIndex];
   Instruction instruction = program[bytecodeIndex];
-  assert(bytecode == getByteCodeFromInstruction(instruction));
+  // assert(bytecode == Instructions::getByteCode(instruction));
 
   if (NULL == builder) {
     printf("unexpected NULL BytecodeBuilder!\n");

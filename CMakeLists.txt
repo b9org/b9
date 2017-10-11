@@ -6,7 +6,7 @@ find_program(NODE_EXECUTABLE
 
 list(APPEND CMAKE_MODULE_PATH
 	cmake/Modules
-	${CMAKE_CURRENT_LIST_DIR}/omr/cmake/modules/
+	${CMAKE_CURRENT_LIST_DIR}/third_party/omr/cmake/modules/
 )
 
 project(base9
@@ -38,12 +38,6 @@ set(OMR_WARNINGS_AS_ERRORS OFF CACHE INTERNAL "OMR doesn't compile cleanly on my
 
 add_library(b9interface INTERFACE)
 
-target_include_directories(b9interface
-	INTERFACE
-		include
-		${CMAKE_CURRENT_BINARY_DIR}/include
-)
-
 add_custom_target(programs)
 
 function(add_b9_program program)
@@ -70,16 +64,10 @@ endfunction(add_b9_program)
 
 # Subdirectories
 
-add_subdirectory(omr)
-
-add_subdirectory(googletest)
-
 add_subdirectory(b9)
 
 add_subdirectory(b9run)
 
-add_subdirectory(b9test)
+add_subdirectory(test)
 
-add_subdirectory(js_programs)
-
-# add_subdirectory(js_compiler)
+add_subdirectory(third_party)

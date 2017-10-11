@@ -4,6 +4,7 @@
 #include <b9/core.hpp>
 #include <cstdint>
 #include <vector>
+#include <stdexcept>
 
 namespace b9 {
 
@@ -22,11 +23,25 @@ struct FunctionSpec {
   std::string name;
 };
 
+/// Function not found exception.
+struct FunctionNotFoundException : public std::runtime_error {
+  using std::runtime_error::runtime_error;
+};
+
 /// An interpreter module.
 struct Module {
   std::vector<FunctionSpec> functions;
   std::vector<PrimitiveFunction*> primitives;
   std::vector<const char*> strings;
+
+  std::size_t findFunction(const std::string& name) const {
+    for (std::size_t i = 0; i < functions.size(); i++) {
+      if (functions[i].name == name) {
+        return i;
+      }
+    }
+    throw FunctionNotFoundException{name};
+  }
 };
 
 }  // namespace b9

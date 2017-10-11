@@ -95,6 +95,7 @@ class VirtualMachine {
   /// Load a module into the VM.
   void load(std::shared_ptr<const Module> module);
   StackElement run(const std::size_t index);
+  StackElement run(const std::string& name);
 
   // private
   const FunctionSpec *getFunction(std::size_t index);

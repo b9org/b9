@@ -11,14 +11,24 @@ namespace b9 {
 
 class FunctionSpec;
 class JitConfig;
+class Stack;
 
 class MethodBuilder : public TR::MethodBuilder {
  public:
-  MethodBuilder(VirtualMachine *virtualMachine, TR::TypeDictionary *types, const JitConfig & config, const FunctionSpec & functionSpec, const Stack *stack);
+  MethodBuilder(VirtualMachine *virtualMachine, TR::TypeDictionary *types, const JitConfig & config, const FunctionSpec & functionSpec, Stack *stack);
 
   virtual bool buildIL();
 
- protected:
+ private:
+  VirtualMachine *virtualMachine_;
+  TR::TypeDictionary *types_;
+  const JitConfig & config_;
+  const FunctionSpec & functionSpec_;
+  Stack *stack_;
+  int32_t topLevelProgramIndex;
+  int32_t maxInlineDepth;
+  int32_t firstArgumentIndex;
+
   TR::IlType *stackType;
   TR::IlType *stackPointerType;
   TR::IlType *stackElementType;
@@ -27,15 +37,6 @@ class MethodBuilder : public TR::MethodBuilder {
   TR::IlType *int32PointerType;
   TR::IlType *int16PointerType;
 
- private:
-  VirtualMachine *virtualMachine_;
-  TR::TypeDictionary *types_;
-  const JitConfig & config_;
-  const FunctionSpec & functionSpec_;
-  int32_t topLevelProgramIndex;
-  int32_t maxInlineDepth;
-  int32_t firstArgumentIndex;
-
   void defineFunctions();
   void defineLocals(std::size_t nargs);
   void defineParameters(std::size_t nargs);
@@ -43,8 +44,8 @@ class MethodBuilder : public TR::MethodBuilder {
   void createBuilderForBytecode(TR::BytecodeBuilder **bytecodeBuilderTable,
                                 ByteCode bytecode, int64_t bytecodeIndex);
   bool generateILForBytecode(
-      TR::BytecodeBuilder **bytecodeBuilderTable, Instruction *program,
-      uint8_t bytecode, long bytecodeIndex,
+      TR::BytecodeBuilder **bytecodeBuilderTable, const Instruction *program,
+      ByteCode bytecode, long bytecodeIndex,
       TR::BytecodeBuilder *jumpToBuilderForInlinedReturn);
 
   bool inlineProgramIntoBuilder(

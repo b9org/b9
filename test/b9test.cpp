@@ -141,3 +141,4 @@ TEST_F(InterpreterTest, test_while) {
 } // namespace test
 } // namespace b9
 
+#endif

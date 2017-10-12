@@ -1,8 +1,20 @@
+function true_f() {
+    return 1
+}
+
 function test_return_true() {
-    return 1;
+    return true_f();
+}
+
+function false_f() {
+    return 0;
 }
 
 function test_return_false() {
+    var a = false_f();
+    if (a == 0) {
+        return 1;
+    }
     return 0;
 }
 

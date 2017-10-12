@@ -123,6 +123,7 @@ bool VirtualMachine::initialize() {
     if (!initializeJit()) {
       return false;
     }
+    compiler_ = new Compiler(this, cfg_.jitConfig);
   }
 
   return true;
@@ -130,6 +131,7 @@ bool VirtualMachine::initialize() {
 
 bool VirtualMachine::shutdown() {
   if (cfg_.jitEnabled) {
+    delete(compiler_);
     shutdownJit();
   }
   return true;
@@ -340,7 +342,7 @@ std::size_t VirtualMachine::getFunctionCount() {
 void VirtualMachine::generateAllCode() {
   std::size_t i = 0;
   for (auto &functionSpec : module_->functions) {
-    auto func = compiler_.generateCode(functionSpec);
+    auto func = compiler_->generateCode(functionSpec);
     compiledFunctions_[i] = func;
   }
 }

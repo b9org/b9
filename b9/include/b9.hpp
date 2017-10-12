@@ -87,7 +87,7 @@ private:
 class VirtualMachine {
  public:
   VirtualMachine(const VirtualMachineConfig &cfg)
-      : cfg_{cfg}, executionContext_{this}, compiler_{this, cfg_.jitConfig} {}
+      : cfg_{cfg}, executionContext_{this}, compiler_{nullptr} {}
 
   bool initialize();
   bool shutdown();
@@ -113,7 +113,7 @@ class VirtualMachine {
  private:
   VirtualMachineConfig cfg_;
   ExecutionContext executionContext_;
-  Compiler compiler_;
+  Compiler *compiler_;
   std::shared_ptr<const Module> module_;
 
   std::vector<void *> compiledFunctions_;

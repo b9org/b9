@@ -97,7 +97,6 @@ class VirtualMachine {
   StackElement run(const std::size_t index);
   StackElement run(const std::string& name);
 
-  // private
   const FunctionSpec *getFunction(std::size_t index);
   PrimitiveFunction *getPrimitive(std::size_t index);
 
@@ -113,7 +112,7 @@ class VirtualMachine {
  private:
   VirtualMachineConfig cfg_;
   ExecutionContext executionContext_;
-  Compiler *compiler_;
+  std::shared_ptr<Compiler> compiler_;
   std::shared_ptr<const Module> module_;
 
   std::vector<void *> compiledFunctions_;

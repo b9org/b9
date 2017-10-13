@@ -44,7 +44,7 @@ void bc_primitive(VirtualMachine *context, Parameter value);
 // typedef StackElement (*Interpret) (ExecutionContext* context, Instruction*
 // program);
 
-typedef StackElement (*Interpret) (ExecutionContext* context, Instruction* program);
+typedef StackElement (*Interpret) (ExecutionContext* context, const Instruction* program);
 
 // define C callable Interpret API for each arg call
 // if args are passed to the function, they are not passed

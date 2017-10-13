@@ -119,19 +119,31 @@ void ExecutionContext::intSub() {
 
 bool VirtualMachine::initialize() {
 
+  if (cfg_.verbose)
+    std::cout << "VM initializing...\n";
+
   if (cfg_.jitEnabled) {
-    if (!initializeJit()) {
-      return false;
+    if (initializeJit()) {
+      compiler_ = std::make_shared<Compiler>(this, cfg_.jitConfig);
+      if (cfg_.verbose)
+        std::cout << "JIT successfully initialized\n";
+      return true;
     }
-    compiler_ = new Compiler(this, cfg_.jitConfig);
+
+    if (cfg_.verbose)
+      std::cout << "JIT failed to initialize\n";
+    return false;
   }
 
   return true;
 }
 
 bool VirtualMachine::shutdown() {
+
+  if (cfg_.verbose)
+    std::cout << "VM shutting down...\n";
+
   if (cfg_.jitEnabled) {
-    delete(compiler_);
     shutdownJit();
   }
   return true;
@@ -170,49 +182,6 @@ StackElement interpret_3(ExecutionContext *context, Instruction *program,
 #endif  // 0
 
 StackElement ExecutionContext::interpret(const FunctionSpec *function) {
-#if 0
-  uint64_t *address = (uint64_t *)(&program[1]);
-  if (*address) {
-    StackElement result = 0;
-    if (virtualMachine_->cfg_- {
-      int argsCount = progArgCount(*program);
-      switch (argsCount) {
-        case 0: {
-          JIT_0_args jitedcode = (JIT_0_args)*address;
-          result = (*jitedcode)();
-        } break;
-        case 1: {
-          JIT_1_args jitedcode = (JIT_1_args)*address;
-          StackElement p1 = pop();
-          result = (*jitedcode)(p1);
-        } break;
-        case 2: {
-          JIT_2_args jitedcode = (JIT_2_args)*address;
-          StackElement p2 = pop();
-          StackElement p1 = pop();
-          result = (*jitedcode)(p1, p2);
-        } break;
-        case 3: {
-          JIT_3_args jitedcode = (JIT_3_args)*address;
-          StackElement p3 = pop();
-          StackElement p2 = pop();
-          StackElement p1 = pop();
-          result = (*jitedcode)(p1, p2, p3);
-        } break;
-        default:
-          printf("Need to add handlers for more parameters\n");
-          break;
-      }
-    } else {
-      // Call the Jit'ed function, passing the parameters on the
-      // ExecutionContext stack.
-      Interpret jitedcode = (Interpret)*address;
-      result = (*jitedcode)(this, program);
-    }
-    return result;
-  }
-#endif
-
   // printf("Prog Arg Count %d, tmp count %d\n", nargs, tmps);
 
   const Instruction *instructionPointer = function->address;
@@ -303,7 +272,7 @@ void setJitAddressSlot(Instruction *p, uint64_t value) {
 }
 
 void *VirtualMachine::getJitAddress(std::size_t functionIndex) {
-  return compiledFunctions_[functionIndex];
+  return compiledFunctions_.size() >= functionIndex ? compiledFunctions_[functionIndex] : nullptr;
 }
 
 void VirtualMachine::setJitAddress(std::size_t functionIndex, void* value) {
@@ -357,22 +326,69 @@ StackElement VirtualMachine::run(const std::string& name) {
 }
 
 StackElement VirtualMachine::run(const std::size_t functionIndex) {
+
+  auto function = getFunction(functionIndex);
+  auto argsCount = function->nargs;
+
+  if (cfg_.verbose)
+    std::cout << "function: " << functionIndex << " nargs: " << argsCount
+              << std::endl;
+
+  // invoke jitted method if it is available
+  uint64_t *address = (uint64_t *)(getJitAddress(functionIndex));
+  if (address && *address) {
+    StackElement result = 0;
+    if (cfg_.jitConfig.callStyle == CallStyle::passParameter) {
+      switch (argsCount) {
+        case 0: {
+          JIT_0_args jitedcode = (JIT_0_args)*address;
+          result = (*jitedcode)();
+        } break;
+        case 1: {
+          JIT_1_args jitedcode = (JIT_1_args)*address;
+          StackElement p1 = executionContext_.pop();
+          result = (*jitedcode)(p1);
+        } break;
+        case 2: {
+          JIT_2_args jitedcode = (JIT_2_args)*address;
+          StackElement p2 = executionContext_.pop();
+          StackElement p1 = executionContext_.pop();
+          result = (*jitedcode)(p1, p2);
+        } break;
+        case 3: {
+          JIT_3_args jitedcode = (JIT_3_args)*address;
+          StackElement p3 = executionContext_.pop();
+          StackElement p2 = executionContext_.pop();
+          StackElement p1 = executionContext_.pop();
+          result = (*jitedcode)(p1, p2, p3);
+        } break;
+        default:
+          printf("Need to add handlers for more parameters\n");
+          break;
+      }
+    } else {
+      // Call the Jit'ed function, passing the parameters on the
+      // ExecutionContext stack.
+      // TODO: should call vm.run here?
+      Interpret jitedcode = (Interpret)*address;
+      result = (*jitedcode)(&executionContext_, function->address);
+    }
+    return result;
+  }
+
+  std::cout << "interpreting...\n" << std::endl;
+
+  // interpret the method otherwise
   executionContext_.reset();
 
   /* Push random arguments to send to the program */
-  auto f = &module_->functions[functionIndex];
-
-  if (cfg_.verbose)
-    std::cout << "function: " << functionIndex << " nargs: " << f->nargs
-              << std::endl;
-
-  for (std::size_t i = 0; i < f->nargs; i++) {
+  for (std::size_t i = 0; i < argsCount; i++) {
     int arg = 100 - (i * 10);
     std::cout << "Pushing arg[" << i << "] = " << arg << std::endl;
     executionContext_.push(arg);
   }
 
-  StackElement result = executionContext_.interpret(f);
+  StackElement result = executionContext_.interpret(function);
 
   executionContext_.reset();
 

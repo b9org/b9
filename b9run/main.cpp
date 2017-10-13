@@ -113,8 +113,18 @@ static void run(const RunConfig& cfg) {
   vm.load(module);
   
   size_t functionIndex = module->findFunction(cfg.mainFunction);
-  for (std::size_t i = 0; i < cfg.loopCount; i++) {
-    vm.run(functionIndex);
+  
+  if (cfg.loopCount == 1) {
+    b9::StackElement returnVal = vm.run(functionIndex);
+    std::cout << cfg.mainFunction << " returned: " << returnVal << std::endl;
+  }
+  else {
+    b9::StackElement returnVal;
+    std::cout << "Running " << cfg.mainFunction << " " << cfg.loopCount << " times:" << std::endl;
+    for (std::size_t i = 1; i <= cfg.loopCount; i++) {
+      returnVal = vm.run(functionIndex);
+      std::cout << "Return value of iteration " << i << ": " << returnVal << std::endl;
+    }
   }
 }
 

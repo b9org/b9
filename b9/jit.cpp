@@ -22,6 +22,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <vector>
 
 namespace b9 {
 
@@ -231,26 +232,16 @@ bool MethodBuilder::inlineProgramIntoBuilder(
   maxInlineDepth--;
   const Instruction *program = functionSpec_.address;
 
-  TR::BytecodeBuilder **bytecodeBuilderTable = nullptr;
-  long numberOfBytecodes = computeNumberOfBytecodes(functionSpec_.address);
-  long tableSize = sizeof(TR::BytecodeBuilder *) * numberOfBytecodes;
-  bytecodeBuilderTable = (TR::BytecodeBuilder **)malloc(tableSize);
-  if (NULL == bytecodeBuilderTable) {
-    maxInlineDepth++;
-    return false;
-  }
-  memset(bytecodeBuilderTable, 0, tableSize);
-
   // Create a BytecodeBuilder for each Bytecode
+  long numberOfBytecodes = computeNumberOfBytecodes(functionSpec_.address);
+  std::vector<TR::BytecodeBuilder *> builderTable (numberOfBytecodes);
   for (int i = 0; i < numberOfBytecodes; i++) {
-    TR::BytecodeBuilder *newBuilder = OrphanBytecodeBuilder(i);
-    bytecodeBuilderTable[i] = newBuilder;
+    builderTable.push_back(OrphanBytecodeBuilder(i));
   }
 
   // Get the first Builder
-  TR::BytecodeBuilder *builder = bytecodeBuilderTable[0];
+  TR::BytecodeBuilder *builder = builderTable[0];
 
-  // If we are inlining
   if (isTopLevel) {
     AppendBuilder(builder);
   } else {
@@ -286,19 +277,19 @@ bool MethodBuilder::inlineProgramIntoBuilder(
   // Create a BytecodeBuilder for each Bytecode
   for (int i = 0; i < numberOfBytecodes; i++) {
     ByteCode bc = Instructions::getByteCode(program[i]);
-    if (!generateILForBytecode(bytecodeBuilderTable, program, bc, i,
+    if (!generateILForBytecode(builderTable, program, bc, i,
           jumpToBuilderForInlinedReturn)) {
       success = false;
       break;
     }
   }
 
-  free((void *)bytecodeBuilderTable);
   maxInlineDepth++;
   return success;
 }
 
 bool MethodBuilder::buildIL() {
+
   if (config_.operandStack) {
     this->Store("stack", this->ConstAddress(stack_));
     OMR::VirtualMachineRegisterInStruct *stackTop =
@@ -312,6 +303,7 @@ bool MethodBuilder::buildIL() {
   } else {
     setVMState(new OMR::VirtualMachineState());
   }
+
   return inlineProgramIntoBuilder(topLevelProgramIndex, true);
 }
 
@@ -360,7 +352,8 @@ void MethodBuilder::storeVarIndex(TR::BytecodeBuilder *builder, int varindex,
 }
 
 bool MethodBuilder::generateILForBytecode(
-    TR::BytecodeBuilder **bytecodeBuilderTable, const Instruction *program,
+    std::vector<TR::BytecodeBuilder *> bytecodeBuilderTable,
+    const Instruction *program,
     ByteCode bytecode, long bytecodeIndex,
     TR::BytecodeBuilder *jumpToBuilderForInlinedReturn) {
   TR::BytecodeBuilder *builder = bytecodeBuilderTable[bytecodeIndex];

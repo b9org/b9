@@ -7,6 +7,8 @@
 #include "ilgen/MethodBuilder.hpp"
 #include "ilgen/TypeDictionary.hpp"
 
+#include <vector>
+
 namespace b9 {
 
 class FunctionSpec;
@@ -44,7 +46,8 @@ class MethodBuilder : public TR::MethodBuilder {
   void createBuilderForBytecode(TR::BytecodeBuilder **bytecodeBuilderTable,
                                 ByteCode bytecode, int64_t bytecodeIndex);
   bool generateILForBytecode(
-      TR::BytecodeBuilder **bytecodeBuilderTable, const Instruction *program,
+      std::vector<TR::BytecodeBuilder *> bytecodeBuilderTable,
+      const Instruction *program,
       ByteCode bytecode, long bytecodeIndex,
       TR::BytecodeBuilder *jumpToBuilderForInlinedReturn);
 

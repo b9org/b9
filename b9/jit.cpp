@@ -400,7 +400,7 @@ bool MethodBuilder::generateILForBytecode(
   // }
 
   switch (bytecode) {
-    // case ByteCode::PUSH_FROM_VAR:
+    case ByteCode::PUSH_FROM_VAR:
     //   push(builder,
     //        loadVarIndex(builder, getParameterFromInstruction(instruction)));
     //   if (nextBytecodeBuilder)
@@ -425,62 +425,66 @@ bool MethodBuilder::generateILForBytecode(
     //     builder->Return(result);
     //   }
     // } break;
-    // case ByteCode::DROP:
+    case ByteCode::DROP:
     //   drop(builder);
     //   if (nextBytecodeBuilder)
     //     builder->AddFallThroughBuilder(nextBytecodeBuilder);
     //   break;
-    // case ByteCode::JMP:
+    case ByteCode::JMP:
     //   handle_bc_jmp(builder, bytecodeBuilderTable, program, bytecodeIndex);
     //   break;
-    // case ByteCode::INT_JMP_EQ:
+    case ByteCode::INT_JMP_EQ:
     //   handle_bc_jmp_eq(builder, bytecodeBuilderTable, program, bytecodeIndex,
     //                    nextBytecodeBuilder);
     //   break;
-    // case ByteCode::INT_JMP_NEQ:
+    case ByteCode::INT_JMP_NEQ:
     //   handle_bc_jmp_neq(builder, bytecodeBuilderTable, program, bytecodeIndex,
     //                     nextBytecodeBuilder);
     //   break;
-    // case ByteCode::INT_JMP_LT:
+    case ByteCode::INT_JMP_LT:
     //   handle_bc_jmp_lt(builder, bytecodeBuilderTable, program, bytecodeIndex,
     //                    nextBytecodeBuilder);
     //   break;
-    // case ByteCode::INT_JMP_LE:
+    case ByteCode::INT_JMP_LE:
     //   handle_bc_jmp_le(builder, bytecodeBuilderTable, program, bytecodeIndex,
     //                    nextBytecodeBuilder);
     //   break;
-    // case ByteCode::INT_JMP_GT:
+    case ByteCode::INT_JMP_GT:
     //   handle_bc_jmp_gt(builder, bytecodeBuilderTable, program, bytecodeIndex,
     //                    nextBytecodeBuilder);
     //   break;
-    // case ByteCode::INT_JMP_GE:
+    case ByteCode::INT_JMP_GE:
     //   handle_bc_jmp_ge(builder, bytecodeBuilderTable, program, bytecodeIndex,
     //                    nextBytecodeBuilder);
     //   break;
-    // case ByteCode::INT_SUB:
+    case ByteCode::INT_SUB:
     //   handle_bc_sub(builder, nextBytecodeBuilder);
     //   break;
-    // case ByteCode::INT_ADD:
+    case ByteCode::INT_ADD:
     //   handle_bc_add(builder, nextBytecodeBuilder);
     //   break;
-    // case ByteCode::INT_PUSH_CONSTANT: {
+    case ByteCode::INT_PUSH_CONSTANT:
+    // {
     //   int constvalue = getParameterFromInstruction(instruction);
     //   push(builder, builder->ConstInt64(constvalue));
     //   if (nextBytecodeBuilder)
     //     builder->AddFallThroughBuilder(nextBytecodeBuilder);
     // } break;
-    // case ByteCode::STR_PUSH_CONSTANT: {
+    case ByteCode::STR_PUSH_CONSTANT:
+    // {
     //         int index = getParameterFromInstruction(instruction);
     //         push(builder,
     //         builder->ConstAddress(&context->stringTable[index]));
     //         builder->AddFallThroughBuilder(nextBytecodeBuilder);
     //       } break;
-    // case ByteCode::PRIMITIVE_CALL: {
+    case ByteCode::PRIMITIVE_CALL:
+    // {
     //      int index = getParameterFromInstruction(instruction);
     //      push(builder,  builder->ConstAddress(&context->stringTable[index]));
     //      builder->AddFallThroughBuilder(nextBytecodeBuilder);
     //    } break;
-    // case ByteCode::FUNCTION_CALL: {
+    case ByteCode::FUNCTION_CALL:
+    // {
     //   int callindex = getParameterFromInstruction(instruction);
     //   Instruction *tocall = context->functions[callindex].program;
     //   if (context->directCall) {

@@ -22,4 +22,9 @@ add_test(
 	COMMAND env B9_TEST_MODULE=$<TARGET_FILE:interpreter_test> $<TARGET_FILE:b9test>
 )
 
+add_test(
+	NAME run_hello_relative
+	COMMAND b9run $<TARGET_FILE_NAME:hello>
+	WORKING_DIRECTORY $<TARGET_FILE_DIR:hello>
+)
 

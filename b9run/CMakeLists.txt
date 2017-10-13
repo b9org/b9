@@ -4,8 +4,7 @@ add_executable(b9run
 
 target_link_libraries(b9run b9)
 
-set_target_properties(b9run
-	PROPERTIES
-		INSTALL_RPATH .
+add_custom_command(TARGET b9run POST_BUILD
+	COMMAND ${CMAKE_INSTALL_NAME_TOOL} -add_rpath "./" $<TARGET_FILE:b9run>
 )
 

@@ -135,10 +135,6 @@ int main(int argc, char* argv[]) {
     exit(EXIT_FAILURE);
   }
 
-  if (cfg.verbose) {
-    std::cout << cfg << std::endl;
-  }
-
   try {
     run(cfg);
   } catch (const b9::DlException& e) {

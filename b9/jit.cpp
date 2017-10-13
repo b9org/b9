@@ -215,14 +215,6 @@ void MethodBuilder::defineFunctions() {
 #define QRELOAD_DROP(b, toDrop) \
   if (config.operandStack) QSTACK(builder)->Drop(builder, toDrop);
 
-void MethodBuilder::createBuilderForBytecode(
-    TR::BytecodeBuilder **bytecodeBuilderTable, ByteCode bytecode,
-    int64_t bytecodeIndex) {
-  TR::BytecodeBuilder *newBuilder =
-      OrphanBytecodeBuilder(bytecodeIndex);
-  bytecodeBuilderTable[bytecodeIndex] = newBuilder;
-}
-
 long computeNumberOfBytecodes(const Instruction *program) {
   long result = 0;
   while (*program != NO_MORE_BYTECODES) {
@@ -249,14 +241,16 @@ bool MethodBuilder::inlineProgramIntoBuilder(
   }
   memset(bytecodeBuilderTable, 0, tableSize);
 
-  long i = 0;
-  while (i < numberOfBytecodes) {
-    ByteCode bc = Instructions::getByteCode(program[i]);
-    createBuilderForBytecode(bytecodeBuilderTable, bc, i);
-    i += 1;
+  // Create a BytecodeBuilder for each Bytecode
+  for (int i = 0; i < numberOfBytecodes; i++) {
+    TR::BytecodeBuilder *newBuilder = OrphanBytecodeBuilder(i);
+    bytecodeBuilderTable[i] = newBuilder;
   }
+
+  // Get the first Builder
   TR::BytecodeBuilder *builder = bytecodeBuilderTable[0];
 
+  // If we are inlining
   if (isTopLevel) {
     AppendBuilder(builder);
   } else {
@@ -289,16 +283,16 @@ bool MethodBuilder::inlineProgramIntoBuilder(
     }
   }
 
-  i = 0;
-  while (i < numberOfBytecodes) {
+  // Create a BytecodeBuilder for each Bytecode
+  for (int i = 0; i < numberOfBytecodes; i++) {
     ByteCode bc = Instructions::getByteCode(program[i]);
     if (!generateILForBytecode(bytecodeBuilderTable, program, bc, i,
-                               jumpToBuilderForInlinedReturn)) {
+          jumpToBuilderForInlinedReturn)) {
       success = false;
       break;
     }
-    i += 1;
   }
+
   free((void *)bytecodeBuilderTable);
   maxInlineDepth++;
   return success;

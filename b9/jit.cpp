@@ -114,14 +114,13 @@ MethodBuilder::MethodBuilder(VirtualMachine *virtualMachine, TR::TypeDictionary 
 
   stackElementType = types->template toIlType<StackElement>();
   stackElementPointerType = types->PointerTo(stackElementType);
-
-  DefineReturnType(stackElementType);
-
   int64PointerType = types->PointerTo(Int64);
   int32PointerType = types->PointerTo(Int32);
   int16PointerType = types->PointerTo(Int16);
   stackType = types->LookupStruct("Stack");
   stackPointerType = types->PointerTo(stackType);
+
+  DefineReturnType(stackElementType);
 
   defineParameters(functionSpec.nargs);
 
@@ -220,11 +219,7 @@ void MethodBuilder::createBuilderForBytecode(
     TR::BytecodeBuilder **bytecodeBuilderTable, ByteCode bytecode,
     int64_t bytecodeIndex) {
   TR::BytecodeBuilder *newBuilder =
-      // OrphanBytecodeBuilder(bytecodeIndex, (char *)b9ByteCodeName(bytecode));
       OrphanBytecodeBuilder(bytecodeIndex);
-  // printf("Created bytecodebuilder index=%d bc=%d param=%d %p\n",
-  // bytecodeIndex, bytecode,
-  // getParameterFromInstruction(program[bytecodeIndex]), newBuilder);
   bytecodeBuilderTable[bytecodeIndex] = newBuilder;
 }
 

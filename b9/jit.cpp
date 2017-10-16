@@ -64,11 +64,10 @@ class VirtualMachineState : public OMR::VirtualMachineState {
   OMR::VirtualMachineRegister *_stackTop;
 };
 
-Compiler::Compiler (VirtualMachine *virtualMachine, const JitConfig & jitConfig)
+Compiler::Compiler(VirtualMachine *virtualMachine, const JitConfig & jitConfig)
 : virtualMachine_(virtualMachine),
   jitConfig_(jitConfig)
 {
-
   auto stackElementType = types_.toIlType<StackElement>();
   auto stackElementPointerType = types_.PointerTo(stackElementType);
 
@@ -118,6 +117,7 @@ MethodBuilder::MethodBuilder(VirtualMachine *virtualMachine, TR::TypeDictionary 
   int64PointerType = types->PointerTo(Int64);
   int32PointerType = types->PointerTo(Int32);
   int16PointerType = types->PointerTo(Int16);
+
   stackType = types->LookupStruct("Stack");
   stackPointerType = types->PointerTo(stackType);
 

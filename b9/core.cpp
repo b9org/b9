@@ -401,7 +401,7 @@ StackElement VirtualMachine::run(const std::size_t functionIndex) {
 
 extern "C" void b9_prim_print_number(ExecutionContext *context) {
   StackElement number = context->pop();
-  std::cout << number;
+  std::cout << number << " ";
   context->push(0);
 }
 

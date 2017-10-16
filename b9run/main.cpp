@@ -31,6 +31,7 @@ struct RunConfig {
   const char* mainFunction = "b9main";
   std::size_t loopCount = 1;
   bool verbose = false;
+  std::vector<int> usrArgs;
 };
 
 /// Print the configuration summary.
@@ -75,6 +76,8 @@ static bool parseArguments(RunConfig& cfg, const int argc, char* argv[]) {
       } else if (strcmp("operandstack", callStyle) == 0) {
         cfg.vm.jitConfig.callStyle = b9::CallStyle::operandStack;
       }
+    } else if (strcmp(arg, "-function") == 0) {
+      cfg.mainFunction=argv[++i];
     } else if (strcmp(arg, "--") == 0) {
       i++;
       break;
@@ -86,13 +89,17 @@ static bool parseArguments(RunConfig& cfg, const int argc, char* argv[]) {
     }
   }
 
-  // positional
-
+  // check for user defined module
   if (i < argc) {
     cfg.moduleName = argv[i++];
   } else {
     std::cerr << "No module name given to b9run" << std::endl;
     return false;
+  }
+  
+  // check for user defined arguments
+  for (; i < argc; i++) {
+    cfg.usrArgs.push_back(std::atoi(argv[i]));
   }
 
   return true;
@@ -112,7 +119,6 @@ static void run(const RunConfig& cfg) {
   vm.load(module);
 
   size_t functionIndex = module->findFunction(cfg.mainFunction);
-
   if (cfg.loopCount == 1) {
     b9::StackElement returnVal = vm.run(functionIndex);
     std::cout << cfg.mainFunction << " returned: " << returnVal << std::endl;

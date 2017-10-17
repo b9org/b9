@@ -118,7 +118,6 @@ void ExecutionContext::intSub() {
 /// ExecutionContext
 
 bool VirtualMachine::initialize() {
-
   if (cfg_.jitEnabled) {
     if (!initializeJit()) {
       return false;
@@ -131,7 +130,7 @@ bool VirtualMachine::initialize() {
 
 bool VirtualMachine::shutdown() {
   if (cfg_.jitEnabled) {
-    delete(compiler_);
+    delete (compiler_);
     shutdownJit();
   }
   return true;
@@ -306,7 +305,7 @@ void *VirtualMachine::getJitAddress(std::size_t functionIndex) {
   return compiledFunctions_[functionIndex];
 }
 
-void VirtualMachine::setJitAddress(std::size_t functionIndex, void* value) {
+void VirtualMachine::setJitAddress(std::size_t functionIndex, void *value) {
   compiledFunctions_[functionIndex] = value;
 }
 
@@ -352,7 +351,7 @@ void ExecutionContext::reset() {
   programCounter_ = 0;
 }
 
-StackElement VirtualMachine::run(const std::string& name) {
+StackElement VirtualMachine::run(const std::string &name) {
   return run(module_->findFunction(name));
 }
 

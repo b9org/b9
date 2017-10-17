@@ -11,18 +11,16 @@ namespace b9 {
 namespace test {
 
 class InterpreterTestEnvironment : public ::testing::Environment {
-  public:
-    static const char* moduleName;
+ public:
+  static const char* moduleName;
 
-    virtual void SetUp() {
-      moduleName = getenv("B9_TEST_MODULE");
-    }
+  virtual void SetUp() { moduleName = getenv("B9_TEST_MODULE"); }
 };
 
 const char* InterpreterTestEnvironment::moduleName{nullptr};
 
 class InterpreterTest : public ::testing::TestWithParam<const char*> {
-public:
+ public:
   static std::shared_ptr<Module> module_;
   VirtualMachine virtualMachine_{{}};
 
@@ -31,16 +29,14 @@ public:
     module_ = loader.loadModule(InterpreterTestEnvironment::moduleName);
   }
 
-  virtual void SetUp() {
-    virtualMachine_.load(module_);
-  }
+  virtual void SetUp() { virtualMachine_.load(module_); }
 };
 
 std::shared_ptr<Module> InterpreterTest::module_{nullptr};
 
-TEST_P(InterpreterTest, run) {
-  EXPECT_TRUE(virtualMachine_.run(GetParam()));
-}
+TEST_P(InterpreterTest, run) { EXPECT_TRUE(virtualMachine_.run(GetParam())); }
+
+// clang-format off
 
 INSTANTIATE_TEST_CASE_P(InterpreterTestSuite, InterpreterTest,
   ::testing::Values(
@@ -68,12 +64,13 @@ INSTANTIATE_TEST_CASE_P(InterpreterTestSuite, InterpreterTest,
     "test_while"
 ));
 
-} // namespace test
-} // namespace b9
+// clang-format on
+
+}  // namespace test
+}  // namespace b9
 
 extern "C" int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   AddGlobalTestEnvironment(new b9::test::InterpreterTestEnvironment{});
   return RUN_ALL_TESTS();
 }
-

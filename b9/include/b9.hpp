@@ -75,10 +75,10 @@ class ExecutionContext {
   // private
   Stack stackFields = {stack_, stack_};
 
-private:
+ private:
   StackElement stack_[1000];
-  StackElement* &stackBase_ = stackFields.stackBase;
-  StackElement* &stackPointer_ = stackFields.stackPointer;
+  StackElement *&stackBase_ = stackFields.stackBase;
+  StackElement *&stackPointer_ = stackFields.stackPointer;
   Instruction *programCounter_ = 0;
   StackElement *stackEnd_ = &stack_[1000];
   VirtualMachine *virtualMachine_;
@@ -95,14 +95,14 @@ class VirtualMachine {
   /// Load a module into the VM.
   void load(std::shared_ptr<const Module> module);
   StackElement run(const std::size_t index);
-  StackElement run(const std::string& name);
+  StackElement run(const std::string &name);
 
   // private
   const FunctionSpec *getFunction(std::size_t index);
   PrimitiveFunction *getPrimitive(std::size_t index);
 
   void *getJitAddress(std::size_t functionIndex);
-  void setJitAddress(std::size_t functionIndex, void* value);
+  void setJitAddress(std::size_t functionIndex, void *value);
 
   std::size_t getFunctionCount();
   void generateCode(int32_t functionIndex);
@@ -119,6 +119,6 @@ class VirtualMachine {
   std::vector<void *> compiledFunctions_;
 };
 
-} // namespace b9
+}  // namespace b9
 
-#endif // B9_HPP_
+#endif  // B9_HPP_

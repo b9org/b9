@@ -12,6 +12,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
+#include <sstream>
+#include <string>
 
 namespace b9 {
 
@@ -351,23 +353,35 @@ void ExecutionContext::reset() {
   programCounter_ = 0;
 }
 
-StackElement VirtualMachine::run(const std::string &name) {
-  return run(module_->findFunction(name));
+StackElement VirtualMachine::run(const std::string &name,
+                                 const std::vector<StackElement> &usrArgs) {
+  return run(module_->findFunction(name), usrArgs);
 }
 
-StackElement VirtualMachine::run(const std::size_t functionIndex) {
+StackElement VirtualMachine::run(const std::size_t functionIndex,
+                                 const std::vector<StackElement> &usrArgs) {
   executionContext_.reset();
 
-  /* Push random arguments to send to the program */
   auto f = &module_->functions[functionIndex];
 
+  if (f->nargs != usrArgs.size()) {
+    std::stringstream ss;
+    ss << f->name << " - Got " << usrArgs.size() << " arguments, expected "
+       << f->nargs;
+    std::string message = ss.str();
+    throw BadFunctionCallException{message};
+  }
+
+  // get/dispay function name and num arguments
   if (cfg_.verbose)
     std::cout << "function: " << functionIndex << " nargs: " << f->nargs
               << std::endl;
 
+  // push user defined arguments to send to the program
   for (std::size_t i = 0; i < f->nargs; i++) {
-    int arg = 100 - (i * 10);
-    std::cout << "Pushing arg[" << i << "] = " << arg << std::endl;
+    auto idx = f->nargs - i - 1;
+    auto arg = usrArgs[idx];
+    std::cout << "Pushing arg[" << idx << "] = " << arg << std::endl;
     executionContext_.push(arg);
   }
 

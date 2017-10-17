@@ -64,8 +64,8 @@ class VirtualMachineState : public OMR::VirtualMachineState {
   OMR::VirtualMachineRegister *_stackTop;
 };
 
-Compiler::Compiler(VirtualMachine *virtualMachine, const JitConfig &jitConfig)
-    : virtualMachine_(virtualMachine), jitConfig_(jitConfig) {
+Compiler::Compiler(VirtualMachine *virtualMachine, const Config &cfg)
+    : virtualMachine_(virtualMachine), cfg_(cfg) {
   auto stackElementType = types_.toIlType<StackElement>();
   auto stackElementPointerType = types_.PointerTo(stackElementType);
 
@@ -81,8 +81,8 @@ Compiler::Compiler(VirtualMachine *virtualMachine, const JitConfig &jitConfig)
 uint8_t *Compiler::generateCode(const FunctionSpec &functionSpec) {
   // TODO get the stack
   Stack *stack = nullptr;
-  MethodBuilder methodBuilder(virtualMachine_, &types_, jitConfig_,
-                              functionSpec, stack);
+  MethodBuilder methodBuilder(virtualMachine_, &types_, cfg_, functionSpec,
+                              stack);
   uint8_t *entry = nullptr;
   int rc = compileMethodBuilder(&methodBuilder, &entry);
   if (rc != 0) {
@@ -94,15 +94,15 @@ uint8_t *Compiler::generateCode(const FunctionSpec &functionSpec) {
 }
 
 MethodBuilder::MethodBuilder(VirtualMachine *virtualMachine,
-                             TR::TypeDictionary *types, const JitConfig &config,
+                             TR::TypeDictionary *types, const Config &cfg,
                              const FunctionSpec &functionSpec, Stack *stack)
     : TR::MethodBuilder(types),
       virtualMachine_(virtualMachine),
       types_(types),
-      config_(config),
+      cfg_(cfg),
       functionSpec_(functionSpec),
       stack_(stack),
-      maxInlineDepth(config.maxInlineDepth),
+      maxInlineDepth(cfg.maxInlineDepth),
       firstArgumentIndex(0) {
   DefineLine(LINETOSTR(__LINE__));
   DefineFile(__FILE__);
@@ -123,7 +123,7 @@ MethodBuilder::MethodBuilder(VirtualMachine *virtualMachine,
 
   defineParameters(functionSpec.nargs);
 
-  if (config.operandStack) {
+  if (cfg.lazyVmState) {
     // hack for topLevel
     DefineLocal("stack", stackType);
   }
@@ -145,7 +145,7 @@ static const char *argsAndTempNames[] = {
   sizeof(argsAndTempNames) / sizeof(argsAndTempNames[0])
 
 void MethodBuilder::defineParameters(std::size_t argCount) {
-  if (config_.callStyle == CallStyle::passParameter) {
+  if (cfg_.passParam) {
     for (int i = 0; i < argCount; i++) {
       DefineParameter(argsAndTempNames[i], stackElementType);
     }
@@ -153,7 +153,7 @@ void MethodBuilder::defineParameters(std::size_t argCount) {
 }
 
 void MethodBuilder::defineLocals(std::size_t argCount) {
-  if (config_.callStyle == CallStyle::passParameter) {
+  if (cfg_.passParam) {
     // for locals we pre-define all the locals we could use, for the toplevel
     // and all the inlined names which are simply referenced via a skew to reach
     // past callers functions args/temps
@@ -251,7 +251,7 @@ bool MethodBuilder::inlineProgramIntoBuilder(
   if (isTopLevel) {
     // only initialize locals if top level, inlines will be stored into from
     // parent.
-    if (config_.callStyle == CallStyle::passParameter) {
+    if (cfg_.passParam) {
       int argsCount = functionSpec_.nargs;
       int regsCount = functionSpec_.nregs;
       for (int i = argsCount; i < argsCount + regsCount; i++) {
@@ -290,7 +290,7 @@ bool MethodBuilder::inlineProgramIntoBuilder(
 }
 
 bool MethodBuilder::buildIL() {
-  if (config_.operandStack) {
+  if (cfg_.lazyVmState) {
     this->Store("stack", this->ConstAddress(stack_));
     OMR::VirtualMachineRegisterInStruct *stackTop =
         new OMR::VirtualMachineRegisterInStruct(this, "stackType", "stack",
@@ -318,7 +318,7 @@ TR::IlValue *MethodBuilder::loadVarIndex(TR::BytecodeBuilder *builder,
     varindex += firstArgumentIndex;
   }
 
-  if (config_.callStyle == CallStyle::passParameter) {
+  if (cfg_.passParam) {
     return builder->Load(argsAndTempNames[varindex]);
   } else {
     TR::IlValue *args = builder->Load("returnSP");
@@ -339,7 +339,7 @@ void MethodBuilder::storeVarIndex(TR::BytecodeBuilder *builder, int varindex,
     // }
     varindex += firstArgumentIndex;
   }
-  if (config_.callStyle == CallStyle::passParameter) {
+  if (cfg_.passParam) {
     builder->Store(argsAndTempNames[varindex], value);
     return;
   } else {

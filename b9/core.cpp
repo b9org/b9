@@ -2,6 +2,7 @@
 
 #include <b9/core.hpp>
 #include <b9/hash.hpp>
+#include <b9/jit.hpp>
 #include <b9/loader.hpp>
 
 #include "Jit.hpp"
@@ -120,18 +121,18 @@ void ExecutionContext::intSub() {
 /// ExecutionContext
 
 bool VirtualMachine::initialize() {
-  if (cfg_.jitEnabled) {
+  if (cfg_.jit) {
     if (!initializeJit()) {
       return false;
     }
-    compiler_ = new Compiler(this, cfg_.jitConfig);
+    compiler_ = new Compiler(this, cfg_);
   }
 
   return true;
 }
 
 bool VirtualMachine::shutdown() {
-  if (cfg_.jitEnabled) {
+  if (cfg_.jit) {
     delete (compiler_);
     shutdownJit();
   }

@@ -2,9 +2,7 @@
 #define B9_HPP_
 
 #include <b9/bytecodes.hpp>
-#include <b9/callstyle.hpp>
 #include <b9/core.hpp>
-#include <b9/jit.hpp>
 #include <b9/module.hpp>
 
 #include <cstring>
@@ -16,19 +14,16 @@
 
 namespace b9 {
 
-struct JitConfig {
-  CallStyle callStyle = CallStyle::interpreter;
-  std::size_t maxInlineDepth = 0;
-  bool operandStack = true;
-  bool verbose = false;
-  bool debug = false;
-};
+class Compiler;
 
-struct VirtualMachineConfig {
-  JitConfig jitConfig;
-  bool jitEnabled;
-  bool debug = false;
-  bool verbose = false;
+struct Config {
+  std::size_t maxInlineDepth = 1;
+  bool jit = false;          //< Enable the JIT
+  bool directCall = false;   //< Enable direct JIT to JIT calls
+  bool passParam = false;    //< Pass arguments in CPU registers
+  bool lazyVmState = false;  //< Simulate the VM state
+  bool debug = false;        //< Enable debug code
+  bool verbose = false;      //< Enable verbose printing and tracing
 };
 
 class VirtualMachine;
@@ -91,7 +86,7 @@ class ExecutionContext {
 
 class VirtualMachine {
  public:
-  VirtualMachine(const VirtualMachineConfig &cfg)
+  VirtualMachine(const Config &cfg)
       : cfg_{cfg}, executionContext_{this}, compiler_{nullptr} {}
 
   bool initialize();
@@ -118,7 +113,7 @@ class VirtualMachine {
   const char *getString(int index);
 
  private:
-  VirtualMachineConfig cfg_;
+  Config cfg_;
   ExecutionContext executionContext_;
   Compiler *compiler_;
   std::shared_ptr<const Module> module_;

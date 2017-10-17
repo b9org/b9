@@ -12,13 +12,12 @@
 namespace b9 {
 
 class FunctionSpec;
-class JitConfig;
 class Stack;
 
 class MethodBuilder : public TR::MethodBuilder {
  public:
   MethodBuilder(VirtualMachine *virtualMachine, TR::TypeDictionary *types,
-                const JitConfig &config, const FunctionSpec &functionSpec,
+                const Config &config, const FunctionSpec &functionSpec,
                 Stack *stack);
 
   virtual bool buildIL();
@@ -26,7 +25,7 @@ class MethodBuilder : public TR::MethodBuilder {
  private:
   VirtualMachine *virtualMachine_;
   TR::TypeDictionary *types_;
-  const JitConfig &config_;
+  const Config &cfg_;
   const FunctionSpec &functionSpec_;
   Stack *stack_;
   int32_t topLevelProgramIndex;
@@ -112,13 +111,13 @@ class MethodBuilder : public TR::MethodBuilder {
 
 class Compiler {
  public:
-  Compiler(VirtualMachine *virtualMachine, const JitConfig &jitConfig);
+  Compiler(VirtualMachine *virtualMachine, const Config &cfg);
   uint8_t *generateCode(const FunctionSpec &functionSpec);
 
  private:
   TR::TypeDictionary types_;
   VirtualMachine *virtualMachine_;
-  const JitConfig &jitConfig_;
+  const Config &cfg_;
 };
 
 }  // namespace b9

@@ -9,39 +9,27 @@
 static const char* usage =
     "Usage: b9run [<option>...] [--] <module> [<main>]\n"
     "   Or: b9run -help\n"
-    "Options:\n"
-    "  -callstyle <style>: Set the calling style. One of:\n"
-    "      interpreter:   Calls are made through the interpreter\n"
-    "      direct:        Calls are made directly, but parameters are on the "
-    "operand stack\n"
-    "      passparameter: Direct calls, with parameters passed in CPU "
-    "registers\n"
-    "      operandstack:  Like passparam, but will keep the VM operand stack "
-    "updated\n"
-    "  -loop <n>:   Run the program <n> times\n"
-    "  -inline <n>: Enable inlining\n"
-    "  -debug:      Enable debug code\n"
-    "  -verbose:    Run with verbose printing\n"
-    "  -help:       Print this help message";
+    "Jit Options:\n"
+    "  -jit:         Enable the jit\n"
+    "  -directcall:  make direct jit to jit calls\n"
+    "  -passparam:   Pass arguments in CPU registers\n"
+    "  -lazyvmstate: Only update the VM state as needed\n"
+    "Run Options:\n"
+    "  -loop <n>:    Run the program <n> times\n"
+    "  -inline <n>:  Enable inlining\n"
+    "  -debug:       Enable debug code\n"
+    "  -verbose:     Run with verbose printing\n"
+    "  -help:        Print this help message";
 
 /// The b9run program's global configuration.
 struct RunConfig {
-  b9::VirtualMachineConfig vm;
+  b9::Config b9;
   const char* moduleName = "";
   const char* mainFunction = "b9main";
   std::size_t loopCount = 1;
   bool verbose = false;
   std::vector<b9::StackElement> usrArgs;
 };
-
-/// Print the configuration summary.
-std::ostream& operator<<(std::ostream& out, const RunConfig& cfg) {
-  return out << "Loading:      " << cfg.moduleName << std::endl
-             << "Executing:    " << cfg.mainFunction << std::endl
-             << "Call Style:   " << cfg.vm.jitConfig.callStyle << std::endl
-             << "Looping:      " << cfg.loopCount << " times" << std::endl
-             << "Inline depth: " << cfg.vm.jitConfig.maxInlineDepth;
-}
 
 /// Parse CLI arguments and set up the config.
 static bool parseArguments(RunConfig& cfg, const int argc, char* argv[]) {
@@ -56,28 +44,22 @@ static bool parseArguments(RunConfig& cfg, const int argc, char* argv[]) {
     } else if (strcmp(arg, "-loop") == 0) {
       cfg.loopCount = atoi(argv[++i]);
     } else if (strcmp(arg, "-inline") == 0) {
-      cfg.vm.jitConfig.maxInlineDepth = atoi(argv[++i]);
+      cfg.b9.maxInlineDepth = atoi(argv[++i]);
     } else if (strcmp(arg, "-verbose") == 0) {
       cfg.verbose = true;
-      cfg.vm.verbose = true;
-      cfg.vm.jitConfig.verbose = true;
+      cfg.b9.verbose = true;
     } else if (strcmp(arg, "-debug") == 0) {
-      cfg.vm.debug = true;
-      cfg.vm.jitConfig.debug = true;
-    } else if (strcmp(arg, "-callstyle") == 0) {
-      i += 1;
-      auto callStyle = argv[i];
-      if (strcmp("interpreter", callStyle) == 0) {
-        cfg.vm.jitConfig.callStyle = b9::CallStyle::interpreter;
-      } else if (strcmp("direct", callStyle) == 0) {
-        cfg.vm.jitConfig.callStyle = b9::CallStyle::direct;
-      } else if (strcmp("passparameter", callStyle) == 0) {
-        cfg.vm.jitConfig.callStyle = b9::CallStyle::passParameter;
-      } else if (strcmp("operandstack", callStyle) == 0) {
-        cfg.vm.jitConfig.callStyle = b9::CallStyle::operandStack;
-      }
+      cfg.b9.debug = true;
     } else if (strcmp(arg, "-function") == 0) {
       cfg.mainFunction = argv[++i];
+    } else if (strcmp(arg, "-jit") == 0) {
+      cfg.b9.jit = true;
+    } else if (strcmp(arg, "-directcall") == 0) {
+      cfg.b9.directCall = true;
+    } else if (strcmp(arg, "-passparam") == 0) {
+      cfg.b9.passParam = true;
+    } else if (strcmp(arg, "-lazyvmstate") == 0) {
+      cfg.b9.lazyVmState = true;
     } else if (strcmp(arg, "--") == 0) {
       i++;
       break;
@@ -106,7 +88,7 @@ static bool parseArguments(RunConfig& cfg, const int argc, char* argv[]) {
 }
 
 static void run(const RunConfig& cfg) {
-  b9::VirtualMachine vm{cfg.vm};
+  b9::VirtualMachine vm{cfg.b9};
   vm.initialize();
 
   b9::DlLoader loader{true};

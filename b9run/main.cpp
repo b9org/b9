@@ -31,7 +31,7 @@ struct RunConfig {
   const char* mainFunction = "b9main";
   std::size_t loopCount = 1;
   bool verbose = false;
-  std::vector<int> usrArgs;
+  std::vector<b9::StackElement> usrArgs;
 };
 
 /// Print the configuration summary.
@@ -77,7 +77,7 @@ static bool parseArguments(RunConfig& cfg, const int argc, char* argv[]) {
         cfg.vm.jitConfig.callStyle = b9::CallStyle::operandStack;
       }
     } else if (strcmp(arg, "-function") == 0) {
-      cfg.mainFunction=argv[++i];
+      cfg.mainFunction = argv[++i];
     } else if (strcmp(arg, "--") == 0) {
       i++;
       break;
@@ -96,7 +96,7 @@ static bool parseArguments(RunConfig& cfg, const int argc, char* argv[]) {
     std::cerr << "No module name given to b9run" << std::endl;
     return false;
   }
-  
+
   // check for user defined arguments
   for (; i < argc; i++) {
     cfg.usrArgs.push_back(std::atoi(argv[i]));
@@ -120,14 +120,14 @@ static void run(const RunConfig& cfg) {
 
   size_t functionIndex = module->findFunction(cfg.mainFunction);
   if (cfg.loopCount == 1) {
-    b9::StackElement returnVal = vm.run(functionIndex);
+    b9::StackElement returnVal = vm.run(functionIndex, cfg.usrArgs);
     std::cout << cfg.mainFunction << " returned: " << returnVal << std::endl;
   } else {
     b9::StackElement returnVal;
     std::cout << "Running " << cfg.mainFunction << " " << cfg.loopCount
               << " times:" << std::endl;
     for (std::size_t i = 1; i <= cfg.loopCount; i++) {
-      returnVal = vm.run(functionIndex);
+      returnVal = vm.run(functionIndex, cfg.usrArgs);
       std::cout << "Return value of iteration " << i << ": " << returnVal
                 << std::endl;
     }
@@ -149,6 +149,9 @@ int main(int argc, char* argv[]) {
     exit(EXIT_FAILURE);
   } catch (const b9::FunctionNotFoundException& e) {
     std::cerr << "Failed to find function: " << e.what() << std::endl;
+    exit(EXIT_FAILURE);
+  } catch (const b9::BadFunctionCallException& e) {
+    std::cerr << "Failed to call function " << e.what() << std::endl;
     exit(EXIT_FAILURE);
   }
 

@@ -12,6 +12,7 @@
 #include <memory>
 #include <ostream>
 #include <string>
+#include <vector>
 
 namespace b9 {
 
@@ -31,6 +32,10 @@ struct VirtualMachineConfig {
 };
 
 class VirtualMachine;
+
+struct BadFunctionCallException : public std::runtime_error {
+  using std::runtime_error::runtime_error;
+};
 
 struct Stack {
   StackElement *stackBase;
@@ -94,8 +99,10 @@ class VirtualMachine {
 
   /// Load a module into the VM.
   void load(std::shared_ptr<const Module> module);
-  StackElement run(const std::size_t index);
-  StackElement run(const std::string &name);
+  StackElement run(const std::size_t index,
+                   const std::vector<StackElement> &usrArgs);
+  StackElement run(const std::string &name,
+                   const std::vector<StackElement> &usrArgs);
 
   // private
   const FunctionSpec *getFunction(std::size_t index);

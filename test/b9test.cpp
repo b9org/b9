@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/time.h>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -34,7 +35,10 @@ class InterpreterTest : public ::testing::TestWithParam<const char*> {
 
 std::shared_ptr<Module> InterpreterTest::module_{nullptr};
 
-TEST_P(InterpreterTest, run) { EXPECT_TRUE(virtualMachine_.run(GetParam())); }
+TEST_P(InterpreterTest, run) {
+  std::vector<StackElement> v;
+  EXPECT_TRUE(virtualMachine_.run(GetParam(), v));
+}
 
 // clang-format off
 
@@ -65,6 +69,21 @@ INSTANTIATE_TEST_CASE_P(InterpreterTestSuite, InterpreterTest,
 ));
 
 // clang-format on
+
+TEST(MyTest, arguments) {
+  b9::VirtualMachine vm{{}};
+  auto m = std::make_shared<Module>();
+  Instruction i[] = {
+      Instructions::create(ByteCode::PUSH_FROM_VAR, 0),  //  I:0 S:0 variable a
+      Instructions::create(ByteCode::PUSH_FROM_VAR, 1),  //  I:0 S:0 variable a
+      Instructions::create(ByteCode::INT_ADD, 0),        //  I:14 S:2
+      Instructions::create(ByteCode::FUNCTION_RETURN, 0),
+      Instructions::create(ByteCodes::fromByte(NO_MORE_BYTECODES), 0)};
+  m->functions.push_back(b9::FunctionSpec{"add_args", i, 2, 0});
+  vm.load(m);
+  auto r = vm.run("add_args", {1, 2});
+  EXPECT_EQ(r, 3);
+}
 
 }  // namespace test
 }  // namespace b9

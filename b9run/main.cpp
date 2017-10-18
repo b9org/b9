@@ -27,7 +27,7 @@ static const char* usage =
 /// The b9run program's global configuration.
 struct RunConfig {
   b9::VirtualMachineConfig vm;
-  const char* moduleName = "program.so";
+  const char* moduleName = "";
   const char* mainFunction = "b9main";
   std::size_t loopCount = 1;
   bool verbose = false;
@@ -90,10 +90,9 @@ static bool parseArguments(RunConfig& cfg, const int argc, char* argv[]) {
 
   if (i < argc) {
     cfg.moduleName = argv[i++];
-
-    if (i < argc) {
-      cfg.mainFunction = argv[i++];
-    }
+  } else {
+    std::cerr << "No module name given to b9run" << std::endl;
+    return false;
   }
 
   return true;
@@ -133,6 +132,7 @@ int main(int argc, char* argv[]) {
   RunConfig cfg;
 
   if (!parseArguments(cfg, argc, argv)) {
+    std::cerr << usage << std::endl;
     exit(EXIT_FAILURE);
   }
 

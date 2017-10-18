@@ -34,33 +34,36 @@ set(OMR_GC         ON CACHE INTERNAL "We don't use the GC in b9 (yet)")
 set(OMR_FVTEST     OFF CACHE INTERNAL "Disable OMR's internal test suite, it's incompatible with b9")
 set(OMR_WARNINGS_AS_ERRORS OFF CACHE INTERNAL "OMR doesn't compile cleanly on my laptop :p")
 
-# B9 basic configuration library
-
-add_library(b9interface INTERFACE)
-
-add_custom_target(programs)
-
-function(add_b9_program program)
+# Compile a b9-js *.src to C++
+function(add_b9_src src)
 	add_custom_command(
 		OUTPUT
-			"${program}.cpp"
+			"${src}.cpp"
 		COMMAND
 			${NODE_EXECUTABLE} "${CMAKE_SOURCE_DIR}/js_compiler/compile.js"
-			"${CMAKE_CURRENT_SOURCE_DIR}/${program}.src"
-			>"${program}.cpp"
+			"${CMAKE_CURRENT_SOURCE_DIR}/${src}.src"
+			>"${src}.cpp"
 		DEPENDS
 			"${CMAKE_SOURCE_DIR}/js_compiler/compile.js"
-			"${CMAKE_CURRENT_SOURCE_DIR}/${program}.src"
+			"${CMAKE_CURRENT_SOURCE_DIR}/${src}.src"
 	)
+endfunction(add_b9_src)
 
-	add_library("${program}" SHARED "${program}.cpp")
-	target_link_libraries("${program}" b9)
-	add_dependencies(programs "${program}")
+# Compile a b9-js *.src file to a module DLL
+function(add_b9_module module)
+	add_b9_src(${module})
+	add_library(${module} SHARED "${module}.cpp")
+	target_link_libraries("${module}" b9)
+endfunction(add_b9_module)
+
+# Add a b9 test program written in b9-js
+function(add_b9_test test)
+	add_b9_module("${test}")
 	add_test(
-		NAME "run_${program}"
-		COMMAND b9run $<TARGET_FILE:${program}>
+		NAME "run_${test}"
+		COMMAND b9run $<TARGET_FILE:${test}>
 	)
-endfunction(add_b9_program)
+endfunction(add_b9_test)
 
 # Subdirectories
 

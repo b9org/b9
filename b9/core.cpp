@@ -312,7 +312,7 @@ void VirtualMachine::generateAllCode() {
   std::size_t i = 0;
   for (auto &functionSpec : module_->functions) {
     auto func = compiler_->generateCode(functionSpec);
-    compiledFunctions_[i] = func;
+    setJitAddress(i, func);
   }
 }
 
@@ -334,29 +334,36 @@ StackElement VirtualMachine::run(const std::size_t functionIndex) {
     std::cout << "function: " << functionIndex << " nargs: " << argsCount
               << std::endl;
 
-  // invoke jitted method if it is available
-  uint64_t *address = (uint64_t *)(getJitAddress(functionIndex));
-  if (address && *address) {
+  auto address = getJitAddress(functionIndex);
+  if (cfg_.jitEnabled && address == nullptr)
+    {
+      address = compiler_->generateCode(*function);
+      setJitAddress(functionIndex, address);
+    }
+
+  if (address) {
+    if (cfg_.debug)
+      std::cout << "Calling JIT address at " << address << std::endl;
     StackElement result = 0;
     if (cfg_.jitConfig.callStyle == CallStyle::passParameter) {
       switch (argsCount) {
         case 0: {
-          JIT_0_args jitedcode = (JIT_0_args)*address;
+          JIT_0_args jitedcode = (JIT_0_args)address;
           result = (*jitedcode)();
         } break;
         case 1: {
-          JIT_1_args jitedcode = (JIT_1_args)*address;
+          JIT_1_args jitedcode = (JIT_1_args)address;
           StackElement p1 = executionContext_.pop();
           result = (*jitedcode)(p1);
         } break;
         case 2: {
-          JIT_2_args jitedcode = (JIT_2_args)*address;
+          JIT_2_args jitedcode = (JIT_2_args)address;
           StackElement p2 = executionContext_.pop();
           StackElement p1 = executionContext_.pop();
           result = (*jitedcode)(p1, p2);
         } break;
         case 3: {
-          JIT_3_args jitedcode = (JIT_3_args)*address;
+          JIT_3_args jitedcode = (JIT_3_args)address;
           StackElement p3 = executionContext_.pop();
           StackElement p2 = executionContext_.pop();
           StackElement p1 = executionContext_.pop();
@@ -370,13 +377,13 @@ StackElement VirtualMachine::run(const std::size_t functionIndex) {
       // Call the Jit'ed function, passing the parameters on the
       // ExecutionContext stack.
       // TODO: should call vm.run here?
-      Interpret jitedcode = (Interpret)*address;
+      Interpret jitedcode = (Interpret)address;
       result = (*jitedcode)(&executionContext_, function->address);
     }
     return result;
   }
 
-  std::cout << "interpreting...\n" << std::endl;
+  std::cout << "Interpreting...\n" << std::endl;
 
   // interpret the method otherwise
   executionContext_.reset();

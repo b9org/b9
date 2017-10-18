@@ -27,7 +27,6 @@ class MethodBuilder : public TR::MethodBuilder {
   const JitConfig & config_;
   const FunctionSpec & functionSpec_;
   Stack *stack_;
-  int32_t topLevelProgramIndex;
   int32_t maxInlineDepth;
   int32_t firstArgumentIndex;
 
@@ -35,6 +34,7 @@ class MethodBuilder : public TR::MethodBuilder {
   TR::IlType *stackPointerType;
   TR::IlType *stackElementType;
   TR::IlType *stackElementPointerType;
+
   TR::IlType *int64PointerType;
   TR::IlType *int32PointerType;
   TR::IlType *int16PointerType;
@@ -52,8 +52,7 @@ class MethodBuilder : public TR::MethodBuilder {
       TR::BytecodeBuilder *jumpToBuilderForInlinedReturn);
 
   bool inlineProgramIntoBuilder(
-      int32_t programIndex, bool isTopLevel,
-      TR::BytecodeBuilder *currentBuilder = 0,
+      bool isTopLevel, TR::BytecodeBuilder *currentBuilder = 0,
       TR::BytecodeBuilder *jumpToBuilderForInlinedReturn = 0);
 
   TR::IlValue *pop(TR::BytecodeBuilder *builder);
@@ -81,31 +80,31 @@ class MethodBuilder : public TR::MethodBuilder {
   void handle_bc_call(TR::BytecodeBuilder *builder,
                       TR::BytecodeBuilder *nextBuilder);
   void handle_bc_jmp(TR::BytecodeBuilder *builder,
-                     TR::BytecodeBuilder **bytecodeBuilderTable,
-                     Instruction *program, long bytecodeIndex);
+                     std::vector<TR::BytecodeBuilder *> bytecodeBuilderTable,
+                     const Instruction *program, long bytecodeIndex);
   void handle_bc_jmp_eq(TR::BytecodeBuilder *builder,
-                        TR::BytecodeBuilder **bytecodeBuilderTable,
-                        Instruction *program, long bytecodeIndex,
+                        std::vector<TR::BytecodeBuilder *> bytecodeBuilderTable,
+                        const Instruction *program, long bytecodeIndex,
                         TR::BytecodeBuilder *nextBuilder);
   void handle_bc_jmp_neq(TR::BytecodeBuilder *builder,
-                         TR::BytecodeBuilder **bytecodeBuilderTable,
-                         Instruction *program, long bytecodeIndex,
+                         std::vector<TR::BytecodeBuilder *> bytecodeBuilderTable,
+                         const Instruction *program, long bytecodeIndex,
                          TR::BytecodeBuilder *nextBuilder);
   void handle_bc_jmp_lt(TR::BytecodeBuilder *builder,
-                        TR::BytecodeBuilder **bytecodeBuilderTable,
-                        Instruction *program, long bytecodeIndex,
+                        std::vector<TR::BytecodeBuilder *> bytecodeBuilderTable,
+                        const Instruction *program, long bytecodeIndex,
                         TR::BytecodeBuilder *nextBuilder);
   void handle_bc_jmp_le(TR::BytecodeBuilder *builder,
-                        TR::BytecodeBuilder **bytecodeBuilderTable,
-                        Instruction *program, long bytecodeIndex,
+                        std::vector<TR::BytecodeBuilder *> bytecodeBuilderTable,
+                        const Instruction *program, long bytecodeIndex,
                         TR::BytecodeBuilder *nextBuilder);
   void handle_bc_jmp_gt(TR::BytecodeBuilder *builder,
-                        TR::BytecodeBuilder **bytecodeBuilderTable,
-                        Instruction *program, long bytecodeIndex,
+                        std::vector<TR::BytecodeBuilder *> bytecodeBuilderTable,
+                        const Instruction *program, long bytecodeIndex,
                         TR::BytecodeBuilder *nextBuilder);
   void handle_bc_jmp_ge(TR::BytecodeBuilder *builder,
-                        TR::BytecodeBuilder **bytecodeBuilderTable,
-                        Instruction *program, long bytecodeIndex,
+                        std::vector<TR::BytecodeBuilder *> bytecodeBuilderTable,
+                        const Instruction *program, long bytecodeIndex,
                         TR::BytecodeBuilder *nextBuilder);
 };
 

@@ -39,7 +39,7 @@ std::ostream& operator<<(std::ostream& out, const RunConfig& cfg) {
              << "Executing:    " << cfg.mainFunction << std::endl
              << "Call Style:   " << cfg.vm.jitConfig.callStyle << std::endl
              << "Looping:      " << cfg.loopCount << " times" << std::endl
-             << "Inline depth: " << cfg.vm.jitConfig.maxInlineDepth;
+             << "Inline depth: " << cfg.vm.jitConfig.maxInlineDepth << std::endl;
 }
 
 /// Parse CLI arguments and set up the config.
@@ -114,24 +114,9 @@ static void run(const RunConfig& cfg) {
   
   size_t functionIndex = module->findFunction(cfg.mainFunction);
 
-  // interpret first
-  if (cfg.verbose) {
-    std::cout << std::endl << "Step #1: Interpreting " << cfg.mainFunction  << std::endl;
-  }
   for (std::size_t i = 0; i < cfg.loopCount; i++) {
     vm.run(functionIndex);
   }
-
-#if JIT_ENABLED
-  // compile methods with jit compiler and run next
-  if (cfg.verbose) {
-    std::cout << std::endl << "Step #2: Jitting " << cfg.mainFunction  << std::endl;
-  }
-  vm.generateAllCode();
-  for (std::size_t i = 0; i < cfg.loopCount; i++) {
-    vm.run(functionIndex);
-  }
-#endif
 }
 
 int main(int argc, char* argv[]) {

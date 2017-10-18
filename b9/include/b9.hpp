@@ -25,7 +25,7 @@ struct JitConfig {
 
 struct VirtualMachineConfig {
   JitConfig jitConfig;
-  bool jitEnabled;
+  bool jitEnabled = true;
   bool debug = false;
   bool verbose = false;
 };
@@ -72,6 +72,8 @@ class ExecutionContext {
   // Reset the stack and other internal data
   void reset();
 
+  Stack *stack() { return &stackFields; }
+
   // private
   Stack stackFields = {stack_, stack_};
 
@@ -108,6 +110,8 @@ class VirtualMachine {
   void generateAllCode();
 
   const char *getString(int index);
+
+  ExecutionContext *executionContext() { return &executionContext_; }
 
  private:
   VirtualMachineConfig cfg_;

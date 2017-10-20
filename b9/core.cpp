@@ -387,9 +387,6 @@ StackElement VirtualMachine::run(const std::size_t functionIndex,
 
   std::cout << "Interpreting...\n" << std::endl;
 
-  // interpret the method otherwise
-  executionContext_.reset();
-
   StackElement result = executionContext_.interpret(function);
 
   executionContext_.reset();

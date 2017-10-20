@@ -17,15 +17,17 @@ class Stack;
 
 class MethodBuilder : public TR::MethodBuilder {
  public:
-  MethodBuilder(VirtualMachine *virtualMachine, TR::TypeDictionary *types, const JitConfig & config, const FunctionSpec & functionSpec, Stack *stack);
+  MethodBuilder(VirtualMachine *virtualMachine, TR::TypeDictionary *types,
+                const JitConfig &config, const FunctionSpec &functionSpec,
+                Stack *stack);
 
   virtual bool buildIL();
 
  private:
   VirtualMachine *virtualMachine_;
   TR::TypeDictionary *types_;
-  const JitConfig & config_;
-  const FunctionSpec & functionSpec_;
+  const JitConfig &config_;
+  const FunctionSpec &functionSpec_;
   Stack *stack_;
   int32_t maxInlineDepth;
   int32_t firstArgumentIndex;
@@ -47,8 +49,7 @@ class MethodBuilder : public TR::MethodBuilder {
                                 ByteCode bytecode, int64_t bytecodeIndex);
   bool generateILForBytecode(
       std::vector<TR::BytecodeBuilder *> bytecodeBuilderTable,
-      const Instruction *program,
-      ByteCode bytecode, long bytecodeIndex,
+      const Instruction *program, ByteCode bytecode, long bytecodeIndex,
       TR::BytecodeBuilder *jumpToBuilderForInlinedReturn);
 
   bool inlineProgramIntoBuilder(
@@ -86,10 +87,11 @@ class MethodBuilder : public TR::MethodBuilder {
                         std::vector<TR::BytecodeBuilder *> bytecodeBuilderTable,
                         const Instruction *program, long bytecodeIndex,
                         TR::BytecodeBuilder *nextBuilder);
-  void handle_bc_jmp_neq(TR::BytecodeBuilder *builder,
-                         std::vector<TR::BytecodeBuilder *> bytecodeBuilderTable,
-                         const Instruction *program, long bytecodeIndex,
-                         TR::BytecodeBuilder *nextBuilder);
+  void handle_bc_jmp_neq(
+      TR::BytecodeBuilder *builder,
+      std::vector<TR::BytecodeBuilder *> bytecodeBuilderTable,
+      const Instruction *program, long bytecodeIndex,
+      TR::BytecodeBuilder *nextBuilder);
   void handle_bc_jmp_lt(TR::BytecodeBuilder *builder,
                         std::vector<TR::BytecodeBuilder *> bytecodeBuilderTable,
                         const Instruction *program, long bytecodeIndex,
@@ -109,14 +111,14 @@ class MethodBuilder : public TR::MethodBuilder {
 };
 
 class Compiler {
-public:
-  Compiler (VirtualMachine *virtualMachine, const JitConfig & jitConfig);
-  uint8_t *generateCode(const FunctionSpec & functionSpec);
+ public:
+  Compiler(VirtualMachine *virtualMachine, const JitConfig &jitConfig);
+  uint8_t *generateCode(const FunctionSpec &functionSpec);
 
-private:
+ private:
   TR::TypeDictionary types_;
   VirtualMachine *virtualMachine_;
-  const JitConfig & jitConfig_;
+  const JitConfig &jitConfig_;
 };
 
 }  // namespace b9

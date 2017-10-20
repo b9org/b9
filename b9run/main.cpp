@@ -39,7 +39,8 @@ std::ostream& operator<<(std::ostream& out, const RunConfig& cfg) {
              << "Executing:    " << cfg.mainFunction << std::endl
              << "Call Style:   " << cfg.vm.jitConfig.callStyle << std::endl
              << "Looping:      " << cfg.loopCount << " times" << std::endl
-             << "Inline depth: " << cfg.vm.jitConfig.maxInlineDepth << std::endl;
+             << "Inline depth: " << cfg.vm.jitConfig.maxInlineDepth
+             << std::endl;
 }
 
 /// Parse CLI arguments and set up the config.
@@ -111,7 +112,7 @@ static void run(const RunConfig& cfg) {
   }
 
   vm.load(module);
-  
+
   size_t functionIndex = module->findFunction(cfg.mainFunction);
 
   for (std::size_t i = 0; i < cfg.loopCount; i++) {

@@ -3,8 +3,8 @@
 
 #include <b9/core.hpp>
 #include <cstdint>
-#include <vector>
 #include <stdexcept>
+#include <vector>
 
 namespace b9 {
 
@@ -12,10 +12,7 @@ namespace b9 {
 struct FunctionSpec {
   FunctionSpec(const std::string& name, const Instruction* address,
                std::uint32_t nargs = 0, std::uint32_t nregs = 0)
-      : address{address},
-        nargs{nargs},
-        nregs{nregs},
-        name{name} {}
+      : address{address}, nargs{nargs}, nregs{nregs}, name{name} {}
 
   const Instruction* address;
   std::uint32_t nargs;

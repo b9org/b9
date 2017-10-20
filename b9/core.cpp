@@ -118,20 +118,16 @@ void ExecutionContext::intSub() {
 /// ExecutionContext
 
 bool VirtualMachine::initialize() {
-
-  if (cfg_.verbose)
-    std::cout << "VM initializing...\n";
+  if (cfg_.verbose) std::cout << "VM initializing...\n";
 
   if (cfg_.jitEnabled) {
     if (initializeJit()) {
       compiler_ = std::make_shared<Compiler>(this, cfg_.jitConfig);
-      if (cfg_.verbose)
-        std::cout << "JIT successfully initialized\n";
+      if (cfg_.verbose) std::cout << "JIT successfully initialized\n";
       return true;
     }
 
-    if (cfg_.verbose)
-      std::cout << "JIT failed to initialize\n";
+    if (cfg_.verbose) std::cout << "JIT failed to initialize\n";
     return false;
   }
 
@@ -139,9 +135,7 @@ bool VirtualMachine::initialize() {
 }
 
 bool VirtualMachine::shutdown() {
-
-  if (cfg_.verbose)
-    std::cout << "VM shutting down...\n";
+  if (cfg_.verbose) std::cout << "VM shutting down...\n";
 
   if (cfg_.jitEnabled) {
     shutdownJit();
@@ -272,10 +266,12 @@ void setJitAddressSlot(Instruction *p, uint64_t value) {
 }
 
 void *VirtualMachine::getJitAddress(std::size_t functionIndex) {
-  return compiledFunctions_.size() >= functionIndex ? compiledFunctions_[functionIndex] : nullptr;
+  return compiledFunctions_.size() >= functionIndex
+             ? compiledFunctions_[functionIndex]
+             : nullptr;
 }
 
-void VirtualMachine::setJitAddress(std::size_t functionIndex, void* value) {
+void VirtualMachine::setJitAddress(std::size_t functionIndex, void *value) {
   compiledFunctions_[functionIndex] = value;
 }
 
@@ -321,12 +317,11 @@ void ExecutionContext::reset() {
   programCounter_ = 0;
 }
 
-StackElement VirtualMachine::run(const std::string& name) {
+StackElement VirtualMachine::run(const std::string &name) {
   return run(module_->findFunction(name));
 }
 
 StackElement VirtualMachine::run(const std::size_t functionIndex) {
-
   auto function = getFunction(functionIndex);
   auto argsCount = function->nargs;
 
@@ -335,11 +330,10 @@ StackElement VirtualMachine::run(const std::size_t functionIndex) {
               << std::endl;
 
   auto address = getJitAddress(functionIndex);
-  if (cfg_.jitEnabled && address == nullptr)
-    {
-      address = compiler_->generateCode(*function);
-      setJitAddress(functionIndex, address);
-    }
+  if (cfg_.jitEnabled && address == nullptr) {
+    address = compiler_->generateCode(*function);
+    setJitAddress(functionIndex, address);
+  }
 
   if (address) {
     if (cfg_.debug)

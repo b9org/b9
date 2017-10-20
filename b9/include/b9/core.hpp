@@ -44,7 +44,8 @@ void bc_primitive(VirtualMachine *context, Parameter value);
 // typedef StackElement (*Interpret) (ExecutionContext* context, Instruction*
 // program);
 
-typedef StackElement (*Interpret) (ExecutionContext* context, const Instruction* program);
+typedef StackElement (*Interpret)(ExecutionContext *context,
+                                  const Instruction *program);
 
 // define C callable Interpret API for each arg call
 // if args are passed to the function, they are not passed
@@ -79,14 +80,13 @@ Instruction *getFunctionAddress(ExecutionContext *context,
 StackElement timeFunction(VirtualMachine *virtualMachine, Instruction *function,
                           int loopCount, long *runningTime);
 
-StackElement
-interpret_0(ExecutionContext *context, Instruction *program);
-StackElement
-interpret_1(ExecutionContext *context, Instruction *program, StackElement p1);
-StackElement
-interpret_2(ExecutionContext *context, Instruction *program, StackElement p1, StackElement p2);
-StackElement
-interpret_3(ExecutionContext *context, Instruction *program, StackElement p1, StackElement p2, StackElement p3 );
+StackElement interpret_0(ExecutionContext *context, Instruction *program);
+StackElement interpret_1(ExecutionContext *context, Instruction *program,
+                         StackElement p1);
+StackElement interpret_2(ExecutionContext *context, Instruction *program,
+                         StackElement p1, StackElement p2);
+StackElement interpret_3(ExecutionContext *context, Instruction *program,
+                         StackElement p1, StackElement p2, StackElement p3);
 
 StackElement interpret_0(ExecutionContext *context, Instruction *program);
 StackElement interpret_1(ExecutionContext *context, Instruction *program,

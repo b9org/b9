@@ -154,6 +154,9 @@ int main(int argc, char* argv[]) {
   } catch (const b9::BadFunctionCallException& e) {
     std::cerr << "Failed to call function " << e.what() << std::endl;
     exit(EXIT_FAILURE);
+  } catch (const b9::CompilationException& e) {
+    std::cerr << "Failed to compile function: " << e.what() << std::endl;
+    exit(EXIT_FAILURE);
   }
 
   exit(EXIT_SUCCESS);

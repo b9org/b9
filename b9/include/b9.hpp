@@ -79,7 +79,6 @@ class ExecutionContext {
 
   Stack *stack() { return &stackFields; }
 
-  // private
   Stack stackFields = {stack_, stack_};
 
  private:

@@ -15,7 +15,10 @@ class InterpreterTestEnvironment : public ::testing::Environment {
  public:
   static const char* moduleName;
 
-  virtual void SetUp() { moduleName = getenv("B9_TEST_MODULE"); }
+  virtual void SetUp() {
+    moduleName = getenv("B9_TEST_MODULE");
+    ASSERT_NE(moduleName, nullptr);
+  }
 };
 
 const char* InterpreterTestEnvironment::moduleName{nullptr};
@@ -23,21 +26,48 @@ const char* InterpreterTestEnvironment::moduleName{nullptr};
 class InterpreterTest : public ::testing::TestWithParam<const char*> {
  public:
   static std::shared_ptr<Module> module_;
-  VirtualMachine virtualMachine_{{}};
 
   static void SetUpTestCase() {
-    DlLoader loader{};
-    module_ = loader.loadModule(InterpreterTestEnvironment::moduleName);
+    std::cerr << "**** Loading " << std::endl;
+    module_ = DlLoader{}.loadModule(InterpreterTestEnvironment::moduleName);
   }
 
-  virtual void SetUp() { virtualMachine_.load(module_); }
+  virtual void SetUp() {}
 };
 
 std::shared_ptr<Module> InterpreterTest::module_{nullptr};
 
 TEST_P(InterpreterTest, run) {
-  std::vector<StackElement> v;
-  EXPECT_TRUE(virtualMachine_.run(GetParam(), v));
+  VirtualMachine vm{{}};
+  vm.load(module_);
+  EXPECT_TRUE(vm.run(GetParam(), {}));
+}
+
+TEST_P(InterpreterTest, runJit) {
+  VirtualMachine vm{{.jit = true}};
+  vm.load(module_);
+  EXPECT_TRUE(vm.run(GetParam(), {}));
+}
+
+TEST_P(InterpreterTest, runDirectCall) {
+  VirtualMachine vm{{.jit = true, .directCall = true}};
+  vm.load(module_);
+  EXPECT_TRUE(vm.run(GetParam(), {}));
+}
+
+TEST_P(InterpreterTest, runPassParam) {
+  VirtualMachine vm{{.jit = true, .directCall = true, .passParam = true}};
+  vm.load(module_);
+  EXPECT_TRUE(vm.run(GetParam(), {}));
+}
+
+TEST_P(InterpreterTest, runLazyVmState) {
+  VirtualMachine vm{{.jit = true,
+                     .directCall = true,
+                     .passParam = true,
+                     .lazyVmState = true}};
+  vm.load(module_);
+  EXPECT_TRUE(vm.run(GetParam(), {}));
 }
 
 // clang-format off

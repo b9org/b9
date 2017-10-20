@@ -2,6 +2,7 @@
 
 #include <b9/core.hpp>
 #include <b9/hash.hpp>
+#include <b9/jit.hpp>
 #include <b9/loader.hpp>
 
 #include "Jit.hpp"
@@ -122,9 +123,9 @@ void ExecutionContext::intSub() {
 bool VirtualMachine::initialize() {
   if (cfg_.verbose) std::cout << "VM initializing...\n";
 
-  if (cfg_.jitEnabled) {
+  if (cfg_.jit) {
     if (initializeJit()) {
-      compiler_ = std::make_shared<Compiler>(this, cfg_.jitConfig);
+      compiler_ = std::make_shared<Compiler>(this, cfg_);
       if (cfg_.verbose) std::cout << "JIT successfully initialized\n";
       return true;
     }
@@ -139,7 +140,7 @@ bool VirtualMachine::initialize() {
 bool VirtualMachine::shutdown() {
   if (cfg_.verbose) std::cout << "VM shutting down...\n";
 
-  if (cfg_.jitEnabled) {
+  if (cfg_.jit) {
     shutdownJit();
   }
   return true;
@@ -341,7 +342,7 @@ StackElement VirtualMachine::run(const std::size_t functionIndex,
   }
 
   auto address = getJitAddress(functionIndex);
-  if (cfg_.jitEnabled && address == nullptr) {
+  if (cfg_.jit && address == nullptr) {
     address = compiler_->generateCode(*function);
     setJitAddress(functionIndex, address);
   }
@@ -350,7 +351,7 @@ StackElement VirtualMachine::run(const std::size_t functionIndex,
     if (cfg_.debug)
       std::cout << "Calling JIT address at " << address << std::endl;
     StackElement result = 0;
-    if (cfg_.jitConfig.callStyle == CallStyle::passParameter) {
+    if (cfg_.passParam) {
       switch (argsCount) {
         case 0: {
           JIT_0_args jitedcode = (JIT_0_args)address;

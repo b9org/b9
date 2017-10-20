@@ -64,8 +64,8 @@ class VirtualMachineState : public OMR::VirtualMachineState {
   OMR::VirtualMachineRegister *_stackTop;
 };
 
-Compiler::Compiler(VirtualMachine *virtualMachine, const JitConfig &jitConfig)
-    : virtualMachine_(virtualMachine), jitConfig_(jitConfig) {
+Compiler::Compiler(VirtualMachine *virtualMachine, const Config &cfg)
+    : virtualMachine_(virtualMachine), cfg_(cfg) {
   auto stackElementType = types_.toIlType<StackElement>();
 
   // Stack
@@ -80,9 +80,9 @@ Compiler::Compiler(VirtualMachine *virtualMachine, const JitConfig &jitConfig)
 
 uint8_t *Compiler::generateCode(const FunctionSpec &functionSpec) {
   Stack *stack = virtualMachine_->executionContext()->stack();
-  MethodBuilder methodBuilder(virtualMachine_, &types_, jitConfig_,
+  MethodBuilder methodBuilder(virtualMachine_, &types_, cfg_,
                               functionSpec, stack);
-  if (jitConfig_.debug)
+  if (cfg_.debug)
     std::cout << "MethodBuilder for function: " << functionSpec.name
               << " is constructed" << std::endl;
   uint8_t *entry = nullptr;
@@ -93,7 +93,7 @@ uint8_t *Compiler::generateCode(const FunctionSpec &functionSpec) {
     throw b9::CompilationException{"IL generation failed"};
   }
 
-  if (jitConfig_.debug)
+  if (cfg_.debug)
     std::cout << "Compilation completed with return code: " << rc
               << ", code address: " << entry << std::endl;
 
@@ -101,15 +101,15 @@ uint8_t *Compiler::generateCode(const FunctionSpec &functionSpec) {
 }
 
 MethodBuilder::MethodBuilder(VirtualMachine *virtualMachine,
-                             TR::TypeDictionary *types, const JitConfig &config,
+                             TR::TypeDictionary *types, const Config &cfg,
                              const FunctionSpec &functionSpec, Stack *stack)
     : TR::MethodBuilder(types),
       virtualMachine_(virtualMachine),
       types_(types),
-      config_(config),
+      cfg_(cfg),
       functionSpec_(functionSpec),
       stack_(stack),
-      maxInlineDepth(config.maxInlineDepth),
+      maxInlineDepth(cfg.maxInlineDepth),
       firstArgumentIndex(0) {
   DefineLine(LINETOSTR(__LINE__));
   DefineFile(__FILE__);
@@ -130,7 +130,7 @@ MethodBuilder::MethodBuilder(VirtualMachine *virtualMachine,
 
   defineParameters(functionSpec.nargs);
 
-  if (config.operandStack) {
+  if (cfg.lazyVmState) {
     // hack for topLevel
     DefineLocal("localStack", stackType);
   }
@@ -152,7 +152,7 @@ static const char *argsAndTempNames[] = {
   sizeof(argsAndTempNames) / sizeof(argsAndTempNames[0])
 
 void MethodBuilder::defineParameters(std::size_t argCount) {
-  if (config_.callStyle == b9::CallStyle::passParameter) {
+  if (cfg_.passParam) {
     for (int i = 0; i < argCount; i++) {
       DefineParameter(argsAndTempNames[i], stackElementType);
     }
@@ -160,12 +160,12 @@ void MethodBuilder::defineParameters(std::size_t argCount) {
 }
 
 void MethodBuilder::defineLocals(std::size_t argCount) {
-  if (config_.callStyle == b9::CallStyle::passParameter) {
+  if (cfg_.passParam) {
     // for locals we pre-define all the locals we could use, for the toplevel
     // and all the inlined names which are simply referenced via a skew to reach
     // past callers functions args/temps
     std::size_t topLevelLocals = functionSpec_.nargs + functionSpec_.nregs;
-    if (config_.debug) {
+    if (cfg_.debug) {
       std::cout << "CREATING " << topLevelLocals << " topLevel with "
                 << MAX_ARGS_TEMPS_AVAIL - topLevelLocals
                 << " slots for inlining\n";
@@ -223,13 +223,13 @@ void MethodBuilder::defineFunctions() {
 
 #define QSTACK(b) (((VirtualMachineState *)(b)->vmState())->_stack)
 #define QCOMMIT(b)                                      \
-  if (config_.callStyle == b9::CallStyle::operandStack) \
+  if (cfg_.lazyVmState) \
     ((b)->vmState()->Commit(b));
 #define QRELOAD(b)                                      \
-  if (config_.callStyle == b9::CallStyle::operandStack) \
+  if (cfg_.lazyVmState) \
     ((b)->vmState()->Reload(b));
 #define QRELOAD_DROP(b, toDrop)                         \
-  if (config_.callStyle == b9::CallStyle::operandStack) \
+  if (cfg_.lazyVmState) \
     QSTACK(b)->Drop(b, toDrop);
 
 long computeNumberOfBytecodes(const Instruction *program) {
@@ -267,7 +267,7 @@ bool MethodBuilder::inlineProgramIntoBuilder(
   if (isTopLevel) {
     // only initialize locals if top level, inlines will be stored into from
     // parent.
-    if (config_.callStyle == b9::CallStyle::passParameter) {
+    if (cfg_.passParam) {
       int argsCount = functionSpec_.nargs;
       int regsCount = functionSpec_.nregs;
       for (int i = argsCount; i < argsCount + regsCount; i++) {
@@ -306,7 +306,7 @@ bool MethodBuilder::inlineProgramIntoBuilder(
 }
 
 bool MethodBuilder::buildIL() {
-  if (config_.callStyle == b9::CallStyle::operandStack) {
+  if (cfg_.lazyVmState) {
     this->Store("localStack", this->ConstAddress(stack_));
     OMR::VirtualMachineRegisterInStruct *stackTop =
         new OMR::VirtualMachineRegisterInStruct(this, "Stack", "localStack",
@@ -334,7 +334,7 @@ TR::IlValue *MethodBuilder::loadVarIndex(TR::BytecodeBuilder *builder,
     varindex += firstArgumentIndex;
   }
 
-  if (config_.callStyle == b9::CallStyle::passParameter) {
+  if (cfg_.passParam) {
     return builder->Load(argsAndTempNames[varindex]);
   } else {
     TR::IlValue *args = builder->Load("returnSP");
@@ -355,7 +355,7 @@ void MethodBuilder::storeVarIndex(TR::BytecodeBuilder *builder, int varindex,
     // }
     varindex += firstArgumentIndex;
   }
-  if (config_.callStyle == b9::CallStyle::passParameter) {
+  if (cfg_.passParam) {
     builder->Store(argsAndTempNames[varindex], value);
     return;
   } else {
@@ -375,7 +375,7 @@ bool MethodBuilder::generateILForBytecode(
   assert(bytecode == Instructions::getByteCode(instruction));
 
   if (NULL == builder) {
-    if (config_.debug) std::cout << "unexpected NULL BytecodeBuilder!\n";
+    if (cfg_.debug) std::cout << "unexpected NULL BytecodeBuilder!\n";
     return false;
   }
 
@@ -388,7 +388,7 @@ bool MethodBuilder::generateILForBytecode(
 
   bool handled = true;
 
-  if (config_.debug) {
+  if (cfg_.debug) {
     if (jumpToBuilderForInlinedReturn) {
       std::cout << "INLINED METHOD: skew " << firstArgumentIndex
                 << " return bc will jump to " << jumpToBuilderForInlinedReturn
@@ -401,7 +401,7 @@ bool MethodBuilder::generateILForBytecode(
   }
 
   /*
-    if (config_.debug) {
+    if (cfg_.debug) {
       QCOMMIT(builder);
 
       builder->Call(
@@ -429,7 +429,7 @@ bool MethodBuilder::generateILForBytecode(
         builder->Goto(jumpToBuilderForInlinedReturn);
       } else {
         auto result = pop(builder);
-        if (config_.callStyle != b9::CallStyle::passParameter) {
+        if (!cfg_.passParam) {
           builder->StoreIndirect("localStack", "stackPointer",
                                  builder->ConstAddress(stack_),
                                  builder->Load("returnSP"));
@@ -504,13 +504,13 @@ bool MethodBuilder::generateILForBytecode(
       break;
     */
     case ByteCode::FUNCTION_CALL: {
-      int callindex = Instructions::getParameter(instruction);
+      const std::size_t callindex = Instructions::getParameter(instruction);
       const FunctionSpec *callee = virtualMachine_->getFunction(callindex);
       const Instruction *tocall = callee->address;
-      int argsCount = callee->nargs;
-      int regsCount = callee->nregs;
+      const std::uint32_t argsCount = callee->nargs;
+      const std::uint32_t regsCount = callee->nregs;
 
-      if (config_.callStyle == b9::CallStyle::direct) {
+      if (cfg_.directCall) {
         const char *interpretName[] = {"interpret_0", "interpret_1",
                                        "interpret_2", "interpret_3"};
         const char *nameToCall = interpretName[argsCount];
@@ -521,7 +521,7 @@ bool MethodBuilder::generateILForBytecode(
           interp = false;
         }
 
-        if (config_.callStyle == b9::CallStyle::passParameter) {
+        if (cfg_.passParam) {
           if (maxInlineDepth >= 0 && !interp) {
             int32_t save = firstArgumentIndex;
             int32_t skipLocals = functionSpec_.nargs + functionSpec_.nregs;
@@ -605,7 +605,7 @@ bool MethodBuilder::generateILForBytecode(
         builder->AddFallThroughBuilder(nextBytecodeBuilder);
     } break;
     default:
-      if (config_.debug) {
+      if (cfg_.debug) {
         std::cout << "Cannot handle unknown bytecode: returning\n";
       }
       handled = false;
@@ -756,7 +756,7 @@ void MethodBuilder::handle_bc_add(TR::BytecodeBuilder *builder,
 void MethodBuilder::drop(TR::BytecodeBuilder *builder) { pop(builder); }
 
 TR::IlValue *MethodBuilder::pop(TR::BytecodeBuilder *builder) {
-  if (config_.callStyle == b9::CallStyle::operandStack) {
+  if (cfg_.lazyVmState) {
     return QSTACK(builder)->Pop(builder);
   } else {
     TR::IlValue *sp = builder->LoadIndirect("Stack", "stackPointer",
@@ -771,7 +771,7 @@ TR::IlValue *MethodBuilder::pop(TR::BytecodeBuilder *builder) {
 }
 
 void MethodBuilder::push(TR::BytecodeBuilder *builder, TR::IlValue *value) {
-  if (config_.callStyle == b9::CallStyle::operandStack) {
+  if (cfg_.lazyVmState) {
     QSTACK(builder)->Push(builder, value);
   } else {
     TR::IlValue *sp = builder->LoadIndirect("Stack", "stackPointer",

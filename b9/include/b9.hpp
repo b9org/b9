@@ -74,10 +74,8 @@ class ExecutionContext {
 
   Stack *stack() { return &stackFields; }
 
-  // private
-  Stack stackFields = {stack_, stack_};
-
 private:
+  Stack stackFields = {stack_, stack_};
   StackElement stack_[1000];
   StackElement* &stackBase_ = stackFields.stackBase;
   StackElement* &stackPointer_ = stackFields.stackPointer;

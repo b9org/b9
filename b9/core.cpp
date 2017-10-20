@@ -260,9 +260,11 @@ StackElement ExecutionContext::interpret(const FunctionSpec *function) {
 }
 
 void *VirtualMachine::getJitAddress(std::size_t functionIndex) {
-  return compiledFunctions_.size() >= functionIndex
-             ? compiledFunctions_[functionIndex]
-             : nullptr;
+  if (functionIndex > compiledFunctions_.size()) {
+    return nullptr;
+  }
+
+  return compiledFunctions_[functionIndex];
 }
 
 void VirtualMachine::setJitAddress(std::size_t functionIndex, void *value) {

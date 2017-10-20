@@ -80,8 +80,8 @@ Compiler::Compiler(VirtualMachine *virtualMachine, const Config &cfg)
 
 uint8_t *Compiler::generateCode(const FunctionSpec &functionSpec) {
   Stack *stack = virtualMachine_->executionContext()->stack();
-  MethodBuilder methodBuilder(virtualMachine_, &types_, cfg_,
-                              functionSpec, stack);
+  MethodBuilder methodBuilder(virtualMachine_, &types_, cfg_, functionSpec,
+                              stack);
   if (cfg_.debug)
     std::cout << "MethodBuilder for function: " << functionSpec.name
               << " is constructed" << std::endl;
@@ -222,15 +222,12 @@ void MethodBuilder::defineFunctions() {
 }
 
 #define QSTACK(b) (((VirtualMachineState *)(b)->vmState())->_stack)
-#define QCOMMIT(b)                                      \
-  if (cfg_.lazyVmState) \
-    ((b)->vmState()->Commit(b));
-#define QRELOAD(b)                                      \
-  if (cfg_.lazyVmState) \
-    ((b)->vmState()->Reload(b));
-#define QRELOAD_DROP(b, toDrop)                         \
-  if (cfg_.lazyVmState) \
-    QSTACK(b)->Drop(b, toDrop);
+#define QCOMMIT(b) \
+  if (cfg_.lazyVmState) ((b)->vmState()->Commit(b));
+#define QRELOAD(b) \
+  if (cfg_.lazyVmState) ((b)->vmState()->Reload(b));
+#define QRELOAD_DROP(b, toDrop) \
+  if (cfg_.lazyVmState) QSTACK(b)->Drop(b, toDrop);
 
 long computeNumberOfBytecodes(const Instruction *program) {
   long result = 0;

@@ -1,6 +1,6 @@
 #include <b9.hpp>
-#include <b9/loader.hpp>
 #include <b9/jit.hpp>
+#include <b9/loader.hpp>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>

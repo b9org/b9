@@ -120,30 +120,24 @@ void ExecutionContext::intSub() {
 
 /// ExecutionContext
 
-bool VirtualMachine::initialize() {
-  if (cfg_.verbose) std::cout << "VM initializing...\n";
+VirtualMachine::VirtualMachine(const Config &cfg)
+    : cfg_{cfg}, executionContext_{this}, compiler_{nullptr} {
+  if (cfg_.verbose) std::cout << "VM initializing..." << std::endl;
 
   if (cfg_.jit) {
-    if (initializeJit()) {
-      compiler_ = std::make_shared<Compiler>(this, cfg_);
-      if (cfg_.verbose) std::cout << "JIT successfully initialized\n";
-      return true;
+    auto ok = initializeJit();
+    if (!ok) {
+      throw std::runtime_error{"Failed to init JIT"};
     }
 
-    if (cfg_.verbose) std::cout << "JIT failed to initialize\n";
-    return false;
+    compiler_ = std::make_shared<Compiler>(this, cfg_);
   }
-
-  return true;
 }
 
-bool VirtualMachine::shutdown() {
-  if (cfg_.verbose) std::cout << "VM shutting down...\n";
-
+VirtualMachine::~VirtualMachine() noexcept {
   if (cfg_.jit) {
     shutdownJit();
   }
-  return true;
 }
 
 void VirtualMachine::load(std::shared_ptr<const Module> module) {

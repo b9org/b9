@@ -87,11 +87,9 @@ class ExecutionContext {
 
 class VirtualMachine {
  public:
-  VirtualMachine(const Config &cfg)
-      : cfg_{cfg}, executionContext_{this}, compiler_{nullptr} {}
+  VirtualMachine(const Config &cfg);
 
-  bool initialize();
-  bool shutdown();
+  ~VirtualMachine() noexcept;
 
   /// Load a module into the VM.
   void load(std::shared_ptr<const Module> module);

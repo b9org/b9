@@ -18,7 +18,7 @@ class Stack;
 /// Function not found exception.
 struct CompilationException : public std::runtime_error {
   using std::runtime_error::runtime_error;
-  };
+};
 
 class MethodBuilder : public TR::MethodBuilder {
  public:

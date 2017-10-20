@@ -14,14 +14,14 @@
 #include "ilgen/VirtualMachineRegisterInStruct.hpp"
 
 #include <assert.h>
-#include <cstring>
 #include <dlfcn.h>
 #include <errno.h>
-#include <iostream>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <cstring>
+#include <iostream>
 #include <vector>
 
 namespace b9 {
@@ -34,7 +34,7 @@ class VirtualMachineState : public OMR::VirtualMachineState {
       : OMR::VirtualMachineState(), _stack(NULL), _stackTop(NULL) {}
 
   VirtualMachineState(OMR::VirtualMachineOperandStack *stack,
-                        OMR::VirtualMachineRegister *stackTop)
+                      OMR::VirtualMachineRegister *stackTop)
       : OMR::VirtualMachineState(), _stack(stack), _stackTop(stackTop) {}
 
   virtual void Commit(TR::IlBuilder *b) {
@@ -64,15 +64,13 @@ class VirtualMachineState : public OMR::VirtualMachineState {
   OMR::VirtualMachineRegister *_stackTop;
 };
 
-Compiler::Compiler(VirtualMachine *virtualMachine, const JitConfig & jitConfig)
-: virtualMachine_(virtualMachine),
-  jitConfig_(jitConfig)
-{
+Compiler::Compiler(VirtualMachine *virtualMachine, const JitConfig &jitConfig)
+    : virtualMachine_(virtualMachine), jitConfig_(jitConfig) {
   auto stackElementType = types_.toIlType<StackElement>();
 
   // Stack
   types_.DefineStruct("Stack");
-  //types_.DefineField("Stack", "stackBase", stackElementPointerType,
+  // types_.DefineField("Stack", "stackBase", stackElementPointerType,
   //                   offsetof(Stack, stackBase));
   types_.DefineField("Stack", "stackPointer",
                      types_.PointerTo(types_.PointerTo(stackElementType)),
@@ -80,26 +78,31 @@ Compiler::Compiler(VirtualMachine *virtualMachine, const JitConfig & jitConfig)
   types_.CloseStruct("Stack");
 }
 
-uint8_t *Compiler::generateCode(const FunctionSpec & functionSpec) {
+uint8_t *Compiler::generateCode(const FunctionSpec &functionSpec) {
   Stack *stack = virtualMachine_->executionContext()->stack();
-  MethodBuilder methodBuilder(virtualMachine_, &types_, jitConfig_, functionSpec, stack);
+  MethodBuilder methodBuilder(virtualMachine_, &types_, jitConfig_,
+                              functionSpec, stack);
   if (jitConfig_.debug)
-    std::cout << "MethodBuilder for function: " << functionSpec.name << " is constructed" << std::endl;
+    std::cout << "MethodBuilder for function: " << functionSpec.name
+              << " is constructed" << std::endl;
   uint8_t *entry = nullptr;
   int rc = compileMethodBuilder(&methodBuilder, &entry);
   if (rc != 0) {
-    std::cout << "Failed to compile function: " << functionSpec.name << " nargs: "
-      << functionSpec.nargs << std::endl;
+    std::cout << "Failed to compile function: " << functionSpec.name
+              << " nargs: " << functionSpec.nargs << std::endl;
     throw b9::CompilationException{"IL generation failed"};
   }
 
   if (jitConfig_.debug)
-    std::cout << "Compilation completed with return code: " << rc << ", code address: " << entry << std::endl;
+    std::cout << "Compilation completed with return code: " << rc
+              << ", code address: " << entry << std::endl;
 
   return entry;
 }
 
-MethodBuilder::MethodBuilder(VirtualMachine *virtualMachine, TR::TypeDictionary *types, const JitConfig &config, const FunctionSpec & functionSpec, Stack *stack)
+MethodBuilder::MethodBuilder(VirtualMachine *virtualMachine,
+                             TR::TypeDictionary *types, const JitConfig &config,
+                             const FunctionSpec &functionSpec, Stack *stack)
     : TR::MethodBuilder(types),
       virtualMachine_(virtualMachine),
       types_(types),
@@ -108,7 +111,6 @@ MethodBuilder::MethodBuilder(VirtualMachine *virtualMachine, TR::TypeDictionary 
       stack_(stack),
       maxInlineDepth(config.maxInlineDepth),
       firstArgumentIndex(0) {
-
   DefineLine(LINETOSTR(__LINE__));
   DefineFile(__FILE__);
 
@@ -128,7 +130,7 @@ MethodBuilder::MethodBuilder(VirtualMachine *virtualMachine, TR::TypeDictionary 
 
   defineParameters(functionSpec.nargs);
 
-  if (config.operandStack){
+  if (config.operandStack) {
     // hack for topLevel
     DefineLocal("localStack", stackType);
   }
@@ -164,8 +166,9 @@ void MethodBuilder::defineLocals(std::size_t argCount) {
     // past callers functions args/temps
     std::size_t topLevelLocals = functionSpec_.nargs + functionSpec_.nregs;
     if (config_.debug) {
-      std::cout << "CREATING " << topLevelLocals << " topLevel with " << MAX_ARGS_TEMPS_AVAIL - topLevelLocals 
-        << " slots for inlining\n";
+      std::cout << "CREATING " << topLevelLocals << " topLevel with "
+                << MAX_ARGS_TEMPS_AVAIL - topLevelLocals
+                << " slots for inlining\n";
     }
 
     for (std::size_t i = argCount; i < MAX_ARGS_TEMPS_AVAIL; i++) {
@@ -178,7 +181,8 @@ void MethodBuilder::defineLocals(std::size_t argCount) {
 
 void MethodBuilder::defineFunctions() {
   // DefineFunction((char *)"printVMState", (char *)__FILE__, "printVMState",
-  //                (void *)&printVMState, NoType, 4, Int64, Int64, Int64, Int64);
+  //                (void *)&printVMState, NoType, 4, Int64, Int64, Int64,
+  //                Int64);
   // DefineFunction((char *)"printStack", (char *)__FILE__, "printStack",
   //                (void *)&b9PrintStack, NoType, 1, Int64);
   // DefineFunction((char *)"interpret", (char *)__FILE__, "interpret",
@@ -187,7 +191,8 @@ void MethodBuilder::defineFunctions() {
   // int functionIndex = 0;
   // while (context->functions[functionIndex].name != NO_MORE_FUNCTIONS) {
   //   if (context->functions[functionIndex].jitAddress) {
-  //     DefineFunction(context->functions[functionIndex].name, (char *)__FILE__,
+  //     DefineFunction(context->functions[functionIndex].name, (char
+  //     *)__FILE__,
   //                    context->functions[functionIndex].name,
   //                    (void *)context->functions[functionIndex].jitAddress,
   //                    Int64,
@@ -212,17 +217,20 @@ void MethodBuilder::defineFunctions() {
   //                int32PointerType, stackElementType, stackElementType,
   //                stackElementType);
   // DefineFunction((char *)"bc_primitive", (char *)__FILE__, "bc_primitive",
-  //                (void *)&bc_primitive, Int64, 2, executionContextPointerType,
-  //                Int32);
+  //                (void *)&bc_primitive, Int64, 2,
+  //                executionContextPointerType, Int32);
 }
 
 #define QSTACK(b) (((VirtualMachineState *)(b)->vmState())->_stack)
-#define QCOMMIT(b) \
-  if (config_.callStyle == b9::CallStyle::operandStack) ((b)->vmState()->Commit(b));
-#define QRELOAD(b) \
-  if (config_.callStyle == b9::CallStyle::operandStack) ((b)->vmState()->Reload(b));
-#define QRELOAD_DROP(b, toDrop) \
-  if (config_.callStyle == b9::CallStyle::operandStack) QSTACK(b)->Drop(b, toDrop);
+#define QCOMMIT(b)                                      \
+  if (config_.callStyle == b9::CallStyle::operandStack) \
+    ((b)->vmState()->Commit(b));
+#define QRELOAD(b)                                      \
+  if (config_.callStyle == b9::CallStyle::operandStack) \
+    ((b)->vmState()->Reload(b));
+#define QRELOAD_DROP(b, toDrop)                         \
+  if (config_.callStyle == b9::CallStyle::operandStack) \
+    QSTACK(b)->Drop(b, toDrop);
 
 long computeNumberOfBytecodes(const Instruction *program) {
   long result = 0;
@@ -263,13 +271,14 @@ bool MethodBuilder::inlineProgramIntoBuilder(
       int argsCount = functionSpec_.nargs;
       int regsCount = functionSpec_.nregs;
       for (int i = argsCount; i < argsCount + regsCount; i++) {
-        storeVarIndex(builder, i, builder->ConstInt64(0));  // init all temps to zero
+        storeVarIndex(builder, i,
+                      builder->ConstInt64(0));  // init all temps to zero
       }
     } else {
       // arguments are &sp[-number_of_args]
       // temps are pushes onto the stack to &sp[number_of_temps]
-      TR::IlValue *sp =
-          builder->LoadIndirect("Stack", "stackPointer", builder->ConstAddress(stack_));
+      TR::IlValue *sp = builder->LoadIndirect("Stack", "stackPointer",
+                                              builder->ConstAddress(stack_));
       TR::IlValue *args =
           builder->IndexAt(stackElementPointerType, sp,
                            builder->ConstInt32(0 - functionSpec_.nargs));
@@ -286,7 +295,7 @@ bool MethodBuilder::inlineProgramIntoBuilder(
   for (int i = 0; i < numberOfBytecodes; i++) {
     ByteCode bc = Instructions::getByteCode(program[i]);
     if (!generateILForBytecode(builderTable, program, bc, i,
-          jumpToBuilderForInlinedReturn)) {
+                               jumpToBuilderForInlinedReturn)) {
       success = false;
       break;
     }
@@ -297,12 +306,11 @@ bool MethodBuilder::inlineProgramIntoBuilder(
 }
 
 bool MethodBuilder::buildIL() {
-
   if (config_.callStyle == b9::CallStyle::operandStack) {
     this->Store("localStack", this->ConstAddress(stack_));
     OMR::VirtualMachineRegisterInStruct *stackTop =
-        new OMR::VirtualMachineRegisterInStruct(
-            this, "Stack", "localStack", "stackPointer", "SP");
+        new OMR::VirtualMachineRegisterInStruct(this, "Stack", "localStack",
+                                                "stackPointer", "SP");
     OMR::VirtualMachineOperandStack *stack =
         new OMR::VirtualMachineOperandStack(this, 32, stackElementPointerType,
                                             stackTop, true, 0);
@@ -316,7 +324,7 @@ bool MethodBuilder::buildIL() {
 }
 
 TR::IlValue *MethodBuilder::loadVarIndex(TR::BytecodeBuilder *builder,
-                                    int varindex) {
+                                         int varindex) {
   if (firstArgumentIndex > 0) {
     // if (context->debug >= 2) {
     //   printf("loadVarIndex varindex adjusted = %d %d\n", varindex,
@@ -325,7 +333,6 @@ TR::IlValue *MethodBuilder::loadVarIndex(TR::BytecodeBuilder *builder,
 
     varindex += firstArgumentIndex;
   }
-
 
   if (config_.callStyle == b9::CallStyle::passParameter) {
     return builder->Load(argsAndTempNames[varindex]);
@@ -340,7 +347,7 @@ TR::IlValue *MethodBuilder::loadVarIndex(TR::BytecodeBuilder *builder,
 }
 
 void MethodBuilder::storeVarIndex(TR::BytecodeBuilder *builder, int varindex,
-                             TR::IlValue *value) {
+                                  TR::IlValue *value) {
   if (firstArgumentIndex > 0) {
     // if (context->debug >= 2) {
     //   printf("storeVarIndex varindex adjusted = %d %d\n", varindex,
@@ -361,17 +368,14 @@ void MethodBuilder::storeVarIndex(TR::BytecodeBuilder *builder, int varindex,
 
 bool MethodBuilder::generateILForBytecode(
     std::vector<TR::BytecodeBuilder *> bytecodeBuilderTable,
-    const Instruction *program,
-    ByteCode bytecode, long bytecodeIndex,
+    const Instruction *program, ByteCode bytecode, long bytecodeIndex,
     TR::BytecodeBuilder *jumpToBuilderForInlinedReturn) {
-
   TR::BytecodeBuilder *builder = bytecodeBuilderTable[bytecodeIndex];
   Instruction instruction = program[bytecodeIndex];
   assert(bytecode == Instructions::getByteCode(instruction));
 
   if (NULL == builder) {
-    if (config_.debug)
-      std::cout << "unexpected NULL BytecodeBuilder!\n";
+    if (config_.debug) std::cout << "unexpected NULL BytecodeBuilder!\n";
     return false;
   }
 
@@ -386,24 +390,26 @@ bool MethodBuilder::generateILForBytecode(
 
   if (config_.debug) {
     if (jumpToBuilderForInlinedReturn) {
-      std::cout << "INLINED METHOD: skew " << firstArgumentIndex 
-        << " return bc will jump to " << jumpToBuilderForInlinedReturn << ": ";
+      std::cout << "INLINED METHOD: skew " << firstArgumentIndex
+                << " return bc will jump to " << jumpToBuilderForInlinedReturn
+                << ": ";
     }
-    std::cout << "generating index=" << bytecodeIndex 
-      << " bc=" << b9ByteCodeName(bytecode) << "(" << (int) bytecode 
-      << ") param = " << Instructions::getParameter(instruction) << std::endl;
+    std::cout << "generating index=" << bytecodeIndex
+              << " bc=" << b9ByteCodeName(bytecode) << "(" << (int)bytecode
+              << ") param = " << Instructions::getParameter(instruction)
+              << std::endl;
   }
 
-/*
-  if (config_.debug) {
-    QCOMMIT(builder);
+  /*
+    if (config_.debug) {
+      QCOMMIT(builder);
 
-    builder->Call(
-        "printVMState", 4, builder->ConstAddress(stack_),
-        builder->ConstInt64(bytecodeIndex), builder->ConstInt64(bytecode),
-        builder->ConstInt64(Instructions::getParameter(instruction)));
-  }
-*/
+      builder->Call(
+          "printVMState", 4, builder->ConstAddress(stack_),
+          builder->ConstInt64(bytecodeIndex), builder->ConstInt64(bytecode),
+          builder->ConstInt64(Instructions::getParameter(instruction)));
+    }
+  */
 
   switch (bytecode) {
     case ByteCode::PUSH_FROM_VAR:
@@ -418,25 +424,26 @@ bool MethodBuilder::generateILForBytecode(
       if (nextBytecodeBuilder)
         builder->AddFallThroughBuilder(nextBytecodeBuilder);
       break;
-    case ByteCode::FUNCTION_RETURN: 
-      {
+    case ByteCode::FUNCTION_RETURN: {
       if (jumpToBuilderForInlinedReturn) {
         builder->Goto(jumpToBuilderForInlinedReturn);
       } else {
         auto result = pop(builder);
-				if (config_.callStyle != b9::CallStyle::passParameter) {
+        if (config_.callStyle != b9::CallStyle::passParameter) {
           builder->StoreIndirect("localStack", "stackPointer",
                                  builder->ConstAddress(stack_),
                                  builder->Load("returnSP"));
         }
         builder->Return(result);
       }
-      } break;
+    } break;
     case ByteCode::DROP:
       std::cout << "1\n";
       drop(builder);
       std::cout << "2\n";
-      std::cout << "builder: " << builder << ", nextBytecodeBuilder: " << nextBytecodeBuilder << std::endl;
+      std::cout << "builder: " << builder
+                << ", nextBytecodeBuilder: " << nextBytecodeBuilder
+                << std::endl;
       if (nextBytecodeBuilder)
         builder->AddFallThroughBuilder(nextBytecodeBuilder);
       std::cout << "3\n";
@@ -474,33 +481,29 @@ bool MethodBuilder::generateILForBytecode(
     case ByteCode::INT_ADD:
       handle_bc_add(builder, nextBytecodeBuilder);
       break;
-    case ByteCode::INT_PUSH_CONSTANT:
-			{
+    case ByteCode::INT_PUSH_CONSTANT: {
       int constvalue = Instructions::getParameter(instruction);
       push(builder, builder->ConstInt64(constvalue));
       if (nextBytecodeBuilder)
         builder->AddFallThroughBuilder(nextBytecodeBuilder);
-			}
-      break;
-    case ByteCode::STR_PUSH_CONSTANT:
-			{
+    } break;
+    case ByteCode::STR_PUSH_CONSTANT: {
       int index = Instructions::getParameter(instruction);
-      push(builder,
-          builder->ConstInt64((int64_t)(char *)virtualMachine_->getString(index)));
+      push(builder, builder->ConstInt64(
+                        (int64_t)(char *)virtualMachine_->getString(index)));
       builder->AddFallThroughBuilder(nextBytecodeBuilder);
-			}
-      break;
+    } break;
     /*
     case ByteCode::PRIMITIVE_CALL:
-			{
+                        {
       int index = Instructions::getParameter(instruction);
-      push(builder,  builder->ConstAddress(&(virtualMachine_->getPrimitive(index))));
+      push(builder,
+    builder->ConstAddress(&(virtualMachine_->getPrimitive(index))));
       builder->AddFallThroughBuilder(nextBytecodeBuilder);
-			}
+                        }
       break;
     */
-    case ByteCode::FUNCTION_CALL:
-      {
+    case ByteCode::FUNCTION_CALL: {
       int callindex = Instructions::getParameter(instruction);
       const FunctionSpec *callee = virtualMachine_->getFunction(callindex);
       const Instruction *tocall = callee->address;
@@ -536,10 +539,11 @@ bool MethodBuilder::generateILForBytecode(
               while (storeInto-- > 0) {
                 // printf("Storing temp %d into dest variable \n", storeInto);
                 storeVarIndex(builder, storeInto,
-                    pop(builder));  // firstArgumentIndex is added in
+                              pop(builder));  // firstArgumentIndex is added in
                 // storeVarIndex
               }
-              bool result = inlineProgramIntoBuilder(false, builder, nextBytecodeBuilder);
+              bool result =
+                  inlineProgramIntoBuilder(false, builder, nextBytecodeBuilder);
               if (!result) {
                 printf("Failed inlineProgramIntoBuilder\n");
                 return result;
@@ -570,17 +574,16 @@ bool MethodBuilder::generateILForBytecode(
             push(builder, result);
           } else {
             TR::IlValue *result =
-              builder->Call(nameToCall, argsCount, p[0], p[1], p[2], p[3],
-                  p[4], p[5], p[6], p[7]);
+                builder->Call(nameToCall, argsCount, p[0], p[1], p[2], p[3],
+                              p[4], p[5], p[6], p[7]);
             push(builder, result);
           }
         } else {
           TR::IlValue *result;
           QCOMMIT(builder);
           if (interp) {
-            result =
-              builder->Call(nameToCall, 2, builder->ConstAddress(stack_),
-                  builder->ConstAddress(tocall));
+            result = builder->Call(nameToCall, 2, builder->ConstAddress(stack_),
+                                   builder->ConstAddress(tocall));
           } else {
             result = builder->Call(nameToCall, 0);
           }
@@ -590,17 +593,17 @@ bool MethodBuilder::generateILForBytecode(
       } else {
         // only use interpreter to dispatch the calls
         QCOMMIT(builder);
-        TR::IlValue *result =
-          builder->Call("interpret", 2, builder->ConstAddress(virtualMachine_->executionContext()),
-              builder->ConstAddress(tocall));
+        TR::IlValue *result = builder->Call(
+            "interpret", 2,
+            builder->ConstAddress(virtualMachine_->executionContext()),
+            builder->ConstAddress(tocall));
         QRELOAD_DROP(builder, argsCount);
         push(builder, result);
       }
 
       if (nextBytecodeBuilder)
         builder->AddFallThroughBuilder(nextBytecodeBuilder);
-      }
-      break;
+    } break;
     default:
       if (config_.debug) {
         std::cout << "Cannot handle unknown bytecode: returning\n";
@@ -616,9 +619,10 @@ bool MethodBuilder::generateILForBytecode(
  * GENERATE CODE FOR BYTECODES
  *************************************************/
 
-void MethodBuilder::handle_bc_jmp(TR::BytecodeBuilder *builder,
-														 std::vector<TR::BytecodeBuilder *> bytecodeBuilderTable,
-                             const Instruction *program, long bytecodeIndex) {
+void MethodBuilder::handle_bc_jmp(
+    TR::BytecodeBuilder *builder,
+    std::vector<TR::BytecodeBuilder *> bytecodeBuilderTable,
+    const Instruction *program, long bytecodeIndex) {
   // Instruction instruction = program[bytecodeIndex];
   // StackElement delta = getParameterFromInstruction(instruction) + 1;
   // int next_bc_index = bytecodeIndex + delta;
@@ -626,10 +630,11 @@ void MethodBuilder::handle_bc_jmp(TR::BytecodeBuilder *builder,
   // builder->Goto(destBuilder);
 }
 
-void MethodBuilder::handle_bc_jmp_eq(TR::BytecodeBuilder *builder,
-														    std::vector<TR::BytecodeBuilder *> bytecodeBuilderTable,
-                                const Instruction *program, long bytecodeIndex,
-                                TR::BytecodeBuilder *nextBuilder) {
+void MethodBuilder::handle_bc_jmp_eq(
+    TR::BytecodeBuilder *builder,
+    std::vector<TR::BytecodeBuilder *> bytecodeBuilderTable,
+    const Instruction *program, long bytecodeIndex,
+    TR::BytecodeBuilder *nextBuilder) {
   // Instruction instruction = program[bytecodeIndex];
   // StackElement delta = getParameterFromInstruction(instruction) + 1;
   // int next_bc_index = bytecodeIndex + delta;
@@ -642,10 +647,11 @@ void MethodBuilder::handle_bc_jmp_eq(TR::BytecodeBuilder *builder,
   // builder->AddFallThroughBuilder(nextBuilder);
 }
 
-void MethodBuilder::handle_bc_jmp_neq(TR::BytecodeBuilder *builder,
-														     std::vector<TR::BytecodeBuilder *> bytecodeBuilderTable,
-                                 const Instruction *program, long bytecodeIndex,
-                                 TR::BytecodeBuilder *nextBuilder) {
+void MethodBuilder::handle_bc_jmp_neq(
+    TR::BytecodeBuilder *builder,
+    std::vector<TR::BytecodeBuilder *> bytecodeBuilderTable,
+    const Instruction *program, long bytecodeIndex,
+    TR::BytecodeBuilder *nextBuilder) {
   // Instruction instruction = program[bytecodeIndex];
   // StackElement delta = getParameterFromInstruction(instruction) + 1;
   // int next_bc_index = bytecodeIndex + delta;
@@ -658,10 +664,11 @@ void MethodBuilder::handle_bc_jmp_neq(TR::BytecodeBuilder *builder,
   // builder->AddFallThroughBuilder(nextBuilder);
 }
 
-void MethodBuilder::handle_bc_jmp_lt(TR::BytecodeBuilder *builder,
-														    std::vector<TR::BytecodeBuilder *> bytecodeBuilderTable,
-                                const Instruction *program, long bytecodeIndex,
-                                TR::BytecodeBuilder *nextBuilder) {
+void MethodBuilder::handle_bc_jmp_lt(
+    TR::BytecodeBuilder *builder,
+    std::vector<TR::BytecodeBuilder *> bytecodeBuilderTable,
+    const Instruction *program, long bytecodeIndex,
+    TR::BytecodeBuilder *nextBuilder) {
   // Instruction instruction = program[bytecodeIndex];
   // StackElement delta = getParameterFromInstruction(instruction) + 1;
   // int next_bc_index = bytecodeIndex + delta;
@@ -673,10 +680,11 @@ void MethodBuilder::handle_bc_jmp_lt(TR::BytecodeBuilder *builder,
   // builder->IfCmpLessThan(jumpTo, left, right);
   // builder->AddFallThroughBuilder(nextBuilder);
 }
-void MethodBuilder::handle_bc_jmp_le(TR::BytecodeBuilder *builder,
-														    std::vector<TR::BytecodeBuilder *> bytecodeBuilderTable,
-                                const Instruction *program, long bytecodeIndex,
-                                TR::BytecodeBuilder *nextBuilder) {
+void MethodBuilder::handle_bc_jmp_le(
+    TR::BytecodeBuilder *builder,
+    std::vector<TR::BytecodeBuilder *> bytecodeBuilderTable,
+    const Instruction *program, long bytecodeIndex,
+    TR::BytecodeBuilder *nextBuilder) {
   // Instruction instruction = program[bytecodeIndex];
 
   // StackElement delta = getParameterFromInstruction(instruction) + 1;
@@ -687,14 +695,15 @@ void MethodBuilder::handle_bc_jmp_le(TR::BytecodeBuilder *builder,
   // int next_bc_index = bytecodeIndex + delta;
   // TR::BytecodeBuilder *jumpTo = bytecodeBuilderTable[next_bc_index];
   // left = builder->Sub(left, builder->ConstInt64(1));
-  // builder->IfCmpGreaterThan(jumpTo, right, left);  // swap and do a greaterthan
-  // builder->AddFallThroughBuilder(nextBuilder);
+  // builder->IfCmpGreaterThan(jumpTo, right, left);  // swap and do a
+  // greaterthan builder->AddFallThroughBuilder(nextBuilder);
 }
 
-void MethodBuilder::handle_bc_jmp_gt(TR::BytecodeBuilder *builder,
-														    std::vector<TR::BytecodeBuilder *> bytecodeBuilderTable,
-                                const Instruction *program, long bytecodeIndex,
-                                TR::BytecodeBuilder *nextBuilder) {
+void MethodBuilder::handle_bc_jmp_gt(
+    TR::BytecodeBuilder *builder,
+    std::vector<TR::BytecodeBuilder *> bytecodeBuilderTable,
+    const Instruction *program, long bytecodeIndex,
+    TR::BytecodeBuilder *nextBuilder) {
   // Instruction instruction = program[bytecodeIndex];
   // StackElement delta = getParameterFromInstruction(instruction) + 1;
   // int next_bc_index = bytecodeIndex + delta;
@@ -707,10 +716,11 @@ void MethodBuilder::handle_bc_jmp_gt(TR::BytecodeBuilder *builder,
   // builder->AddFallThroughBuilder(nextBuilder);
 }
 
-void MethodBuilder::handle_bc_jmp_ge(TR::BytecodeBuilder *builder,
-														    std::vector<TR::BytecodeBuilder *> bytecodeBuilderTable,
-                                const Instruction *program, long bytecodeIndex,
-                                TR::BytecodeBuilder *nextBuilder) {
+void MethodBuilder::handle_bc_jmp_ge(
+    TR::BytecodeBuilder *builder,
+    std::vector<TR::BytecodeBuilder *> bytecodeBuilderTable,
+    const Instruction *program, long bytecodeIndex,
+    TR::BytecodeBuilder *nextBuilder) {
   // Instruction instruction = program[bytecodeIndex];
   // StackElement delta = getParameterFromInstruction(instruction) + 1;
   // int next_bc_index = bytecodeIndex + delta;
@@ -726,7 +736,7 @@ void MethodBuilder::handle_bc_jmp_ge(TR::BytecodeBuilder *builder,
 }
 
 void MethodBuilder::handle_bc_sub(TR::BytecodeBuilder *builder,
-                             TR::BytecodeBuilder *nextBuilder) {
+                                  TR::BytecodeBuilder *nextBuilder) {
   // TR::IlValue *right = pop(builder);
   // TR::IlValue *left = pop(builder);
 
@@ -735,7 +745,7 @@ void MethodBuilder::handle_bc_sub(TR::BytecodeBuilder *builder,
 }
 
 void MethodBuilder::handle_bc_add(TR::BytecodeBuilder *builder,
-                             TR::BytecodeBuilder *nextBuilder) {
+                                  TR::BytecodeBuilder *nextBuilder) {
   // TR::IlValue *right = pop(builder);
   // TR::IlValue *left = pop(builder);
 
@@ -743,20 +753,18 @@ void MethodBuilder::handle_bc_add(TR::BytecodeBuilder *builder,
   // builder->AddFallThroughBuilder(nextBuilder);
 }
 
-void MethodBuilder::drop(TR::BytecodeBuilder *builder) { 
-  pop(builder); 
-}
+void MethodBuilder::drop(TR::BytecodeBuilder *builder) { pop(builder); }
 
 TR::IlValue *MethodBuilder::pop(TR::BytecodeBuilder *builder) {
   if (config_.callStyle == b9::CallStyle::operandStack) {
     return QSTACK(builder)->Pop(builder);
   } else {
-    TR::IlValue *sp = builder->LoadIndirect(
-        "Stack", "stackPointer", builder->ConstAddress(stack_));
+    TR::IlValue *sp = builder->LoadIndirect("Stack", "stackPointer",
+                                            builder->ConstAddress(stack_));
     TR::IlValue *newSP =
-      builder->IndexAt(stackElementPointerType, sp, builder->ConstInt32(-1));
+        builder->IndexAt(stackElementPointerType, sp, builder->ConstInt32(-1));
     builder->StoreIndirect("Stack", "stackPointer",
-        builder->ConstAddress(stack_), newSP);
+                           builder->ConstAddress(stack_), newSP);
     return builder->LoadAt(stackElementPointerType, newSP);
   }
   return builder->ConstInt32(0);
@@ -766,14 +774,14 @@ void MethodBuilder::push(TR::BytecodeBuilder *builder, TR::IlValue *value) {
   if (config_.callStyle == b9::CallStyle::operandStack) {
     QSTACK(builder)->Push(builder, value);
   } else {
-    TR::IlValue *sp = builder->LoadIndirect(
-        "Stack", "stackPointer", builder->ConstAddress(stack_));
+    TR::IlValue *sp = builder->LoadIndirect("Stack", "stackPointer",
+                                            builder->ConstAddress(stack_));
     builder->StoreAt(builder->ConvertTo(stackElementPointerType, sp),
-        builder->ConvertTo(stackElementType, value));
+                     builder->ConvertTo(stackElementType, value));
     TR::IlValue *newSP =
-      builder->IndexAt(stackElementPointerType, sp, builder->ConstInt32(1));
+        builder->IndexAt(stackElementPointerType, sp, builder->ConstInt32(1));
     builder->StoreIndirect("Stack", "stackPointer",
-        builder->ConstAddress(stack_), newSP);
+                           builder->ConstAddress(stack_), newSP);
   }
 }
 

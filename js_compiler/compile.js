@@ -234,7 +234,7 @@ function CodeGen(f) {
         this.outputLines.push({"computeText": function () {
             var function_table = 'static const DlFunctionEntry b9_functions[] = {\n'
             for (name in functions) {
-                const f = functions[name];
+                var f = functions[name];
                 function_table += '  { "' + name + '", ' + name + ', ' + f.nargs + ', ' + f.nregs + '}, // ' + f + "\n";
             }
             function_table += '};\n'

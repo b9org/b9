@@ -7,7 +7,7 @@
 
 /// B9run's usage string. Printed when run with -help.
 static const char* usage =
-    "Usage: b9run [<option>...] [--] [<module> [<main>]]\n"
+    "Usage: b9run [<option>...] [--] <module> [<main>]\n"
     "   Or: b9run -help\n"
     "Options:\n"
     "  -callstyle <style>: Set the calling style. One of:\n"
@@ -27,10 +27,11 @@ static const char* usage =
 /// The b9run program's global configuration.
 struct RunConfig {
   b9::VirtualMachineConfig vm;
-  const char* moduleName = "program.so";
+  const char* moduleName = "";
   const char* mainFunction = "b9main";
   std::size_t loopCount = 1;
   bool verbose = false;
+  std::vector<b9::StackElement> usrArgs;
 };
 
 /// Print the configuration summary.
@@ -76,6 +77,8 @@ static bool parseArguments(RunConfig& cfg, const int argc, char* argv[]) {
       } else if (strcmp("operandstack", callStyle) == 0) {
         cfg.vm.jitConfig.callStyle = b9::CallStyle::operandStack;
       }
+    } else if (strcmp(arg, "-function") == 0) {
+      cfg.mainFunction = argv[++i];
     } else if (strcmp(arg, "--") == 0) {
       i++;
       break;
@@ -87,14 +90,17 @@ static bool parseArguments(RunConfig& cfg, const int argc, char* argv[]) {
     }
   }
 
-  // positional
-
+  // check for user defined module
   if (i < argc) {
     cfg.moduleName = argv[i++];
+  } else {
+    std::cerr << "No module name given to b9run" << std::endl;
+    return false;
+  }
 
-    if (i < argc) {
-      cfg.mainFunction = argv[i++];
-    }
+  // check for user defined arguments
+  for (; i < argc; i++) {
+    cfg.usrArgs.push_back(std::atoi(argv[i]));
   }
 
   return true;
@@ -114,9 +120,18 @@ static void run(const RunConfig& cfg) {
   vm.load(module);
 
   size_t functionIndex = module->findFunction(cfg.mainFunction);
-
-  for (std::size_t i = 0; i < cfg.loopCount; i++) {
-    vm.run(functionIndex);
+  if (cfg.loopCount == 1) {
+    b9::StackElement returnVal = vm.run(functionIndex, cfg.usrArgs);
+    std::cout << cfg.mainFunction << " returned: " << returnVal << std::endl;
+  } else {
+    b9::StackElement returnVal;
+    std::cout << "Running " << cfg.mainFunction << " " << cfg.loopCount
+              << " times:" << std::endl;
+    for (std::size_t i = 1; i <= cfg.loopCount; i++) {
+      returnVal = vm.run(functionIndex, cfg.usrArgs);
+      std::cout << "Return value of iteration " << i << ": " << returnVal
+                << std::endl;
+    }
   }
 }
 
@@ -124,11 +139,8 @@ int main(int argc, char* argv[]) {
   RunConfig cfg;
 
   if (!parseArguments(cfg, argc, argv)) {
+    std::cerr << usage << std::endl;
     exit(EXIT_FAILURE);
-  }
-
-  if (cfg.verbose) {
-    std::cout << cfg << std::endl;
   }
 
   try {
@@ -138,6 +150,9 @@ int main(int argc, char* argv[]) {
     exit(EXIT_FAILURE);
   } catch (const b9::FunctionNotFoundException& e) {
     std::cerr << "Failed to find function: " << e.what() << std::endl;
+    exit(EXIT_FAILURE);
+  } catch (const b9::BadFunctionCallException& e) {
+    std::cerr << "Failed to call function " << e.what() << std::endl;
     exit(EXIT_FAILURE);
   }
 

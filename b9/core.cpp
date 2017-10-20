@@ -12,6 +12,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
+#include <sstream>
+#include <string>
 
 namespace b9 {
 
@@ -317,17 +319,36 @@ void ExecutionContext::reset() {
   programCounter_ = 0;
 }
 
-StackElement VirtualMachine::run(const std::string &name) {
-  return run(module_->findFunction(name));
+StackElement VirtualMachine::run(const std::string &name,
+                                 const std::vector<StackElement> &usrArgs) {
+  return run(module_->findFunction(name), usrArgs);
 }
 
-StackElement VirtualMachine::run(const std::size_t functionIndex) {
+StackElement VirtualMachine::run(const std::size_t functionIndex,
+                                 const std::vector<StackElement> &usrArgs) {
+
   auto function = getFunction(functionIndex);
   auto argsCount = function->nargs;
 
   if (cfg_.verbose)
     std::cout << "function: " << functionIndex << " nargs: " << argsCount
               << std::endl;
+
+  if (function->nargs != usrArgs.size()) {
+    std::stringstream ss;
+    ss << function->name << " - Got " << usrArgs.size() << " arguments, expected "
+       << function->nargs;
+    std::string message = ss.str();
+    throw BadFunctionCallException{message};
+  }
+
+  // push user defined arguments to send to the program
+  for (std::size_t i = 0; i < function->nargs; i++) {
+    auto idx = function->nargs - i - 1;
+    auto arg = usrArgs[idx];
+    std::cout << "Pushing arg[" << idx << "] = " << arg << std::endl;
+    executionContext_.push(arg);
+  }
 
   auto address = getJitAddress(functionIndex);
   if (cfg_.jitEnabled && address == nullptr) {
@@ -382,12 +403,7 @@ StackElement VirtualMachine::run(const std::size_t functionIndex) {
   // interpret the method otherwise
   executionContext_.reset();
 
-  /* Push random arguments to send to the program */
-  for (std::size_t i = 0; i < argsCount; i++) {
-    int arg = 100 - (i * 10);
-    std::cout << "Pushing arg[" << i << "] = " << arg << std::endl;
-    executionContext_.push(arg);
-  }
+
 
   StackElement result = executionContext_.interpret(function);
 

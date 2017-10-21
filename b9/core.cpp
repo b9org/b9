@@ -394,47 +394,5 @@ StackElement VirtualMachine::run(const std::size_t functionIndex,
   return result;
 }
 
-//
-// Base9 Primitives
-//
-
-extern "C" void b9_prim_print_number(ExecutionContext *context) {
-  StackElement number = context->pop();
-  std::cout << number << " ";
-  context->push(0);
-}
-
-extern "C" void b9_prim_print_string(ExecutionContext *context) {
-  char *string = (char *)keyToChar(context->pop());
-  puts(string);
-  context->push(0);
-}
-
-extern "C" void b9_prim_hash_table_allocate(ExecutionContext *context) {
-  pHeap p = hashTable_allocate(8);
-  // if (context->debug >= 1) {
-  //   printf("IN hashTableAllocate %p\n", p);
-  // }
-  context->push((StackElement)p);
-}
-
-extern "C" void b9_prim_hash_table_put(ExecutionContext *context) {
-  StackElement v = context->pop();
-  StackElement k = context->pop();
-  StackElement ht = context->pop();
-  // if (context->debug >= 1) {
-  // printf("IN hashTablePut %p %p(%s) %p(%s) \n", ht, k, k, v, v);
-  // }
-
-  context->push((StackElement)hashTable_put(context, (pHeap)ht, (hashTableKey)k,
-                                            (hashTableKey)v));
-}
-
-extern "C" void b9_prim_hash_table_get(ExecutionContext *context) {
-  StackElement k = context->pop();
-  StackElement ht = context->pop();
-  context->push(
-      (StackElement)hashTable_get(context, (pHeap)ht, (hashTableKey)k));
-}
 
 }  // namespace b9

@@ -391,8 +391,8 @@ bool MethodBuilder::generateILForBytecode(
                 << " return bc will jump to " << jumpToBuilderForInlinedReturn
                 << ": ";
     }
-    std::cout << "generating index=" << bytecodeIndex
-              << " bc=" << b9ByteCodeName(bytecode) << "(" << (int)bytecode
+    std::cout << "generating index=" << bytecodeIndex << " bc=" << bytecode
+              << "(" << (int)bytecode
               << ") param = " << Instructions::getParameter(instruction)
               << std::endl;
   }

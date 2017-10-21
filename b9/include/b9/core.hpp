@@ -2,6 +2,7 @@
 #define b9core_hpp_
 
 #include <b9/bytecodes.hpp>
+#include <b9/instruction.hpp>
 #include <cstdint>
 #include <string>
 

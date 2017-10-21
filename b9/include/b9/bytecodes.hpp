@@ -2,6 +2,7 @@
 #define B9_BYTECODES_HPP_
 
 #include <cstdint>
+#include <ostream>
 
 namespace b9 {
 
@@ -12,12 +13,11 @@ namespace b9 {
 // Each Intruction is 32 bits: The first 8 bits are the ByteCode The second 24
 // bits may be an argument to the opcode
 
-using ByteCodeSize = std::uint8_t;
-using Parameter = std::int32_t;  // even though only 24 bits used
-using Instruction = std::uint32_t;
+using RawByteCode = std::uint8_t;
+
 using StackElement = std::int64_t;
 
-enum class ByteCode : ByteCodeSize {
+enum class ByteCode : RawByteCode {
   // Generic ByteCodes
 
   // Drop the top element of the stack
@@ -67,6 +67,59 @@ enum class ByteCode : ByteCodeSize {
   // Jump if two integer are not equal
   STR_JMP_NEQ = 0x14,
 };
+
+inline const char *toString(ByteCode bc) {
+  switch (bc) {
+    case ByteCode::DROP:
+      return "DROP";
+    case ByteCode::DUPLICATE:
+      return "DUPLICATE";
+    case ByteCode::FUNCTION_RETURN:
+      return "FUNCTION_RETURN";
+    case ByteCode::FUNCTION_CALL:
+      return "FUNCTION_CALL";
+    case ByteCode::PRIMITIVE_CALL:
+      return "PRIMITIVE_CALL";
+    case ByteCode::JMP:
+      return "JMP";
+    case ByteCode::PUSH_FROM_VAR:
+      return "PUSH_FROM_VAR";
+    case ByteCode::POP_INTO_VAR:
+      return "POP_INTO_VAR";
+    case ByteCode::INT_PUSH_CONSTANT:
+      return "INT_PUSH_CONSTANT";
+    case ByteCode::INT_SUB:
+      return "INT_SUB";
+    case ByteCode::INT_ADD:
+      return "INT_ADD";
+    case ByteCode::INT_JMP_EQ:
+      return "INT_JMP_EQ";
+    case ByteCode::INT_JMP_NEQ:
+      return "INT_JMP_NEQ";
+    case ByteCode::INT_JMP_GT:
+      return "INT_JMP_GT";
+    case ByteCode::INT_JMP_GE:
+      return "INT_JMP_GE";
+    case ByteCode::INT_JMP_LT:
+      return "INT_JMP_LT";
+    case ByteCode::INT_JMP_LE:
+      return "INT_JMP_LE";
+    case ByteCode::STR_PUSH_CONSTANT:
+      return "STR_PUSH_CONSTANT";
+    case ByteCode::STR_JMP_EQ:
+      return "STR_JMP_EQ";
+    case ByteCode::STR_JMP_NEQ:
+      return "STR_JMP_NEQ";
+    default:
+      return "UNKNOWN BYTECODE";
+  }
+}
+
+inline std::ostream &operator<<(std::ostream &out, ByteCode bc) {
+  out << std::hex;
+  return out << toString(bc) << " [" << (RawByteCode)bc << "]";
+  out << std::dec;
+}
 
 }  // namespace b9
 

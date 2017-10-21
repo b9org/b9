@@ -394,33 +394,6 @@ StackElement VirtualMachine::run(const std::size_t functionIndex,
   return result;
 }
 
-const char *b9ByteCodeName(ByteCode bc) {
-  if (bc == ByteCode::DROP) return "DROP";
-  if (bc == ByteCode::DUPLICATE) return "DUPLICATE";
-  if (bc == ByteCode::FUNCTION_RETURN) return "FUNCTION_RETURN";
-  if (bc == ByteCode::FUNCTION_CALL) return "FUNCTION_CALL";
-  if (bc == ByteCode::PRIMITIVE_CALL) return "PRIMITIVE_CALL";
-  if (bc == ByteCode::JMP) return "JMP";
-  if (bc == ByteCode::PUSH_FROM_VAR) return "PUSH_FROM_VAR";
-  if (bc == ByteCode::POP_INTO_VAR) return "POP_INTO_VAR";
-
-  if (bc == ByteCode::INT_PUSH_CONSTANT) return "INT_PUSH_CONSTANT";
-  if (bc == ByteCode::INT_SUB) return "INT_SUB";
-  if (bc == ByteCode::INT_ADD) return "INT_ADD";
-  if (bc == ByteCode::INT_JMP_EQ) return "INT_JMP_EQ";
-  if (bc == ByteCode::INT_JMP_NEQ) return "INT_JMP_NEQ";
-  if (bc == ByteCode::INT_JMP_GT) return "INT_JMP_GT";
-  if (bc == ByteCode::INT_JMP_GE) return "INT_JMP_GE";
-  if (bc == ByteCode::INT_JMP_LT) return "INT_JMP_LT";
-  if (bc == ByteCode::INT_JMP_LE) return "INT_JMP_LE";
-
-  if (bc == ByteCode::STR_PUSH_CONSTANT) return "STR_PUSH_CONSTANT";
-  if (bc == ByteCode::STR_JMP_EQ) return "STR_JMP_EQ";
-  if (bc == ByteCode::STR_JMP_NEQ) return "STR_JMP_NEQ";
-
-  return "UNKNOWN BYTECODE";
-}
-
 //
 // Base9 Primitives
 //

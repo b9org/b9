@@ -28,7 +28,7 @@ class InterpreterTest : public ::testing::TestWithParam<const char*> {
   static std::shared_ptr<Module> module_;
 
   static void SetUpTestCase() {
-    std::cerr << "**** Loading " << std::endl;
+    std::cout << "**** Loading " << std::endl;
     module_ = DlLoader{}.loadModule(InterpreterTestEnvironment::moduleName);
   }
 

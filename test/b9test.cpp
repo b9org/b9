@@ -103,12 +103,12 @@ INSTANTIATE_TEST_CASE_P(InterpreterTestSuite, InterpreterTest,
 TEST(MyTest, arguments) {
   b9::VirtualMachine vm{{}};
   auto m = std::make_shared<Module>();
-  Instruction i[] = {
-      Instructions::create(ByteCode::PUSH_FROM_VAR, 0),  //  I:0 S:0 variable a
-      Instructions::create(ByteCode::PUSH_FROM_VAR, 1),  //  I:0 S:0 variable a
-      Instructions::create(ByteCode::INT_ADD, 0),        //  I:14 S:2
-      Instructions::create(ByteCode::FUNCTION_RETURN, 0),
-      Instructions::create(ByteCodes::fromByte(NO_MORE_BYTECODES), 0)};
+  Instruction i[] = {{ByteCode::PUSH_FROM_VAR, 0},  //  I:0 S:0 variable a
+                     {ByteCode::PUSH_FROM_VAR, 1},  //  I:0 S:0 variable a
+                     {ByteCode::INT_ADD},           //  I:14 S:2
+                     {ByteCode::FUNCTION_RETURN},
+                     {NO_MORE_BYTECODES}};
+
   m->functions.push_back(b9::FunctionSpec{"add_args", i, 2, 0});
   vm.load(m);
   auto r = vm.run("add_args", {1, 2});

@@ -194,7 +194,7 @@ function CodeGen(f) {
             if (typeof(param) == "function") computedParm = param(instruction);
             var out = " I:" + instruction.instructionIndex + " S:" + instruction.stack + " " + comment;
             return gen.outputInstructionText(
-                "{" + bc + "," + computedParm + "},",
+                "{" + bc + ", " + computedParm + "},",
                 out,
                 true);
         };
@@ -203,10 +203,10 @@ function CodeGen(f) {
     }
 
     this.outputInstructionText = function(out, comment, tab) {
-        while (out.length < 32) out += " ";
-        var line = "\t" + out;
+        while (out.length < 40) out += " ";
+        var line = "    " + out;
         if (comment) {
-            line = line + "\t// " + comment;
+            line = line + "  // " + comment;
         }
         return line;
     };
@@ -235,7 +235,7 @@ function CodeGen(f) {
             var function_table = 'static const DlFunctionEntry b9_functions[] = {\n'
             for (name in functions) {
                 var f = functions[name];
-                function_table += '  { "' + name + '", ' + name + ', ' + f.nargs + ', ' + f.nregs + '}, // ' + f + "\n";
+                function_table += '    { "' + name + '", ' + name + ', ' + f.nargs + ', ' + f.nregs + '},  // ' + f + "\n";
             }
             function_table += '};\n'
             return function_table;
@@ -471,18 +471,6 @@ function CodeGen(f) {
         var fThis = this;
         var func = fThis.currentFunction;
 
-        // // Output two empty slots for the JIT address
-        // this.outputRawString(this.outputInstructionText(
-        //     "decl (0,0),",
-        //     "0: space for JIT address",
-        //     true));
-        // this.outputRawString(this.outputInstructionText(
-        //     "decl (0,0),",
-        //     "0: space for JIT address",
-        //     true));
-
-        this.outputRawString("");
-
         this.handle(decl.body);
 
         this.genReturn(true);
@@ -507,7 +495,7 @@ function CodeGen(f) {
     };
 
     this.genEndOfByteCodes = function() {
-        this.outputRawString("{NO_MORE_BYTECODES}};", " end of function");
+        this.outputRawString("    {NO_MORE_BYTECODES}};", " end of function");
     };
 
     this.processDeferred = function() {

@@ -35,13 +35,13 @@ class Instruction {
   }
 
   /// Encode the bytecode
-  Instruction &bytecode(ByteCode bc) noexcept {
+  Instruction &byteCode(ByteCode bc) noexcept {
     raw_ = RawByteCode(bc) << BYTECODE_SHIFT | parameter();
     return *this;
   }
 
   /// Decode the bytecode
-  ByteCode bytecode() const noexcept {
+  ByteCode byteCode() const noexcept {
     return static_cast<ByteCode>(raw_ >> BYTECODE_SHIFT);
   }
 
@@ -69,7 +69,7 @@ class Instruction {
 };
 
 inline std::ostream &operator<<(std::ostream &out, Instruction i) {
-  return out << i.bytecode() << "(" << i.parameter() << ")";
+  return out << i.byteCode() << "(" << i.parameter() << ")";
 }
 
 }  // namespace b9

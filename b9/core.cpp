@@ -1,4 +1,3 @@
-#include <b9/core.hpp>
 #include <b9/hash.hpp>
 #include <b9/interpreter.hpp>
 #include <b9/jit.hpp>
@@ -234,16 +233,12 @@ StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
   stackPointer_ += function->nregs;
 
   while (*instructionPointer != NO_MORE_BYTECODES) {
-    // b9PrintStack(context);
-    // std::cerr << "instruction call " << std::hex << (int)
-    // ByteCodes::toByte(Instructions::getByteCode(*instructionPointer)) <<
-    // std::endl;
-    switch (Instructions::getByteCode(*instructionPointer)) {
+    switch (instructionPointer->byteCode()) {
       case ByteCode::INT_PUSH_CONSTANT:
-        intPushConstant(Instructions::getParameter(*instructionPointer));
+        intPushConstant(instructionPointer->parameter());
         break;
       case ByteCode::STR_PUSH_CONSTANT:
-        strPushConstant(Instructions::getParameter(*instructionPointer));
+        strPushConstant(instructionPointer->parameter());
         break;
       case ByteCode::DROP:
         drop();
@@ -255,41 +250,35 @@ StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
         intSub();
         break;
       case ByteCode::JMP:
-        instructionPointer += Instructions::getParameter(*instructionPointer);
+        instructionPointer += instructionPointer->parameter();
         break;
       case ByteCode::INT_JMP_EQ:
-        instructionPointer +=
-            intJmpEq(Instructions::getParameter(*instructionPointer));
+        instructionPointer += intJmpEq(instructionPointer->parameter());
         break;
       case ByteCode::INT_JMP_NEQ:
-        instructionPointer +=
-            intJmpNeq(Instructions::getParameter(*instructionPointer));
+        instructionPointer += intJmpNeq(instructionPointer->parameter());
         break;
       case ByteCode::INT_JMP_GT:
-        instructionPointer +=
-            intJmpGt(Instructions::getParameter(*instructionPointer));
+        instructionPointer += intJmpGt(instructionPointer->parameter());
         break;
       case ByteCode::INT_JMP_GE:
-        instructionPointer +=
-            intJmpGe(Instructions::getParameter(*instructionPointer));
+        instructionPointer += intJmpGe(instructionPointer->parameter());
         break;
       case ByteCode::INT_JMP_LT:
-        instructionPointer +=
-            intJmpLt(Instructions::getParameter(*instructionPointer));
+        instructionPointer += intJmpLt(instructionPointer->parameter());
         break;
       case ByteCode::INT_JMP_LE:
-        instructionPointer +=
-            intJmpLe(Instructions::getParameter(*instructionPointer));
+        instructionPointer += intJmpLe(instructionPointer->parameter());
         break;
       case ByteCode::FUNCTION_CALL:
-        functionCall(Instructions::getParameter(*instructionPointer));
+        functionCall(instructionPointer->parameter());
         break;
       case ByteCode::PUSH_FROM_VAR:
-        pushFromVar(args, Instructions::getParameter(*instructionPointer));
+        pushFromVar(args, instructionPointer->parameter());
         break;
       case ByteCode::POP_INTO_VAR:
         // TODO bad name, push or pop?
-        pushIntoVar(args, Instructions::getParameter(*instructionPointer));
+        pushIntoVar(args, instructionPointer->parameter());
         break;
       case ByteCode::FUNCTION_RETURN: {
         StackElement result = *(stackPointer_ - 1);
@@ -298,7 +287,7 @@ StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
         break;
       }
       case ByteCode::PRIMITIVE_CALL:
-        primitiveCall(Instructions::getParameter(*instructionPointer));
+        primitiveCall(instructionPointer->parameter());
         break;
       default:
         assert(false);

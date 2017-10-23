@@ -194,7 +194,7 @@ function CodeGen(f) {
             if (typeof(param) == "function") computedParm = param(instruction);
             var out = " I:" + instruction.instructionIndex + " S:" + instruction.stack + " " + comment;
             return gen.outputInstructionText(
-                "Instructions::create(" + bc + "," + computedParm + "),",
+                "{" + bc + "," + computedParm + "},",
                 out,
                 true);
         };
@@ -507,7 +507,7 @@ function CodeGen(f) {
     };
 
     this.genEndOfByteCodes = function() {
-        this.outputRawString("Instructions::create(ByteCodes::fromByte(NO_MORE_BYTECODES), 0)};", " end of function");
+        this.outputRawString("{NO_MORE_BYTECODES}};", " end of function");
     };
 
     this.processDeferred = function() {

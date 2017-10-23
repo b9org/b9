@@ -77,25 +77,19 @@ int parseArguments(ExecutionContext *context, int argc, char *argv[]);
 
 Instruction *getFunctionAddress(ExecutionContext *context,
                                 const char *functionName);
-// StackElement interpret(ExecutionContext* context, Instruction* program);
 StackElement timeFunction(VirtualMachine *virtualMachine, Instruction *function,
                           int loopCount, long *runningTime);
 
-StackElement interpret_0(ExecutionContext *context, Instruction *program);
-StackElement interpret_1(ExecutionContext *context, Instruction *program,
-                         StackElement p1);
-StackElement interpret_2(ExecutionContext *context, Instruction *program,
-                         StackElement p1, StackElement p2);
-StackElement interpret_3(ExecutionContext *context, Instruction *program,
-                         StackElement p1, StackElement p2, StackElement p3);
-
-StackElement interpret_0(ExecutionContext *context, Instruction *program);
-StackElement interpret_1(ExecutionContext *context, Instruction *program,
-                         StackElement p1);
-StackElement interpret_2(ExecutionContext *context, Instruction *program,
-                         StackElement p1, StackElement p2);
-StackElement interpret_3(ExecutionContext *context, Instruction *program,
-                         StackElement p1, StackElement p2, StackElement p3);
+StackElement interpret_0(ExecutionContext *context,
+                         const std::size_t functionIndex);
+StackElement interpret_1(ExecutionContext *context,
+                         const std::size_t functionIndex, StackElement p1);
+StackElement interpret_2(ExecutionContext *context,
+                         const std::size_t functionIndex, StackElement p1,
+                         StackElement p2);
+StackElement interpret_3(ExecutionContext *context,
+                         const std::size_t functionIndex, StackElement p1,
+                         StackElement p2, StackElement p3);
 
 /* Debug Helpers */
 void b9PrintStack(ExecutionContext *context);

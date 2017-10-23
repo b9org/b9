@@ -1,7 +1,7 @@
-#include <iostream>
-#include <b9/core.hpp>
 #include <b9.hpp>
+#include <b9/core.hpp>
 #include <b9/hash.hpp>
+#include <iostream>
 
 using namespace b9;
 

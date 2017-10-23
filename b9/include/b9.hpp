@@ -39,12 +39,12 @@ struct Stack {
 
 class ExecutionContext {
  public:
-  ExecutionContext(VirtualMachine *virtualMachine)
-      : virtualMachine_(virtualMachine) {
+  ExecutionContext(VirtualMachine *virtualMachine, const Config &cfg)
+      : virtualMachine_(virtualMachine), cfg_(cfg) {
     std::memset(stack_, 0, sizeof(StackElement) * 1000);
   }
 
-  StackElement interpret(const FunctionSpec *function);
+  StackElement interpret(std::size_t functionIndex);
 
   void push(StackElement value);
   StackElement pop();
@@ -83,6 +83,7 @@ class ExecutionContext {
   Instruction *programCounter_ = 0;
   StackElement *stackEnd_ = &stack_[1000];
   VirtualMachine *virtualMachine_;
+  const Config &cfg_;
 };
 
 class VirtualMachine {
@@ -105,12 +106,14 @@ class VirtualMachine {
   void setJitAddress(std::size_t functionIndex, void *value);
 
   std::size_t getFunctionCount();
-  void generateCode(int32_t functionIndex);
+  uint8_t *generateCode(const FunctionSpec &functionSpec);
   void generateAllCode();
 
   const char *getString(int index);
 
   ExecutionContext *executionContext() { return &executionContext_; }
+
+  const std::shared_ptr<const Module> &module() { return module_; }
 
  private:
   Config cfg_;

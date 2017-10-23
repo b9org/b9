@@ -41,6 +41,7 @@ class MethodBuilder : public TR::MethodBuilder {
   TR::IlType *stackElementType;
   TR::IlType *stackElementPointerType;
 
+  TR::IlType *addressPointerType;
   TR::IlType *int64PointerType;
   TR::IlType *int32PointerType;
   TR::IlType *int16PointerType;

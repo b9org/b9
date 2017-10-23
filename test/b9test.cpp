@@ -1,4 +1,4 @@
-#include <b9.hpp>
+#include <b9/interpreter.hpp>
 #include <b9/loader.hpp>
 
 #include <stdio.h>

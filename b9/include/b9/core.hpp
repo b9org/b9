@@ -3,6 +3,8 @@
 
 #include <b9/bytecodes.hpp>
 #include <b9/instruction.hpp>
+#include <b9/interpreter.hpp>
+
 #include <cstdint>
 #include <string>
 
@@ -33,68 +35,6 @@ class Instructions final {
                                       : instruction & 0xFFFFFF);
   }
 };
-
-class VirtualMachine;
-class ExecutionContext;
-
-// Primitive Function from Interpreter call
-extern "C" typedef void(PrimitiveFunction)(ExecutionContext *virtualMachine);
-
-void bc_primitive(VirtualMachine *context, Parameter value);
-
-// typedef StackElement (*Interpret) (ExecutionContext* context, Instruction*
-// program);
-
-typedef StackElement (*Interpret)(ExecutionContext *context,
-                                  const Instruction *program);
-
-// define C callable Interpret API for each arg call
-// if args are passed to the function, they are not passed
-// on the intepreter stack
-
-typedef StackElement (*interpret_n_args)(ExecutionContext *context,
-                                         Instruction *program, ...);
-
-typedef StackElement (*Interpret_0_args)(ExecutionContext *context,
-                                         Instruction *program);
-typedef StackElement (*Interpret_1_args)(ExecutionContext *context,
-                                         Instruction *program, StackElement p1);
-typedef StackElement (*Interpret_2_args)(ExecutionContext *context,
-                                         Instruction *program, StackElement p1,
-                                         StackElement p2);
-typedef StackElement (*Interpret_3_args)(ExecutionContext *context,
-                                         Instruction *program, StackElement p1,
-                                         StackElement p2, StackElement p3);
-
-typedef StackElement (*JIT_0_args)();
-typedef StackElement (*JIT_1_args)(StackElement p1);
-typedef StackElement (*JIT_2_args)(StackElement p1, StackElement p2);
-typedef StackElement (*JIT_3_args)(StackElement p1, StackElement p2,
-                                   StackElement p3);
-
-/* B9 Interpreter */
-int parseArguments(ExecutionContext *context, int argc, char *argv[]);
-
-Instruction *getFunctionAddress(ExecutionContext *context,
-                                const char *functionName);
-StackElement timeFunction(VirtualMachine *virtualMachine, Instruction *function,
-                          int loopCount, long *runningTime);
-
-StackElement interpret_0(ExecutionContext *context,
-                         const std::size_t functionIndex);
-StackElement interpret_1(ExecutionContext *context,
-                         const std::size_t functionIndex, StackElement p1);
-StackElement interpret_2(ExecutionContext *context,
-                         const std::size_t functionIndex, StackElement p1,
-                         StackElement p2);
-StackElement interpret_3(ExecutionContext *context,
-                         const std::size_t functionIndex, StackElement p1,
-                         StackElement p2, StackElement p3);
-
-/* Debug Helpers */
-void b9PrintStack(ExecutionContext *context);
-
-const char *b9ByteCodeName(ByteCode bc);
 
 }  // namespace b9
 #endif  // b9core_hpp_

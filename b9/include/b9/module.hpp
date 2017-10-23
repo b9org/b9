@@ -8,6 +8,10 @@
 
 namespace b9 {
 
+class Compiler;
+class ExecutionContext;
+class VirtualMachine;
+
 /// Function specification. Metadata about a function.
 struct FunctionSpec {
   FunctionSpec(const std::string& name, const Instruction* address,
@@ -19,6 +23,9 @@ struct FunctionSpec {
   std::uint32_t nregs;
   std::string name;
 };
+
+// Primitive Function from Interpreter call
+extern "C" typedef void(PrimitiveFunction)(ExecutionContext* virtualMachine);
 
 /// Function not found exception.
 struct FunctionNotFoundException : public std::runtime_error {

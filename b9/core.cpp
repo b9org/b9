@@ -1,7 +1,6 @@
-#include <b9.hpp>
-
 #include <b9/core.hpp>
 #include <b9/hash.hpp>
+#include <b9/interpreter.hpp>
 #include <b9/jit.hpp>
 #include <b9/loader.hpp>
 

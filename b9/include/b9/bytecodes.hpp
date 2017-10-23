@@ -8,14 +8,8 @@ namespace b9 {
 
 #define NO_MORE_BYTECODES 0x0
 
-// ByteCodes
-
-// Each Intruction is 32 bits: The first 8 bits are the ByteCode The second 24
 // bits may be an argument to the opcode
-
 using RawByteCode = std::uint8_t;
-
-using StackElement = std::int64_t;
 
 enum class ByteCode : RawByteCode {
   // Generic ByteCodes

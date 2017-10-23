@@ -1,8 +1,8 @@
-#include <b9.hpp>
+#include <b9/interpreter.hpp>
 
-#include <b9.hpp>
 #include <b9/bytecodes.hpp>
 #include <b9/core.hpp>
+#include <b9/interpreter.hpp>
 #include <b9/jit.hpp>
 
 #include "Jit.hpp"

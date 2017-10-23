@@ -212,7 +212,7 @@ function CodeGen(f) {
     };
 
     this.handleHeaders = function() {
-        this.outputRawString('#include <b9.hpp>');
+        this.outputRawString('#include <b9/interpreter.hpp>');
         this.outputRawString('#include <b9/loader.hpp>');
         this.outputRawString('');
         this.outputRawString('using namespace b9;');

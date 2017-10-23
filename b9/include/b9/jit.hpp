@@ -1,8 +1,8 @@
 #ifndef B9_JIT_INCL
 #define B9_JIT_INCL
 
-#include <b9.hpp>
 #include <b9/core.hpp>
+#include <b9/interpreter.hpp>
 
 #include "ilgen/MethodBuilder.hpp"
 #include "ilgen/TypeDictionary.hpp"

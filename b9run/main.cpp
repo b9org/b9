@@ -100,13 +100,16 @@ static void run(const RunConfig& cfg) {
 
   vm.load(module);
 
+  if (cfg.b9.jit) vm.generateAllCode();
+
   size_t functionIndex = module->findFunction(cfg.mainFunction);
   if (cfg.loopCount == 1) {
     b9::StackElement returnVal = vm.run(functionIndex, cfg.usrArgs);
-    std::cout << cfg.mainFunction << " returned: " << returnVal << std::endl;
+    std::cout << std::endl
+              << cfg.mainFunction << " returned: " << returnVal << std::endl;
   } else {
     b9::StackElement returnVal;
-    std::cout << "Running " << cfg.mainFunction << " " << cfg.loopCount
+    std::cout << "\nRunning " << cfg.mainFunction << " " << cfg.loopCount
               << " times:" << std::endl;
     for (std::size_t i = 1; i <= cfg.loopCount; i++) {
       returnVal = vm.run(functionIndex, cfg.usrArgs);

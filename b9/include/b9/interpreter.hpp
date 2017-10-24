@@ -126,7 +126,7 @@ class VirtualMachine {
 };
 
 typedef StackElement (*Interpret)(ExecutionContext *context,
-                                  const Instruction *program);
+                                  const std::size_t functionIndex);
 
 typedef StackElement (*JIT_0_args)();
 typedef StackElement (*JIT_1_args)(StackElement p1);
@@ -148,6 +148,8 @@ StackElement interpret_2(ExecutionContext *context,
 StackElement interpret_3(ExecutionContext *context,
                          const std::size_t functionIndex, StackElement p1,
                          StackElement p2, StackElement p3);
+
+void primitive_call(ExecutionContext *context, Parameter value);
 
 }  // namespace b9
 

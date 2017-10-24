@@ -140,7 +140,7 @@ VirtualMachine::~VirtualMachine() noexcept {
 
 void VirtualMachine::load(std::shared_ptr<const Module> module) {
   module_ = module;
-  compiledFunctions_.reserve(module_->functions.size());
+  compiledFunctions_.reserve(getFunctionCount());
 }
 
 /// ByteCode Interpreter
@@ -170,41 +170,43 @@ StackElement interpret_3(ExecutionContext *context,
   return context->interpret(functionIndex);
 }
 
+// For primitive calls
+void primitive_call(ExecutionContext *context, Parameter value) {
+  context->primitiveCall(value);
+}
+
 StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
   auto function = virtualMachine_->getFunction(functionIndex);
   auto argsCount = function->nargs;
   auto address = virtualMachine_->getJitAddress(functionIndex);
 
-  if (cfg_.jit && address == nullptr) {
-    if (cfg_.debug)
-      std::cout << "Jitting function: " << function->name.c_str() << std::endl;
-    address = virtualMachine_->generateCode(*function);
-    virtualMachine_->setJitAddress(functionIndex, address);
-  }
-
   if (address) {
     if (cfg_.debug)
-      std::cout << "Calling JIT address at " << address << std::endl;
+      std::cout << "Calling " << function->name.c_str()
+                << " with JIT address at " << address << std::endl;
     StackElement result = 0;
     if (cfg_.passParam) {
-      if (cfg_.debug) std::cout << "passing parameters via registers\n";
       switch (argsCount) {
         case 0: {
+          if (cfg_.debug) std::cout << "calling with no args\n";
           JIT_0_args jitedcode = (JIT_0_args)address;
           result = (*jitedcode)();
         } break;
         case 1: {
+          if (cfg_.debug) std::cout << "calling with one args\n";
           JIT_1_args jitedcode = (JIT_1_args)address;
           StackElement p1 = pop();
           result = (*jitedcode)(p1);
         } break;
         case 2: {
+          if (cfg_.debug) std::cout << "calling with two args\n";
           JIT_2_args jitedcode = (JIT_2_args)address;
           StackElement p2 = pop();
           StackElement p1 = pop();
           result = (*jitedcode)(p1, p2);
         } break;
         case 3: {
+          if (cfg_.debug) std::cout << "calling with three args\n";
           JIT_3_args jitedcode = (JIT_3_args)address;
           StackElement p3 = pop();
           StackElement p2 = pop();
@@ -220,12 +222,10 @@ StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
       // ExecutionContext stack.
       if (cfg_.debug) std::cout << "passing parameters on the stack\n";
       Interpret jitedcode = (Interpret)address;
-      result = (*jitedcode)(this, function->address);
+      result = (*jitedcode)(this, functionIndex);
     }
     return result;
   }
-
-  // std::cout << "Interpreting...\n" << std::endl;
 
   // interpret the method otherwise
   const Instruction *instructionPointer = function->address;
@@ -307,12 +307,7 @@ void *VirtualMachine::getJitAddress(std::size_t functionIndex) {
 }
 
 void VirtualMachine::setJitAddress(std::size_t functionIndex, void *value) {
-  // std::cout << "compiledFunctions_ capacity is: " <<
-  // compiledFunctions_.capacity() << std::endl;
-  // compiledFunctions_.insert(compiledFunctions_.begin()+functionIndex, value);
   compiledFunctions_[functionIndex] = value;
-  // std::cout << "new compiledFunctions_ capacity is: " <<
-  // compiledFunctions_.capacity() << std::endl;
 }
 
 PrimitiveFunction *VirtualMachine::getPrimitive(std::size_t index) {
@@ -349,10 +344,14 @@ std::size_t VirtualMachine::getFunctionCount() {
 // }
 
 void VirtualMachine::generateAllCode() {
-  std::size_t i = 0;
+  assert(cfg_.jit);
+
   for (auto &functionSpec : module_->functions) {
+    if (cfg_.debug)
+      std::cout << "\nJitting function: " << functionSpec.name.c_str()
+                << std::endl;
     auto func = compiler_->generateCode(functionSpec);
-    setJitAddress(i, func);
+    compiledFunctions_.push_back(func);
   }
 }
 
@@ -371,9 +370,11 @@ StackElement VirtualMachine::run(const std::size_t functionIndex,
   auto function = getFunction(functionIndex);
   auto argsCount = function->nargs;
 
-  if (cfg_.verbose)
-    std::cout << "Running function: " << functionIndex
+  if (cfg_.verbose) {
+    std::cout << "+++++++++++++++++++++++\n";
+    std::cout << "Running function: " << function->name.c_str()
               << " nargs: " << argsCount << std::endl;
+  }
 
   if (argsCount != usrArgs.size()) {
     std::stringstream ss;

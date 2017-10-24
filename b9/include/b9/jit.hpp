@@ -57,7 +57,8 @@ class MethodBuilder : public TR::MethodBuilder {
       TR::BytecodeBuilder *jumpToBuilderForInlinedReturn);
 
   bool inlineProgramIntoBuilder(
-      bool isTopLevel, TR::BytecodeBuilder *currentBuilder = 0,
+      const FunctionSpec *function, bool isTopLevel,
+      TR::BytecodeBuilder *currentBuilder = 0,
       TR::BytecodeBuilder *jumpToBuilderForInlinedReturn = 0);
 
   TR::IlValue *pop(TR::BytecodeBuilder *builder);

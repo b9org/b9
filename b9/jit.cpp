@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <cstring>
 #include <iostream>
+#include <sstream>
 #include <vector>
 
 namespace b9 {
@@ -129,12 +130,10 @@ MethodBuilder::MethodBuilder(VirtualMachine *virtualMachine,
   defineParameters(functionSpec.nargs);
 
   if (cfg.lazyVmState) {
-    std::cout << "firstArgumentIndex = " << firstArgumentIndex
-              << std::endl;  // hack for topLevel
     DefineLocal("localStack", stackType);
   }
 
-  defineLocals(functionSpec.nregs);
+  defineLocals(functionSpec.nargs);
 
   defineFunctions();
 
@@ -151,6 +150,7 @@ static const char *argsAndTempNames[] = {
   sizeof(argsAndTempNames) / sizeof(argsAndTempNames[0])
 
 void MethodBuilder::defineParameters(std::size_t argCount) {
+  if (cfg_.debug) std::cout << "Defining " << argCount << " parameters\n";
   if (cfg_.passParam) {
     for (int i = 0; i < argCount; i++) {
       DefineParameter(argsAndTempNames[i], stackElementType);
@@ -179,35 +179,20 @@ void MethodBuilder::defineLocals(std::size_t argCount) {
 }
 
 void MethodBuilder::defineFunctions() {
-  // DefineFunction((char *)"printVMState", (char *)__FILE__, "printVMState",
-  //                (void *)&printVMState, NoType, 4, Int64, Int64, Int64,
-  //                Int64);
-  // DefineFunction((char *)"printStack", (char *)__FILE__, "printStack",
-  //                (void *)&b9PrintStack, NoType, 1, Int64);
-  // DefineFunction((char *)"interpret", (char *)__FILE__, "interpret",
-  //    (void *)&interpret, Int64, 2, addressPointerType, int32PointerType);
-
-  // TODO
-  /*
-    int functionIndex = 0;
-    const std::shared_ptr<const Module> module = virtualMachine_->module();
-    while (functionIndex < module.primitives.size()) {
-      if (virtualMachine_->getJitAddress(functionIndex) {
-        DefineFunction(module.primitives[functionIndex].
-
-      if (context->functions[functionIndex].jitAddress) {
-        DefineFunction(context->functions[functionIndex].name, (char *)__FILE__,
-            context->functions[functionIndex].name,
-            (void *)context->functions[functionIndex].jitAddress,
-            Int64,
-            progArgCount(*context->functions[functionIndex].program),
-            stackElementType, stackElementType, stackElementType,
-            stackElementType, stackElementType, stackElementType,
-            stackElementType, stackElementType);
-      }
-      functionIndex++;
+  int functionIndex = 0;
+  while (functionIndex < virtualMachine_->getFunctionCount()) {
+    if (virtualMachine_->getJitAddress(functionIndex) != nullptr) {
+      auto function = virtualMachine_->getFunction(functionIndex);
+      auto name = function->name.c_str();
+      DefineFunction(name, (char *)__FILE__, name,
+                     virtualMachine_->getJitAddress(functionIndex), Int64,
+                     function->nargs, stackElementType, stackElementType,
+                     stackElementType, stackElementType, stackElementType,
+                     stackElementType, stackElementType, stackElementType);
     }
-  */
+    functionIndex++;
+  }
+
   DefineFunction((char *)"interpret_0", (char *)__FILE__, "interpret_0",
                  (void *)&interpret_0, Int64, 2, addressPointerType,
                  int32PointerType);
@@ -221,9 +206,8 @@ void MethodBuilder::defineFunctions() {
                  (void *)&interpret_3, Int64, 5, addressPointerType,
                  int32PointerType, stackElementType, stackElementType,
                  stackElementType);
-  // DefineFunction((char *)"bc_primitive", (char *)__FILE__, "bc_primitive",
-  //    (void *)&bc_primitive, Int64, 2, addressPointerType,
-  //    Int32);
+  DefineFunction((char *)"primitive_call", (char *)__FILE__, "primitive_call",
+                 (void *)&primitive_call, Int64, 2, addressPointerType, Int32);
 }
 
 #define QSTACK(b) (((VirtualMachineState *)(b)->vmState())->_stack)
@@ -244,14 +228,17 @@ long computeNumberOfBytecodes(const Instruction *program) {
 }
 
 bool MethodBuilder::inlineProgramIntoBuilder(
-    bool isTopLevel, TR::BytecodeBuilder *currentBuilder,
+    const FunctionSpec *function, bool isTopLevel,
+    TR::BytecodeBuilder *currentBuilder,
     TR::BytecodeBuilder *jumpToBuilderForInlinedReturn) {
   bool success = true;
   maxInlineDepth--;
-  const Instruction *program = functionSpec_.address;
+  const Instruction *program = function->address;
 
   // Create a BytecodeBuilder for each Bytecode
-  long numberOfBytecodes = computeNumberOfBytecodes(functionSpec_.address);
+  auto numberOfBytecodes = computeNumberOfBytecodes(program);
+  if (cfg_.debug)
+    std::cout << "Creating " << numberOfBytecodes << " bytecode builders\n";
   std::vector<TR::BytecodeBuilder *> builderTable;
   for (int i = 0; i < numberOfBytecodes; i++) {
     builderTable.push_back(OrphanBytecodeBuilder(i));
@@ -270,8 +257,8 @@ bool MethodBuilder::inlineProgramIntoBuilder(
     // only initialize locals if top level, inlines will be stored into from
     // parent.
     if (cfg_.passParam) {
-      int argsCount = functionSpec_.nargs;
-      int regsCount = functionSpec_.nregs;
+      int argsCount = function->nargs;
+      int regsCount = function->nregs;
       for (int i = argsCount; i < argsCount + regsCount; i++) {
         storeVarIndex(builder, i,
                       builder->ConstInt64(0));  // init all temps to zero
@@ -283,11 +270,10 @@ bool MethodBuilder::inlineProgramIntoBuilder(
                                               builder->ConstAddress(stack_));
       TR::IlValue *args =
           builder->IndexAt(stackElementPointerType, sp,
-                           builder->ConstInt32(0 - functionSpec_.nargs));
+                           builder->ConstInt32(0 - function->nargs));
       builder->Store("returnSP", args);
-      TR::IlValue *newSP =
-          builder->IndexAt(stackElementPointerType, sp,
-                           builder->ConstInt32(functionSpec_.nregs));
+      TR::IlValue *newSP = builder->IndexAt(
+          stackElementPointerType, sp, builder->ConstInt32(function->nregs));
       builder->StoreIndirect("Stack", "stackPointer",
                              builder->ConstAddress(stack_), newSP);
     }
@@ -322,7 +308,7 @@ bool MethodBuilder::buildIL() {
     setVMState(new OMR::VirtualMachineState());
   }
 
-  return inlineProgramIntoBuilder(true);
+  return inlineProgramIntoBuilder(&functionSpec_, true);
 }
 
 TR::IlValue *MethodBuilder::loadVarIndex(TR::BytecodeBuilder *builder,
@@ -381,7 +367,7 @@ bool MethodBuilder::generateILForBytecode(
     return false;
   }
 
-  long numberOfBytecodes = computeNumberOfBytecodes(program);
+  auto numberOfBytecodes = computeNumberOfBytecodes(program);
   TR::BytecodeBuilder *nextBytecodeBuilder = nullptr;
   int32_t nextBytecodeIndex = bytecodeIndex + 1;
   if (nextBytecodeIndex < numberOfBytecodes) {
@@ -399,17 +385,6 @@ bool MethodBuilder::generateILForBytecode(
     std::cout << "generating index=" << bytecodeIndex << " bc=" << instruction
               << std::endl;
   }
-
-  /*
-    if (cfg_.debug) {
-      QCOMMIT(builder);
-
-      builder->Call(
-          "printVMState", 4, builder->ConstAddress(stack_),
-          builder->ConstInt64(bytecodeIndex), builder->ConstInt64(bytecode),
-          builder->ConstInt64(instruction.byteCode());
-    }
-  */
 
   switch (bytecode) {
     case ByteCode::PUSH_FROM_VAR:
@@ -481,17 +456,20 @@ bool MethodBuilder::generateILForBytecode(
     } break;
     case ByteCode::STR_PUSH_CONSTANT: {
       int index = instruction.parameter();
-      // push(builder, builder->ConstInt64(
-      //                  (int64_t)(char *)virtualMachine_->getString(index)));
-      push(builder,
-           builder->ConstAddress(&virtualMachine_->module()->strings[index]));
-      builder->AddFallThroughBuilder(nextBytecodeBuilder);
+      push(builder, builder->ConstInt64(
+                        (int64_t)(char *)virtualMachine_->getString(index)));
+      if (nextBytecodeBuilder)
+        builder->AddFallThroughBuilder(nextBytecodeBuilder);
     } break;
     case ByteCode::PRIMITIVE_CALL: {
-      int index = instruction.parameter();
-      push(builder, builder->ConstAddress(
-                        (void *)(virtualMachine_->getPrimitive(index))));
-      builder->AddFallThroughBuilder(nextBytecodeBuilder);
+      QCOMMIT(builder);
+      TR::IlValue *result = builder->Call(
+          "primitive_call", 2,
+          builder->ConstAddress(virtualMachine_->executionContext()),
+          builder->ConstInt32(instruction.parameter()));
+      push(builder, result);
+      if (nextBytecodeBuilder)
+        builder->AddFallThroughBuilder(nextBytecodeBuilder);
     } break;
     case ByteCode::FUNCTION_CALL: {
       const std::size_t callindex = instruction.parameter();
@@ -501,6 +479,9 @@ bool MethodBuilder::generateILForBytecode(
       const std::uint32_t regsCount = callee->nregs;
 
       if (cfg_.directCall) {
+        if (cfg_.debug)
+          std::cout << "Handling direct calls to " << callee->name.c_str()
+                    << std::endl;
         const char *interpretName[] = {"interpret_0", "interpret_1",
                                        "interpret_2", "interpret_3"};
         const char *nameToCall = interpretName[argsCount];
@@ -512,6 +493,9 @@ bool MethodBuilder::generateILForBytecode(
         }
 
         if (cfg_.passParam) {
+          if (cfg_.debug) {
+            std::cout << "Parameters are passed to the function call\n";
+          }
           if (maxInlineDepth >= 0 && !interp) {
             int32_t save = firstArgumentIndex;
             int32_t skipLocals = functionSpec_.nargs + functionSpec_.nregs;
@@ -530,13 +514,17 @@ bool MethodBuilder::generateILForBytecode(
                 // printf("Storing temp %d into dest variable \n", storeInto);
                 storeVarIndex(builder, storeInto,
                               pop(builder));  // firstArgumentIndex is added in
-                // storeVarIndex
+                                              // storeVarIndex
               }
-              bool result =
-                  inlineProgramIntoBuilder(false, builder, nextBytecodeBuilder);
+              bool result = inlineProgramIntoBuilder(callee, false, builder,
+                                                     nextBytecodeBuilder);
               if (!result) {
                 printf("Failed inlineProgramIntoBuilder\n");
                 return result;
+              } else {
+                if (cfg_.debug)
+                  std::cout << "Successfully inlined: " << callee->name.c_str()
+                            << std::endl;
               }
               // printf("SETTING SKEW BACK from %d to %d\n", firstArgumentIndex,
               // save);
@@ -560,7 +548,7 @@ bool MethodBuilder::generateILForBytecode(
             TR::IlValue *result = builder->Call(
                 nameToCall, 2 + argsCount,
                 builder->ConstAddress(virtualMachine_->executionContext()),
-                builder->ConstAddress(tocall), p[0], p[1], p[2], p[3], p[4],
+                builder->ConstInt32(callindex), p[0], p[1], p[2], p[3], p[4],
                 p[5], p[6], p[7]);
             push(builder, result);
           } else {
@@ -570,14 +558,21 @@ bool MethodBuilder::generateILForBytecode(
             push(builder, result);
           }
         } else {
+          if (cfg_.debug) {
+            std::cout << "Parameters are on stack to the function call\n";
+          }
           TR::IlValue *result;
           QCOMMIT(builder);
           if (interp) {
+            if (cfg_.debug)
+              std::cout << "calling interpreter " << nameToCall << std::endl;
             result = builder->Call(
                 nameToCall, 2,
                 builder->ConstAddress(virtualMachine_->executionContext()),
-                builder->ConstAddress(tocall));
+                builder->ConstInt32(callindex));
           } else {
+            if (cfg_.debug)
+              std::cout << "calling " << nameToCall << " directly\n";
             result = builder->Call(nameToCall, 0);
           }
           QRELOAD_DROP(builder, argsCount);
@@ -585,11 +580,15 @@ bool MethodBuilder::generateILForBytecode(
         }
       } else {
         // only use interpreter to dispatch the calls
+        if (cfg_.debug)
+          std::cout << "Calling interpret_0 to dispatch call for "
+                    << callee->name.c_str() << " with " << argsCount
+                    << "args\n";
         QCOMMIT(builder);
         TR::IlValue *result = builder->Call(
             "interpret_0", 2,
             builder->ConstAddress(virtualMachine_->executionContext()),
-            builder->ConstAddress(tocall));
+            builder->ConstInt32(callindex));
         QRELOAD_DROP(builder, argsCount);
         push(builder, result);
       }
@@ -757,7 +756,6 @@ TR::IlValue *MethodBuilder::pop(TR::BytecodeBuilder *builder) {
                            builder->ConstAddress(stack_), newSP);
     return builder->LoadAt(stackElementPointerType, newSP);
   }
-  return builder->ConstInt32(0);
 }
 
 void MethodBuilder::push(TR::BytecodeBuilder *builder, TR::IlValue *value) {

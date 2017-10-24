@@ -695,8 +695,19 @@ function CodeGen(f) {
         this.label++;
 
         this.savehack(function() {
+
+            var instruction = null;
             var code = this.handle(decl.test);
-            var instruction = this.genJmpForCompare(code, "IF");
+
+            if(decl.test.type == "BinaryExpression") {
+                 // Binary expressions compile to specialized JMP operations
+                instruction = this.genJmpForCompare(code, "IF");
+            } else {
+                // Unary expressions always compile to a comparison with false.
+                this.outputInstruction("ByteCode::INT_PUSH_CONSTANT", 0);
+                instruction = "ByteCode::INT_JMP_EQ";
+            }
+
             if (decl.alternate != null) {
                 this.outputInstruction(instruction, this.deltaForLabel(labelF),
                     "genJmpForCompare has false block, IF " + code);

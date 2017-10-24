@@ -53,7 +53,10 @@ class Instruction {
 
   /// Decode the parameter
   Parameter parameter() const noexcept {
-    return static_cast<Parameter>(raw_ & PARAMETER_MASK);
+    auto param = static_cast<Parameter>(raw_ & PARAMETER_MASK);
+    // Sign extend when top (24th) bit is 1
+    if (param & 0x0080'0000) param |= 0xFF00'0000;
+    return param;
   }
 
   RawInstruction raw() const noexcept { return raw_; }
@@ -62,7 +65,7 @@ class Instruction {
 
  private:
   static const RawInstruction BYTECODE_SHIFT = 24;
-  static const RawInstruction PARAMETER_MASK = 0xFFFFFF;
+  static const RawInstruction PARAMETER_MASK = 0x00FF'FFFF;
   static const RawInstruction BYTECODE_MASK = ~PARAMETER_MASK;
 
   RawInstruction raw_;

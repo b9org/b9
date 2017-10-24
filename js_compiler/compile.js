@@ -680,11 +680,12 @@ function CodeGen(f) {
 
     this.genJmpForCompare = function(code) {
         if (code == "==") instruction = "ByteCode::INT_JMP_NEQ";
-        if (code == "!=") instruction = "ByteCode::INT_JMP_EQ";
-        if (code == "<=") instruction = "ByteCode::INT_JMP_GT";
-        if (code == "<") instruction = "ByteCode::INT_JMP_GE";
-        if (code == ">") instruction = "ByteCode::INT_JMP_LE";
-        if (code == ">=") instruction = "ByteCode::INT_JMP_LT";
+        else if (code == "!=") instruction = "ByteCode::INT_JMP_EQ";
+        else if (code == "<=") instruction = "ByteCode::INT_JMP_GT";
+        else if (code == "<") instruction = "ByteCode::INT_JMP_GE";
+        else if (code == ">") instruction = "ByteCode::INT_JMP_LE";
+        else if (code == ">=") instruction = "ByteCode::INT_JMP_LT";
+        else throw "Unhandled code";
         return instruction;
     };
 

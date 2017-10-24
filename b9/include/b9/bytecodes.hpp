@@ -66,6 +66,8 @@ enum class ByteCode : RawByteCode {
 
 inline const char *toString(ByteCode bc) {
   switch (bc) {
+    case ByteCode::END_SECTION:
+      return "ByteCode::END_SECTION";
     case ByteCode::DROP:
       return "ByteCode::DROP";
     case ByteCode::DUPLICATE:

@@ -36,7 +36,7 @@ class Instruction {
 
   /// Encode the bytecode
   constexpr Instruction &byteCode(ByteCode bc) noexcept {
-    raw_ = RawByteCode(bc) << BYTECODE_SHIFT | parameter();
+    raw_ = (RawByteCode(bc) << BYTECODE_SHIFT) | (raw_ & PARAMETER_MASK);
     return *this;
   }
 

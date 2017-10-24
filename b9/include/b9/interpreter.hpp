@@ -154,13 +154,8 @@ typedef StackElement (*JIT_2_args)(StackElement p1, StackElement p2);
 typedef StackElement (*JIT_3_args)(StackElement p1, StackElement p2,
                                    StackElement p3);
 
-/* B9 Interpreter */
-int parseArguments(ExecutionContext *context, int argc, char *argv[]);
-
 Instruction *getFunctionAddress(ExecutionContext *context,
                                 const char *functionName);
-StackElement timeFunction(VirtualMachine *virtualMachine, Instruction *function,
-                          int loopCount, long *runningTime);
 
 StackElement interpret_0(ExecutionContext *context,
                          const std::size_t functionIndex);

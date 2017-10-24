@@ -723,7 +723,7 @@ function CodeGen(f) {
             if (decl.alternate != null) {
                 // you only have a false if there is code
                 // so you only jump if there is code to jump around 
-                if (this.prevInstruction.bc != "RETURN") {
+                if (this.prevInstruction.bc != "ByteCode::FUNCTION_RETURN") {
                     this.outputInstruction("ByteCode::JMP", this.deltaForLabel(labelEnd), "SKIP AROUND THE FALSE CODE BLOCK");
                 }
                 this.placeLabel(labelF);

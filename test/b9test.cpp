@@ -38,34 +38,51 @@ class InterpreterTest : public ::testing::TestWithParam<const char*> {
 std::shared_ptr<Module> InterpreterTest::module_{nullptr};
 
 TEST_P(InterpreterTest, run) {
-  VirtualMachine vm{{}};
+  Config cfg;
+
+  VirtualMachine vm{cfg};
   vm.load(module_);
   EXPECT_TRUE(vm.run(GetParam(), {}));
 }
 
 TEST_P(InterpreterTest, runJit) {
-  VirtualMachine vm{{.jit = true}};
+  Config cfg;
+  cfg.jit = true;
+
+  VirtualMachine vm{cfg};
   vm.load(module_);
   EXPECT_TRUE(vm.run(GetParam(), {}));
 }
 
 TEST_P(InterpreterTest, runDirectCall) {
-  VirtualMachine vm{{.jit = true, .directCall = true}};
+  Config cfg;
+  cfg.jit = true;
+  cfg.directCall = true;
+
+  VirtualMachine vm{cfg};
   vm.load(module_);
   EXPECT_TRUE(vm.run(GetParam(), {}));
 }
 
 TEST_P(InterpreterTest, runPassParam) {
-  VirtualMachine vm{{.jit = true, .directCall = true, .passParam = true}};
+  Config cfg;
+  cfg.jit = true;
+  cfg.directCall = true;
+  cfg.passParam = true;
+
+  VirtualMachine vm{cfg};
   vm.load(module_);
   EXPECT_TRUE(vm.run(GetParam(), {}));
 }
 
 TEST_P(InterpreterTest, runLazyVmState) {
-  VirtualMachine vm{{.jit = true,
-                     .directCall = true,
-                     .passParam = true,
-                     .lazyVmState = true}};
+  Config cfg;
+  cfg.jit = true;
+  cfg.directCall = true;
+  cfg.passParam = true;
+  cfg.lazyVmState = true;
+
+  VirtualMachine vm{cfg};
   vm.load(module_);
   EXPECT_TRUE(vm.run(GetParam(), {}));
 }
@@ -103,9 +120,9 @@ INSTANTIATE_TEST_CASE_P(InterpreterTestSuite, InterpreterTest,
 TEST(MyTest, arguments) {
   b9::VirtualMachine vm{{}};
   auto m = std::make_shared<Module>();
-  Instruction i[] = {{ByteCode::PUSH_FROM_VAR, 0},  //  I:0 S:0 variable a
-                     {ByteCode::PUSH_FROM_VAR, 1},  //  I:0 S:0 variable a
-                     {ByteCode::INT_ADD},           //  I:14 S:2
+  Instruction i[] = {{ByteCode::PUSH_FROM_VAR, 0},
+                     {ByteCode::PUSH_FROM_VAR, 1},
+                     {ByteCode::INT_ADD},
                      {ByteCode::FUNCTION_RETURN},
                      {NO_MORE_BYTECODES}};
 

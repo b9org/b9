@@ -72,7 +72,7 @@ class Instruction {
 };
 
 inline std::ostream &operator<<(std::ostream &out, Instruction i) {
-  return out << i.byteCode() << "(" << i.parameter() << ")";
+  return out << "{" << i.byteCode() << ", " << i.parameter() << "}";
 }
 
 }  // namespace b9

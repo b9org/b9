@@ -65,54 +65,52 @@ enum class ByteCode : RawByteCode {
 inline const char *toString(ByteCode bc) {
   switch (bc) {
     case ByteCode::DROP:
-      return "DROP";
+      return "ByteCode::DROP";
     case ByteCode::DUPLICATE:
-      return "DUPLICATE";
+      return "ByteCode::DUPLICATE";
     case ByteCode::FUNCTION_RETURN:
-      return "FUNCTION_RETURN";
+      return "ByteCode::FUNCTION_RETURN";
     case ByteCode::FUNCTION_CALL:
-      return "FUNCTION_CALL";
+      return "ByteCode::FUNCTION_CALL";
     case ByteCode::PRIMITIVE_CALL:
-      return "PRIMITIVE_CALL";
+      return "ByteCode::PRIMITIVE_CALL";
     case ByteCode::JMP:
-      return "JMP";
+      return "ByteCode::JMP";
     case ByteCode::PUSH_FROM_VAR:
-      return "PUSH_FROM_VAR";
+      return "ByteCode::PUSH_FROM_VAR";
     case ByteCode::POP_INTO_VAR:
-      return "POP_INTO_VAR";
+      return "ByteCode::POP_INTO_VAR";
     case ByteCode::INT_PUSH_CONSTANT:
-      return "INT_PUSH_CONSTANT";
+      return "ByteCode::INT_PUSH_CONSTANT";
     case ByteCode::INT_SUB:
-      return "INT_SUB";
+      return "ByteCode::INT_SUB";
     case ByteCode::INT_ADD:
-      return "INT_ADD";
+      return "ByteCode::INT_ADD";
     case ByteCode::INT_JMP_EQ:
-      return "INT_JMP_EQ";
+      return "ByteCode::INT_JMP_EQ";
     case ByteCode::INT_JMP_NEQ:
-      return "INT_JMP_NEQ";
+      return "ByteCode::INT_JMP_NEQ";
     case ByteCode::INT_JMP_GT:
-      return "INT_JMP_GT";
+      return "ByteCode::INT_JMP_GT";
     case ByteCode::INT_JMP_GE:
-      return "INT_JMP_GE";
+      return "ByteCode::INT_JMP_GE";
     case ByteCode::INT_JMP_LT:
-      return "INT_JMP_LT";
+      return "ByteCode::INT_JMP_LT";
     case ByteCode::INT_JMP_LE:
-      return "INT_JMP_LE";
+      return "ByteCode::INT_JMP_LE";
     case ByteCode::STR_PUSH_CONSTANT:
-      return "STR_PUSH_CONSTANT";
+      return "ByteCode::STR_PUSH_CONSTANT";
     case ByteCode::STR_JMP_EQ:
-      return "STR_JMP_EQ";
+      return "ByteCode::STR_JMP_EQ";
     case ByteCode::STR_JMP_NEQ:
-      return "STR_JMP_NEQ";
+      return "ByteCode::STR_JMP_NEQ";
     default:
-      return "UNKNOWN BYTECODE";
+      return "UNKNOWN_BYTECODE";
   }
 }
 
 inline std::ostream &operator<<(std::ostream &out, ByteCode bc) {
-  out << std::hex;
-  return out << toString(bc) << " [" << (RawByteCode)bc << "]";
-  out << std::dec;
+  return out << toString(bc);
 }
 
 }  // namespace b9

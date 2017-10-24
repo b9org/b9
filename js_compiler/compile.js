@@ -216,17 +216,7 @@ function CodeGen(f) {
         this.outputRawString('#include <b9/loader.hpp>');
         this.outputRawString('');
         this.outputRawString('using namespace b9;');
-
-        // var out = this.primitives;
-        // for (key in out) {
-        //     var arguments = out[key].arguments;
-        //     var returnType = out[key].returnType;
-        //     this.outputRawString('extern "C" '+ returnType + " " + key + "(");
-        //     for (arg in arguments) {
-        //         this.outputRawString(arg + ", ");
-        //     }
-
-        // }
+        this.outputRawString('');
     }
 
     this.handleFooters = function() {

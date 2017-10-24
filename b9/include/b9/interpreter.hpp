@@ -3,7 +3,6 @@
 
 #include <b9/bytecodes.hpp>
 #include <b9/module.hpp>
-#include <b9/module.hpp>
 
 #include <cstring>
 #include <map>

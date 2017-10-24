@@ -128,34 +128,15 @@ class VirtualMachine {
 typedef StackElement (*Interpret)(ExecutionContext *context,
                                   const Instruction *program);
 
-void bc_primitive(VirtualMachine *context, Parameter value);
-
-// define C callable Interpret API for each arg call
-// if args are passed to the function, they are not passed
-// on the intepreter stack
-
-typedef StackElement (*interpret_n_args)(ExecutionContext *context,
-                                         Instruction *program, ...);
-
-typedef StackElement (*Interpret_0_args)(ExecutionContext *context,
-                                         Instruction *program);
-typedef StackElement (*Interpret_1_args)(ExecutionContext *context,
-                                         Instruction *program, StackElement p1);
-typedef StackElement (*Interpret_2_args)(ExecutionContext *context,
-                                         Instruction *program, StackElement p1,
-                                         StackElement p2);
-typedef StackElement (*Interpret_3_args)(ExecutionContext *context,
-                                         Instruction *program, StackElement p1,
-                                         StackElement p2, StackElement p3);
-
 typedef StackElement (*JIT_0_args)();
 typedef StackElement (*JIT_1_args)(StackElement p1);
 typedef StackElement (*JIT_2_args)(StackElement p1, StackElement p2);
 typedef StackElement (*JIT_3_args)(StackElement p1, StackElement p2,
                                    StackElement p3);
 
-Instruction *getFunctionAddress(ExecutionContext *context,
-                                const char *functionName);
+// define C callable Interpret API for each arg call
+// if args are passed to the function, they are not passed
+// on the intepreter stack
 
 StackElement interpret_0(ExecutionContext *context,
                          const std::size_t functionIndex);

@@ -6,13 +6,15 @@
 
 namespace b9 {
 
-#define NO_MORE_BYTECODES 0x0
-
 // bits may be an argument to the opcode
 using RawByteCode = std::uint8_t;
 
 enum class ByteCode : RawByteCode {
   // Generic ByteCodes
+
+  // A special uninterpreted ByteCode placed the end of a
+  // ByteCode array.
+  END_SECTION = 0x0,
 
   // Drop the top element of the stack
   DROP = 0x1,

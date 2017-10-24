@@ -124,7 +124,7 @@ TEST(MyTest, arguments) {
                      {ByteCode::PUSH_FROM_VAR, 1},
                      {ByteCode::INT_ADD},
                      {ByteCode::FUNCTION_RETURN},
-                     {NO_MORE_BYTECODES}};
+                     END_SECTION};
 
   m->functions.push_back(b9::FunctionSpec{"add_args", i, 2, 0});
   vm.load(m);

@@ -236,7 +236,7 @@ void MethodBuilder::defineFunctions() {
 
 long computeNumberOfBytecodes(const Instruction *program) {
   long result = 0;
-  while (*program != NO_MORE_BYTECODES) {
+  while (*program != END_SECTION) {
     program++;
     result++;
   }

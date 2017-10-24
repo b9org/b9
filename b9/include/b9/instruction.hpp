@@ -61,7 +61,13 @@ class Instruction {
 
   constexpr RawInstruction raw() const noexcept { return raw_; }
 
-  constexpr operator RawInstruction() const noexcept { return raw(); }
+  constexpr bool operator==(const Instruction rhs) const {
+    return raw_ == rhs.raw_;
+  }
+
+  constexpr bool operator!=(const Instruction rhs) const {
+    return raw_ != rhs.raw_;
+  }
 
  private:
   static constexpr const RawInstruction BYTECODE_SHIFT = 24;
@@ -71,6 +77,11 @@ class Instruction {
   RawInstruction raw_;
 };
 
+/// A special constant indicating the end of a sequence of instructions.
+/// END_SECTION should be the last element in every functions bytecode array.
+static constexpr Instruction END_SECTION{ByteCode::END_SECTION, 0};
+
+/// Print an Instruction.
 inline std::ostream &operator<<(std::ostream &out, Instruction i) {
   return out << "{" << i.byteCode() << ", " << i.parameter() << "}";
 }

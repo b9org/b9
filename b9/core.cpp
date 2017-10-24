@@ -232,7 +232,7 @@ StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
   StackElement *args = stackPointer_ - function->nargs;
   stackPointer_ += function->nregs;
 
-  while (*instructionPointer != NO_MORE_BYTECODES) {
+  while (*instructionPointer != END_SECTION) {
     switch (instructionPointer->byteCode()) {
       case ByteCode::INT_PUSH_CONSTANT:
         intPushConstant(instructionPointer->parameter());

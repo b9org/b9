@@ -485,7 +485,8 @@ function CodeGen(f) {
     };
 
     this.genEndOfByteCodes = function() {
-        this.outputRawString("    {NO_MORE_BYTECODES}};", " end of function");
+        this.outputRawString("    END_SECTION", " end of function");
+        this.outputRawString("};")
     };
 
     this.processDeferred = function() {

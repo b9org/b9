@@ -1,4 +1,5 @@
-#include <b9.hpp>
+#include <b9/interpreter.hpp>
+#include <b9/jit.hpp>
 #include <b9/loader.hpp>
 #include <cstdio>
 #include <cstdlib>
@@ -89,7 +90,6 @@ static bool parseArguments(RunConfig& cfg, const int argc, char* argv[]) {
 
 static void run(const RunConfig& cfg) {
   b9::VirtualMachine vm{cfg.b9};
-  vm.initialize();
 
   b9::DlLoader loader{true};
   auto module = loader.loadModule(cfg.moduleName);
@@ -100,13 +100,16 @@ static void run(const RunConfig& cfg) {
 
   vm.load(module);
 
+  if (cfg.b9.jit) vm.generateAllCode();
+
   size_t functionIndex = module->findFunction(cfg.mainFunction);
   if (cfg.loopCount == 1) {
     b9::StackElement returnVal = vm.run(functionIndex, cfg.usrArgs);
-    std::cout << cfg.mainFunction << " returned: " << returnVal << std::endl;
+    std::cout << std::endl
+              << cfg.mainFunction << " returned: " << returnVal << std::endl;
   } else {
     b9::StackElement returnVal;
-    std::cout << "Running " << cfg.mainFunction << " " << cfg.loopCount
+    std::cout << "\nRunning " << cfg.mainFunction << " " << cfg.loopCount
               << " times:" << std::endl;
     for (std::size_t i = 1; i <= cfg.loopCount; i++) {
       returnVal = vm.run(functionIndex, cfg.usrArgs);
@@ -134,6 +137,9 @@ int main(int argc, char* argv[]) {
     exit(EXIT_FAILURE);
   } catch (const b9::BadFunctionCallException& e) {
     std::cerr << "Failed to call function " << e.what() << std::endl;
+    exit(EXIT_FAILURE);
+  } catch (const b9::CompilationException& e) {
+    std::cerr << "Failed to compile function: " << e.what() << std::endl;
     exit(EXIT_FAILURE);
   }
 

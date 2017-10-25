@@ -1,8 +1,8 @@
 #if !defined(B9_LOADER_HPP_)
 #define B9_LOADER_HPP_
 
-#include <b9/core.hpp>
 #include <b9/module.hpp>
+
 #include <memory>
 #include <stdexcept>
 #include <string>

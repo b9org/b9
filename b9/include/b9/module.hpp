@@ -1,12 +1,17 @@
 #if !defined(B9_MODULE_HPP_)
 #define B9_MODULE_HPP_
 
-#include <b9/core.hpp>
+#include <b9/instruction.hpp>
+
 #include <cstdint>
 #include <stdexcept>
 #include <vector>
 
 namespace b9 {
+
+class Compiler;
+class ExecutionContext;
+class VirtualMachine;
 
 /// Function specification. Metadata about a function.
 struct FunctionSpec {
@@ -19,6 +24,9 @@ struct FunctionSpec {
   std::uint32_t nregs;
   std::string name;
 };
+
+// Primitive Function from Interpreter call
+extern "C" typedef void(PrimitiveFunction)(ExecutionContext* virtualMachine);
 
 /// Function not found exception.
 struct FunctionNotFoundException : public std::runtime_error {

@@ -3,6 +3,7 @@ add_library(b9 SHARED
 	loader.cpp
 	hash.cpp
 	jit.cpp
+	primitives.cpp
 )
 
 target_include_directories(b9

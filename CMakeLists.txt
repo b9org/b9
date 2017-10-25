@@ -63,6 +63,22 @@ function(add_b9_test test)
 		NAME "run_${test}"
 		COMMAND b9run $<TARGET_FILE:${test}>
 	)
+	add_test(
+		NAME "run_${test}_jit"
+		COMMAND b9run -jit $<TARGET_FILE:${test}>
+	)
+	add_test(
+		NAME "run_${test}_jit_directcall"
+		COMMAND b9run -jit -directcall $<TARGET_FILE:${test}>
+	)
+	add_test(
+		NAME "run_${test}_jit_passparam"
+		COMMAND b9run -jit -directcall -passparam $<TARGET_FILE:${test}>
+	)
+	add_test(
+		NAME "run_${test}_jit_lazyvmstate"
+		COMMAND b9run -jit -directcall -passparam -lazyvmstate $<TARGET_FILE:${test}>
+	)
 endfunction(add_b9_test)
 
 # Subdirectories

@@ -2,7 +2,7 @@
 #ifndef B9_HASH_INCL
 #define B9_HASH_INCL
 
-#include <b9.hpp>
+#include <b9/interpreter.hpp>
 
 #include <cassert>
 #include <cstdlib>

@@ -1,8 +1,7 @@
-#ifndef B9_HPP_
-#define B9_HPP_
+#ifndef B9_VIRTUALMACHINE_HPP_
+#define B9_VIRTUALMACHINE_HPP_
 
 #include <b9/bytecodes.hpp>
-#include <b9/core.hpp>
 #include <b9/module.hpp>
 
 #include <cstring>
@@ -15,6 +14,8 @@
 namespace b9 {
 
 class Compiler;
+class ExecutionContext;
+class VirtualMachine;
 
 struct Config {
   std::size_t maxInlineDepth = 1;
@@ -26,11 +27,11 @@ struct Config {
   bool verbose = false;      //< Enable verbose printing and tracing
 };
 
-class VirtualMachine;
-
 struct BadFunctionCallException : public std::runtime_error {
   using std::runtime_error::runtime_error;
 };
+
+using StackElement = std::int64_t;
 
 struct Stack {
   StackElement *stackBase;
@@ -39,12 +40,12 @@ struct Stack {
 
 class ExecutionContext {
  public:
-  ExecutionContext(VirtualMachine *virtualMachine)
-      : virtualMachine_(virtualMachine) {
+  ExecutionContext(VirtualMachine *virtualMachine, const Config &cfg)
+      : virtualMachine_(virtualMachine), cfg_(cfg) {
     std::memset(stack_, 0, sizeof(StackElement) * 1000);
   }
 
-  StackElement interpret(const FunctionSpec *function);
+  StackElement interpret(std::size_t functionIndex);
 
   void push(StackElement value);
   StackElement pop();
@@ -72,7 +73,8 @@ class ExecutionContext {
   // Reset the stack and other internal data
   void reset();
 
-  // private
+  Stack *stack() { return &stackFields; }
+
   Stack stackFields = {stack_, stack_};
 
  private:
@@ -82,15 +84,14 @@ class ExecutionContext {
   Instruction *programCounter_ = 0;
   StackElement *stackEnd_ = &stack_[1000];
   VirtualMachine *virtualMachine_;
+  const Config &cfg_;
 };
 
 class VirtualMachine {
  public:
-  VirtualMachine(const Config &cfg)
-      : cfg_{cfg}, executionContext_{this}, compiler_{nullptr} {}
+  VirtualMachine(const Config &cfg);
 
-  bool initialize();
-  bool shutdown();
+  ~VirtualMachine() noexcept;
 
   /// Load a module into the VM.
   void load(std::shared_ptr<const Module> module);
@@ -99,7 +100,6 @@ class VirtualMachine {
   StackElement run(const std::string &name,
                    const std::vector<StackElement> &usrArgs);
 
-  // private
   const FunctionSpec *getFunction(std::size_t index);
   PrimitiveFunction *getPrimitive(std::size_t index);
 
@@ -107,20 +107,50 @@ class VirtualMachine {
   void setJitAddress(std::size_t functionIndex, void *value);
 
   std::size_t getFunctionCount();
-  void generateCode(int32_t functionIndex);
+  uint8_t *generateCode(const FunctionSpec &functionSpec);
   void generateAllCode();
 
   const char *getString(int index);
 
+  ExecutionContext *executionContext() { return &executionContext_; }
+
+  const std::shared_ptr<const Module> &module() { return module_; }
+
  private:
   Config cfg_;
   ExecutionContext executionContext_;
-  Compiler *compiler_;
+  std::shared_ptr<Compiler> compiler_;
   std::shared_ptr<const Module> module_;
 
   std::vector<void *> compiledFunctions_;
 };
 
+typedef StackElement (*Interpret)(ExecutionContext *context,
+                                  const std::size_t functionIndex);
+
+typedef StackElement (*JIT_0_args)();
+typedef StackElement (*JIT_1_args)(StackElement p1);
+typedef StackElement (*JIT_2_args)(StackElement p1, StackElement p2);
+typedef StackElement (*JIT_3_args)(StackElement p1, StackElement p2,
+                                   StackElement p3);
+
+// define C callable Interpret API for each arg call
+// if args are passed to the function, they are not passed
+// on the intepreter stack
+
+StackElement interpret_0(ExecutionContext *context,
+                         const std::size_t functionIndex);
+StackElement interpret_1(ExecutionContext *context,
+                         const std::size_t functionIndex, StackElement p1);
+StackElement interpret_2(ExecutionContext *context,
+                         const std::size_t functionIndex, StackElement p1,
+                         StackElement p2);
+StackElement interpret_3(ExecutionContext *context,
+                         const std::size_t functionIndex, StackElement p1,
+                         StackElement p2, StackElement p3);
+
+void primitive_call(ExecutionContext *context, Parameter value);
+
 }  // namespace b9
 
-#endif  // B9_HPP_
+#endif  // B9_VIRTUALMACHINE_HPP_

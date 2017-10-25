@@ -194,7 +194,7 @@ function CodeGen(f) {
             if (typeof(param) == "function") computedParm = param(instruction);
             var out = " I:" + instruction.instructionIndex + " S:" + instruction.stack + " " + comment;
             return gen.outputInstructionText(
-                "Instructions::create(" + bc + "," + computedParm + "),",
+                "{" + bc + ", " + computedParm + "},",
                 out,
                 true);
         };
@@ -203,30 +203,20 @@ function CodeGen(f) {
     }
 
     this.outputInstructionText = function(out, comment, tab) {
-        while (out.length < 32) out += " ";
-        var line = "\t" + out;
+        while (out.length < 40) out += " ";
+        var line = "    " + out;
         if (comment) {
-            line = line + "\t// " + comment;
+            line = line + "  // " + comment;
         }
         return line;
     };
 
     this.handleHeaders = function() {
-        this.outputRawString('#include <b9.hpp>');
+        this.outputRawString('#include <b9/interpreter.hpp>');
         this.outputRawString('#include <b9/loader.hpp>');
         this.outputRawString('');
         this.outputRawString('using namespace b9;');
-
-        // var out = this.primitives;
-        // for (key in out) {
-        //     var arguments = out[key].arguments;
-        //     var returnType = out[key].returnType;
-        //     this.outputRawString('extern "C" '+ returnType + " " + key + "(");
-        //     for (arg in arguments) {
-        //         this.outputRawString(arg + ", ");
-        //     }
-
-        // }
+        this.outputRawString('');
     }
 
     this.handleFooters = function() {
@@ -235,7 +225,7 @@ function CodeGen(f) {
             var function_table = 'static const DlFunctionEntry b9_functions[] = {\n'
             for (name in functions) {
                 var f = functions[name];
-                function_table += '  { "' + name + '", ' + name + ', ' + f.nargs + ', ' + f.nregs + '}, // ' + f + "\n";
+                function_table += '    { "' + name + '", ' + name + ', ' + f.nargs + ', ' + f.nregs + '},  // ' + f + "\n";
             }
             function_table += '};\n'
             return function_table;
@@ -471,18 +461,6 @@ function CodeGen(f) {
         var fThis = this;
         var func = fThis.currentFunction;
 
-        // // Output two empty slots for the JIT address
-        // this.outputRawString(this.outputInstructionText(
-        //     "decl (0,0),",
-        //     "0: space for JIT address",
-        //     true));
-        // this.outputRawString(this.outputInstructionText(
-        //     "decl (0,0),",
-        //     "0: space for JIT address",
-        //     true));
-
-        this.outputRawString("");
-
         this.handle(decl.body);
 
         this.genReturn(true);
@@ -507,7 +485,8 @@ function CodeGen(f) {
     };
 
     this.genEndOfByteCodes = function() {
-        this.outputRawString("Instructions::create(ByteCodes::fromByte(NO_MORE_BYTECODES), 0)};", " end of function");
+        this.outputRawString("    END_SECTION", " end of function");
+        this.outputRawString("};")
     };
 
     this.processDeferred = function() {
@@ -702,11 +681,12 @@ function CodeGen(f) {
 
     this.genJmpForCompare = function(code) {
         if (code == "==") instruction = "ByteCode::INT_JMP_NEQ";
-        if (code == "!=") instruction = "ByteCode::INT_JMP_EQ";
-        if (code == "<=") instruction = "ByteCode::INT_JMP_GT";
-        if (code == "<") instruction = "ByteCode::INT_JMP_GE";
-        if (code == ">") instruction = "ByteCode::INT_JMP_LE";
-        if (code == ">=") instruction = "ByteCode::INT_JMP_LT";
+        else if (code == "!=") instruction = "ByteCode::INT_JMP_EQ";
+        else if (code == "<=") instruction = "ByteCode::INT_JMP_GT";
+        else if (code == "<") instruction = "ByteCode::INT_JMP_GE";
+        else if (code == ">") instruction = "ByteCode::INT_JMP_LE";
+        else if (code == ">=") instruction = "ByteCode::INT_JMP_LT";
+        else throw "Unhandled code";
         return instruction;
     };
 
@@ -716,8 +696,19 @@ function CodeGen(f) {
         this.label++;
 
         this.savehack(function() {
+
+            var instruction = null;
             var code = this.handle(decl.test);
-            var instruction = this.genJmpForCompare(code, "IF");
+
+            if(decl.test.type == "BinaryExpression") {
+                 // Binary expressions compile to specialized JMP operations
+                instruction = this.genJmpForCompare(code, "IF");
+            } else {
+                // Unary expressions always compile to a comparison with false.
+                this.outputInstruction("ByteCode::INT_PUSH_CONSTANT", 0);
+                instruction = "ByteCode::INT_JMP_EQ";
+            }
+
             if (decl.alternate != null) {
                 this.outputInstruction(instruction, this.deltaForLabel(labelF),
                     "genJmpForCompare has false block, IF " + code);
@@ -733,7 +724,7 @@ function CodeGen(f) {
             if (decl.alternate != null) {
                 // you only have a false if there is code
                 // so you only jump if there is code to jump around 
-                if (this.prevInstruction.bc != "RETURN") {
+                if (this.prevInstruction.bc != "ByteCode::FUNCTION_RETURN") {
                     this.outputInstruction("ByteCode::JMP", this.deltaForLabel(labelEnd), "SKIP AROUND THE FALSE CODE BLOCK");
                 }
                 this.placeLabel(labelF);

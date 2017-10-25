@@ -8,19 +8,20 @@
 
 /// B9run's usage string. Printed when run with -help.
 static const char* usage =
-    "Usage: b9run [<option>...] [--] <module> [<main>]\n"
+    "Usage: b9run [<option>...] [--] <module> [<arg>...]\n"
     "   Or: b9run -help\n"
     "Jit Options:\n"
-    "  -jit:         Enable the jit\n"
-    "  -directcall:  make direct jit to jit calls\n"
-    "  -passparam:   Pass arguments in CPU registers\n"
-    "  -lazyvmstate: Only update the VM state as needed\n"
+    "  -jit:          Enable the jit\n"
+    "  -directcall:   make direct jit to jit calls\n"
+    "  -passparam:    Pass arguments in CPU registers\n"
+    "  -lazyvmstate:  Only update the VM state as needed\n"
     "Run Options:\n"
-    "  -loop <n>:    Run the program <n> times\n"
-    "  -inline <n>:  Enable inlining\n"
-    "  -debug:       Enable debug code\n"
-    "  -verbose:     Run with verbose printing\n"
-    "  -help:        Print this help message";
+    "  -function <f>: Run the function <f> (default: b9main)\n"
+    "  -loop <n>:     Run the program <n> times (default: 1)\n"
+    "  -inline <n>:   Set the jit's max inline depth (default: 1)\n"
+    "  -debug:        Enable debug code\n"
+    "  -verbose:      Run with verbose printing\n"
+    "  -help:         Print this help message";
 
 /// The b9run program's global configuration.
 struct RunConfig {

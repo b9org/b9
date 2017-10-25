@@ -15,7 +15,7 @@ std::shared_ptr<Module> DlLoader::loadModule(const std::string& name) const {
 }
 
 void* DlLoader::openLibrary(const std::string& name) const {
-  auto n = name;  // TODO: prepend "./" for relative names.
+  auto n = name;
   auto handle = dlopen(n.c_str(), RTLD_NOW);
   auto msg = dlerror();
   if (msg) throw DlException{msg};

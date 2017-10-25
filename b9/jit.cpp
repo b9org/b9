@@ -76,7 +76,7 @@ Compiler::Compiler(VirtualMachine *virtualMachine, const Config &cfg)
   types_.CloseStruct("Stack");
 }
 
-uint8_t *Compiler::generateCode(const FunctionSpec &functionSpec) {
+JitFunction Compiler::generateCode(const FunctionSpec &functionSpec) {
   Stack *stack = virtualMachine_->executionContext()->stack();
   MethodBuilder methodBuilder(virtualMachine_, &types_, cfg_, functionSpec,
                               stack);
@@ -95,7 +95,7 @@ uint8_t *Compiler::generateCode(const FunctionSpec &functionSpec) {
     std::cout << "Compilation completed with return code: " << rc
               << ", code address: " << (void *)entry << std::endl;
 
-  return entry;
+  return (JitFunction)entry;
 }
 
 MethodBuilder::MethodBuilder(VirtualMachine *virtualMachine,
@@ -185,7 +185,7 @@ void MethodBuilder::defineFunctions() {
       auto function = virtualMachine_->getFunction(functionIndex);
       auto name = function->name.c_str();
       DefineFunction(name, (char *)__FILE__, name,
-                     virtualMachine_->getJitAddress(functionIndex), Int64,
+                     (void*)virtualMachine_->getJitAddress(functionIndex), Int64,
                      function->nargs, stackElementType, stackElementType,
                      stackElementType, stackElementType, stackElementType,
                      stackElementType, stackElementType, stackElementType);

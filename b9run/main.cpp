@@ -95,7 +95,9 @@ static void run(const RunConfig& cfg) {
   auto module = loader.loadModule(cfg.moduleName);
   vm.load(module);
 
-  if (cfg.b9.jit) vm.generateAllCode();
+  if (cfg.b9.jit) {
+    vm.generateAllCode();
+  }
 
   size_t functionIndex = module->findFunction(cfg.mainFunction);
   if (cfg.loopCount == 1) {

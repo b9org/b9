@@ -387,7 +387,6 @@ StackElement VirtualMachine::run(const std::size_t functionIndex,
   for (std::size_t i = 0; i < argsCount; i++) {
     auto idx = argsCount - i - 1;
     auto arg = usrArgs[idx];
-    std::cout << "Pushing arg[" << idx << "] = " << arg << std::endl;
     executionContext_.push(arg);
   }
 

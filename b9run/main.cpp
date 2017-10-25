@@ -32,6 +32,21 @@ struct RunConfig {
   std::vector<b9::StackElement> usrArgs;
 };
 
+std::ostream& operator<<(std::ostream& out, const RunConfig& cfg) {
+  out << "Module:       " << cfg.moduleName << std::endl
+      << "Function:     " << cfg.mainFunction << std::endl
+      << "Looping:      " << cfg.loopCount << std::endl;
+
+  out << "Arguments:    [ ";
+  for (const auto& arg : cfg.usrArgs) {
+    out << arg << " ";
+  }
+  out << "]" << std::endl;
+
+  out << cfg.b9;
+  return out;
+}
+
 /// Parse CLI arguments and set up the config.
 static bool parseArguments(RunConfig& cfg, const int argc, char* argv[]) {
   std::size_t i = 1;
@@ -122,6 +137,10 @@ int main(int argc, char* argv[]) {
   if (!parseArguments(cfg, argc, argv)) {
     std::cerr << usage << std::endl;
     exit(EXIT_FAILURE);
+  }
+
+  if (cfg.verbose) {
+    std::cout << cfg << std::endl << std::endl;
   }
 
   try {

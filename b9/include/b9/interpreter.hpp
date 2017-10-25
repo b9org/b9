@@ -27,6 +27,18 @@ struct Config {
   bool verbose = false;      //< Enable verbose printing and tracing
 };
 
+inline std::ostream &operator<<(std::ostream &out, const Config &cfg) {
+  out << std::boolalpha;
+  out << "Mode:         " << (cfg.jit ? "JIT" : "Interpreter") << std::endl
+      << "Inline depth: " << cfg.maxInlineDepth << std::endl
+      << "directcall:   " << cfg.directCall << std::endl
+      << "passparam:    " << cfg.passParam << std::endl
+      << "lazyvmstate:  " << cfg.lazyVmState << std::endl
+      << "debug:        " << cfg.debug;
+  out << std::noboolalpha;
+  return out;
+}
+
 struct BadFunctionCallException : public std::runtime_error {
   using std::runtime_error::runtime_error;
 };

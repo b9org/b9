@@ -519,7 +519,7 @@ bool MethodBuilder::generateILForBytecode(
               bool result = inlineProgramIntoBuilder(callee, false, builder,
                                                      nextBytecodeBuilder);
               if (!result) {
-                printf("Failed inlineProgramIntoBuilder\n");
+                std::cerr << "Failed inlineProgramIntoBuilder" << std::endl;
                 return result;
               } else {
                 if (cfg_.debug)
@@ -531,11 +531,11 @@ bool MethodBuilder::generateILForBytecode(
               firstArgumentIndex = save;
               break;
             } else {
-              printf("SKIP INLINE DUE TO EXCESSIVE TEMPS NEEDED\n");
+              std::cerr << "SKIP INLINE DUE TO EXCESSIVE TEMPS NEEDED" << std::endl;
             }
           }
           if (argsCount > 8) {
-            printf("ERROR Need to add handlers for more parameters\n");
+            throw std::runtime_error{"Need to add handlers for more parameters"};
             break;
           }
           TR::IlValue *p[8];

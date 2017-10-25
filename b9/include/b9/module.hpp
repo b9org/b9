@@ -25,6 +25,11 @@ struct FunctionSpec {
   std::string name;
 };
 
+inline std::ostream& operator<<(std::ostream& out, const FunctionSpec& f) {
+  return out << f.name << " (" << f.address << "): {nargs: " << f.nargs
+             << ", nregs: " << f.nregs << "}";
+}
+
 // Primitive Function from Interpreter call
 extern "C" typedef void(PrimitiveFunction)(ExecutionContext* virtualMachine);
 

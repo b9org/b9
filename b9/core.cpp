@@ -371,9 +371,8 @@ StackElement VirtualMachine::run(const std::size_t functionIndex,
   auto argsCount = function->nargs;
 
   if (cfg_.verbose) {
-    std::cout << "+++++++++++++++++++++++\n";
-    std::cout << "Running function: " << function->name.c_str()
-              << " nargs: " << argsCount << std::endl;
+    std::cout << "+++++++++++++++++++++++" << std::endl
+              << "Running: " << *function << std::endl;
   }
 
   if (argsCount != usrArgs.size()) {

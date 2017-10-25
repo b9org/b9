@@ -90,14 +90,9 @@ static bool parseArguments(RunConfig& cfg, const int argc, char* argv[]) {
 
 static void run(const RunConfig& cfg) {
   b9::VirtualMachine vm{cfg.b9};
-
   b9::DlLoader loader{true};
+
   auto module = loader.loadModule(cfg.moduleName);
-
-  if (module->functions.size() == 0) {
-    throw b9::DlException{"Empty module"};
-  }
-
   vm.load(module);
 
   if (cfg.b9.jit) vm.generateAllCode();

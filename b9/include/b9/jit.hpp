@@ -118,7 +118,7 @@ class MethodBuilder : public TR::MethodBuilder {
 class Compiler {
  public:
   Compiler(VirtualMachine *virtualMachine, const Config &cfg);
-  uint8_t *generateCode(const FunctionSpec &functionSpec);
+  JitFunction generateCode(const FunctionSpec &functionSpec);
 
  private:
   TR::TypeDictionary types_;

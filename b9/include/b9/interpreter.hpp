@@ -38,6 +38,8 @@ struct Stack {
   StackElement *stackPointer;
 };
 
+typedef StackElement (*JitFunction)(...);
+
 class ExecutionContext {
  public:
   ExecutionContext(VirtualMachine *virtualMachine, const Config &cfg)
@@ -103,11 +105,11 @@ class VirtualMachine {
   const FunctionSpec *getFunction(std::size_t index);
   PrimitiveFunction *getPrimitive(std::size_t index);
 
-  void *getJitAddress(std::size_t functionIndex);
-  void setJitAddress(std::size_t functionIndex, void *value);
+  JitFunction getJitAddress(std::size_t functionIndex);
+  void setJitAddress(std::size_t functionIndex, JitFunction value);
 
   std::size_t getFunctionCount();
-  uint8_t *generateCode(const FunctionSpec &functionSpec);
+  JitFunction generateCode(const FunctionSpec &functionSpec);
   void generateAllCode();
 
   const char *getString(int index);
@@ -121,18 +123,13 @@ class VirtualMachine {
   ExecutionContext executionContext_;
   std::shared_ptr<Compiler> compiler_;
   std::shared_ptr<const Module> module_;
-
-  std::vector<void *> compiledFunctions_;
+  std::vector<JitFunction> compiledFunctions_;
 };
 
 typedef StackElement (*Interpret)(ExecutionContext *context,
                                   const std::size_t functionIndex);
 
-typedef StackElement (*JIT_0_args)();
-typedef StackElement (*JIT_1_args)(StackElement p1);
-typedef StackElement (*JIT_2_args)(StackElement p1, StackElement p2);
-typedef StackElement (*JIT_3_args)(StackElement p1, StackElement p2,
-                                   StackElement p3);
+
 
 // define C callable Interpret API for each arg call
 // if args are passed to the function, they are not passed

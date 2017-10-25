@@ -178,40 +178,32 @@ void primitive_call(ExecutionContext *context, Parameter value) {
 StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
   auto function = virtualMachine_->getFunction(functionIndex);
   auto argsCount = function->nargs;
-  auto address = virtualMachine_->getJitAddress(functionIndex);
+  auto jitFunction = virtualMachine_->getJitAddress(functionIndex);
 
-  if (address) {
-    if (cfg_.debug)
-      std::cout << "Calling " << function->name.c_str()
-                << " with JIT address at " << address << std::endl;
+  if (jitFunction) {
+    if (cfg_.debug) {
+      std::cout << "Calling " << function << " jit: " << jitFunction << std::endl;
+    }
     StackElement result = 0;
     if (cfg_.passParam) {
       switch (argsCount) {
         case 0: {
-          if (cfg_.debug) std::cout << "calling with no args\n";
-          JIT_0_args jitedcode = (JIT_0_args)address;
-          result = (*jitedcode)();
+          result = jitFunction();
         } break;
         case 1: {
-          if (cfg_.debug) std::cout << "calling with one args\n";
-          JIT_1_args jitedcode = (JIT_1_args)address;
           StackElement p1 = pop();
-          result = (*jitedcode)(p1);
+          result = jitFunction(p1);
         } break;
         case 2: {
-          if (cfg_.debug) std::cout << "calling with two args\n";
-          JIT_2_args jitedcode = (JIT_2_args)address;
           StackElement p2 = pop();
           StackElement p1 = pop();
-          result = (*jitedcode)(p1, p2);
+          result = jitFunction(p1, p2);
         } break;
         case 3: {
-          if (cfg_.debug) std::cout << "calling with three args\n";
-          JIT_3_args jitedcode = (JIT_3_args)address;
           StackElement p3 = pop();
           StackElement p2 = pop();
           StackElement p1 = pop();
-          result = (*jitedcode)(p1, p2, p3);
+          result = (*jitFunction)(p1, p2, p3);
         } break;
         default:
           printf("Need to add handlers for more parameters\n");
@@ -221,8 +213,7 @@ StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
       // Call the Jit'ed function, passing the parameters on the
       // ExecutionContext stack.
       if (cfg_.debug) std::cout << "passing parameters on the stack\n";
-      Interpret jitedcode = (Interpret)address;
-      result = (*jitedcode)(this, functionIndex);
+      result = jitFunction(this, functionIndex);
     }
     return result;
   }
@@ -299,14 +290,14 @@ StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
   return *(stackPointer_ - 1);
 }
 
-void *VirtualMachine::getJitAddress(std::size_t functionIndex) {
+JitFunction VirtualMachine::getJitAddress(std::size_t functionIndex) {
   if (functionIndex >= compiledFunctions_.size()) {
     return nullptr;
   }
   return compiledFunctions_[functionIndex];
 }
 
-void VirtualMachine::setJitAddress(std::size_t functionIndex, void *value) {
+void VirtualMachine::setJitAddress(std::size_t functionIndex, JitFunction value) {
   compiledFunctions_[functionIndex] = value;
 }
 
@@ -318,7 +309,7 @@ const FunctionSpec *VirtualMachine::getFunction(std::size_t index) {
   return &module_->functions[index];
 }
 
-uint8_t *VirtualMachine::generateCode(const FunctionSpec &functionSpec) {
+JitFunction VirtualMachine::generateCode(const FunctionSpec &functionSpec) {
   return compiler_->generateCode(functionSpec);
 }
 

@@ -26,10 +26,24 @@ void ExecutionContext::functionCall(Parameter value) {
   push(result);
 }
 
+void ExecutionContext::functionReturn(StackElement returnVal) {
+  // TODO
+}
+
 void ExecutionContext::primitiveCall(Parameter value) {
   PrimitiveFunction *primitive = virtualMachine_->getPrimitive(value);
   (*primitive)(this);
 }
+
+void ExecutionContext::jmp(Parameter offset) {
+  // TODO
+}
+
+void ExecutionContext::duplicate() {
+  // TODO
+}
+
+void ExecutionContext::drop() { pop(); }
 
 void ExecutionContext::pushFromVar(StackElement *args, Parameter offset) {
   push(args[offset]);
@@ -39,13 +53,23 @@ void ExecutionContext::pushIntoVar(StackElement *args, Parameter offset) {
   args[offset] = pop();
 }
 
-void ExecutionContext::drop() { pop(); }
+void ExecutionContext::intAdd() {
+  StackElement right = pop();
+  StackElement left = pop();
+  StackElement result = left + right;
+  push(result);
+}
+
+void ExecutionContext::intSub() {
+  StackElement right = pop();
+  StackElement left = pop();
+  StackElement result = left - right;
+  push(result);
+}
+
+// CASCON2017 - Add intMul() and intDiv() here
 
 void ExecutionContext::intPushConstant(Parameter value) { push(value); }
-
-void ExecutionContext::strPushConstant(Parameter value) {
-  push((StackElement)virtualMachine_->getString(value));
-}
 
 Parameter ExecutionContext::intJmpEq(Parameter delta) {
   StackElement right = pop();
@@ -101,20 +125,17 @@ Parameter ExecutionContext::intJmpLe(Parameter delta) {
   return 0;
 }
 
-void ExecutionContext::intAdd() {
-  StackElement right = pop();
-  StackElement left = pop();
-  StackElement result = left + right;
-  push(result);
+void ExecutionContext::strPushConstant(Parameter value) {
+  push((StackElement)virtualMachine_->getString(value));
 }
 
-void ExecutionContext::intSub() {
-  StackElement right = pop();
-  StackElement left = pop();
-  StackElement result = left - right;
+/* void strJmpEq(Parameter delta);
+  TODO
+} */
 
-  push(result);
-}
+/* void strJmpNeq(Parameter delta) {
+  TODO
+} */
 
 /// ExecutionContext
 
@@ -234,14 +255,33 @@ StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
 
   while (*instructionPointer != END_SECTION) {
     switch (instructionPointer->byteCode()) {
-      case ByteCode::INT_PUSH_CONSTANT:
-        intPushConstant(instructionPointer->parameter());
+      case ByteCode::FUNCTION_CALL:
+        functionCall(instructionPointer->parameter());
         break;
-      case ByteCode::STR_PUSH_CONSTANT:
-        strPushConstant(instructionPointer->parameter());
+      case ByteCode::FUNCTION_RETURN: {
+        StackElement result = *(stackPointer_ - 1);
+        stackPointer_ = args;
+        return result;
+        break;
+      }
+      case ByteCode::PRIMITIVE_CALL:
+        primitiveCall(instructionPointer->parameter());
+        break;
+      case ByteCode::JMP:
+        instructionPointer += instructionPointer->parameter();
+        break;
+      case ByteCode::DUPLICATE:
+        // TODO
         break;
       case ByteCode::DROP:
         drop();
+        break;
+      case ByteCode::PUSH_FROM_VAR:
+        pushFromVar(args, instructionPointer->parameter());
+        break;
+      case ByteCode::POP_INTO_VAR:
+        // TODO bad name, push or pop?
+        pushIntoVar(args, instructionPointer->parameter());
         break;
       case ByteCode::INT_ADD:
         intAdd();
@@ -249,8 +289,11 @@ StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
       case ByteCode::INT_SUB:
         intSub();
         break;
-      case ByteCode::JMP:
-        instructionPointer += instructionPointer->parameter();
+
+      // CASCON2017 - Add INT_MUL and INT_DIV here
+
+      case ByteCode::INT_PUSH_CONSTANT:
+        intPushConstant(instructionPointer->parameter());
         break;
       case ByteCode::INT_JMP_EQ:
         instructionPointer += intJmpEq(instructionPointer->parameter());
@@ -270,24 +313,14 @@ StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
       case ByteCode::INT_JMP_LE:
         instructionPointer += intJmpLe(instructionPointer->parameter());
         break;
-      case ByteCode::FUNCTION_CALL:
-        functionCall(instructionPointer->parameter());
+      case ByteCode::STR_PUSH_CONSTANT:
+        strPushConstant(instructionPointer->parameter());
         break;
-      case ByteCode::PUSH_FROM_VAR:
-        pushFromVar(args, instructionPointer->parameter());
+      case ByteCode::STR_JMP_EQ:
+        // TODO
         break;
-      case ByteCode::POP_INTO_VAR:
-        // TODO bad name, push or pop?
-        pushIntoVar(args, instructionPointer->parameter());
-        break;
-      case ByteCode::FUNCTION_RETURN: {
-        StackElement result = *(stackPointer_ - 1);
-        stackPointer_ = args;
-        return result;
-        break;
-      }
-      case ByteCode::PRIMITIVE_CALL:
-        primitiveCall(instructionPointer->parameter());
+      case ByteCode::STR_JMP_NEQ:
+        // TODO
         break;
       default:
         assert(false);

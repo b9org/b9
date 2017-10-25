@@ -757,16 +757,9 @@ function CodeGen(f) {
             this.currentFunction.pushN(-1); // pop 2, push 1
             return decl.operator;
         }
-        if (decl.operator == "*") {
-            this.outputInstruction("ByteCode::INT_MUL", 0, "");
-            this.currentFunction.pushN(-1); // pop 2, push 1
-            return decl.operator;
-        }
-        if (decl.operator == "/") {
-            this.outputInstruction("ByteCode::INT_DIV", 0, "");
-            this.currentFunction.pushN(-1); // pop 2, push 1
-            return decl.operator;
-        }
+        
+        // CASCON2017 - Add INT_MUL and INT_DIV here
+        
         var code = this.genJmpForCompare(decl.operator)
         if (code) {
             // this will be handled by the jmp which includes the compare operation (i.e jmple, jmpgt)

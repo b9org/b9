@@ -214,7 +214,7 @@ StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
           result = (*jitedcode)(p1, p2, p3);
         } break;
         default:
-          printf("Need to add handlers for more parameters\n");
+          throw std::runtime_error{"Need to add handlers for more parameters"};
           break;
       }
     } else {

@@ -49,26 +49,28 @@ class ExecutionContext {
 
   void push(StackElement value);
   StackElement pop();
-  void drop();
-  void duplicate();
-  void functionReturn();
+
   void functionCall(Parameter value);
+  void functionReturn(StackElement returnVal);
   void primitiveCall(Parameter value);
+  void jmp(Parameter offset);
+  void duplicate();
+  void drop();
   void pushFromVar(StackElement *args, Parameter offset);
   void pushIntoVar(StackElement *args, Parameter offset);
-  void jmp(Parameter offset);
-
-  void intPushConstant(Parameter value);
   void intAdd();
   void intSub();
+  // CASCON2017 - Add intMul() and intDiv() here
+  void intPushConstant(Parameter value);
   Parameter intJmpEq(Parameter delta);
   Parameter intJmpNeq(Parameter delta);
   Parameter intJmpGt(Parameter delta);
   Parameter intJmpGe(Parameter delta);
   Parameter intJmpLt(Parameter delta);
   Parameter intJmpLe(Parameter delta);
-
   void strPushConstant(Parameter value);
+  // TODO: void strJmpEq(Parameter delta);
+  // TODO: void strJmpNeq(Parameter delta);
 
   // Reset the stack and other internal data
   void reset();

@@ -67,27 +67,26 @@ Compiler::Compiler(VirtualMachine *virtualMachine, const Config &cfg)
   auto stackElementType = types_.toIlType<StackElement>();
 
   // Stack
-  types_.DefineStruct("Stack");
-  // types_.DefineField("Stack", "stackBase", stackElementPointerType,
+  types_.DefineStruct("executionContextType");
+  // types_.DefineField("executionContextType", "stackBase", stackElementPointerType,
   //                   offsetof(Stack, stackBase));
-  types_.DefineField("Stack", "stackPointer",
+  types_.DefineField("executionContextType", "stackPointer",
                      types_.PointerTo(types_.PointerTo(stackElementType)),
-                     offsetof(Stack, stackPointer));
-  types_.CloseStruct("Stack");
+                     offsetof(struct ExecutionContext, stackPointer_));
+  types_.CloseStruct("executionContextType");
 }
 
-JitFunction Compiler::generateCode(const FunctionSpec &functionSpec) {
-  Stack *stack = virtualMachine_->executionContext()->stack();
-  MethodBuilder methodBuilder(virtualMachine_, &types_, cfg_, functionSpec,
-                              stack);
+JitFunction Compiler::generateCode(const std::size_t functionIndex) {
+  const FunctionSpec *function = virtualMachine_->getFunction(functionIndex);
+  MethodBuilder methodBuilder(virtualMachine_, &types_, cfg_, functionIndex);
   if (cfg_.debug)
-    std::cout << "MethodBuilder for function: " << functionSpec.name
+    std::cout << "MethodBuilder for function: " << function->name
               << " is constructed" << std::endl;
   uint8_t *entry = nullptr;
   int rc = compileMethodBuilder(&methodBuilder, &entry);
   if (rc != 0) {
-    std::cout << "Failed to compile function: " << functionSpec.name
-              << " nargs: " << functionSpec.nargs << std::endl;
+    std::cout << "Failed to compile function: " << function->name
+              << " nargs: " << function->nargs << std::endl;
     throw b9::CompilationException{"IL generation failed"};
   }
 
@@ -100,19 +99,20 @@ JitFunction Compiler::generateCode(const FunctionSpec &functionSpec) {
 
 MethodBuilder::MethodBuilder(VirtualMachine *virtualMachine,
                              TR::TypeDictionary *types, const Config &cfg,
-                             const FunctionSpec &functionSpec, Stack *stack)
+                             const std::size_t functionIndex)
     : TR::MethodBuilder(types),
       virtualMachine_(virtualMachine),
       types_(types),
       cfg_(cfg),
-      functionSpec_(functionSpec),
-      stack_(stack),
+      functionIndex_(functionIndex),
+      context_(virtualMachine->executionContext()),
       maxInlineDepth(cfg.maxInlineDepth),
       firstArgumentIndex(0) {
+  const FunctionSpec *function = virtualMachine_->getFunction(functionIndex);
   DefineLine(LINETOSTR(__LINE__));
   DefineFile(__FILE__);
 
-  DefineName(functionSpec_.name.c_str());
+  DefineName(function->name.c_str());
 
   stackElementType = types_->template toIlType<StackElement>();
   stackElementPointerType = types_->PointerTo(stackElementType);
@@ -122,18 +122,18 @@ MethodBuilder::MethodBuilder(VirtualMachine *virtualMachine,
   int32PointerType = types_->PointerTo(Int32);
   int16PointerType = types_->PointerTo(Int16);
 
-  stackType = types_->LookupStruct("Stack");
-  stackPointerType = types_->PointerTo(stackType);
+  executionContextType = types_->LookupStruct("executionContextType");
+  stackPointerType = types_->PointerTo(executionContextType);
 
   DefineReturnType(stackElementType);
 
-  defineParameters(functionSpec.nargs);
+  defineParameters(function->nargs);
 
   if (cfg.lazyVmState) {
-    DefineLocal("localStack", stackType);
+    DefineLocal("localContext", executionContextType);
   }
 
-  defineLocals(functionSpec.nargs);
+  defineLocals(function->nargs);
 
   defineFunctions();
 
@@ -163,7 +163,8 @@ void MethodBuilder::defineLocals(std::size_t argCount) {
     // for locals we pre-define all the locals we could use, for the toplevel
     // and all the inlined names which are simply referenced via a skew to reach
     // past callers functions args/temps
-    std::size_t topLevelLocals = functionSpec_.nargs + functionSpec_.nregs;
+    const FunctionSpec *function = virtualMachine_->getFunction(functionIndex_);
+    std::size_t topLevelLocals = function->nargs + function->nregs;
     if (cfg_.debug) {
       std::cout << "CREATING " << topLevelLocals << " topLevel with "
                 << MAX_ARGS_TEMPS_AVAIL - topLevelLocals
@@ -228,11 +229,12 @@ long computeNumberOfBytecodes(const Instruction *program) {
 }
 
 bool MethodBuilder::inlineProgramIntoBuilder(
-    const FunctionSpec *function, bool isTopLevel,
+    const std::size_t functionIndex, bool isTopLevel,
     TR::BytecodeBuilder *currentBuilder,
     TR::BytecodeBuilder *jumpToBuilderForInlinedReturn) {
   bool success = true;
   maxInlineDepth--;
+  const FunctionSpec *function = virtualMachine_->getFunction(functionIndex);
   const Instruction *program = function->address;
 
   // Create a BytecodeBuilder for each Bytecode
@@ -266,23 +268,23 @@ bool MethodBuilder::inlineProgramIntoBuilder(
     } else {
       // arguments are &sp[-number_of_args]
       // temps are pushes onto the stack to &sp[number_of_temps]
-      TR::IlValue *sp = builder->LoadIndirect("Stack", "stackPointer",
-                                              builder->ConstAddress(stack_));
+      TR::IlValue *sp = builder->LoadIndirect("executionContextType", "stackPointer",
+                                              builder->ConstAddress(context_));
       TR::IlValue *args =
           builder->IndexAt(stackElementPointerType, sp,
                            builder->ConstInt32(0 - function->nargs));
       builder->Store("returnSP", args);
       TR::IlValue *newSP = builder->IndexAt(
           stackElementPointerType, sp, builder->ConstInt32(function->nregs));
-      builder->StoreIndirect("Stack", "stackPointer",
-                             builder->ConstAddress(stack_), newSP);
+      builder->StoreIndirect("executionContextType", "stackPointer",
+                             builder->ConstAddress(context_), newSP);
     }
   }
 
   // Create a BytecodeBuilder for each Bytecode
   for (int i = 0; i < numberOfBytecodes; i++) {
     ByteCode bc = program[i].byteCode();
-    if (!generateILForBytecode(builderTable, program, bc, i,
+    if (!generateILForBytecode(functionIndex, builderTable, program, bc, i,
                                jumpToBuilderForInlinedReturn)) {
       success = false;
       break;
@@ -295,9 +297,9 @@ bool MethodBuilder::inlineProgramIntoBuilder(
 
 bool MethodBuilder::buildIL() {
   if (cfg_.lazyVmState) {
-    this->Store("localStack", this->ConstAddress(stack_));
+    this->Store("localContext", this->ConstAddress(context_));
     OMR::VirtualMachineRegisterInStruct *stackTop =
-        new OMR::VirtualMachineRegisterInStruct(this, "Stack", "localStack",
+        new OMR::VirtualMachineRegisterInStruct(this, "executionContextType", "localContext",
                                                 "stackPointer", "SP");
     OMR::VirtualMachineOperandStack *stack =
         new OMR::VirtualMachineOperandStack(this, 32, stackElementPointerType,
@@ -308,7 +310,7 @@ bool MethodBuilder::buildIL() {
     setVMState(new OMR::VirtualMachineState());
   }
 
-  return inlineProgramIntoBuilder(&functionSpec_, true);
+  return inlineProgramIntoBuilder(functionIndex_, true);
 }
 
 TR::IlValue *MethodBuilder::loadVarIndex(TR::BytecodeBuilder *builder,
@@ -355,6 +357,7 @@ void MethodBuilder::storeVarIndex(TR::BytecodeBuilder *builder, int varindex,
 }
 
 bool MethodBuilder::generateILForBytecode(
+    const std::size_t functionIndex,
     std::vector<TR::BytecodeBuilder *> bytecodeBuilderTable,
     const Instruction *program, ByteCode bytecode, long bytecodeIndex,
     TR::BytecodeBuilder *jumpToBuilderForInlinedReturn) {
@@ -375,6 +378,7 @@ bool MethodBuilder::generateILForBytecode(
   }
 
   bool handled = true;
+  const FunctionSpec *function = virtualMachine_->getFunction(functionIndex);
 
   if (cfg_.debug) {
     if (jumpToBuilderForInlinedReturn) {
@@ -403,8 +407,8 @@ bool MethodBuilder::generateILForBytecode(
       } else {
         auto result = pop(builder);
         if (!cfg_.passParam) {
-          builder->StoreIndirect("Stack", "stackPointer",
-                                 builder->ConstAddress(stack_),
+          builder->StoreIndirect("executionContextType", "stackPointer",
+                                 builder->ConstAddress(context_),
                                  builder->Load("returnSP"));
         }
         builder->Return(result);
@@ -480,7 +484,7 @@ bool MethodBuilder::generateILForBytecode(
 
       if (cfg_.directCall) {
         if (cfg_.debug)
-          std::cout << "Handling direct calls to " << callee->name.c_str()
+          std::cout << "Handling direct calls to " << callee->name
                     << std::endl;
         const char *interpretName[] = {"interpret_0", "interpret_1",
                                        "interpret_2", "interpret_3"};
@@ -498,7 +502,7 @@ bool MethodBuilder::generateILForBytecode(
           }
           if (maxInlineDepth >= 0 && !interp) {
             int32_t save = firstArgumentIndex;
-            int32_t skipLocals = functionSpec_.nargs + functionSpec_.nregs;
+            int32_t skipLocals = function->nargs + function->nregs;
             int32_t spaceNeeded = argsCount + regsCount;
             firstArgumentIndex += skipLocals;
             // no need to define locals here the outer program registered all
@@ -516,15 +520,14 @@ bool MethodBuilder::generateILForBytecode(
                               pop(builder));  // firstArgumentIndex is added in
                                               // storeVarIndex
               }
-              bool result = inlineProgramIntoBuilder(callee, false, builder,
+              bool result = inlineProgramIntoBuilder(callindex, false, builder,
                                                      nextBytecodeBuilder);
               if (!result) {
                 std::cerr << "Failed inlineProgramIntoBuilder" << std::endl;
                 return result;
               } else {
                 if (cfg_.debug)
-                  std::cout << "Successfully inlined: " << callee->name.c_str()
-                            << std::endl;
+                  std::cout << "Successfully inlined: " << callee->name << std::endl;
               }
               // printf("SETTING SKEW BACK from %d to %d\n", firstArgumentIndex,
               // save);
@@ -582,8 +585,7 @@ bool MethodBuilder::generateILForBytecode(
         // only use interpreter to dispatch the calls
         if (cfg_.debug)
           std::cout << "Calling interpret_0 to dispatch call for "
-                    << callee->name.c_str() << " with " << argsCount
-                    << "args\n";
+                    << callee->name << " with " << argsCount << " args\n";
         QCOMMIT(builder);
         TR::IlValue *result = builder->Call(
             "interpret_0", 2,
@@ -748,12 +750,12 @@ TR::IlValue *MethodBuilder::pop(TR::BytecodeBuilder *builder) {
   if (cfg_.lazyVmState) {
     return QSTACK(builder)->Pop(builder);
   } else {
-    TR::IlValue *sp = builder->LoadIndirect("Stack", "stackPointer",
-                                            builder->ConstAddress(stack_));
+    TR::IlValue *sp = builder->LoadIndirect("executionContextType", "stackPointer",
+                                            builder->ConstAddress(context_));
     TR::IlValue *newSP =
         builder->IndexAt(stackElementPointerType, sp, builder->ConstInt32(-1));
-    builder->StoreIndirect("Stack", "stackPointer",
-                           builder->ConstAddress(stack_), newSP);
+    builder->StoreIndirect("executionContextType", "stackPointer",
+                           builder->ConstAddress(context_), newSP);
     return builder->LoadAt(stackElementPointerType, newSP);
   }
 }
@@ -762,14 +764,14 @@ void MethodBuilder::push(TR::BytecodeBuilder *builder, TR::IlValue *value) {
   if (cfg_.lazyVmState) {
     QSTACK(builder)->Push(builder, value);
   } else {
-    TR::IlValue *sp = builder->LoadIndirect("Stack", "stackPointer",
-                                            builder->ConstAddress(stack_));
+    TR::IlValue *sp = builder->LoadIndirect("executionContextType", "stackPointer",
+                                            builder->ConstAddress(context_));
     builder->StoreAt(builder->ConvertTo(stackElementPointerType, sp),
                      builder->ConvertTo(stackElementType, value));
     TR::IlValue *newSP =
         builder->IndexAt(stackElementPointerType, sp, builder->ConstInt32(1));
-    builder->StoreIndirect("Stack", "stackPointer",
-                           builder->ConstAddress(stack_), newSP);
+    builder->StoreIndirect("executionContextType", "stackPointer",
+                           builder->ConstAddress(context_), newSP);
   }
 }
 

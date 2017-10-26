@@ -1,11 +1,12 @@
 function fib(a) {
-    if (a < 3) {
-        return 1;
-    } else {
-        return fib(a - 1) + fib(a - 2);
-    }
+   var result = 0;
+   if (a < 3) {
+       result = 1;
+   } else {
+       result = fib(a - 1) + fib(a - 2);
+   }
+   return result;
 }
-
 function b9main() {
     b9PrintString("");
     b9PrintString("Fibonacci");

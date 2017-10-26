@@ -53,7 +53,7 @@ class ExecutionContext {
   void functionCall(Parameter value);
   void functionReturn(StackElement returnVal);
   void primitiveCall(Parameter value);
-  void jmp(Parameter offset);
+  Parameter jmp(Parameter offset);
   void duplicate();
   void drop();
   void pushFromVar(StackElement *args, Parameter offset);

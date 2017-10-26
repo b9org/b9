@@ -75,7 +75,7 @@ static bool parseArguments(RunConfig& cfg, const int argc, char* argv[]) {
       cfg.b9.directCall = true;
     } else if (strcmp(arg, "-passparam") == 0) {
       cfg.b9.passParam = true;
-    } else if (strcmp(arg, "-lazyvmstate") == 0) {
+    } else if (strcasecmp(arg, "-lazyvmstate") == 0) {
       cfg.b9.lazyVmState = true;
     } else if (strcmp(arg, "--") == 0) {
       i++;

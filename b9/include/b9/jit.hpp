@@ -21,8 +21,7 @@ struct CompilationException : public std::runtime_error {
 class MethodBuilder : public TR::MethodBuilder {
  public:
   MethodBuilder(VirtualMachine *virtualMachine, TR::TypeDictionary *types,
-                const Config &config, const FunctionSpec &functionSpec,
-                Stack *stack);
+                const Config &config, const std::size_t functionIndex);
 
   virtual bool buildIL();
 
@@ -30,12 +29,12 @@ class MethodBuilder : public TR::MethodBuilder {
   VirtualMachine *virtualMachine_;
   TR::TypeDictionary *types_;
   const Config &cfg_;
-  const FunctionSpec &functionSpec_;
-  Stack *stack_;
+  const std::size_t functionIndex_;
+  ExecutionContext *context_;
   int32_t maxInlineDepth;
   int32_t firstArgumentIndex;
 
-  TR::IlType *stackType;
+  TR::IlType *executionContextType;
   TR::IlType *stackPointerType;
   TR::IlType *stackElementType;
   TR::IlType *stackElementPointerType;
@@ -52,12 +51,13 @@ class MethodBuilder : public TR::MethodBuilder {
   void createBuilderForBytecode(TR::BytecodeBuilder **bytecodeBuilderTable,
                                 ByteCode bytecode, int64_t bytecodeIndex);
   bool generateILForBytecode(
+      const std::size_t functionIndex,
       std::vector<TR::BytecodeBuilder *> bytecodeBuilderTable,
       const Instruction *program, ByteCode bytecode, long bytecodeIndex,
       TR::BytecodeBuilder *jumpToBuilderForInlinedReturn);
 
   bool inlineProgramIntoBuilder(
-      const FunctionSpec *function, bool isTopLevel,
+      const std::size_t functionIndex, bool isTopLevel,
       TR::BytecodeBuilder *currentBuilder = 0,
       TR::BytecodeBuilder *jumpToBuilderForInlinedReturn = 0);
 
@@ -118,7 +118,7 @@ class MethodBuilder : public TR::MethodBuilder {
 class Compiler {
  public:
   Compiler(VirtualMachine *virtualMachine, const Config &cfg);
-  JitFunction generateCode(const FunctionSpec &functionSpec);
+  JitFunction generateCode(const std::size_t functionIndex);
 
  private:
   TR::TypeDictionary types_;

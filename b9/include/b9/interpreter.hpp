@@ -55,7 +55,9 @@ typedef StackElement (*JitFunction)(...);
 class ExecutionContext {
  public:
   ExecutionContext(VirtualMachine *virtualMachine, const Config &cfg)
-      : virtualMachine_(virtualMachine), cfg_(cfg) {
+      : stackPointer_(this->stack_),
+        virtualMachine_(virtualMachine), 
+        cfg_(cfg) {
     std::memset(stack_, 0, sizeof(StackElement) * 1000);
   }
 
@@ -89,14 +91,10 @@ class ExecutionContext {
   // Reset the stack and other internal data
   void reset();
 
-  Stack *stack() { return &stackFields; }
-
-  Stack stackFields = {stack_, stack_};
+  StackElement *stackPointer_;
 
  private:
   StackElement stack_[1000];
-  StackElement *&stackBase_ = stackFields.stackBase;
-  StackElement *&stackPointer_ = stackFields.stackPointer;
   Instruction *programCounter_ = 0;
   StackElement *stackEnd_ = &stack_[1000];
   VirtualMachine *virtualMachine_;
@@ -123,7 +121,7 @@ class VirtualMachine {
   void setJitAddress(std::size_t functionIndex, JitFunction value);
 
   std::size_t getFunctionCount();
-  JitFunction generateCode(const FunctionSpec &functionSpec);
+  JitFunction generateCode(const std::size_t functionIndex);
   void generateAllCode();
 
   const char *getString(int index);

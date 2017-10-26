@@ -1,3 +1,4 @@
+#include <strings.h>
 #include <b9/interpreter.hpp>
 #include <b9/jit.hpp>
 #include <b9/loader.hpp>
@@ -55,27 +56,27 @@ static bool parseArguments(RunConfig& cfg, const int argc, char* argv[]) {
   for (; i < argc; i++) {
     const char* arg = argv[i];
 
-    if (strcmp(arg, "-help") == 0) {
+    if (strcasecmp(arg, "-help") == 0) {
       std::cout << usage << std::endl;
       exit(EXIT_SUCCESS);
-    } else if (strcmp(arg, "-loop") == 0) {
+    } else if (strcasecmp(arg, "-loop") == 0) {
       cfg.loopCount = atoi(argv[++i]);
-    } else if (strcmp(arg, "-inline") == 0) {
+    } else if (strcasecmp(arg, "-inline") == 0) {
       cfg.b9.maxInlineDepth = atoi(argv[++i]);
-    } else if (strcmp(arg, "-verbose") == 0) {
+    } else if (strcasecmp(arg, "-verbose") == 0) {
       cfg.verbose = true;
       cfg.b9.verbose = true;
-    } else if (strcmp(arg, "-debug") == 0) {
+    } else if (strcasecmp(arg, "-debug") == 0) {
       cfg.b9.debug = true;
-    } else if (strcmp(arg, "-function") == 0) {
+    } else if (strcasecmp(arg, "-function") == 0) {
       cfg.mainFunction = argv[++i];
-    } else if (strcmp(arg, "-jit") == 0) {
+    } else if (strcasecmp(arg, "-jit") == 0) {
       cfg.b9.jit = true;
-    } else if (strcmp(arg, "-directcall") == 0) {
+    } else if (strcasecmp(arg, "-directcall") == 0) {
       cfg.b9.directCall = true;
-    } else if (strcmp(arg, "-passparam") == 0) {
+    } else if (strcasecmp(arg, "-passparam") == 0) {
       cfg.b9.passParam = true;
-    } else if (strcmp(arg, "-lazyvmstate") == 0) {
+    } else if (strcasecmp(arg, "-lazyvmstate") == 0) {
       cfg.b9.lazyVmState = true;
     } else if (strcmp(arg, "--") == 0) {
       i++;

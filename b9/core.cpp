@@ -35,8 +35,8 @@ void ExecutionContext::primitiveCall(Parameter value) {
   (*primitive)(this);
 }
 
-void ExecutionContext::jmp(Parameter offset) {
-  // TODO
+Parameter ExecutionContext::jmp(Parameter offset) {
+  return offset;
 }
 
 void ExecutionContext::duplicate() {

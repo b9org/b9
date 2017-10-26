@@ -18,7 +18,7 @@ static const char* usage =
     "Run Options:\n"
     "  -function <f>: Run the function <f> (default: b9main)\n"
     "  -loop <n>:     Run the program <n> times (default: 1)\n"
-    "  -inline <n>:   Set the jit's max inline depth (default: 1)\n"
+    "  -inline <n>:   Set the jit's max inline depth (default: 0)\n"
     "  -debug:        Enable debug code\n"
     "  -verbose:      Run with verbose printing\n"
     "  -help:         Print this help message";

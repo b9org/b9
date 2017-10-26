@@ -18,7 +18,7 @@ class ExecutionContext;
 class VirtualMachine;
 
 struct Config {
-  std::size_t maxInlineDepth = 1;
+  std::size_t maxInlineDepth = 0; //< The JIT's max inline depth
   bool jit = false;          //< Enable the JIT
   bool directCall = false;   //< Enable direct JIT to JIT calls
   bool passParam = false;    //< Pass arguments in CPU registers

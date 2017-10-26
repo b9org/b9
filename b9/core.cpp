@@ -342,8 +342,8 @@ const FunctionSpec *VirtualMachine::getFunction(std::size_t index) {
   return &module_->functions[index];
 }
 
-JitFunction VirtualMachine::generateCode(const FunctionSpec &functionSpec) {
-  return compiler_->generateCode(functionSpec);
+JitFunction VirtualMachine::generateCode(const std::size_t functionIndex) {
+  return compiler_->generateCode(functionIndex);
 }
 
 const char *VirtualMachine::getString(int index) {
@@ -354,28 +354,16 @@ std::size_t VirtualMachine::getFunctionCount() {
   return module_->functions.size();
 }
 
-// void removeGeneratedCode(ExecutionContext *context, int functionIndex) {
-//   context->functions[functionIndex].jitAddress = 0;
-//   setJitAddressSlot(context->functions[functionIndex].program, 0);
-// }
-
-// void removeAllGeneratedCode(ExecutionContext *context) {
-//   int functionIndex = 0;
-//   while (context->functions[functionIndex].name != NO_MORE_FUNCTIONS) {
-//     removeGeneratedCode(context, functionIndex);
-//     functionIndex++;
-//   }
-// }
-
 void VirtualMachine::generateAllCode() {
   assert(cfg_.jit);
+  auto functionIndex = 0;
 
-  for (auto &functionSpec : module_->functions) {
+  while (functionIndex < getFunctionCount()) {
     if (cfg_.debug)
-      std::cout << "\nJitting function: " << functionSpec.name.c_str()
-                << std::endl;
-    auto func = compiler_->generateCode(functionSpec);
+      std::cout << "\nJitting function: " << getFunction(functionIndex)->name << std::endl;
+    auto func = compiler_->generateCode(functionIndex);
     compiledFunctions_.push_back(func);
+    ++functionIndex;
   }
 }
 
@@ -395,8 +383,8 @@ StackElement VirtualMachine::run(const std::size_t functionIndex,
   auto argsCount = function->nargs;
 
   if (cfg_.verbose) {
-    std::cout << "+++++++++++++++++++++++" << std::endl
-              << "Running: " << *function << std::endl;
+    std::cout << "+++++++++++++++++++++++" << std::endl;
+    std::cout << "Running function: " << function->name << " nargs: " << argsCount << std::endl;
   }
 
   if (argsCount != usrArgs.size()) {

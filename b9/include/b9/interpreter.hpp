@@ -55,7 +55,8 @@ typedef StackElement (*JitFunction)(...);
 class ExecutionContext {
  public:
   ExecutionContext(VirtualMachine *virtualMachine, const Config &cfg)
-      : stackPointer_(this->stack_),
+      : stackBase_(this->stack_),
+        stackPointer_(this->stack_),
         virtualMachine_(virtualMachine), 
         cfg_(cfg) {
     std::memset(stack_, 0, sizeof(StackElement) * 1000);
@@ -91,6 +92,7 @@ class ExecutionContext {
   // Reset the stack and other internal data
   void reset();
 
+  StackElement *stackBase_;
   StackElement *stackPointer_;
 
  private:

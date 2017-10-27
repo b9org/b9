@@ -1,19 +1,9 @@
-function fib(a) {
-   var result = 0;
-   if (a < 3) {
-       result = 1;
-   } else {
-       result = fib(a - 1) + fib(a - 2);
-   }
-   return result;
-}
-function b9main() {
-    b9PrintString("");
-    b9PrintString("Fibonacci");
-    var a = 1;
-    while (a <= 20) {
-        b9PrintNumber(fib(a));
-        a++;
-    }
+function fib() {
+   return 100;
 }
 
+function b9main() {
+   var a = 1;
+   b9PrintNumber(fib());
+   b9PrintNumber(a);
+}

@@ -24,6 +24,17 @@
 
 namespace b9 {
 
+extern "C" void b9PrintStack(ExecutionContext *context, int64_t pc, int64_t bytecode, int64_t param) {
+  printf("Executing at pc %lld, bc is (%d, %s), param is (%d)\n", pc, bytecode, toString((ByteCode)bytecode), param);
+	StackElement* base = context->stackBase_;
+	std::cout << "------\n";
+	while (base < context->stackPointer_) {
+		printf("%p: Stack[%ld] = %lld\n", base, base - context->stackBase_, *base);
+		base++;
+	}
+	std::cout << "^^^^^^^^^^^^^^^^^\n";
+}
+
 // Simulates all state of the virtual machine state while compiled code is
 // running. It simulates the stack and the pointer to the top of the stack.
 class VirtualMachineState : public OMR::VirtualMachineState {
@@ -130,6 +141,7 @@ MethodBuilder::MethodBuilder(VirtualMachine *virtualMachine,
   defineParameters(function->nargs);
 
   if (cfg.lazyVmState) {
+    std::cout << "defining localContext\n";
     DefineLocal("localContext", executionContextType);
   }
 
@@ -208,7 +220,9 @@ void MethodBuilder::defineFunctions() {
                  int32PointerType, stackElementType, stackElementType,
                  stackElementType);
   DefineFunction((char *)"primitive_call", (char *)__FILE__, "primitive_call",
-                 (void *)&primitive_call, Int64, 2, addressPointerType, Int32);
+                 (void *)&primitive_call, NoType, 2, addressPointerType, Int32);
+  DefineFunction((char*)"b9PrintStack", (char*)__FILE__, "b9PrintStack", 
+                 (void*)&b9PrintStack, NoType, 4, addressPointerType, Int64, Int64, Int64);
 }
 
 #define QSTACK(b) (((VirtualMachineState *)(b)->vmState())->_stack)
@@ -297,6 +311,7 @@ bool MethodBuilder::inlineProgramIntoBuilder(
 
 bool MethodBuilder::buildIL() {
   if (cfg_.lazyVmState) {
+    std::cout << "setting vmstate in buildIL\n";
     this->Store("localContext", this->ConstAddress(context_));
     OMR::VirtualMachineRegisterInStruct *stackTop =
         new OMR::VirtualMachineRegisterInStruct(this, "executionContextType", "localContext",
@@ -388,6 +403,11 @@ bool MethodBuilder::generateILForBytecode(
     }
     std::cout << "generating index=" << bytecodeIndex << " bc=" << instruction
               << std::endl;
+    QCOMMIT(builder);
+    builder->Call("b9PrintStack", 4, builder->ConstAddress(virtualMachine_->executionContext()),
+					builder->ConstInt64(bytecodeIndex),
+					builder->ConstInt64((int) bytecode),
+					builder->ConstInt64(instruction.parameter()));
   }
 
   switch (bytecode) {
@@ -405,13 +425,14 @@ bool MethodBuilder::generateILForBytecode(
       if (jumpToBuilderForInlinedReturn) {
         builder->Goto(jumpToBuilderForInlinedReturn);
       } else {
+        QCOMMIT(builder);
         auto result = pop(builder);
         if (!cfg_.passParam) {
           builder->StoreIndirect("executionContextType", "stackPointer",
                                  builder->ConstAddress(context_),
                                  builder->Load("returnSP"));
-        }
-        builder->Return(result);
+      }
+      builder->Return(result);
       }
     } break;
     case ByteCode::DROP:
@@ -466,12 +487,17 @@ bool MethodBuilder::generateILForBytecode(
         builder->AddFallThroughBuilder(nextBytecodeBuilder);
     } break;
     case ByteCode::PRIMITIVE_CALL: {
+      std::cout << "qcommitting\n";
       QCOMMIT(builder);
       TR::IlValue *result = builder->Call(
           "primitive_call", 2,
           builder->ConstAddress(virtualMachine_->executionContext()),
           builder->ConstInt32(instruction.parameter()));
-      push(builder, result);
+      std::cout << "qdropping 1 slot\n";
+      //QRELOAD_DROP(builder, 1);
+      QRELOAD(builder);
+      //push(builder, result);
+      //push(builder, builder->ConstInt32(0));
       if (nextBytecodeBuilder)
         builder->AddFallThroughBuilder(nextBytecodeBuilder);
     } break;
@@ -565,6 +591,7 @@ bool MethodBuilder::generateILForBytecode(
             std::cout << "Parameters are on stack to the function call\n";
           }
           TR::IlValue *result;
+          std::cout << "qcommitting\n";
           QCOMMIT(builder);
           if (interp) {
             if (cfg_.debug)
@@ -578,7 +605,9 @@ bool MethodBuilder::generateILForBytecode(
               std::cout << "calling " << nameToCall << " directly\n";
             result = builder->Call(nameToCall, 0);
           }
+          std::cout << "qdropping " << argsCount << " slots\n";
           QRELOAD_DROP(builder, argsCount);
+          //QRELOAD(builder);
           push(builder, result);
         }
       } else {
@@ -586,12 +615,15 @@ bool MethodBuilder::generateILForBytecode(
         if (cfg_.debug)
           std::cout << "Calling interpret_0 to dispatch call for "
                     << callee->name << " with " << argsCount << " args\n";
+        std::cout << "qcommitting\n";
         QCOMMIT(builder);
         TR::IlValue *result = builder->Call(
             "interpret_0", 2,
             builder->ConstAddress(virtualMachine_->executionContext()),
             builder->ConstInt32(callindex));
+        std::cout << "qdropping " << argsCount << " slots\n";
         QRELOAD_DROP(builder, argsCount);
+        //QRELOAD(builder);
         push(builder, result);
       }
 
@@ -748,6 +780,7 @@ void MethodBuilder::drop(TR::BytecodeBuilder *builder) { pop(builder); }
 
 TR::IlValue *MethodBuilder::pop(TR::BytecodeBuilder *builder) {
   if (cfg_.lazyVmState) {
+    std::cout << "-1: popping stack\n";
     return QSTACK(builder)->Pop(builder);
   } else {
     TR::IlValue *sp = builder->LoadIndirect("executionContextType", "stackPointer",
@@ -762,6 +795,7 @@ TR::IlValue *MethodBuilder::pop(TR::BytecodeBuilder *builder) {
 
 void MethodBuilder::push(TR::BytecodeBuilder *builder, TR::IlValue *value) {
   if (cfg_.lazyVmState) {
+    std::cout << "+1: pushing stack\n";
     QSTACK(builder)->Push(builder, value);
   } else {
     TR::IlValue *sp = builder->LoadIndirect("executionContextType", "stackPointer",

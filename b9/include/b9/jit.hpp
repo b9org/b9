@@ -57,7 +57,7 @@ class MethodBuilder : public TR::MethodBuilder {
       TR::BytecodeBuilder *jumpToBuilderForInlinedReturn);
 
   bool inlineProgramIntoBuilder(
-      const std::size_t functionIndex, bool isTopLevel,
+      const std::size_t functionIndex,
       TR::BytecodeBuilder *currentBuilder = 0,
       TR::BytecodeBuilder *jumpToBuilderForInlinedReturn = 0);
 

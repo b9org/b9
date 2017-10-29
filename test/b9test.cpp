@@ -111,7 +111,8 @@ INSTANTIATE_TEST_CASE_P(InterpreterTestSuite, InterpreterTest,
     "test_string_declare_string_var",
     "helper_test_string_return_string",
     "test_string_return_string",
-    "test_while"
+    "test_while",
+    "test_fib"
 ));
 
 // clang-format on

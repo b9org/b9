@@ -50,6 +50,7 @@ TEST_P(InterpreterTest, runJit) {
 
   VirtualMachine vm{cfg};
   vm.load(module_);
+  vm.generateAllCode();
   EXPECT_TRUE(vm.run(GetParam(), {}));
 }
 
@@ -60,6 +61,7 @@ TEST_P(InterpreterTest, runDirectCall) {
 
   VirtualMachine vm{cfg};
   vm.load(module_);
+  vm.generateAllCode();
   EXPECT_TRUE(vm.run(GetParam(), {}));
 }
 
@@ -71,6 +73,7 @@ TEST_P(InterpreterTest, runPassParam) {
 
   VirtualMachine vm{cfg};
   vm.load(module_);
+  vm.generateAllCode();
   EXPECT_TRUE(vm.run(GetParam(), {}));
 }
 
@@ -83,6 +86,32 @@ TEST_P(InterpreterTest, runLazyVmState) {
 
   VirtualMachine vm{cfg};
   vm.load(module_);
+  vm.generateAllCode();
+  EXPECT_TRUE(vm.run(GetParam(), {}));
+}
+
+TEST_P(InterpreterTest, runInlining) {
+  Config cfg;
+  cfg.jit = true;
+  cfg.maxInlineDepth = 3;
+
+  VirtualMachine vm{cfg};
+  vm.load(module_);
+  vm.generateAllCode();
+  EXPECT_TRUE(vm.run(GetParam(), {}));
+}
+
+TEST_P(InterpreterTest, runInliningAllFeatures) {
+  Config cfg;
+  cfg.jit = true;
+  cfg.maxInlineDepth = 3;
+  cfg.directCall = true;
+  cfg.passParam = true;
+  cfg.lazyVmState = true;
+
+  VirtualMachine vm{cfg};
+  vm.load(module_);
+  vm.generateAllCode();
   EXPECT_TRUE(vm.run(GetParam(), {}));
 }
 

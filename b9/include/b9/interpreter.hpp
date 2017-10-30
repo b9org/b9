@@ -77,7 +77,11 @@ class ExecutionContext {
   void pushIntoVar(StackElement *args, Parameter offset);
   void intAdd();
   void intSub();
-  // CASCON2017 - Add intMul() and intDiv() here
+
+// CASCON2017 - Add intMul() and intDiv() here
+  void intMul();
+  void intDiv();
+
   void intPushConstant(Parameter value);
   Parameter intJmpEq(Parameter delta);
   Parameter intJmpNeq(Parameter delta);

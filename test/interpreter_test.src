@@ -37,6 +37,23 @@ function test_sub() {
 }
 
 // CASCON2017 - add test_mul and test_div here
+function test_mul() {  
+  var a = 4;  
+  var b = 6;  
+  if ((a * b) == 24) {    
+    return 1;  
+  }  
+  return 0;
+}
+
+function test_div() {  
+  var a = 24;  
+  var b = 6;  
+  if ((a / b) == 4) {    
+    return 1;  
+  }  
+  return 0;
+}
 
 // test equal, test the true and the false case
 function test_equal() {
@@ -216,5 +233,5 @@ function test_while() {
     return 1;
 }
 function b9main() {
+    b9PrintString("This is the interpreter test suite - to run, run ./test/b9test");
 }
-

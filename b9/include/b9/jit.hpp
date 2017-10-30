@@ -84,6 +84,10 @@ class MethodBuilder : public TR::MethodBuilder {
   void handle_bc_add(TR::BytecodeBuilder *builder,
                      TR::BytecodeBuilder *nextBuilder);
   // CASCON2017 - add handle_bc_mul and handle_bc_div here
+  void handle_bc_mul(TR::BytecodeBuilder *builder,
+                     TR::BytecodeBuilder *nextBuilder);
+  void handle_bc_div(TR::BytecodeBuilder *builder,
+                     TR::BytecodeBuilder *nextBuilder);
   void handle_bc_call(TR::BytecodeBuilder *builder,
                       TR::BytecodeBuilder *nextBuilder);
   void handle_bc_jmp(TR::BytecodeBuilder *builder,

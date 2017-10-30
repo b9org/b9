@@ -68,6 +68,19 @@ void ExecutionContext::intSub() {
 }
 
 // CASCON2017 - Add intMul() and intDiv() here
+void ExecutionContext::intMul() {
+  StackElement right = pop();
+  StackElement left = pop();
+  StackElement result = left * right;
+  push(result); 
+}
+
+void ExecutionContext::intDiv() {  
+  StackElement right = pop();  
+  StackElement left = pop();  
+  StackElement result = left / right;  
+  push(result);
+}
 
 void ExecutionContext::intPushConstant(Parameter value) { push(value); }
 
@@ -282,6 +295,12 @@ StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
         break;
 
       // CASCON2017 - Add INT_MUL and INT_DIV here
+      case ByteCode::INT_MUL:        
+        intMul();        
+        break;
+      case ByteCode::INT_DIV:        
+        intDiv();        
+        break;
 
       case ByteCode::INT_PUSH_CONSTANT:
         intPushConstant(instructionPointer->parameter());

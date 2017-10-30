@@ -41,6 +41,8 @@ enum class ByteCode : RawByteCode {
   INT_SUB = 0xa,
 
   // CASCON2017 - Add INT_MUL and INT_DIV here
+  INT_MUL = 0xb,
+  INT_DIV = 0xc,
 
   // Push a constant
   INT_PUSH_CONSTANT = 0xd,
@@ -93,6 +95,10 @@ inline const char *toString(ByteCode bc) {
       return "INT_SUB";
 
     // CASCON2017 - Add INT_MUL and INT_DIV here
+    case ByteCode::INT_MUL:
+      return "INT_MUL";
+    case ByteCode::INT_DIV:
+      return "INT_DIV";
 
     case ByteCode::INT_PUSH_CONSTANT:
       return "INT_PUSH_CONSTANT";

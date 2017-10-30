@@ -94,6 +94,9 @@ INSTANTIATE_TEST_CASE_P(InterpreterTestSuite, InterpreterTest,
     "test_return_false",
     "test_add",
     "test_sub",
+    // CASCON2017 add test_div and test_mul here
+    "test_mul",
+    "test_div",
     "test_equal",
     "test_equal_1",
     "test_greaterThan",
@@ -112,7 +115,6 @@ INSTANTIATE_TEST_CASE_P(InterpreterTestSuite, InterpreterTest,
     "helper_test_string_return_string",
     "test_string_return_string",
     "test_while"
-    // CASCON2017 add test_div and test_mul here
 ));
 
 // clang-format on

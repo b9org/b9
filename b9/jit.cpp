@@ -140,11 +140,6 @@ MethodBuilder::MethodBuilder(VirtualMachine *virtualMachine,
 
   defineParameters(function->nargs);
 
-  if (cfg.lazyVmState) {
-    if (cfg_.debug) std::cout << "defining localContext\n";
-    DefineLocal("localContext", executionContextType);
-  }
-
   defineLocals(function->nargs);
 
   defineFunctions();
@@ -171,6 +166,10 @@ void MethodBuilder::defineParameters(std::size_t argCount) {
 }
 
 void MethodBuilder::defineLocals(std::size_t argCount) {
+
+  // The current execution context
+  DefineLocal("executionContext", executionContextType);
+
   if (cfg_.passParam) {
     // for locals we pre-define all the locals we could use, for the toplevel
     // and all the inlined names which are simply referenced via a skew to reach
@@ -284,9 +283,9 @@ bool MethodBuilder::buildIL() {
   // Create the lazy virtual machine state if enabled
   if (cfg_.lazyVmState) {
     if (cfg_.debug) std::cout << "setting vmstate in buildIL\n";
-    this->Store("localContext", this->ConstAddress(context_));
+    this->Store("executionContext", this->ConstAddress(context_));
     OMR::VirtualMachineRegisterInStruct *stackTop =
-        new OMR::VirtualMachineRegisterInStruct(this, "executionContextType", "localContext",
+        new OMR::VirtualMachineRegisterInStruct(this, "executionContextType", "executionContext",
                                                 "stackPointer", "SP");
     OMR::VirtualMachineOperandStack *stack =
         new OMR::VirtualMachineOperandStack(this, 32, stackElementPointerType,

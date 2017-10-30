@@ -36,6 +36,8 @@ function test_sub() {
     return 0;
 }
 
+// CASCON2017 - add test_mul and test_div here
+
 // test equal, test the true and the false case
 function test_equal() {
     var a = 1;
@@ -214,6 +216,8 @@ function test_while() {
     return 1;
 }
 function b9main() {
-        test_while();
+
+    // CASCON2017 - add calls to test functions here
+
 }
 

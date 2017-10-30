@@ -25,11 +25,11 @@
 namespace b9 {
 
 extern "C" void b9PrintStack(ExecutionContext *context, int64_t pc, int64_t bytecode, int64_t param) {
-  printf("Executing at pc %lld, bc is (%d, %s), param is (%d)\n", pc, bytecode, toString((ByteCode)bytecode), param);
+  printf("Executing at pc %ld, bc is (%ld, %s), param is (%ld)\n", pc, bytecode, toString((ByteCode)bytecode), param);
 	StackElement* base = context->stackBase_;
 	std::cout << "------\n";
 	while (base < context->stackPointer_) {
-		printf("%p: Stack[%ld] = %lld\n", base, base - context->stackBase_, *base);
+		printf("%p: Stack[%ld] = %ld\n", base, base - context->stackBase_, *base);
 		base++;
 	}
 	std::cout << "^^^^^^^^^^^^^^^^^\n";
@@ -140,11 +140,6 @@ MethodBuilder::MethodBuilder(VirtualMachine *virtualMachine,
 
   defineParameters(function->nargs);
 
-  if (cfg.lazyVmState) {
-    std::cout << "defining localContext\n";
-    DefineLocal("localContext", executionContextType);
-  }
-
   defineLocals(function->nargs);
 
   defineFunctions();
@@ -171,6 +166,10 @@ void MethodBuilder::defineParameters(std::size_t argCount) {
 }
 
 void MethodBuilder::defineLocals(std::size_t argCount) {
+
+  // The current execution context
+  DefineLocal("executionContext", executionContextType);
+
   if (cfg_.passParam) {
     // for locals we pre-define all the locals we could use, for the toplevel
     // and all the inlined names which are simply referenced via a skew to reach
@@ -243,9 +242,10 @@ long computeNumberOfBytecodes(const Instruction *program) {
 }
 
 bool MethodBuilder::inlineProgramIntoBuilder(
-    const std::size_t functionIndex, bool isTopLevel,
+    const std::size_t functionIndex,
     TR::BytecodeBuilder *currentBuilder,
     TR::BytecodeBuilder *jumpToBuilderForInlinedReturn) {
+
   bool success = true;
   maxInlineDepth--;
   const FunctionSpec *function = virtualMachine_->getFunction(functionIndex);
@@ -262,38 +262,7 @@ bool MethodBuilder::inlineProgramIntoBuilder(
 
   // Get the first Builder
   TR::BytecodeBuilder *builder = builderTable[0];
-
-  if (isTopLevel) {
-    AppendBuilder(builder);
-  } else {
-    currentBuilder->AddFallThroughBuilder(builder);
-  }
-
-  if (isTopLevel) {
-    // only initialize locals if top level, inlines will be stored into from
-    // parent.
-    if (cfg_.passParam) {
-      int argsCount = function->nargs;
-      int regsCount = function->nregs;
-      for (int i = argsCount; i < argsCount + regsCount; i++) {
-        storeVarIndex(builder, i,
-                      builder->ConstInt64(0));  // init all temps to zero
-      }
-    } else {
-      // arguments are &sp[-number_of_args]
-      // temps are pushes onto the stack to &sp[number_of_temps]
-      TR::IlValue *sp = builder->LoadIndirect("executionContextType", "stackPointer",
-                                              builder->ConstAddress(context_));
-      TR::IlValue *args =
-          builder->IndexAt(stackElementPointerType, sp,
-                           builder->ConstInt32(0 - function->nargs));
-      builder->Store("returnSP", args);
-      TR::IlValue *newSP = builder->IndexAt(
-          stackElementPointerType, sp, builder->ConstInt32(function->nregs));
-      builder->StoreIndirect("executionContextType", "stackPointer",
-                             builder->ConstAddress(context_), newSP);
-    }
-  }
+  currentBuilder->AddFallThroughBuilder(builder);
 
   // Create a BytecodeBuilder for each Bytecode
   for (int i = 0; i < numberOfBytecodes; i++) {
@@ -310,11 +279,13 @@ bool MethodBuilder::inlineProgramIntoBuilder(
 }
 
 bool MethodBuilder::buildIL() {
+
+  // Create the lazy virtual machine state if enabled
   if (cfg_.lazyVmState) {
-    std::cout << "setting vmstate in buildIL\n";
-    this->Store("localContext", this->ConstAddress(context_));
+    if (cfg_.debug) std::cout << "setting vmstate in buildIL\n";
+    this->Store("executionContext", this->ConstAddress(context_));
     OMR::VirtualMachineRegisterInStruct *stackTop =
-        new OMR::VirtualMachineRegisterInStruct(this, "executionContextType", "localContext",
+        new OMR::VirtualMachineRegisterInStruct(this, "executionContextType", "executionContext",
                                                 "stackPointer", "SP");
     OMR::VirtualMachineOperandStack *stack =
         new OMR::VirtualMachineOperandStack(this, 32, stackElementPointerType,
@@ -325,7 +296,64 @@ bool MethodBuilder::buildIL() {
     setVMState(new OMR::VirtualMachineState());
   }
 
-  return inlineProgramIntoBuilder(functionIndex_, true);
+  const FunctionSpec *function = virtualMachine_->getFunction(functionIndex_);
+  auto builder = OrphanBytecodeBuilder();
+  AppendBuilder(builder);
+
+  // Initialize parameters and locals on the stack.
+  if (cfg_.passParam) {
+    // Arguments and locals are not stored on the stack. Arguments are passed
+    // on the native stack, and locals are stored as JitBuilder locals
+    int argsCount = function->nargs;
+    int regsCount = function->nregs;
+    for (int i = argsCount; i < argsCount + regsCount; i++) {
+      storeVarIndex(builder, i,
+          builder->ConstInt64(0));  // init all temps to zero
+    }
+  } else {
+    // Arguments and locals are passed on the stack.
+    // arguments are &sp[-number_of_args]
+    // temps are pushes onto the stack to &sp[number_of_temps]
+    QCOMMIT(builder);
+    TR::IlValue *sp = builder->LoadIndirect("executionContextType", "stackPointer",
+        builder->ConstAddress(context_));
+
+    TR::IlValue *args =
+      builder->IndexAt(stackElementPointerType, sp,
+          builder->ConstInt32(0 - function->nargs));
+
+    builder->Store("returnSP", args);
+
+    TR::IlValue *newSP = builder->IndexAt(
+        stackElementPointerType, sp, builder->ConstInt32(function->nregs));
+
+    builder->StoreIndirect("executionContextType", "stackPointer",
+        builder->ConstAddress(context_), newSP);
+    QRELOAD(builder);
+    QCOMMIT(builder);
+    if (cfg_.debug) builder->Call("b9PrintStack", 4, builder->ConstAddress(virtualMachine_->executionContext()),
+                                        builder->ConstInt64(-1),
+                                        builder->ConstInt64(-1),
+                                        builder->ConstInt64(0));
+  }
+
+  auto returnBuilder = OrphanBytecodeBuilder();
+  auto success = inlineProgramIntoBuilder(functionIndex_, builder, returnBuilder);
+
+  if (success) {
+    // Create a builder to return from the current function.  This is the last
+    // builder which will be run in the compiled function.
+    QCOMMIT(returnBuilder);
+    auto result = pop(returnBuilder);
+    if (!cfg_.passParam) {
+      returnBuilder->StoreIndirect("executionContextType", "stackPointer",
+          returnBuilder->ConstAddress(context_),
+          returnBuilder->Load("returnSP"));
+    }
+    returnBuilder->Return(result);
+  }
+
+  return success;
 }
 
 TR::IlValue *MethodBuilder::loadVarIndex(TR::BytecodeBuilder *builder,
@@ -376,6 +404,7 @@ bool MethodBuilder::generateILForBytecode(
     std::vector<TR::BytecodeBuilder *> bytecodeBuilderTable,
     const Instruction *program, ByteCode bytecode, long bytecodeIndex,
     TR::BytecodeBuilder *jumpToBuilderForInlinedReturn) {
+
   TR::BytecodeBuilder *builder = bytecodeBuilderTable[bytecodeIndex];
   Instruction instruction = program[bytecodeIndex];
   assert(bytecode == instruction.byteCode());
@@ -401,10 +430,10 @@ bool MethodBuilder::generateILForBytecode(
                 << " return bc will jump to " << jumpToBuilderForInlinedReturn
                 << ": ";
     }
-    std::cout << "generating index=" << bytecodeIndex << " bc=" << instruction
+    if (cfg_.debug) std::cout << "generating index=" << bytecodeIndex << " bc=" << instruction
               << std::endl;
     QCOMMIT(builder);
-    builder->Call("b9PrintStack", 4, builder->ConstAddress(virtualMachine_->executionContext()),
+    if (cfg_.debug) builder->Call("b9PrintStack", 4, builder->ConstAddress(virtualMachine_->executionContext()),
 					builder->ConstInt64(bytecodeIndex),
 					builder->ConstInt64((int) bytecode),
 					builder->ConstInt64(instruction.parameter()));
@@ -421,20 +450,9 @@ bool MethodBuilder::generateILForBytecode(
       if (nextBytecodeBuilder)
         builder->AddFallThroughBuilder(nextBytecodeBuilder);
       break;
-    case ByteCode::FUNCTION_RETURN: {
-      if (jumpToBuilderForInlinedReturn) {
-        builder->Goto(jumpToBuilderForInlinedReturn);
-      } else {
-        QCOMMIT(builder);
-        auto result = pop(builder);
-        if (!cfg_.passParam) {
-          builder->StoreIndirect("executionContextType", "stackPointer",
-                                 builder->ConstAddress(context_),
-                                 builder->Load("returnSP"));
-      }
-      builder->Return(result);
-      }
-    } break;
+    case ByteCode::FUNCTION_RETURN:
+      builder->Goto(jumpToBuilderForInlinedReturn);
+      break;
     case ByteCode::DROP:
       drop(builder);
       if (nextBytecodeBuilder)
@@ -487,13 +505,13 @@ bool MethodBuilder::generateILForBytecode(
         builder->AddFallThroughBuilder(nextBytecodeBuilder);
     } break;
     case ByteCode::PRIMITIVE_CALL: {
-      std::cout << "qcommitting\n";
+      if (cfg_.debug) std::cout << "qcommitting\n";
       QCOMMIT(builder);
       TR::IlValue *result = builder->Call(
           "primitive_call", 2,
           builder->ConstAddress(virtualMachine_->executionContext()),
           builder->ConstInt32(instruction.parameter()));
-      std::cout << "qdropping 1 slot\n";
+      if (cfg_.debug) std::cout << "qdropping 1 slot\n";
       //QRELOAD_DROP(builder, 1);
       QRELOAD(builder);
       //push(builder, result);
@@ -546,7 +564,7 @@ bool MethodBuilder::generateILForBytecode(
                               pop(builder));  // firstArgumentIndex is added in
                                               // storeVarIndex
               }
-              bool result = inlineProgramIntoBuilder(callindex, false, builder,
+              bool result = inlineProgramIntoBuilder(callindex, builder,
                                                      nextBytecodeBuilder);
               if (!result) {
                 std::cerr << "Failed inlineProgramIntoBuilder" << std::endl;
@@ -591,7 +609,7 @@ bool MethodBuilder::generateILForBytecode(
             std::cout << "Parameters are on stack to the function call\n";
           }
           TR::IlValue *result;
-          std::cout << "qcommitting\n";
+          if (cfg_.debug) std::cout << "qcommitting\n";
           QCOMMIT(builder);
           if (interp) {
             if (cfg_.debug)
@@ -605,7 +623,7 @@ bool MethodBuilder::generateILForBytecode(
               std::cout << "calling " << nameToCall << " directly\n";
             result = builder->Call(nameToCall, 0);
           }
-          std::cout << "qdropping " << argsCount << " slots\n";
+          if (cfg_.debug) std::cout << "qdropping " << argsCount << " slots\n";
           QRELOAD_DROP(builder, argsCount);
           //QRELOAD(builder);
           push(builder, result);
@@ -615,13 +633,13 @@ bool MethodBuilder::generateILForBytecode(
         if (cfg_.debug)
           std::cout << "Calling interpret_0 to dispatch call for "
                     << callee->name << " with " << argsCount << " args\n";
-        std::cout << "qcommitting\n";
+        if (cfg_.debug) std::cout << "qcommitting\n";
         QCOMMIT(builder);
         TR::IlValue *result = builder->Call(
             "interpret_0", 2,
             builder->ConstAddress(virtualMachine_->executionContext()),
             builder->ConstInt32(callindex));
-        std::cout << "qdropping " << argsCount << " slots\n";
+        if (cfg_.debug) std::cout << "qdropping " << argsCount << " slots\n";
         QRELOAD_DROP(builder, argsCount);
         //QRELOAD(builder);
         push(builder, result);
@@ -780,7 +798,7 @@ void MethodBuilder::drop(TR::BytecodeBuilder *builder) { pop(builder); }
 
 TR::IlValue *MethodBuilder::pop(TR::BytecodeBuilder *builder) {
   if (cfg_.lazyVmState) {
-    std::cout << "-1: popping stack\n";
+    if (cfg_.debug) std::cout << "-1: popping stack\n";
     return QSTACK(builder)->Pop(builder);
   } else {
     TR::IlValue *sp = builder->LoadIndirect("executionContextType", "stackPointer",
@@ -795,7 +813,7 @@ TR::IlValue *MethodBuilder::pop(TR::BytecodeBuilder *builder) {
 
 void MethodBuilder::push(TR::BytecodeBuilder *builder, TR::IlValue *value) {
   if (cfg_.lazyVmState) {
-    std::cout << "+1: pushing stack\n";
+    if (cfg_.debug) std::cout << "+1: pushing stack\n";
     QSTACK(builder)->Push(builder, value);
   } else {
     TR::IlValue *sp = builder->LoadIndirect("executionContextType", "stackPointer",

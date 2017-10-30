@@ -25,11 +25,11 @@
 namespace b9 {
 
 extern "C" void b9PrintStack(ExecutionContext *context, int64_t pc, int64_t bytecode, int64_t param) {
-  printf("Executing at pc %lld, bc is (%d, %s), param is (%d)\n", pc, bytecode, toString((ByteCode)bytecode), param);
+  printf("Executing at pc %ld, bc is (%ld, %s), param is (%ld)\n", pc, bytecode, toString((ByteCode)bytecode), param);
 	StackElement* base = context->stackBase_;
 	std::cout << "------\n";
 	while (base < context->stackPointer_) {
-		printf("%p: Stack[%ld] = %lld\n", base, base - context->stackBase_, *base);
+		printf("%p: Stack[%ld] = %ld\n", base, base - context->stackBase_, *base);
 		base++;
 	}
 	std::cout << "^^^^^^^^^^^^^^^^^\n";

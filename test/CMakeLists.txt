@@ -1,7 +1,7 @@
 
 # Test Programs
 
-#add_b9_test(factorial)
+add_b9_test(factorial)
 add_b9_test(fib)
 add_b9_test(hello)
 

@@ -66,8 +66,7 @@ class MethodBuilder : public TR::MethodBuilder {
   void drop(TR::BytecodeBuilder *builder);
 
   TR::IlValue *loadVarIndex(TR::IlBuilder *builder, int varindex);
-  void storeVarIndex(TR::IlBuilder *builder, int varindex,
-                     TR::IlValue *value);
+  void storeVarIndex(TR::IlBuilder *builder, int varindex, TR::IlValue *value);
 
   void handle_bc_push_constant(TR::BytecodeBuilder *builder,
                                TR::BytecodeBuilder *nextBuilder);

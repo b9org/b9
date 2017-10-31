@@ -71,7 +71,6 @@ function test_greaterThan_1() {
     return 1;
 }
 
-
 function test_greaterThanOrEqual() {
     var a = 1;
     if(a >= 1) {
@@ -95,7 +94,6 @@ function test_greaterThanOrEqual_2() {
     }
     return 1;
 }
-
 
 function test_lessThan() {
     var a = 1;
@@ -215,6 +213,10 @@ function test_while() {
     }
     return 1;
 }
+
 function b9main() {
+    b9PrintString("This is the interpreter test suite - to run, run ./test/b9test");
 }
+
+
 

@@ -44,27 +44,29 @@ enum class ByteCode : RawByteCode {
 
   // Push a constant
   INT_PUSH_CONSTANT = 0xd,
+  // Invert a boolean value, all non-zero integers are true
+  INT_NOT = 0xe,
   // Jump if two integers are equal
-  INT_JMP_EQ = 0xe,
+  INT_JMP_EQ = 0xf,
   // Jump if two integer are not equal
-  INT_JMP_NEQ = 0xf,
+  INT_JMP_NEQ = 0x10,
   // Jump if the first integer is greater than the second
-  INT_JMP_GT = 0x10,
+  INT_JMP_GT = 0x11,
   // Jump if the first integer is greater than or equal to the second
-  INT_JMP_GE = 0x11,
+  INT_JMP_GE = 0x12,
   // Jump if the first integer is less than to the second
-  INT_JMP_LT = 0x12,
+  INT_JMP_LT = 0x13,
   // Jump if the first integer is less than or equal to the second
-  INT_JMP_LE = 0x13,
+  INT_JMP_LE = 0x14,
 
   // String ByteCodes
 
   // Push a string from this module's constant pool
-  STR_PUSH_CONSTANT = 0x14,
+  STR_PUSH_CONSTANT = 0x15,
   // Jump if two strings are equal
-  STR_JMP_EQ = 0x15,
+  STR_JMP_EQ = 0x16,
   // Jump if two strings are not equal
-  STR_JMP_NEQ = 0x16,
+  STR_JMP_NEQ = 0x17,
 };
 
 inline const char *toString(ByteCode bc) {
@@ -96,6 +98,8 @@ inline const char *toString(ByteCode bc) {
 
     case ByteCode::INT_PUSH_CONSTANT:
       return "INT_PUSH_CONSTANT";
+    case ByteCode::INT_NOT:
+      return "ByteCode::INT_NOT";
     case ByteCode::INT_JMP_EQ:
       return "ByteCode::INT_JMP_EQ";
     case ByteCode::INT_JMP_NEQ:

@@ -18,13 +18,13 @@ class ExecutionContext;
 class VirtualMachine;
 
 struct Config {
-  std::size_t maxInlineDepth = 0; //< The JIT's max inline depth
-  bool jit = false;          //< Enable the JIT
-  bool directCall = false;   //< Enable direct JIT to JIT calls
-  bool passParam = false;    //< Pass arguments in CPU registers
-  bool lazyVmState = false;  //< Simulate the VM state
-  bool debug = false;        //< Enable debug code
-  bool verbose = false;      //< Enable verbose printing and tracing
+  std::size_t maxInlineDepth = 0;  //< The JIT's max inline depth
+  bool jit = false;                //< Enable the JIT
+  bool directCall = false;         //< Enable direct JIT to JIT calls
+  bool passParam = false;          //< Pass arguments in CPU registers
+  bool lazyVmState = false;        //< Simulate the VM state
+  bool debug = false;              //< Enable debug code
+  bool verbose = false;            //< Enable verbose printing and tracing
 };
 
 inline std::ostream &operator<<(std::ostream &out, const Config &cfg) {
@@ -57,7 +57,7 @@ class ExecutionContext {
   ExecutionContext(VirtualMachine *virtualMachine, const Config &cfg)
       : stackBase_(this->stack_),
         stackPointer_(this->stack_),
-        virtualMachine_(virtualMachine), 
+        virtualMachine_(virtualMachine),
         cfg_(cfg) {
     std::memset(stack_, 0, sizeof(StackElement) * 1000);
   }
@@ -79,6 +79,7 @@ class ExecutionContext {
   void intSub();
   // CASCON2017 - Add intMul() and intDiv() here
   void intPushConstant(Parameter value);
+  void intNot();
   Parameter intJmpEq(Parameter delta);
   Parameter intJmpNeq(Parameter delta);
   Parameter intJmpGt(Parameter delta);
@@ -142,8 +143,6 @@ class VirtualMachine {
 
 typedef StackElement (*Interpret)(ExecutionContext *context,
                                   const std::size_t functionIndex);
-
-
 
 // define C callable Interpret API for each arg call
 // if args are passed to the function, they are not passed

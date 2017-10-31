@@ -24,15 +24,17 @@
 
 namespace b9 {
 
-extern "C" void b9PrintStack(ExecutionContext *context, int64_t pc, int64_t bytecode, int64_t param) {
-  printf("Executing at pc %lld, bc is (%d, %s), param is (%d)\n", pc, bytecode, toString((ByteCode)bytecode), param);
-	StackElement* base = context->stackBase_;
-	std::cout << "------\n";
-	while (base < context->stackPointer_) {
-		printf("%p: Stack[%ld] = %lld\n", base, base - context->stackBase_, *base);
-		base++;
-	}
-	std::cout << "^^^^^^^^^^^^^^^^^\n";
+extern "C" void b9PrintStack(ExecutionContext *context, int64_t pc,
+                             int64_t bytecode, int64_t param) {
+  printf("Executing at pc %lld, bc is (%d, %s), param is (%d)\n", pc, bytecode,
+         toString((ByteCode)bytecode), param);
+  StackElement *base = context->stackBase_;
+  std::cout << "------\n";
+  while (base < context->stackPointer_) {
+    printf("%p: Stack[%ld] = %lld\n", base, base - context->stackBase_, *base);
+    base++;
+  }
+  std::cout << "^^^^^^^^^^^^^^^^^\n";
 }
 
 // Simulates all state of the virtual machine state while compiled code is
@@ -79,7 +81,8 @@ Compiler::Compiler(VirtualMachine *virtualMachine, const Config &cfg)
 
   // Stack
   types_.DefineStruct("executionContextType");
-  // types_.DefineField("executionContextType", "stackBase", stackElementPointerType,
+  // types_.DefineField("executionContextType", "stackBase",
+  // stackElementPointerType,
   //                   offsetof(Stack, stackBase));
   types_.DefineField("executionContextType", "stackPointer",
                      types_.PointerTo(types_.PointerTo(stackElementType)),
@@ -196,8 +199,8 @@ void MethodBuilder::defineFunctions() {
       auto function = virtualMachine_->getFunction(functionIndex);
       auto name = function->name.c_str();
       DefineFunction(name, (char *)__FILE__, name,
-                     (void*)virtualMachine_->getJitAddress(functionIndex), Int64,
-                     function->nargs, stackElementType, stackElementType,
+                     (void *)virtualMachine_->getJitAddress(functionIndex),
+                     Int64, function->nargs, stackElementType, stackElementType,
                      stackElementType, stackElementType, stackElementType,
                      stackElementType, stackElementType, stackElementType);
     }
@@ -219,8 +222,9 @@ void MethodBuilder::defineFunctions() {
                  stackElementType);
   DefineFunction((char *)"primitive_call", (char *)__FILE__, "primitive_call",
                  (void *)&primitive_call, NoType, 2, addressPointerType, Int32);
-  DefineFunction((char*)"b9PrintStack", (char*)__FILE__, "b9PrintStack", 
-                 (void*)&b9PrintStack, NoType, 4, addressPointerType, Int64, Int64, Int64);
+  DefineFunction((char *)"b9PrintStack", (char *)__FILE__, "b9PrintStack",
+                 (void *)&b9PrintStack, NoType, 4, addressPointerType, Int64,
+                 Int64, Int64);
 }
 
 #define QSTACK(b) (((VirtualMachineState *)(b)->vmState())->_stack)
@@ -294,22 +298,21 @@ bool MethodBuilder::buildIL() {
     // arguments are &sp[-number_of_args]
     // temps are pushes onto the stack to &sp[number_of_temps]
     TR::IlValue *sp = this->LoadIndirect("executionContextType", "stackPointer",
-        this->ConstAddress(context_));
-    TR::IlValue *args =
-      this->IndexAt(stackElementPointerType, sp,
-          this->ConstInt32(0 - function->nargs));
+                                         this->ConstAddress(context_));
+    TR::IlValue *args = this->IndexAt(stackElementPointerType, sp,
+                                      this->ConstInt32(0 - function->nargs));
     this->Store("returnSP", args);
-    TR::IlValue *newSP = this->IndexAt(
-        stackElementPointerType, sp, this->ConstInt32(function->nregs));
+    TR::IlValue *newSP = this->IndexAt(stackElementPointerType, sp,
+                                       this->ConstInt32(function->nregs));
     this->StoreIndirect("executionContextType", "stackPointer",
-        this->ConstAddress(context_), newSP);
+                        this->ConstAddress(context_), newSP);
   }
 
   if (cfg_.lazyVmState) {
     this->Store("localContext", this->ConstAddress(context_));
     OMR::VirtualMachineRegisterInStruct *stackTop =
-        new OMR::VirtualMachineRegisterInStruct(this, "executionContextType", "localContext",
-                                                "stackPointer", "SP");
+        new OMR::VirtualMachineRegisterInStruct(
+            this, "executionContextType", "localContext", "stackPointer", "SP");
     OMR::VirtualMachineOperandStack *stack =
         new OMR::VirtualMachineOperandStack(this, 32, stackElementPointerType,
                                             stackTop, true, 0);
@@ -322,8 +325,7 @@ bool MethodBuilder::buildIL() {
   return inlineProgramIntoBuilder(functionIndex_, true);
 }
 
-TR::IlValue *MethodBuilder::loadVarIndex(TR::IlBuilder *builder,
-                                         int varindex) {
+TR::IlValue *MethodBuilder::loadVarIndex(TR::IlBuilder *builder, int varindex) {
   if (firstArgumentIndex > 0) {
     // if (context->debug >= 2) {
     //   printf("loadVarIndex varindex adjusted = %d %d\n", varindex,
@@ -398,10 +400,11 @@ bool MethodBuilder::generateILForBytecode(
     std::cout << "generating index=" << bytecodeIndex << " bc=" << instruction
               << std::endl;
     QCOMMIT(builder);
-    builder->Call("b9PrintStack", 4, builder->ConstAddress(virtualMachine_->executionContext()),
-					builder->ConstInt64(bytecodeIndex),
-					builder->ConstInt64((int) bytecode),
-					builder->ConstInt64(instruction.parameter()));
+    builder->Call("b9PrintStack", 4,
+                  builder->ConstAddress(virtualMachine_->executionContext()),
+                  builder->ConstInt64(bytecodeIndex),
+                  builder->ConstInt64((int)bytecode),
+                  builder->ConstInt64(instruction.parameter()));
   }
 
   switch (bytecode) {
@@ -425,8 +428,8 @@ bool MethodBuilder::generateILForBytecode(
           builder->StoreIndirect("executionContextType", "stackPointer",
                                  builder->ConstAddress(context_),
                                  builder->Load("returnSP"));
-      }
-      builder->Return(result);
+        }
+        builder->Return(result);
       }
     } break;
     case ByteCode::DROP:
@@ -500,8 +503,7 @@ bool MethodBuilder::generateILForBytecode(
 
       if (cfg_.directCall) {
         if (cfg_.debug)
-          std::cout << "Handling direct calls to " << callee->name
-                    << std::endl;
+          std::cout << "Handling direct calls to " << callee->name << std::endl;
         const char *interpretName[] = {"interpret_0", "interpret_1",
                                        "interpret_2", "interpret_3"};
         const char *nameToCall = interpretName[argsCount];
@@ -543,18 +545,21 @@ bool MethodBuilder::generateILForBytecode(
                 return result;
               } else {
                 if (cfg_.debug)
-                  std::cout << "Successfully inlined: " << callee->name << std::endl;
+                  std::cout << "Successfully inlined: " << callee->name
+                            << std::endl;
               }
               // printf("SETTING SKEW BACK from %d to %d\n", firstArgumentIndex,
               // save);
               firstArgumentIndex = save;
               break;
             } else {
-              std::cerr << "SKIP INLINE DUE TO EXCESSIVE TEMPS NEEDED" << std::endl;
+              std::cerr << "SKIP INLINE DUE TO EXCESSIVE TEMPS NEEDED"
+                        << std::endl;
             }
           }
           if (argsCount > 8) {
-            throw std::runtime_error{"Need to add handlers for more parameters"};
+            throw std::runtime_error{
+                "Need to add handlers for more parameters"};
             break;
           }
           TR::IlValue *p[8];
@@ -768,8 +773,9 @@ TR::IlValue *MethodBuilder::pop(TR::BytecodeBuilder *builder) {
   if (cfg_.lazyVmState) {
     return QSTACK(builder)->Pop(builder);
   } else {
-    TR::IlValue *sp = builder->LoadIndirect("executionContextType", "stackPointer",
-                                            builder->ConstAddress(context_));
+    TR::IlValue *sp =
+        builder->LoadIndirect("executionContextType", "stackPointer",
+                              builder->ConstAddress(context_));
     TR::IlValue *newSP =
         builder->IndexAt(stackElementPointerType, sp, builder->ConstInt32(-1));
     builder->StoreIndirect("executionContextType", "stackPointer",
@@ -782,8 +788,9 @@ void MethodBuilder::push(TR::BytecodeBuilder *builder, TR::IlValue *value) {
   if (cfg_.lazyVmState) {
     QSTACK(builder)->Push(builder, value);
   } else {
-    TR::IlValue *sp = builder->LoadIndirect("executionContextType", "stackPointer",
-                                            builder->ConstAddress(context_));
+    TR::IlValue *sp =
+        builder->LoadIndirect("executionContextType", "stackPointer",
+                              builder->ConstAddress(context_));
     builder->StoreAt(builder->ConvertTo(stackElementPointerType, sp),
                      builder->ConvertTo(stackElementType, value));
     TR::IlValue *newSP =

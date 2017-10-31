@@ -35,9 +35,7 @@ void ExecutionContext::primitiveCall(Parameter value) {
   (*primitive)(this);
 }
 
-Parameter ExecutionContext::jmp(Parameter offset) {
-  return offset;
-}
+Parameter ExecutionContext::jmp(Parameter offset) { return offset; }
 
 void ExecutionContext::duplicate() {
   // TODO
@@ -70,6 +68,11 @@ void ExecutionContext::intSub() {
 // CASCON2017 - Add intMul() and intDiv() here
 
 void ExecutionContext::intPushConstant(Parameter value) { push(value); }
+
+void ExecutionContext::intNot() {
+  StackElement i = pop();
+  push(!i);
+}
 
 Parameter ExecutionContext::intJmpEq(Parameter delta) {
   StackElement right = pop();
@@ -203,7 +206,8 @@ StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
 
   if (jitFunction) {
     if (cfg_.debug) {
-      std::cout << "Calling " << function << " jit: " << jitFunction << std::endl;
+      std::cout << "Calling " << function << " jit: " << jitFunction
+                << std::endl;
     }
     StackElement result = 0;
     if (cfg_.passParam) {
@@ -286,6 +290,9 @@ StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
       case ByteCode::INT_PUSH_CONSTANT:
         intPushConstant(instructionPointer->parameter());
         break;
+      case ByteCode::INT_NOT:
+        intNot();
+        break;
       case ByteCode::INT_JMP_EQ:
         instructionPointer += intJmpEq(instructionPointer->parameter());
         break;
@@ -330,7 +337,8 @@ JitFunction VirtualMachine::getJitAddress(std::size_t functionIndex) {
   return compiledFunctions_[functionIndex];
 }
 
-void VirtualMachine::setJitAddress(std::size_t functionIndex, JitFunction value) {
+void VirtualMachine::setJitAddress(std::size_t functionIndex,
+                                   JitFunction value) {
   compiledFunctions_[functionIndex] = value;
 }
 
@@ -360,7 +368,8 @@ void VirtualMachine::generateAllCode() {
 
   while (functionIndex < getFunctionCount()) {
     if (cfg_.debug)
-      std::cout << "\nJitting function: " << getFunction(functionIndex)->name << std::endl;
+      std::cout << "\nJitting function: " << getFunction(functionIndex)->name
+                << std::endl;
     auto func = compiler_->generateCode(functionIndex);
     compiledFunctions_.push_back(func);
     ++functionIndex;
@@ -384,7 +393,8 @@ StackElement VirtualMachine::run(const std::size_t functionIndex,
 
   if (cfg_.verbose) {
     std::cout << "+++++++++++++++++++++++" << std::endl;
-    std::cout << "Running function: " << function->name << " nargs: " << argsCount << std::endl;
+    std::cout << "Running function: " << function->name
+              << " nargs: " << argsCount << std::endl;
   }
 
   if (argsCount != usrArgs.size()) {

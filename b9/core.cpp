@@ -234,7 +234,7 @@ StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
       // Call the Jit'ed function, passing the parameters on the
       // ExecutionContext stack.
       if (cfg_.debug) std::cout << "passing parameters on the stack\n";
-      result = jitFunction(this, functionIndex);
+      result = jitFunction();
     }
     return result;
   }
@@ -251,9 +251,7 @@ StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
         break;
       case ByteCode::FUNCTION_RETURN: {
         StackElement result = *(stackPointer_ - 1);
-        std::cout << "before stackPointer_: " << stackPointer_ << std::endl;
         stackPointer_ = args;
-        std::cout << "after stackPointer_: " << stackPointer_ << std::endl;
         return result;
         break;
       }

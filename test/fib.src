@@ -1,9 +1,18 @@
-function fib() {
-   return 100;
+function fib(a) {
+    if (a < 3) {
+        return 1;
+    } else {
+        return fib(a - 1) + fib(a - 2);
+    }
 }
 
 function b9main() {
-   var a = 1;
-   b9PrintNumber(fib());
-   b9PrintNumber(a);
+    b9PrintString("");
+    b9PrintString("Fibonacci");
+    var a = 1;
+    while (a <= 20) {
+        b9PrintNumber(fib(a));
+        a++;
+    }
 }
+

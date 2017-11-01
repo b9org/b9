@@ -1,4 +1,4 @@
-#include <b9/bytecodes.hpp>
+#include <b9/instructions.hpp>
 #include <b9/interpreter.hpp>
 #include <b9/jit.hpp>
 

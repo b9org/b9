@@ -1,7 +1,7 @@
 #if !defined(B9_MODULE_HPP_)
 #define B9_MODULE_HPP_
 
-#include <b9/instruction.hpp>
+#include <b9/instructions.hpp>
 
 #include <cstdint>
 #include <stdexcept>

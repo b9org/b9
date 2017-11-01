@@ -4,6 +4,7 @@
 add_b9_test(factorial)
 add_b9_test(fib)
 add_b9_test(hello)
+add_b9_test(simple_add)
 
 # b9 test - The native test
 

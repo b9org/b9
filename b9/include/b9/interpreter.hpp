@@ -1,7 +1,7 @@
 #ifndef B9_VIRTUALMACHINE_HPP_
 #define B9_VIRTUALMACHINE_HPP_
 
-#include <b9/bytecodes.hpp>
+#include <b9/instructions.hpp>
 #include <b9/module.hpp>
 
 #include <cstring>

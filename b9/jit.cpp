@@ -781,7 +781,7 @@ void MethodBuilder::handle_bc_not(TR::BytecodeBuilder *builder,
                                   TR::BytecodeBuilder *nextBuilder) {
   auto zero = builder->ConstInteger(stackElementType, 0);
   auto value = pop(builder);
-  auto result = builder->EqualTo(value, zero);
+  auto result = builder->ConvertTo(stackElementType, builder->EqualTo(value, zero));
   push(builder, result);
   builder->AddFallThroughBuilder(nextBuilder);
 }

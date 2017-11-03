@@ -36,7 +36,19 @@ function test_sub() {
     return 0;
 }
 
-// CASCON2017 - add test_mul and test_div here
+function test_not() {
+    if (!0 == 1) {
+        return 1;
+    }
+    if (!1 == 0) {
+        return 1;
+    }
+    if (!2 == 0) {
+        return 1;
+    }
+    return 0;
+}
+
 
 // test equal, test the true and the false case
 function test_equal() {

@@ -255,6 +255,13 @@ bool MethodBuilder::inlineProgramIntoBuilder(
 
   // Create a BytecodeBuilder for each Bytecode
   auto numberOfBytecodes = computeNumberOfBytecodes(program);
+  if (numberOfBytecodes == 0) {
+    if (cfg_.debug) {
+      std::cout << "unexpected EMPTY function body for " << function->name << std::endl;
+    }
+    return false;
+  }
+
   if (cfg_.debug)
     std::cout << "Creating " << numberOfBytecodes << " bytecode builders\n";
   std::vector<TR::BytecodeBuilder *> builderTable;

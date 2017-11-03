@@ -11,59 +11,84 @@
 namespace b9 {
 namespace test {
 
-class InterpreterTestEnvironment : public ::testing::Environment {
+// clang-format off
+const std::vector<const char*> TEST_NAMES = {
+  "test_return_true",
+  "test_return_false",
+  "test_add",
+  "test_sub",
+  // CASCON2017 add test_div and test_mul here
+  "test_equal",
+  "test_equal_1",
+  "test_greaterThan",
+  "test_greaterThan_1",
+  "test_greaterThanOrEqual",
+  "test_greaterThanOrEqual_1",
+  "test_greaterThanOrEqual_2",
+  "test_lessThan",
+  "test_lessThan_1",
+  "test_lessThan_2",
+  "test_lessThan_3",
+  "test_lessThanOrEqual",
+  "test_lessThanOrEqual_1",
+  "test_call",
+  "test_string_declare_string_var",
+  "helper_test_string_return_string",
+  "test_string_return_string",
+  "test_while"
+};
+// clang-format on
+
+class InterpreterTest : public ::testing::Test {
  public:
-  static const char* moduleName;
+  std::shared_ptr<Module> module_;
 
   virtual void SetUp() {
-    moduleName = getenv("B9_TEST_MODULE");
+    auto moduleName = getenv("B9_TEST_MODULE");
     ASSERT_NE(moduleName, nullptr);
+    module_ = DlLoader{}.loadModule(moduleName);
   }
 };
 
-const char* InterpreterTestEnvironment::moduleName{nullptr};
-
-class InterpreterTest : public ::testing::TestWithParam<const char*> {
- public:
-  static std::shared_ptr<Module> module_;
-
-  static void SetUpTestCase() {
-    module_ = DlLoader{}.loadModule(InterpreterTestEnvironment::moduleName);
-  }
-
-  virtual void SetUp() {}
-};
-
-std::shared_ptr<Module> InterpreterTest::module_{nullptr};
-
-TEST_P(InterpreterTest, run) {
+TEST_F(InterpreterTest, interpreter) {
   Config cfg;
 
   VirtualMachine vm{cfg};
   vm.load(module_);
-  EXPECT_TRUE(vm.run(GetParam(), {}));
+
+  for (auto test : TEST_NAMES) {
+    EXPECT_TRUE(vm.run(test, {})) << "Test Failed: " << test;
+  }
 }
 
-TEST_P(InterpreterTest, runJit) {
+TEST_F(InterpreterTest, jit) {
   Config cfg;
   cfg.jit = true;
 
   VirtualMachine vm{cfg};
   vm.load(module_);
-  EXPECT_TRUE(vm.run(GetParam(), {}));
+  vm.generateAllCode();
+
+  for (auto test : TEST_NAMES) {
+    EXPECT_TRUE(vm.run(test, {})) << "Test Failed: " << test;
+  }
 }
 
-TEST_P(InterpreterTest, runDirectCall) {
+TEST_F(InterpreterTest, jit_dc) {
   Config cfg;
   cfg.jit = true;
   cfg.directCall = true;
 
   VirtualMachine vm{cfg};
   vm.load(module_);
-  EXPECT_TRUE(vm.run(GetParam(), {}));
+  vm.generateAllCode();
+
+  for (auto test : TEST_NAMES) {
+    EXPECT_TRUE(vm.run(test, {})) << "Test Failed: " << test;
+  }
 }
 
-TEST_P(InterpreterTest, runPassParam) {
+TEST_F(InterpreterTest, jit_pp) {
   Config cfg;
   cfg.jit = true;
   cfg.directCall = true;
@@ -71,10 +96,14 @@ TEST_P(InterpreterTest, runPassParam) {
 
   VirtualMachine vm{cfg};
   vm.load(module_);
-  EXPECT_TRUE(vm.run(GetParam(), {}));
+  vm.generateAllCode();
+
+  for (auto test : TEST_NAMES) {
+    EXPECT_TRUE(vm.run(test, {})) << "Test Failed: " << test;
+  }
 }
 
-TEST_P(InterpreterTest, runLazyVmState) {
+TEST_F(InterpreterTest, jit_lvms) {
   Config cfg;
   cfg.jit = true;
   cfg.directCall = true;
@@ -83,40 +112,12 @@ TEST_P(InterpreterTest, runLazyVmState) {
 
   VirtualMachine vm{cfg};
   vm.load(module_);
-  EXPECT_TRUE(vm.run(GetParam(), {}));
+  vm.generateAllCode();
+
+  for (auto test : TEST_NAMES) {
+    EXPECT_TRUE(vm.run(test, {})) << "Test Failed: " << test;
+  }
 }
-
-// clang-format off
-
-INSTANTIATE_TEST_CASE_P(InterpreterTestSuite, InterpreterTest,
-  ::testing::Values(
-    "test_return_true",
-    "test_return_false",
-    "test_add",
-    "test_sub",
-    // CASCON2017 add test_div and test_mul here
-    "test_not",
-    "test_equal",
-    "test_equal_1",
-    "test_greaterThan",
-    "test_greaterThan_1",
-    "test_greaterThanOrEqual",
-    "test_greaterThanOrEqual_1",
-    "test_greaterThanOrEqual_2",
-    "test_lessThan",
-    "test_lessThan_1",
-    "test_lessThan_2",
-    "test_lessThan_3",
-    "test_lessThanOrEqual",
-    "test_lessThanOrEqual_1",
-    "test_call",
-    "test_string_declare_string_var",
-    "helper_test_string_return_string",
-    "test_string_return_string",
-    "test_while"
-));
-
-// clang-format on
 
 TEST(MyTest, arguments) {
   b9::VirtualMachine vm{{}};
@@ -135,9 +136,3 @@ TEST(MyTest, arguments) {
 
 }  // namespace test
 }  // namespace b9
-
-extern "C" int main(int argc, char** argv) {
-  ::testing::InitGoogleTest(&argc, argv);
-  AddGlobalTestEnvironment(new b9::test::InterpreterTestEnvironment{});
-  return RUN_ALL_TESTS();
-}

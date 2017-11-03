@@ -478,6 +478,9 @@ bool MethodBuilder::generateILForBytecode(
       handle_bc_add(builder, nextBytecodeBuilder);
       break;
     // CASCON2017 - add INT_MUL and INT_DIV here
+    case ByteCode::INT_NOT:
+      handle_bc_not(builder, nextBytecodeBuilder);
+      break;
     case ByteCode::INT_PUSH_CONSTANT: {
       int constvalue = instruction.parameter();
       push(builder, builder->ConstInt64(constvalue));
@@ -773,6 +776,15 @@ void MethodBuilder::handle_bc_add(TR::BytecodeBuilder *builder,
 }
 
 // CASCON2017 - add handle_bc_mul and handle_bc_div here
+
+void MethodBuilder::handle_bc_not(TR::BytecodeBuilder *builder,
+                                  TR::BytecodeBuilder *nextBuilder) {
+  auto zero = builder->ConstInteger(stackElementType, 0);
+  auto value = pop(builder);
+  auto result = builder->EqualTo(value, zero);
+  push(builder, result);
+  builder->AddFallThroughBuilder(nextBuilder);
+}
 
 void MethodBuilder::drop(TR::BytecodeBuilder *builder) { pop(builder); }
 

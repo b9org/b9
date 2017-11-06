@@ -36,6 +36,8 @@ function test_sub() {
     return 0;
 }
 
+// CASCON2017 - add test_mul() and test_div() here
+
 function test_not() {
     if (!0 == 1) {
         return 1;

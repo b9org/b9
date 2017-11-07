@@ -41,38 +41,39 @@ extern "C" void b9PrintStack(ExecutionContext *context, int64_t pc,
 // running. It simulates the stack and the pointer to the top of the stack.
 class VirtualMachineState : public OMR::VirtualMachineState {
  public:
-  VirtualMachineState()
-      : OMR::VirtualMachineState(), _stack(NULL), _stackTop(NULL) {}
+  VirtualMachineState() = default;
 
   VirtualMachineState(OMR::VirtualMachineOperandStack *stack,
                       OMR::VirtualMachineRegister *stackTop)
-      : OMR::VirtualMachineState(), _stack(stack), _stackTop(stackTop) {}
+      : _stack(stack), _stackTop(stackTop) {}
 
-  virtual void Commit(TR::IlBuilder *b) {
+  void Commit(TR::IlBuilder *b) override {
     _stack->Commit(b);
     _stackTop->Commit(b);
   }
 
-  virtual void Reload(TR::IlBuilder *b) {
+  void Reload(TR::IlBuilder *b) override {
     _stackTop->Reload(b);
     _stack->Reload(b);
   }
 
-  virtual VirtualMachineState *MakeCopy() {
-    VirtualMachineState *newState = new VirtualMachineState();
-    newState->_stack = (OMR::VirtualMachineOperandStack *)_stack->MakeCopy();
-    newState->_stackTop = (OMR::VirtualMachineRegister *)_stackTop->MakeCopy();
+  VirtualMachineState *MakeCopy() override {
+    auto newState = new VirtualMachineState();
+    newState->_stack =
+        dynamic_cast<OMR::VirtualMachineOperandStack *>(_stack->MakeCopy());
+    newState->_stackTop =
+        dynamic_cast<OMR::VirtualMachineRegister *>(_stackTop->MakeCopy());
     return newState;
   }
 
-  virtual void MergeInto(VirtualMachineState *other, TR::IlBuilder *b) {
-    VirtualMachineState *otherState = (VirtualMachineState *)other;
+  void MergeInto(OMR::VirtualMachineState *other, TR::IlBuilder *b) override {
+    auto otherState = dynamic_cast<VirtualMachineState *>(other);
     _stack->MergeInto(otherState->_stack, b);
     _stackTop->MergeInto(otherState->_stackTop, b);
   }
 
-  OMR::VirtualMachineOperandStack *_stack;
-  OMR::VirtualMachineRegister *_stackTop;
+  OMR::VirtualMachineOperandStack *_stack = nullptr;
+  OMR::VirtualMachineRegister *_stackTop = nullptr;
 };
 
 Compiler::Compiler(VirtualMachine *virtualMachine, const Config &cfg)

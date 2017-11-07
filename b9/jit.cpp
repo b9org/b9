@@ -1,6 +1,6 @@
-#include <b9/instructions.hpp>
-#include <b9/interpreter.hpp>
-#include <b9/jit.hpp>
+#include "b9/instructions.hpp"
+#include "b9/interpreter.hpp"
+#include "b9/jit.hpp"
 
 #include "Jit.hpp"
 #include "ilgen/BytecodeBuilder.hpp"
@@ -10,14 +10,14 @@
 #include "ilgen/VirtualMachineRegister.hpp"
 #include "ilgen/VirtualMachineRegisterInStruct.hpp"
 
-#include <assert.h>
-#include <dlfcn.h>
-#include <errno.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cassert>
+#include <cerrno>
+#include <cstddef>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
 #include <cstring>
+#include <dlfcn.h>
 #include <iostream>
 #include <sstream>
 #include <vector>

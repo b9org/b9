@@ -26,15 +26,15 @@ namespace b9 {
 
 extern "C" void b9PrintStack(ExecutionContext *context, int64_t pc,
                              int64_t bytecode, int64_t param) {
-  printf("Executing at pc %lld, bc is (%d, %s), param is (%d)\n", pc, bytecode,
-         toString((ByteCode)bytecode), param);
+
   StackElement *base = context->stackBase_;
-  std::cout << "------\n";
+  std::cout << "Executing at pc: " << pc << " bc: "  << toString((ByteCode)bytecode) << ", " << param << std::endl;
+  std::cout << "vvvvvvvvvvvvvvvvv" << std::endl;
   while (base < context->stackPointer_) {
-    printf("%p: Stack[%ld] = %lld\n", base, base - context->stackBase_, *base);
+    std::cout << base << ": Stack[" << base - context->stackBase_ <<"] = " << *base << std::endl;
     base++;
   }
-  std::cout << "^^^^^^^^^^^^^^^^^\n";
+  std::cout << "^^^^^^^^^^^^^^^^^" << std::endl;
 }
 
 // Simulates all state of the virtual machine state while compiled code is

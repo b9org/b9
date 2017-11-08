@@ -68,7 +68,7 @@ class ExecutionContext {
   StackElement pop();
 
   void functionCall(Parameter value);
-  void functionReturn(StackElement returnVal);
+  StackElement functionReturn(StackElement *args);
   void primitiveCall(Parameter value);
   Parameter jmp(Parameter offset);
   void duplicate();

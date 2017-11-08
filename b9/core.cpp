@@ -26,8 +26,10 @@ void ExecutionContext::functionCall(Parameter value) {
   push(result);
 }
 
-void ExecutionContext::functionReturn(StackElement returnVal) {
-  // TODO
+StackElement ExecutionContext::functionReturn(StackElement *sp) {
+  StackElement result = *(stackPointer_ - 1);
+  stackPointer_ = sp;
+  return result;
 }
 
 void ExecutionContext::primitiveCall(Parameter value) {
@@ -38,7 +40,9 @@ void ExecutionContext::primitiveCall(Parameter value) {
 Parameter ExecutionContext::jmp(Parameter offset) { return offset; }
 
 void ExecutionContext::duplicate() {
-  // TODO
+  StackElement dup = pop();
+  push(dup);
+  push(dup);
 }
 
 void ExecutionContext::drop() { pop(); }
@@ -253,12 +257,8 @@ StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
       case ByteCode::FUNCTION_CALL:
         functionCall(instructionPointer->parameter());
         break;
-      case ByteCode::FUNCTION_RETURN: {
-        StackElement result = *(stackPointer_ - 1);
-        stackPointer_ = args;
-        return result;
-        break;
-      }
+      case ByteCode::FUNCTION_RETURN:
+        return functionReturn(args); 
       case ByteCode::PRIMITIVE_CALL:
         primitiveCall(instructionPointer->parameter());
         break;
@@ -266,7 +266,7 @@ StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
         instructionPointer += instructionPointer->parameter();
         break;
       case ByteCode::DUPLICATE:
-        // TODO
+        duplicate();
         break;
       case ByteCode::DROP:
         drop();

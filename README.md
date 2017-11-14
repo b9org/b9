@@ -1,49 +1,49 @@
 [![Build Status](https://api.travis-ci.org/youngar/Base9.svg?branch=master)](https://travis-ci.org/youngar/Base9)
 
-# Building Base9
+# Welcome to Base9!
 
-## Grab the source
+Base9 is a miniature virtual machine and programming language! We’re using it to show people how to use [Eclipse OMR](https://github.com/eclipse/omr) to build their own programming languages. The Base9 language is a simple subset of JavaScript. 
 
-clone this repository using git:
 
-```sh
-git clone https://github.com/youngar/Base9
+## Requirements
+
+To get started with Base9, you'll need:
+
+`git, build-essential, nodejs, npm, esprima, cmake, ninja` 
+
+Click **insert link** for detailed instructionson getting set-up with Base9
+
+
+## Clone the repository and get the submodules 
+```
+git clone --recursive https://github.com/youngar/Base9.git
 cd Base9
-# Download sub-modules: googletest and omr
 git submodule update --init
 ```
 
-## Building
-
-### Set up the build directory
-
-Create a build directory and configure the build. Base9 and OMR use Cmake.
-We suggest using the ninja generator.
-
-```sh
-# Inside the Base9 directory
+## Build Base9
+```
 mkdir build && cd build
-cmake -G Ninja ..
+cmake –GNinja –DCMAKE_BUILD_TYPE=Debug ..
+ninja
 ```
 
-### Build it!
+## Run Hello World!
+On Ubuntu:
 
-```sh
-# Inside the build directory
-ninja -j2
-```
+`./b9run/b9run ./test/libhellod.so`
 
-## Testing
+On OSX:
 
-To run the base9 tests, run:
-```sh
-# Inside the build directory
-ctest -V
-```
+`./b9run/b9run ./test/libhellod.dylib"`
 
-## Benchmarking
 
-To run the benchmark, use:
-```
-ninja bench
-```
+## Test Base9
+
+You can run the full Base9 test suit by running either:
+
+`ninja test`
+
+or 
+
+`ctest -V -R run_interpreter_test`

@@ -26,10 +26,12 @@ At runtime, the byte codes are given to the VM as input, where they will either 
 ## Getting Set-up 
 
 #### Set-up on Ubuntu:
-**insert link**
+
+[Ubuntu Set-up Instructions](https://github.com/arianneb/Base9/blob/documentation/doc/setupUbuntu.md)
 
 #### Set-up on OSX:
-**insert link**
+
+[OSX Set-up Instructions](https://github.com/arianneb/Base9/blob/documentation/doc/setupOSX.md)
 
 #### Clone the repository and get submodules
 ```
@@ -41,7 +43,7 @@ git submodule update --init
 
 ## Directory Structure of Base9
 
-**insert description and link**
+Learn more about our [Directory Structure](https://github.com/arianneb/Base9/blob/documentation/doc/directoryStructure.md)
 
 
 ## Build Base9

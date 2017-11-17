@@ -53,6 +53,12 @@ endfunction(add_b9_src)
 function(add_b9_module module)
 	add_b9_src(${module})
 	add_library(${module} SHARED "${module}.cpp")
+        set_target_properties(${module} 
+          PROPERTIES 
+            PREFIX "" 
+            DEBUG_POSTFIX "" 
+            SUFFIX ".b9mod"
+        )
 	target_link_libraries("${module}" b9)
 endfunction(add_b9_module)
 

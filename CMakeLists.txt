@@ -87,6 +87,8 @@ add_subdirectory(b9)
 
 add_subdirectory(b9run)
 
+add_subdirectory(b9disassemble)
+
 add_subdirectory(test)
 
 add_subdirectory(third_party)

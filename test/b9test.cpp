@@ -1,5 +1,6 @@
 #include <b9/interpreter.hpp>
 #include <b9/loader.hpp>
+#include <b9/objects.hpp>
 
 #include <stdio.h>
 #include <stdlib.h>

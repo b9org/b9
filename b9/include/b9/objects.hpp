@@ -21,7 +21,36 @@ class Object;
 
 using Id = std::uint32_t;
 
-struct Allocator {};
+struct RawAllocator {};
+
+struct Allocator {
+#if 0
+  template <typename T, typename... Args>
+  T* allocate(Context& cx, Args&&... args) {
+    auto p = rawAllocator.allocate(sizeof(T));
+
+    /// Some sneaky notes: The constructor for T should not sub-allocate. It
+    /// must do the minimum initialization to make the object walkable, in the
+    /// case of a concurrent GC scan.
+    new (p)(std::forward<Args>(args)...);
+
+    cx->saveStack().push(p);
+    pay_tax(cx);
+    cx->saveStack.pop();
+  }
+#endif
+};
+
+struct GlobalContext {
+ public:
+  MapMap* mapMap() const { return mapMap_; }
+
+  EmptyObjectMap* emptyObjectMap() const { return emptyObjectMap_; }
+
+ private:
+  MapMap* mapMap_;
+  EmptyObjectMap* emptyObjectMap_;
+};
 
 struct Context {
  public:
@@ -29,13 +58,12 @@ struct Context {
 
  private:
   Allocator allocator_;
-  MapMap* mapMap_;
-  EmptyObjectMap* emptyObjectMap_;
+  // std::stack<Cell*> saveStack_;
 };
 
 }  // namespace b9
 
-/// Can GC
+/// !CAN_GC!
 void* operator new(std::size_t size, b9::Context& cx) {
   std::cerr << "> allocating: " << size << "B\n";
   return malloc(size);  // TODO
@@ -46,7 +74,6 @@ void* operator new(std::size_t size, b9::Context& cx) {
 //
 
 namespace b9 {
-
 class Map;
 
 class Cell {
@@ -195,7 +222,7 @@ class Object : public Cell {
 
   /// Allocate a new slot corresponding to the id. The object may not already
   /// have a slot with this Id matching. !CAN_GC!
-  std::size_t newSlot(Context& cx, Id id) {
+  Index newSlot(Context& cx, Id id) {
     ObjectMap* m;
     switch (map()->kind()) {
       case MapKind::EMPTY_OBJECT_MAP:
@@ -216,7 +243,7 @@ class Object : public Cell {
   }
 
  private:
-  static constexpr std::size_t MAX_SLOTS = 32;
+  static constexpr Index MAX_SLOTS = 32;
 
   Value slots_[MAX_SLOTS];
 };

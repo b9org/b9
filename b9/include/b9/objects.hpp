@@ -3,26 +3,62 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <iostream>
+#include <new>
+
+//
+// Context and Byte Allocator
+//
 
 namespace b9 {
 
+class Cell;
+class Map;
+class MapMap;
+class EmptyObjectMap;
+class ObjectMap;
+class Object;
+
 using Id = std::uint32_t;
 
-class IdGenerator {
+struct Allocator {};
+
+struct Context {
  public:
-  Id newId() { return nextId_++; }
+  Allocator& allocator() { return allocator_; }
 
  private:
-  Id nextId_ = 0;
+  Allocator allocator_;
+  MapMap* mapMap_;
+  EmptyObjectMap* emptyObjectMap_;
 };
+
+}  // namespace b9
+
+/// Can GC
+void* operator new(std::size_t size, b9::Context& cx) {
+  std::cerr << "> allocating: " << size << "B\n";
+  return malloc(size);  // TODO
+}
+
+//
+// Maps maps maps
+//
+
+namespace b9 {
 
 class Map;
 
 class Cell {
  public:
-  Cell(Map* map) : map_(map) {}
+  constexpr Cell(Map* map) : map_(map) {}
 
-  Map* map() const { return map_; }
+  constexpr Map* map() const { return map_; }
+
+  Cell& map(Map* m) {
+    map_ = m;
+    return *this;
+  }
 
  private:
   Map* map_;
@@ -37,6 +73,8 @@ struct Map : public Cell {
   Map(MapMap* map, MapKind kind) noexcept;
 
   MapMap* mapMap() const;
+
+  MapKind kind() const { return kind_; }
 
  private:
   MapKind kind_;
@@ -56,7 +94,7 @@ class EmptyObjectMap : public Map {
   EmptyObjectMap(MapMap* map) : Map(map, MapKind::EMPTY_OBJECT_MAP) {}
 };
 
-using MapIndex = std::uint8_t;
+using Index = std::uint8_t;
 
 class ObjectMap : public Map {
  public:
@@ -72,6 +110,8 @@ class ObjectMap : public Map {
         id_(id),
         index_(parent->index() + 1) {}
 
+  constexpr Map* parent() const noexcept { return parent_; }
+
   constexpr Id id() const noexcept { return id_; }
 
   Map& id(Id id) noexcept {
@@ -79,9 +119,9 @@ class ObjectMap : public Map {
     return *this;
   }
 
-  constexpr MapIndex index() const noexcept { return index_; }
+  constexpr Index index() const noexcept { return index_; }
 
-  Map& index(MapIndex index) noexcept {
+  Map& index(Index index) noexcept {
     index_ = index;
     return *this;
   }
@@ -90,98 +130,118 @@ class ObjectMap : public Map {
   Map* parent_;
   // MapTable* children_;
   Id id_;
-  MapIndex index_;
+  Index index_;
 };
 
-using Slot = std::uintptr_t;
+using Value = std::int32_t;
 
 class Object : public Cell {
  public:
-  Object(ObjectMap* map) : map_(map) {
-    memset(slots, 0, MAX_SLOTS * sizeof(Slot));
+  Object(ObjectMap* map) : Cell(map) {
+    memset(slots_, 0, MAX_SLOTS * sizeof(Value));
   }
 
-  Object(Object& other) : map_(other.map_) {
-    memcpy(slots_, other.slots_, MAX_SLOTS * sizeof(Slot));
+  Object(EmptyObjectMap* map) : Cell(map) {
+    memset(slots_, 0, MAX_SLOTS * sizeof(Value));
   }
 
-  Slot* slots() { return slots_; }
+  Object(Object& other) : Cell(other.map()) {
+    memcpy(slots_, other.slots_, MAX_SLOTS * sizeof(Value));
+  }
 
-  Slot const* slots() const { return slots_; }
+  Value* slots() { return slots_; }
 
-  Slot slot(Id id) {
-    for (Map* m = map_; m != nullptr; m = m->parent()) {
-      if (m.id() == id) {
-        return slots_[m.index()];
+  const Value* slots() const { return slots_; }
+
+  /// Returns {index, true} on success, or {0, false} on failure.
+  /// Note that {0, true} is the first slot in the object.
+  std::pair<Index, bool> index(Id id) {
+    for (auto m = map(); m->kind() != MapKind::EMPTY_OBJECT_MAP;) {
+      // assert(m->kind() == MapKind::OBJECT_MAP);
+      auto om = (ObjectMap*)m;
+      if (om->id() == id) {
+        return {om->index(), true};
       }
+      m = om->parent();
     }
-    throw std::runtime_error{std::string{"failed to find slot: "} + atoi(id)};
+    return std::make_pair(0, false);
   }
 
-  Slot set(Context& cx, Id id, Slot value) {
-    for (Map* m = map_; m != cx->emptyObjectMap(); m = m->parent()) {
-      if (m.id() == id) {
-        return slots_[m.index()] = value;
-      }
+  std::pair<Value, bool> get(Context& cx, Id id) {
+    auto lookup = index(id);
+    if (lookup.second) {
+      Value value = slots_[lookup.first];
+      return std::make_pair(value, true);
+    } else {
+      return std::make_pair(0, false);
     }
-    else {
-      auto index = newSlot(id);
+  }
+
+  /// Set the slot that corresponds to the id. If the slot doesn't exist,
+  /// allocate the slot and assign it. The result is the address of the slot.
+  /// !CAN_GC!
+  Index set(Context& cx, Id id, Value value) {
+    auto lookup = index(id);
+    if (std::get<bool>(lookup)) {
+      auto index = std::get<Index>(lookup);
       slots_[index] = value;
+      return index;
+    } else {
+      auto index = newSlot(cx, id);
+      slots_[index] = value;
+      return index;
     }
-    throw std::runtime_error{std::string{"failed to find slot: "} + atoi(id)};
   }
 
+  /// Allocate a new slot corresponding to the id. The object may not already
+  /// have a slot with this Id matching. !CAN_GC!
   std::size_t newSlot(Context& cx, Id id) {
-    switch (map_->kind()) {
+    ObjectMap* m;
+    switch (map()->kind()) {
       case MapKind::EMPTY_OBJECT_MAP:
-        map_ = new (cx) ObjectMap((EmptyObjectMap*)map_, id);
-        return map_.index();
+        m = new (cx) ObjectMap((EmptyObjectMap*)map(), id);
+        break;
       case MapKind::OBJECT_MAP:
-        map_ = new (cx) ObjectMap((ObjectMap*)map_, id);
-        return map_.index();
+        m = new (cx) ObjectMap((ObjectMap*)map(), id);
+        break;
+      default:
+        throw std::runtime_error(
+            "An object has a map that is neither an ObjectMap nor "
+            "EmptyObjectMap");
+        m = nullptr;
+        break;
     }
-    return map_.index();
+    map(m);
+    return m->index();
   }
 
  private:
   static constexpr std::size_t MAX_SLOTS = 32;
 
-  Slot slots_[MAX_SLOTS];
+  Value slots_[MAX_SLOTS];
 };
 
-newObjectMap(Context& cx, ObjectMap* parent = nullptr) {
-  return new (cx->allocator()) ObjectMap(cx->mapMap(), parent);
-}
+//
+// ID Generation and Mapping
+//
 
-newObject(Context& cx, ObjectMap* map) { return new (cx) Object(map); }
-
-newObject(Context& cx, Object* object) { return new (cx) Object(*object); }
-
-struct Allocator {};
-
-struct Context {
+class IdGenerator {
  public:
-  Allocator& allocator() { return allocator_; }
+  Id newId() { return nextId_++; }
 
  private:
-  Allocator allocator_;
-  MapMap* mapMap_;
-  EmptyObjectMap* emptyObjectMap_;
+  Id nextId_ = 0;
 };
-
-void* operator new(Context& cx, std::size_t size) {
-  return OMR_GC_Allocate(cx, size);
-}
 
 class SymbolTable {
  public:
   Id lookup(std::string& string) {
     auto it = lookupTable_.find(string);
-    if (it != lookupTable.end()) {
+    if (it != lookupTable_.end()) {
       return it->second;
     } else {
-      auto id = IdGenerator.newId();
-      lookupTable.insert({string, id});
+      auto id = idGenerator_.newId();
+      lookupTable_.insert({string, id});
       return id;
     }
   }
@@ -191,7 +251,20 @@ class SymbolTable {
   std::map<std::string, Id> lookupTable_;
 };
 
-getSizeOfObject()
+//
+// Misc Object allocators
+//
+
+#if 0
+  newObjectMap(Context& cx, ObjectMap* parent = nullptr) {
+    return new (cx->allocator()) ObjectMap(cx->mapMap(), parent);
+  }
+
+  newObject(Context& cx, ObjectMap* map) { return new (cx) Object(map); }
+
+  newObject(Context& cx, Object* object) { return new (cx) Object(*object); }
+#endif
+
 }  // namespace b9
 
 #endif  // B9_OBJECTS_HPP_

@@ -1,6 +1,10 @@
 #include <b9/interpreter.hpp>
 #include <b9/loader.hpp>
 #include <b9/objects.hpp>
+#include <ObjectAllocationModel.hpp>
+// #include <omrgcallocate.hpp>
+
+#include <omrgc.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -39,6 +43,16 @@ const std::vector<const char*> TEST_NAMES = {
   "test_while"
 };
 // clang-format on
+
+Object* newObject(Context& cx, Map* map) {
+  ObjectInitializer init(map, sizeof(Object), 0);
+  auto p = OMR_GC_Allocate(cx.omrEnv(), init); 
+  return (Object*)p;
+}
+
+TEST(GCTest, basicTest) {
+
+}
 
 class InterpreterTest : public ::testing::Test {
  public:

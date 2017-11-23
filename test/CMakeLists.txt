@@ -16,7 +16,7 @@ add_executable(b9test
 
 target_link_libraries(b9test
 	PUBLIC
-		b9 gtest_main
+		b9 gtest_main b9objects
 )
 
 add_test(

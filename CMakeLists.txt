@@ -30,9 +30,16 @@ enable_testing()
 
 set(OMR_COMPILER   ON  CACHE INTERNAL "Enable the Compiler.")
 set(OMR_JITBUILDER ON  CACHE INTERNAL "We use OMR's jitbuilder tool for the b9 JIT")
-set(OMR_GC         ON CACHE INTERNAL "We don't use the GC in b9 (yet)")
+set(OMR_GC         ON  CACHE INTERNAL "Enable the GC")
 set(OMR_FVTEST     OFF CACHE INTERNAL "Disable OMR's internal test suite, it's incompatible with b9")
 set(OMR_WARNINGS_AS_ERRORS OFF CACHE INTERNAL "OMR doesn't compile cleanly on my laptop :p")
+
+# OMR Glue Configuration
+
+set(OMR_GC_GLUE_TARGET "base9_gc_glue" CACHE STRING "The gc glue target, must be interface library")
+set(OMR_UTIL_GLUE_TARGET "base9_util_glue" CACHE STRING "The util glue target, must be interface library")
+set(OMR_RAS_GLUE_TARGET "base9_ras_glue" CACHE STRING "The ras glue target, must be interface library")
+set(OMR_CORE_GLUE_TARGET "base9_core_glue" CACHE STRING "The core glue target, must be and interface library")
 
 # Compile a b9-js *.src to C++
 function(add_b9_src src)
@@ -87,6 +94,10 @@ add_subdirectory(b9)
 
 add_subdirectory(b9run)
 
+add_subdirectory(b9objects)
+
 add_subdirectory(test)
 
 add_subdirectory(third_party)
+
+add_subdirectory(glue)

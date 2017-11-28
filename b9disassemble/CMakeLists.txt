@@ -1,5 +1,10 @@
 add_executable (b9disassemble
-  b9disassemble.cpp
+  b9disassemble.cpp 
+  testModule.cpp
+)
+
+target_link_libraries(b9disassemble
+        b9
 )
 
 function(b9disassemble_test module)

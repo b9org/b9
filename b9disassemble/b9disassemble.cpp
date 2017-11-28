@@ -1,5 +1,16 @@
 #include <iostream>
+#include <iterator>
 #include <string.h>
+
+// Parse uint32
+uint32_t uint32Parser(std::istream &in) {
+  uint32_t value;
+  in.read((char *)&value, sizeof(value));
+  std::cout << "The value is: " << value << std::endl;
+  
+  return 0;
+}
+
 
 // Read header "b9module" from module 
 bool parseHeader(std::istream &in) {
@@ -13,9 +24,17 @@ bool parseHeader(std::istream &in) {
   return true;
 }
 
+int parseSectionCode(std::istream &in) {
+ return 0;
+}
+
+
 bool disassemble(std::istream &in, std::ostream &out) {
-  // TODO call various parsing functions 
-  return parseHeader(in);
+ parseHeader(in);
+ uint32Parser(in);
+ //parseSectionCode(in);
+ // TODO call various parsing functions 
+ return true;
 }
 
 int main (int argc, char** argv) {

@@ -22,19 +22,18 @@
 #ifndef OBJECTMODELDELEGATE_HPP_
 #define OBJECTMODELDELEGATE_HPP_
 
-#include <b9/objects.hpp>
-
 #include "ForwardedHeader.hpp"
 #include "GCExtensionsBase.hpp"
-// #include "ObjectAllocationModel.hpp"
 #include "objectdescription.h"
+
+#include <b9/objects.hpp>
+#include <b9/context.hpp>
+#include <b9/runtime.hpp>
 
 class MM_AllocateInitialization;
 class MM_EnvironmentBase;
 
-#define CLI_THREAD_TYPE OMR_VMThread
-
-struct CLI_THREAD_TYPE;
+using CLI_THREAD_TYPE = ::b9::Context;
 
 class GC_ObjectModelDelegate {
  public:

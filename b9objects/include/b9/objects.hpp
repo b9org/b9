@@ -4,90 +4,34 @@
 #include <cstddef>
 #include <cstdint>
 #include <iostream>
-#include <new>
 #include <map>
-
-//
-// Context and Byte Allocator
-//
+#include <new>
 
 namespace b9 {
 
-class Cell;
 class Map;
-class MapMap;
-class EmptyObjectMap;
-class ObjectMap;
-class Object;
+class Context;
+class MemoryManager;
 
+/// A numeric unique id. ID's can be used to identify anything.
+/// Any heap allocated thing, or 32-bit number, or string symbol, can be
+/// converted to an ID. The ID used for a number of lookups. In particular, IDs
+/// are used for object-field lookup.
 using Id = std::uint32_t;
-
-struct RawAllocator {};
-
-struct Allocator {
-#if 0
-  template <typename T, typename... Args>
-  T* allocate(Context& cx, Args&&... args) {
-    auto p = rawAllocator.allocate(sizeof(T));
-
-    /// Some sneaky notes: The constructor for T should not sub-allocate. It
-    /// must do the minimum initialization to make the object walkable, in the
-    /// case of a concurrent GC scan.
-    new (p)(std::forward<Args>(args)...);
-
-    cx->saveStack().push(p);
-    pay_tax(cx);
-    cx->saveStack.pop();
-  }
-#endif
-};
-
-struct GlobalContext {
- public:
-  MapMap* mapMap() const { return mapMap_; }
-
-  EmptyObjectMap* emptyObjectMap() const { return emptyObjectMap_; }
-
- private:
-  MapMap* mapMap_;
-  EmptyObjectMap* emptyObjectMap_;
-};
-
-struct Context {
- public:
-  Allocator& allocator() { return allocator_; }
-
-  
- private:
-  Allocator allocator_;
-  // std::stack<Cell*> saveStack_;
-};
-
-}  // namespace b9
-
-/// !CAN_GC!
-void* operator new(std::size_t size, b9::Context& cx) {
-  std::cerr << "> allocating: " << size << "B\n";
-  return malloc(size);  // TODO
-}
-
-//
-// Maps maps maps
-//
-
-namespace b9 {
-class Map;
-
-using RawCellHeader = std::uintptr_t;
 
 ///
 /// The Cell header
-/// 
+///
+
+using RawCellHeader = std::uintptr_t;
+
 class CellHeader {
  public:
   CellHeader(Map* m = nullptr) : value_(RawCellHeader(m) << MAP_SHIFT) {}
 
-  void map(Map* m) { value_ = (RawCellHeader(m) << MAP_SHIFT) | (value_ & FLAGS_MASK); }
+  void map(Map* m) {
+    value_ = (RawCellHeader(m) << MAP_SHIFT) | (value_ & FLAGS_MASK);
+  }
 
   Map* map() const { return (Map*)(value_ >> MAP_SHIFT); }
 
@@ -140,7 +84,7 @@ class MapMap : public Map {
 
 inline Map::Map(MapMap* map, MapKind kind) noexcept : Cell(map), kind_(kind) {}
 
-MapMap* Map::mapMap() const { return (MapMap*)map(); }
+inline MapMap* Map::mapMap() const { return (MapMap*)map(); }
 
 class EmptyObjectMap : public Map {
  public:
@@ -190,89 +134,52 @@ using Value = std::int32_t;
 
 class Object : public Cell {
  public:
-  Object(ObjectMap* map) : Cell(map) {
-    memset(slots_, 0, MAX_SLOTS * sizeof(Value));
-  }
+  Object(ObjectMap* map);
 
-  Object(EmptyObjectMap* map) : Cell(map) {
-    memset(slots_, 0, MAX_SLOTS * sizeof(Value));
-  }
+  Object(EmptyObjectMap* map);
 
-  Object(Object& other) : Cell(other.map()) {
-    memcpy(slots_, other.slots_, MAX_SLOTS * sizeof(Value));
-  }
+  Object(Object& other);
 
-  Value* slots() { return slots_; }
+  Value* slots();
 
-  const Value* slots() const { return slots_; }
+  const Value* slots() const;
 
   /// Returns {index, true} on success, or {0, false} on failure.
   /// Note that {0, true} is the first slot in the object.
-  std::pair<Index, bool> index(Id id) {
-    for (auto m = map(); m->kind() != MapKind::EMPTY_OBJECT_MAP;) {
-      // assert(m->kind() == MapKind::OBJECT_MAP);
-      auto om = (ObjectMap*)m;
-      if (om->id() == id) {
-        return {om->index(), true};
-      }
-      m = om->parent();
-    }
-    return std::make_pair(0, false);
-  }
+  std::pair<Index, bool> index(Id id);
 
-  std::pair<Value, bool> get(Context& cx, Id id) {
-    auto lookup = index(id);
-    if (lookup.second) {
-      Value value = slots_[lookup.first];
-      return std::make_pair(value, true);
-    } else {
-      return std::make_pair(0, false);
-    }
-  }
+  std::pair<Value, bool> get(Context& cx, Id id);
 
   /// Set the slot that corresponds to the id. If the slot doesn't exist,
   /// allocate the slot and assign it. The result is the address of the slot.
   /// !CAN_GC!
-  Index set(Context& cx, Id id, Value value) {
-    auto lookup = index(id);
-    if (std::get<bool>(lookup)) {
-      auto index = std::get<Index>(lookup);
-      slots_[index] = value;
-      return index;
-    } else {
-      auto index = newSlot(cx, id);
-      slots_[index] = value;
-      return index;
-    }
-  }
+  bool set(Context& cx, Id id, Value value);
+
+  void setAt(Context& cx, Index index, Value value);
 
   /// Allocate a new slot corresponding to the id. The object may not already
   /// have a slot with this Id matching. !CAN_GC!
-  Index newSlot(Context& cx, Id id) {
-    ObjectMap* m;
-    switch (map()->kind()) {
-      case MapKind::EMPTY_OBJECT_MAP:
-        m = new (cx) ObjectMap((EmptyObjectMap*)map(), id);
-        break;
-      case MapKind::OBJECT_MAP:
-        m = new (cx) ObjectMap((ObjectMap*)map(), id);
-        break;
-      default:
-        throw std::runtime_error(
-            "An object has a map that is neither an ObjectMap nor "
-            "EmptyObjectMap");
-        m = nullptr;
-        break;
-    }
-    map(m);
-    return m->index();
-  }
+  Index newSlot(Context& cx, Id id);
 
  private:
   static constexpr Index MAX_SLOTS = 32;
 
   Value slots_[MAX_SLOTS];
 };
+
+#if 0
+bool setSlot(Context& cx, Object* obj, Id slotId, Value value) {
+  auto lookup = obj->index(slotId);
+  if(std::get<bool>(lookup)) {
+    auto index = std::get<Index>(lookup);
+    obj->setAt(cx, index, value);
+  } else {
+    RootRef root(cx, obj);
+    auto index = root->newSlot(slotId);
+    root.ptr->setAt(cx, index, value);
+  }
+}
+#endif
 
 //
 // ID Generation and Mapping
@@ -286,23 +193,7 @@ class IdGenerator {
   Id nextId_ = 0;
 };
 
-class SymbolTable {
- public:
-  Id lookup(std::string& string) {
-    auto it = lookupTable_.find(string);
-    if (it != lookupTable_.end()) {
-      return it->second;
-    } else {
-      auto id = idGenerator_.newId();
-      lookupTable_.insert({string, id});
-      return id;
-    }
-  }
 
- private:
-  IdGenerator idGenerator_;
-  std::map<std::string, Id> lookupTable_;
-};
 
 //
 // Misc Object allocators

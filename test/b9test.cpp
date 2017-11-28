@@ -1,8 +1,11 @@
 #include <b9/interpreter.hpp>
 #include <b9/loader.hpp>
 #include <b9/objects.hpp>
+#include <b9/objects.inl.hpp>
 #include <ObjectAllocationModel.hpp>
 // #include <omrgcallocate.hpp>
+#include <b9/context.hpp>
+#include <b9/runtime.hpp>
 
 #include <omrgc.h>
 
@@ -45,13 +48,22 @@ const std::vector<const char*> TEST_NAMES = {
 // clang-format on
 
 Object* newObject(Context& cx, Map* map) {
-  ObjectInitializer init(map, sizeof(Object), 0);
-  auto p = OMR_GC_Allocate(cx.omrEnv(), init); 
-  return (Object*)p;
+  return nullptr;
+  // ObjectInitializer init(map, sizeof(Object), 0);
+  // auto p = OMR_GC_Allocate(cx.omrEnv(), init); 
+  // return (Object*)p;
 }
 
-TEST(GCTest, basicTest) {
+ProcessRuntime runtime;
 
+TEST(MemoryManagerTest, startupAndShutdown) {
+  MemoryManager memoryManager(runtime);
+}
+
+TEST(MemoryManagerTest, startupAContext) {
+  // ProcessRuntime runtime;
+  MemoryManager manager(runtime);
+  Context cx(manager);
 }
 
 class InterpreterTest : public ::testing::Test {

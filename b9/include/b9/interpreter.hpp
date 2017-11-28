@@ -3,6 +3,7 @@
 
 #include <b9/instructions.hpp>
 #include <b9/module.hpp>
+#include <b9/runtime.hpp>
 
 #include <cstring>
 #include <map>

@@ -53,26 +53,57 @@ bool parseFunctionCount(std::istream &in) {
   return true;
 }
 
+/* Read function information  */
+bool parseFunctionData(std::istream &in) {
+  uint32_t functionIndex;
+  uint32_t nargs;
+  uint32_t nregs;
+  if (!uint32Parser(in, functionIndex)) {
+    return false;
+  }
+  if (!uint32Parser(in, nargs)) {
+    return false;
+  }
+  if (!uint32Parser(in, nregs)) {
+    return false;
+  }
+  std::cout << "Function Index: " << functionIndex << std::endl;
+  std::cout << "Number Arguments: " << nargs << std::endl;
+  std::cout << "Number Registers: " << nregs << std::endl;
+  // TODO Set function index, nargs, and nregs in Module
+  return true;
+}
+
 /* Disassemble Binary Module  */
 bool disassemble(std::istream &in, std::ostream &out) {
- // Read header
- if (parseHeader(in)) {
-   std::cout << "Success in parseHeader" << std::endl;
- } else {
-   std::cout << "Failure in parseHeader" << std::endl;
-   return false;
- }
- // Read section code
- if (parseSectionCode(in)) {
-   std::cout << "Success in parseSectionCode" << std::endl;
- } else {
-   std::cout << "Failure in parseSectionCode" << std::endl;
-   return false;
- }
- // Read function count 
- parseFunctionCount(in);
-
- return true;
+  // Read header
+  if (parseHeader(in)) {
+    std::cout << "Success in parseHeader" << std::endl;
+  } else {
+    std::cout << "Failure in parseHeader" << std::endl;
+    return false;
+  }
+  // Read section code
+  if (parseSectionCode(in)) {
+    std::cout << "Success in parseSectionCode" << std::endl;
+  } else {
+    std::cout << "Failure in parseSectionCode" << std::endl;
+    return false;
+  }
+  // Read function count 
+  if (parseFunctionCount(in)) {
+    std::cout << "Success in parseFunctionCount" << std::endl;
+  } else {
+    std::cout << "Failure in parseFunctionCount" << std::endl;
+    return false;
+  }
+  // Read function data
+  if (parseFunctionData(in)) {
+    std::cout << "Success in parseFunctionData" << std::endl;
+  } else {
+    std::cout << "Failure in parseFunctionData" << std::endl;
+  }
+  return true;
 }
 
 int main (int argc, char** argv) {

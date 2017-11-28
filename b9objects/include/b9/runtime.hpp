@@ -21,6 +21,8 @@
 #include "omrvm.h"
 #include "thread_api.h"
 #include "omrvm.h"
+#include <omrgcstartup.hpp>
+#include <StartupManagerImpl.hpp>
 
 namespace b9 {
 
@@ -96,6 +98,10 @@ class PlatformInterface {
     return portLibrary_;
   }
 
+  const ThreadInterface& thread() const noexcept {
+    return threadInterface_;
+  }
+
  private:
   ThreadInterface threadInterface_;
   OMRPortLibrary portLibrary_;
@@ -133,6 +139,8 @@ class ProcessRuntime {
 class MemoryManager {
  public:
   explicit MemoryManager(ProcessRuntime& runtime) : runtime_(runtime) {
+    Thread self(runtime.platform().thread());
+
     memset(&omrVm_, 0, sizeof(OMR_VM));
     omrVm_._runtime = &runtime_.omrRuntime();
     omrVm_._language_vm = this;
@@ -141,9 +149,19 @@ class MemoryManager {
     if (e != 0) {
       throw PlatformError(e);
     }
+
+    MM_StartupManagerImpl startupManager(&omrVm_);
+    e = OMR_GC_IntializeHeapAndCollector(&omrVm_, &startupManager);
+        if (e != 0) {
+      throw PlatformError(e);
+    }
   }
 
-  ~MemoryManager() { omr_detach_vm_from_runtime(&omrVm()); }
+  ~MemoryManager() {
+    Thread self(runtime().platform().thread());
+    // TODO: Shut down the heap (requires a thread (boo!!))
+    omr_detach_vm_from_runtime(&omrVm());
+  }
 
   OMR_VM& omrVm() { return omrVm_; }
 

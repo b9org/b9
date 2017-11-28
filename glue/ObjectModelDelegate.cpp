@@ -42,10 +42,10 @@ GC_ObjectModelDelegate::initializeAllocation(MM_EnvironmentBase *env, void *allo
 
 omrobjectptr_t GC_ObjectModelDelegate::initializeAllocation(
     MM_EnvironmentBase *env, void *allocatedBytes,
-    MM_AllocateInitialization *init) {
+    MM_AllocateInitialization *a) {
   auto cell = (b9::Cell *)allocatedBytes;
-  auto allocModel = (b9::ObjectInitializer *)init;
-  return (omrobjectptr_t)allocModel->initializeObject(env, cell);
+  auto alloc = (b9::Allocation*) a;
+  return (omrobjectptr_t) alloc->initializeObject(cell);
 }
 
 #if defined(OMR_GC_MODRON_SCAVENGER)

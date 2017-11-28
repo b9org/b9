@@ -13,12 +13,6 @@ inline void* operator new(std::size_t size, b9::Context& cx) {
 
 namespace b9 {
 
-template <typename T, typename... Args>
-T* allocate(Context& cx, Args&&... args) {
-  return new(cx) T(std::forward<Args>(args)...);
-}
-
-
 Object::Object(ObjectMap* map) : Cell(map) {
   memset(slots_, 0, MAX_SLOTS * sizeof(Value));
 }

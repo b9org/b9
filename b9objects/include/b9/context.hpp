@@ -9,14 +9,16 @@
 #include <cstdint>
 #include <new>
 
+class MM_EnvironmentBase;
+
+namespace b9 {
+
 class Cell;
 class Map;
 class MapMap;
 class EmptyObjectMap;
 class ObjectMap;
 class Object;
-
-namespace b9 {
 
 class Context {
  public:
@@ -37,6 +39,8 @@ class Context {
   MemoryManager& manager() const noexcept { return manager_; }
 
   OMR_VMThread* omrVmThread() const noexcept { return omrVmThread_; }
+
+  MM_EnvironmentBase* omrGcThread() const noexcept;
 
  private:
   MemoryManager& manager_;
@@ -93,7 +97,6 @@ struct ContextState {
 //
 // Context and Byte Allocator
 //
-
 
 
 

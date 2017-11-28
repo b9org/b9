@@ -6,6 +6,7 @@
 // #include <omrgcallocate.hpp>
 #include <b9/context.hpp>
 #include <b9/runtime.hpp>
+#include <b9/allocator.hpp>
 
 #include <omrgc.h>
 
@@ -56,14 +57,20 @@ Object* newObject(Context& cx, Map* map) {
 
 ProcessRuntime runtime;
 
-TEST(MemoryManagerTest, startupAndShutdown) {
+TEST(MemoryManagerTest, startUpAndShutDown) {
   MemoryManager memoryManager(runtime);
 }
 
-TEST(MemoryManagerTest, startupAContext) {
-  // ProcessRuntime runtime;
+TEST(MemoryManagerTest, startUpAContext) {
   MemoryManager manager(runtime);
   Context cx(manager);
+}
+
+TEST(MemoryManagerTest, allocateTheMapMap) {
+  MemoryManager manager(runtime);
+  Context cx(manager);
+  MapMap * mapMap = allocateMapMap(cx);
+  EXPECT_EQ(mapMap, mapMap->map());
 }
 
 class InterpreterTest : public ::testing::Test {

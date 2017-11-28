@@ -22,29 +22,54 @@
 #if !defined(OBJECTALLOCATIONMODEL_HPP_)
 #define OBJECTALLOCATIONMODEL_HPP_
 
+#include <AllocateInitialization.hpp>
+#include <b9/context.inl.hpp>
 #include <b9/objects.hpp>
-
-#include "AllocateInitialization.hpp"
-// #include "ObjectModel.hpp"
 
 namespace b9 {
 
-class ObjectInitializer : public ::MM_AllocateInitialization {
+class Initializer {
  public:
-  Cell *initializeObject(MM_EnvironmentBase *env, b9::Cell *cell) {
-    return new (cell) b9::Cell(map_);
-  }
+  virtual Cell* operator()(Cell* cell) = 0;
+};
 
-  ObjectInitializer(MM_EnvironmentBase *env, b9::Map *map, uintptr_t size,
-                    uintptr_t flags = 0)
-      : MM_AllocateInitialization(env, 0 /*< category, unused */, size, flags),
-        map_(map) {}
+struct MapInitializer : public Initializer {
+  virtual Cell* operator()(Cell* cell) override {
+    return new (cell) Map(mapMap, kind);
+  }
+  MapMap* mapMap;
+  MapKind kind;
+};
+
+struct EmptyObjectInitializer : public Initializer {
+ public:
+  virtual Cell* operator()(Cell* cell) override {
+    return new (cell) Object(map);
+  }
+  EmptyObjectMap* map;
+};
+
+struct ObjectInitializer : public Initializer {
+ public:
+  virtual Cell* operator()(Cell* cell) override {
+    return new (cell) Object(map);
+  }
+  ObjectMap* map;
+};
+
+class Allocation : public ::MM_AllocateInitialization {
+ public:
+  Cell* initializeObject(Cell* p) { return init_(p); }
+
+  Allocation(Context& cx, Initializer& init, std::size_t size,
+             uintptr_t flags = 0)
+      : MM_AllocateInitialization(cx.omrGcThread(), 0, size, flags),
+        init_(init) {}
 
  private:
-  Map *map_;
+  Initializer& init_;
 };
 
 }  // namespace b9
 
 #endif /* OBJECTALLOCATIONMODEL_HPP_ */
-

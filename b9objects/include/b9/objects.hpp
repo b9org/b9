@@ -193,8 +193,6 @@ class IdGenerator {
   Id nextId_ = 0;
 };
 
-
-
 //
 // Misc Object allocators
 //

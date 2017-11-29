@@ -13,25 +13,25 @@ inline void* operator new(std::size_t size, b9::Context& cx) {
 
 namespace b9 {
 
-Object::Object(ObjectMap* map) : Cell(map) {
+inline Object::Object(ObjectMap* map) : Cell(map) {
   memset(slots_, 0, MAX_SLOTS * sizeof(Value));
 }
 
-Object::Object(EmptyObjectMap* map) : Cell(map) {
+inline Object::Object(EmptyObjectMap* map) : Cell(map) {
   memset(slots_, 0, MAX_SLOTS * sizeof(Value));
 }
 
-Object::Object(Object& other) : Cell(other.map()) {
+inline Object::Object(Object& other) : Cell(other.map()) {
   memcpy(slots_, other.slots_, MAX_SLOTS * sizeof(Value));
 }
 
-Value* Object::slots() { return slots_; }
+inline Value* Object::slots() { return slots_; }
 
-const Value* Object::slots() const { return slots_; }
+inline const Value* Object::slots() const { return slots_; }
 
 /// Returns {index, true} on success, or {0, false} on failure.
 /// Note that {0, true} is the first slot in the object.
-std::pair<Index, bool> Object::index(Id id) {
+inline std::pair<Index, bool> Object::index(Id id) {
   for (auto m = map(); m->kind() != MapKind::EMPTY_OBJECT_MAP;) {
     // assert(m->kind() == MapKind::OBJECT_MAP);
     auto om = (ObjectMap*)m;
@@ -43,7 +43,7 @@ std::pair<Index, bool> Object::index(Id id) {
   return std::make_pair(0, false);
 }
 
-std::pair<Value, bool> Object::get(Context& cx, Id id) {
+inline std::pair<Value, bool> Object::get(Context& cx, Id id) {
   auto lookup = index(id);
   if (lookup.second) {
     Value value = slots_[lookup.first];
@@ -56,7 +56,7 @@ std::pair<Value, bool> Object::get(Context& cx, Id id) {
 /// Set the slot that corresponds to the id. If the slot doesn't exist,
 /// allocate the slot and assign it. The result is the address of the slot.
 /// !CAN_GC!
-bool Object::set(Context& cx, Id id, Value value) {
+inline bool Object::set(Context& cx, Id id, Value value) {
   auto lookup = index(id);
   if (std::get<bool>(lookup)) {
     auto index = std::get<Index>(lookup);
@@ -66,13 +66,13 @@ bool Object::set(Context& cx, Id id, Value value) {
   return false;
 }
 
-void Object::setAt(Context& cx, Index index, Value value) {
+inline void Object::setAt(Context& cx, Index index, Value value) {
   slots_[index] = value;
 }
 
 /// Allocate a new slot corresponding to the id. The object may not already
 /// have a slot with this Id matching. !CAN_GC!
-Index Object::newSlot(Context& cx, Id id) {
+inline Index Object::newSlot(Context& cx, Id id) {
   ObjectMap* m;
   switch (map()->kind()) {
     case MapKind::EMPTY_OBJECT_MAP:

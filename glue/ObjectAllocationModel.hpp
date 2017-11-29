@@ -33,6 +33,12 @@ class Initializer {
   virtual Cell* operator()(Cell* cell) = 0;
 };
 
+struct MapMapInitializer : public Initializer {
+	virtual Cell* operator()(Cell* cell) override {
+		return new(cell) MapMap();
+	}
+};
+
 struct MapInitializer : public Initializer {
   virtual Cell* operator()(Cell* cell) override {
     return new (cell) Map(mapMap, kind);

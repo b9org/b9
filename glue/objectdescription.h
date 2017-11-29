@@ -25,14 +25,16 @@
 #include "omrcomp.h"
 #include "omr.h"
 
+namespace b9 {
 class Cell;
+}
 
 /**
  * Object token definitions to be used by OMR components.
  */
-typedef Cell* languageobjectptr_t;
-typedef Cell* omrobjectptr_t;
-typedef Cell* omrarrayptr_t;
+typedef b9::Cell* languageobjectptr_t;
+typedef b9::Cell* omrobjectptr_t;
+typedef b9::Cell* omrarrayptr_t;
 
 #if defined (OMR_GC_COMPRESSED_POINTERS)
 typedef uint32_t fomrobject_t;

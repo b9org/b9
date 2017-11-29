@@ -8,6 +8,8 @@
 #include <b9/runtime.hpp>
 #include <b9/allocator.hpp>
 
+#include <b9/memorymanager.inl.hpp>
+
 #include <omrgc.h>
 
 #include <stdio.h>
@@ -72,6 +74,8 @@ TEST(MemoryManagerTest, allocateTheMapMap) {
   MapMap * mapMap = allocateMapMap(cx);
   EXPECT_EQ(mapMap, mapMap->map());
 }
+
+
 
 class InterpreterTest : public ::testing::Test {
  public:

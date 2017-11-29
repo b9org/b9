@@ -24,14 +24,22 @@
 
 #include "EnvironmentBase.hpp"
 #include "MarkingScheme.hpp"
-#include "omrExampleVM.hpp"
 #include "OMRVMThreadListIterator.hpp"
+#include "omrExampleVM.hpp"
 
 #include "MarkingDelegate.hpp"
 
-void
-MM_MarkingDelegate::scanRoots(MM_EnvironmentBase *env)
-{
+#include <b9/context.hpp>
+#include <b9/memorymanager.inl.hpp>
+#include <b9/marking.hpp>
+#include <b9/traverse.hpp>
+
+void MM_MarkingDelegate::scanRoots(MM_EnvironmentBase *env) {
+	// b9::Context& cx = *(b9::Context*)env->getLanguageVMThread();
+	// b9::Marker marker(_markingScheme);
+	// manager.visitRoots(cx, marker);
+
+#if 0
 	OMR_VM_Example *omrVM = (OMR_VM_Example *)env->getOmrVM()->_language_vm;
 	J9HashTableState state;
 	RootEntry *rEntry = NULL;
@@ -50,11 +58,11 @@ MM_MarkingDelegate::scanRoots(MM_EnvironmentBase *env)
 			_markingScheme->markObject(env, (omrobjectptr_t)walkThread->_savedObject2);
 		}
 	}
+#endif
 }
 
-void
-MM_MarkingDelegate::masterCleanupAfterGC(MM_EnvironmentBase *env)
-{
+void MM_MarkingDelegate::masterCleanupAfterGC(MM_EnvironmentBase *env) {
+#if 0
 	OMRPORT_ACCESS_FROM_OMRVM(env->getOmrVM());
 	J9HashTableState state;
 	ObjectEntry *objEntry = NULL;
@@ -68,4 +76,5 @@ MM_MarkingDelegate::masterCleanupAfterGC(MM_EnvironmentBase *env)
 		}
 		objEntry = (ObjectEntry *)hashTableNextDo(&state);
 	}
+#endif
 }

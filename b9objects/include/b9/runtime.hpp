@@ -9,6 +9,8 @@
 #include <stdexcept>
 // #include "GCExtensionsBase.hpp"
 // #include "Heap.hpp"
+#include <StartupManagerImpl.hpp>
+#include <omrgcstartup.hpp>
 #include "OMR_VMThread.hpp"
 #include "StartupManagerImpl.hpp"
 #include "mminitcore.h"
@@ -20,9 +22,6 @@
 #include "omrutil.h"
 #include "omrvm.h"
 #include "thread_api.h"
-#include "omrvm.h"
-#include <omrgcstartup.hpp>
-#include <StartupManagerImpl.hpp>
 
 namespace b9 {
 
@@ -90,26 +89,20 @@ class PlatformInterface {
     library().port_shutdown_library(&library());
   }
 
-  OMRPortLibrary& library() noexcept {
-    return portLibrary_;
-  }
+  OMRPortLibrary& library() noexcept { return portLibrary_; }
 
-  const OMRPortLibrary& library() const noexcept {
-    return portLibrary_;
-  }
+  const OMRPortLibrary& library() const noexcept { return portLibrary_; }
 
-  const ThreadInterface& thread() const noexcept {
-    return threadInterface_;
-  }
+  const ThreadInterface& thread() const noexcept { return threadInterface_; }
 
  private:
   ThreadInterface threadInterface_;
   OMRPortLibrary portLibrary_;
 };
 
+/// Process-wide initialization and tear down.
 class ProcessRuntime {
  public:
-
   /// Initialize the process runtime.
   ProcessRuntime() {
     memset(&omrRuntime_, 0, sizeof(OMR_Runtime));
@@ -134,44 +127,6 @@ class ProcessRuntime {
  private:
   PlatformInterface platform_;
   OMR_Runtime omrRuntime_;
-};
-
-class MemoryManager {
- public:
-  explicit MemoryManager(ProcessRuntime& runtime) : runtime_(runtime) {
-    Thread self(runtime.platform().thread());
-
-    memset(&omrVm_, 0, sizeof(OMR_VM));
-    omrVm_._runtime = &runtime_.omrRuntime();
-    omrVm_._language_vm = this;
-  
-    auto e = omr_attach_vm_to_runtime(&omrVm_);
-    if (e != 0) {
-      throw PlatformError(e);
-    }
-
-    MM_StartupManagerImpl startupManager(&omrVm_);
-    e = OMR_GC_IntializeHeapAndCollector(&omrVm_, &startupManager);
-        if (e != 0) {
-      throw PlatformError(e);
-    }
-  }
-
-  ~MemoryManager() {
-    Thread self(runtime().platform().thread());
-    // TODO: Shut down the heap (requires a thread (boo!!))
-    omr_detach_vm_from_runtime(&omrVm());
-  }
-
-  OMR_VM& omrVm() { return omrVm_; }
-
-  const OMR_VM& omrVm() const { return omrVm_; }
-
-  ProcessRuntime& runtime() { return runtime_; }
-
- private:
-  ProcessRuntime& runtime_;
-  OMR_VM omrVm_;
 };
 
 }  // namespace b9

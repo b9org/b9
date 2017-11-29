@@ -25,14 +25,14 @@
 #include "MixedObjectScanner.hpp"
 
 /**
- * This union is not intended for runtime usage -- it is required only to determine the maximal size of
- * GC_ObjectScanner subclasses used in the client language. An analogous definition
- * of GC_ObjectScannerState must be specified in the glue layer for the client language and that definition
- * will be used when OMR is built for the client language.
+ * This union is not intended for runtime usage -- it is required only to
+ * determine the maximal size of GC_ObjectScanner subclasses used in the client
+ * language. An analogous definition of GC_ObjectScannerState must be specified
+ * in the glue layer for the client language and that definition will be used
+ * when OMR is built for the client language.
  */
-typedef union GC_ObjectScannerState
-{
-	uint8_t scanner[sizeof(GC_MixedObjectScanner)];
+typedef union GC_ObjectScannerState {
+  uint8_t scanner[sizeof(GC_MixedObjectScanner)];
 } GC_ObjectScannerState;
 
 #endif /* OBJECTSCANNERSTATE_HPP_ */

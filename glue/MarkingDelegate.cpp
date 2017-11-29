@@ -30,14 +30,14 @@
 #include "MarkingDelegate.hpp"
 
 #include <b9/context.hpp>
-#include <b9/memorymanager.inl.hpp>
 #include <b9/marking.hpp>
+#include <b9/memorymanager.inl.hpp>
 #include <b9/traverse.hpp>
 
 void MM_MarkingDelegate::scanRoots(MM_EnvironmentBase *env) {
-	// b9::Context& cx = *(b9::Context*)env->getLanguageVMThread();
-	// b9::Marker marker(_markingScheme);
-	// manager.visitRoots(cx, marker);
+// b9::Context& cx = *(b9::Context*)env->getLanguageVMThread();
+// b9::Marker marker(_markingScheme);
+// manager.visitRoots(cx, marker);
 
 #if 0
 	OMR_VM_Example *omrVM = (OMR_VM_Example *)env->getOmrVM()->_language_vm;

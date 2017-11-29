@@ -4,8 +4,8 @@
 #include <mminitcore.h>
 #include <omrutil.h>
 #include <OMR_VMThread.hpp>
-#include <b9/runtime.hpp>
 #include <b9/memorymanager.hpp>
+#include <b9/runtime.hpp>
 #include <cstddef>
 #include <cstdint>
 #include <new>
@@ -45,14 +45,14 @@ class Context {
 
 /// A special limited context that is only used during startup or shutdown.
 class StartupContext : public Context {
-protected:
-	friend class MemoryManager;
-	StartupContext(MemoryManager& manager) : Context(manager) {}
+ protected:
+  friend class MemoryManager;
+  StartupContext(MemoryManager& manager) : Context(manager) {}
 };
 
 /// A full runtime context.
 class RunContext : public Context {
-	RunContext(MemoryManager& manager) : Context(manager) {}
+  RunContext(MemoryManager& manager) : Context(manager) {}
 };
 
 }  // namespace b9

@@ -44,8 +44,8 @@ omrobjectptr_t GC_ObjectModelDelegate::initializeAllocation(
     MM_EnvironmentBase *env, void *allocatedBytes,
     MM_AllocateInitialization *a) {
   auto cell = (b9::Cell *)allocatedBytes;
-  auto alloc = (b9::Allocation*) a;
-  return (omrobjectptr_t) alloc->initializeObject(cell);
+  auto alloc = (b9::Allocation *)a;
+  return (omrobjectptr_t)alloc->initializeObject(cell);
 }
 
 #if defined(OMR_GC_MODRON_SCAVENGER)

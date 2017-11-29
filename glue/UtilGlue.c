@@ -21,25 +21,22 @@
 
 #include "omr.h"
 
-/* This glue function is implemented in a different file from LanguageVMGlue so that
- * it can be used without requiring all the dependencies of LanguageVMGlue.
- * (Since LanguageVMGlue interacts with OMR_VM initialization, it prereqs all GC/RAS/OMR core modules.)
+/* This glue function is implemented in a different file from LanguageVMGlue so
+ * that it can be used without requiring all the dependencies of LanguageVMGlue.
+ * (Since LanguageVMGlue interacts with OMR_VM initialization, it prereqs all
+ * GC/RAS/OMR core modules.)
  */
 #if defined(WIN32)
-omr_error_t
-OMR_Glue_GetVMDirectoryToken(void **token)
-{
-	/* NULL means the runtime will look in the current executable's directory */
-	*token = NULL;
-	return OMR_ERROR_NONE;
+omr_error_t OMR_Glue_GetVMDirectoryToken(void **token) {
+  /* NULL means the runtime will look in the current executable's directory */
+  *token = NULL;
+  return OMR_ERROR_NONE;
 }
 #endif /* defined(WIN32) */
 
 /**
  * Provides the thread name to be used when no name is given.
  */
-char *
-OMR_Glue_GetThreadNameForUnamedThread(OMR_VMThread *vmThread)
-{
-	return "(unnamed thread)";
+char *OMR_Glue_GetThreadNameForUnamedThread(OMR_VMThread *vmThread) {
+  return "(unnamed thread)";
 }

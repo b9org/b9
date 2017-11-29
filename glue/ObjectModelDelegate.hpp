@@ -26,8 +26,8 @@
 #include "GCExtensionsBase.hpp"
 #include "objectdescription.h"
 
-#include <b9/objects.hpp>
 #include <b9/context.hpp>
+#include <b9/objects.hpp>
 #include <b9/runtime.hpp>
 
 class MM_AllocateInitialization;

@@ -22,8 +22,8 @@
 #if !defined(OBJECTDESCRIPTION_H_)
 #define OBJECTDESCRIPTION_H_
 
-#include "omrcomp.h"
 #include "omr.h"
+#include "omrcomp.h"
 
 namespace b9 {
 class Cell;
@@ -36,7 +36,7 @@ typedef b9::Cell* languageobjectptr_t;
 typedef b9::Cell* omrobjectptr_t;
 typedef b9::Cell* omrarrayptr_t;
 
-#if defined (OMR_GC_COMPRESSED_POINTERS)
+#if defined(OMR_GC_COMPRESSED_POINTERS)
 typedef uint32_t fomrobject_t;
 typedef uint32_t fomrarray_t;
 #else

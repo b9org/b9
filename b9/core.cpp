@@ -353,7 +353,7 @@ const FunctionSpec *VirtualMachine::getFunction(std::size_t index) {
 JitFunction VirtualMachine::generateCode(const std::size_t functionIndex) {
   try {
     return compiler_->generateCode(functionIndex);
-  } catch (const CompilationException& e) {
+  } catch (const CompilationException &e) {
     auto f = getFunction(functionIndex);
     std::cerr << "Warning: Failed to compile " << f << std::endl;
     std::cerr << "    with error: " << e.what() << std::endl;

@@ -36,62 +36,56 @@ class MM_EnvironmentBase;
  * Keeps track of the most frequent class instantiations
  */
 
-class MM_FrequentObjectsStats : public MM_Base
-{
-private:
+class MM_FrequentObjectsStats : public MM_Base {
+ private:
+  /*
+   * Estimates the space necessary to report the top k elements accurately 90%
+   * of the time. Derived from a sample run of Eclipse, which showed that the
+   * size necessary to have accurately report the top k elements was
+   * approximately linear.
+   */
+  uint32_t getSizeForTopKFrequent(uint32_t topKFrequent) {
+    /* DO NOTHING */
+    return 0;
+  }
 
-	/*
-	 * Estimates the space necessary to report the top k elements accurately 90% of the time.
-	 * Derived from a sample run of Eclipse, which showed that the size necessary to have accurately report the top k
-	 * elements was approximately linear.
-	 */
-	uint32_t
-	getSizeForTopKFrequent(uint32_t topKFrequent)
-	{
-		/* DO NOTHING */
-		return 0;
-	}
+  /* Function Members */
+ public:
+  static MM_FrequentObjectsStats *newInstance(MM_EnvironmentBase *env);
+  virtual void kill(MM_EnvironmentBase *env);
 
-/* Function Members */
-public:
-	static MM_FrequentObjectsStats *newInstance(MM_EnvironmentBase *env);
-	virtual void kill(MM_EnvironmentBase *env);
+  /* reset the stats*/
+  void clear() {
+    /* DO NOTHING */
+    return;
+  }
 
-	/* reset the stats*/
-	void clear()
-	{
-		/* DO NOTHING */
-		return;
-	}
+  /*
+   * Update stats with another class
+   * @param clazz another clazz to record
+   */
+  void update(MM_EnvironmentBase *env, omrobjectptr_t object) {
+    /* DO NOTHING */
+    return;
+  }
 
-	/*
-	 * Update stats with another class
-	 * @param clazz another clazz to record
-	 */
-	void
-	update(MM_EnvironmentBase *env, omrobjectptr_t object)
-	{
-		/* DO NOTHING */
-		return;
-	}
+  /* Creates a data structure which keeps track of the k most frequent class
+   * allocations (estimated probability of 90% of reporting this accurately (and
+   * in the correct order).  The larger k is, the more memory is required
+   * @param portLibrary the port library
+   * @param k the number of frequent objects we'd like to accurately report
+   */
+  MM_FrequentObjectsStats(OMRPortLibrary *portLibrary,
+                          uint32_t k = TOPK_FREQUENT_DEFAULT) {}
 
-	/* Creates a data structure which keeps track of the k most frequent class allocations (estimated probability of 90% of
-	 * reporting this accurately (and in the correct order).  The larger k is, the more memory is required
-	 * @param portLibrary the port library
-	 * @param k the number of frequent objects we'd like to accurately report
-	 */
-	MM_FrequentObjectsStats(OMRPortLibrary *portLibrary, uint32_t k=TOPK_FREQUENT_DEFAULT)
-	{}
+  /* Merges a FrequentObjectStats structures together together with this one*/
+  void merge(MM_FrequentObjectsStats *frequentObjectsStats);
 
+  void traceStats(MM_EnvironmentBase *env);
 
-	/* Merges a FrequentObjectStats structures together together with this one*/
-	void merge(MM_FrequentObjectsStats* frequentObjectsStats);
-
-	void traceStats(MM_EnvironmentBase *env);
-
-protected:
-	virtual bool initialize(MM_EnvironmentBase *env);
-	virtual void tearDown(MM_EnvironmentBase *env);
+ protected:
+  virtual bool initialize(MM_EnvironmentBase *env);
+  virtual void tearDown(MM_EnvironmentBase *env);
 };
 
 #endif /* !FREQUENTOBJECTSSTATS_HPP_ */

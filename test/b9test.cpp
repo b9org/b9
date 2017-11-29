@@ -1,12 +1,12 @@
+#include <ObjectAllocationModel.hpp>
 #include <b9/interpreter.hpp>
 #include <b9/loader.hpp>
 #include <b9/objects.hpp>
 #include <b9/objects.inl.hpp>
-#include <ObjectAllocationModel.hpp>
 // #include <omrgcallocate.hpp>
+#include <b9/allocator.hpp>
 #include <b9/context.hpp>
 #include <b9/runtime.hpp>
-#include <b9/allocator.hpp>
 
 #include <b9/memorymanager.inl.hpp>
 
@@ -53,7 +53,7 @@ const std::vector<const char*> TEST_NAMES = {
 Object* newObject(Context& cx, Map* map) {
   return nullptr;
   // ObjectInitializer init(map, sizeof(Object), 0);
-  // auto p = OMR_GC_Allocate(cx.omrEnv(), init); 
+  // auto p = OMR_GC_Allocate(cx.omrEnv(), init);
   // return (Object*)p;
 }
 
@@ -71,11 +71,9 @@ TEST(MemoryManagerTest, startUpAContext) {
 TEST(MemoryManagerTest, allocateTheMapMap) {
   MemoryManager manager(runtime);
   Context cx(manager);
-  MapMap * mapMap = allocateMapMap(cx);
+  MapMap* mapMap = allocateMapMap(cx);
   EXPECT_EQ(mapMap, mapMap->map());
 }
-
-
 
 class InterpreterTest : public ::testing::Test {
  public:

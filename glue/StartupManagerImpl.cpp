@@ -19,8 +19,8 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
  *******************************************************************************/
 
-#include "GCExtensionsBase.hpp"
 #include "CollectorLanguageInterfaceImpl.hpp"
+#include "GCExtensionsBase.hpp"
 #if defined(OMR_GC_MODRON_SCAVENGER)
 #include "ConfigurationGenerational.hpp"
 #endif /* defined(OMR_GC_MODRON_SCAVENGER) */
@@ -38,62 +38,58 @@
 #define OMR_SEGREGATEDHEAP_LENGTH 21
 #endif /* defined(OMR_GC_SEGREGATED_HEAP) */
 
-bool
-MM_StartupManagerImpl::handleOption(MM_GCExtensionsBase *extensions, char *option)
-{
-	bool result = MM_StartupManager::handleOption(extensions, option);
+bool MM_StartupManagerImpl::handleOption(MM_GCExtensionsBase *extensions,
+                                         char *option) {
+  bool result = MM_StartupManager::handleOption(extensions, option);
 
-	if (!result) {
+  if (!result) {
 #if defined(OMR_GC_SEGREGATED_HEAP)
-		if (0 == strncmp(option, OMR_SEGREGATEDHEAP, OMR_SEGREGATEDHEAP_LENGTH)) {
-			/* OMRTODO: when we have a flag in extensions to use a segregated heap,
-			 * perhaps we should set it to true here..
-			 */
-			_useSegregatedGC = true;
-			result = true;
-		}
+    if (0 == strncmp(option, OMR_SEGREGATEDHEAP, OMR_SEGREGATEDHEAP_LENGTH)) {
+      /* OMRTODO: when we have a flag in extensions to use a segregated heap,
+       * perhaps we should set it to true here..
+       */
+      _useSegregatedGC = true;
+      result = true;
+    }
 #endif /* defined(OMR_GC_SEGREGATED_HEAP) */
-	}
+  }
 
-	return result;
+  return result;
 }
 
 MM_CollectorLanguageInterface *
-MM_StartupManagerImpl::createCollectorLanguageInterface(MM_EnvironmentBase *env)
-{
-	return MM_CollectorLanguageInterfaceImpl::newInstance(env);
+MM_StartupManagerImpl::createCollectorLanguageInterface(
+    MM_EnvironmentBase *env) {
+  return MM_CollectorLanguageInterfaceImpl::newInstance(env);
 }
 
-MM_VerboseManagerBase *
-MM_StartupManagerImpl::createVerboseManager(MM_EnvironmentBase* env)
-{
-	return MM_VerboseManagerImpl::newInstance(env, env->getOmrVM());
+MM_VerboseManagerBase *MM_StartupManagerImpl::createVerboseManager(
+    MM_EnvironmentBase *env) {
+  return MM_VerboseManagerImpl::newInstance(env, env->getOmrVM());
 }
 
-char *
-MM_StartupManagerImpl::getOptions(void)
-{
-	char *options = getenv("OMR_GC_OPTIONS");
-	return options;
+char *MM_StartupManagerImpl::getOptions(void) {
+  char *options = getenv("OMR_GC_OPTIONS");
+  return options;
 }
 
-MM_Configuration *
-MM_StartupManagerImpl::createConfiguration(MM_EnvironmentBase *env)
-{
+MM_Configuration *MM_StartupManagerImpl::createConfiguration(
+    MM_EnvironmentBase *env) {
 #if defined(OMR_GC_MODRON_SCAVENGER)
-	MM_GCExtensionsBase *ext = MM_GCExtensionsBase::getExtensions(env->getOmrVM());
+  MM_GCExtensionsBase *ext =
+      MM_GCExtensionsBase::getExtensions(env->getOmrVM());
 #endif /* defined(OMR_GC_MODRON_SCAVENGER) */
 #if defined(OMR_GC_SEGREGATED_HEAP)
-	if (_useSegregatedGC) {
-		return MM_ConfigurationSegregated::newInstance(env);
-	} else
+  if (_useSegregatedGC) {
+    return MM_ConfigurationSegregated::newInstance(env);
+  } else
 #endif /* OMR_GC_SEGREGATED_HEAP */
 #if defined(OMR_GC_MODRON_SCAVENGER)
-	if (ext->scavengerEnabled) {
-		return MM_ConfigurationGenerational::newInstance(env);
-	} else
+      if (ext->scavengerEnabled) {
+    return MM_ConfigurationGenerational::newInstance(env);
+  } else
 #endif /* defined(OMR_GC_MODRON_SCAVENGER) */
-	{
-		return MM_ConfigurationFlat::newInstance(env);
-	}
+  {
+    return MM_ConfigurationFlat::newInstance(env);
+  }
 }

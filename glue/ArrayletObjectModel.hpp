@@ -22,53 +22,44 @@
 #if !defined(ARRAYLETOBJECTMODEL_)
 #define ARRAYLETOBJECTMODEL_
 
-#include "omrcfg.h"
 #include "ModronAssertions.h"
+#include "omrcfg.h"
 
 #if defined(OMR_GC_ARRAYLETS)
 
 class MM_GCExtensionsBase;
 class MM_MemorySubSpace;
 
-class GC_ArrayletObjectModel
-{
-	/*
-	 * Function members
-	 */
-private:
-protected:
-public:
-	bool
-	initialize(MM_GCExtensionsBase *extensions)
-	{
-		return true;
-	}
+class GC_ArrayletObjectModel {
+  /*
+   * Function members
+   */
+ private:
+ protected:
+ public:
+  bool initialize(MM_GCExtensionsBase *extensions) { return true; }
 
-	void tearDown(MM_GCExtensionsBase *extensions) {}
+  void tearDown(MM_GCExtensionsBase *extensions) {}
 
-	MMINLINE fomrobject_t *
-	getArrayoidPointer(omrarrayptr_t arrayPtr)
-	{
-		return (fomrobject_t *) NULL;
-	}
+  MMINLINE fomrobject_t *getArrayoidPointer(omrarrayptr_t arrayPtr) {
+    return (fomrobject_t *)NULL;
+  }
 
-	MMINLINE void
-	expandArrayletSubSpaceRange(MM_MemorySubSpace * subSpace, void * rangeBase, void * rangeTop, uintptr_t largestDesirableArraySpineSize)
-	{
-		/* No-op */
-	}
-	
-	/**
-	 * Returns the size of an indexable object, in bytes, including the header.
-	 * @param arrayPtr Pointer to the indexable object whose size is required
-	 * @return Size of object in bytes including the header
-	 */
-	MMINLINE uintptr_t
-	getSizeInBytesWithHeader(omrarrayptr_t arrayPtr)
-	{
-		Assert_MM_unimplemented();
-		return 0;
-	}
+  MMINLINE void expandArrayletSubSpaceRange(
+      MM_MemorySubSpace *subSpace, void *rangeBase, void *rangeTop,
+      uintptr_t largestDesirableArraySpineSize) {
+    /* No-op */
+  }
+
+  /**
+   * Returns the size of an indexable object, in bytes, including the header.
+   * @param arrayPtr Pointer to the indexable object whose size is required
+   * @return Size of object in bytes including the header
+   */
+  MMINLINE uintptr_t getSizeInBytesWithHeader(omrarrayptr_t arrayPtr) {
+    Assert_MM_unimplemented();
+    return 0;
+  }
 };
 
 #endif /*OMR_GC_ARRAYLETS */

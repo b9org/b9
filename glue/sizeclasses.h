@@ -30,16 +30,19 @@
 
 #if defined(OMR_GC_SEGREGATED_HEAP)
 
-/* The number of non-zero allocation sizes defined in the SMALL_SIZECLASSES array. */
+/* The number of non-zero allocation sizes defined in the SMALL_SIZECLASSES
+ * array. */
 #define OMR_SIZECLASSES_NUM_SMALL 0x0F
 
-/* The index of the smallest non-zero small size class in the SMALL_SIZECLASSES array. */
+/* The index of the smallest non-zero small size class in the SMALL_SIZECLASSES
+ * array. */
 #define OMR_SIZECLASSES_MIN_SMALL 0x1
 /* The index of the largest small size class in the SMALL_SIZECLASSES array. */
 #define OMR_SIZECLASSES_MAX_SMALL OMR_SIZECLASSES_NUM_SMALL
 /* Reserved for allocation of arraylets */
 #define OMR_SIZECLASSES_ARRAYLET (OMR_SIZECLASSES_NUM_SMALL + 1)
-/* Reserved for allocation of large (>OMR_SIZECLASSES_MAX_SMALL_SIZE_BYTES) objects */
+/* Reserved for allocation of large (>OMR_SIZECLASSES_MAX_SMALL_SIZE_BYTES)
+ * objects */
 #define OMR_SIZECLASSES_LARGE (OMR_SIZECLASSES_NUM_SMALL + 2)
 
 /* Logarithm of the smallest small class size */
@@ -59,12 +62,16 @@
  *
  * Trivial example below admits 15 allocation sizes up to 2k.
  */
-#define SMALL_SIZECLASSES	{ 0, 16, 32, 64, 96, 160, 240, 352, 456, 592, 760, 968, 1200, 1520, 1760, 2048 }
+#define SMALL_SIZECLASSES                                                   \
+  {                                                                         \
+    0, 16, 32, 64, 96, 160, 240, 352, 456, 592, 760, 968, 1200, 1520, 1760, \
+        2048                                                                \
+  }
 
 typedef struct OMR_SizeClasses {
-    uintptr_t smallCellSizes[OMR_SIZECLASSES_MAX_SMALL + 1];
-    uintptr_t smallNumCells[OMR_SIZECLASSES_MAX_SMALL + 1];
-    uintptr_t sizeClassIndex[OMR_SIZECLASSES_MAX_SMALL_SIZE_BYTES >> 2];
+  uintptr_t smallCellSizes[OMR_SIZECLASSES_MAX_SMALL + 1];
+  uintptr_t smallNumCells[OMR_SIZECLASSES_MAX_SMALL + 1];
+  uintptr_t sizeClassIndex[OMR_SIZECLASSES_MAX_SMALL_SIZE_BYTES >> 2];
 } OMR_SizeClasses;
 
 #endif /* OMR_GC_SEGREGATED_HEAP */

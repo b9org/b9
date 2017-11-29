@@ -49,6 +49,6 @@ class MemoryManager {
   Globals globals_;
 };
 
-} // namespace b9
+}  // namespace b9
 
-#endif // B9_MEMORYMANAGER_HPP_
+#endif  // B9_MEMORYMANAGER_HPP_

@@ -11,7 +11,6 @@ namespace b9 {
 
 inline MemoryManager::MemoryManager(ProcessRuntime& runtime)
     : runtime_(runtime) {
-
   Thread self(runtime.platform().thread());
   initOmrVm();
   initOmrGc();

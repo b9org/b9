@@ -31,7 +31,7 @@ class MM_GCExtensionsBase;
 class MM_GlobalCollector;
 class MM_MarkingScheme;
 class MM_MemorySubSpace;
-
+class GC_ObjectHeapIterator;
 /**
  * Delegate class provides implementations for methods required for gc policies
  * using OMR global collector.
@@ -98,7 +98,26 @@ class MM_GlobalCollectorDelegate {
    *
    * @param env environment for calling thread
    */
-  void postMarkProcessing(MM_EnvironmentBase *env) {}
+  void postMarkProcessing(MM_EnvironmentBase *env);
+
+#define OMR_GC_PAINT_HEAP 1
+
+#if defined(OMR_GC_PAINT_HEAP)
+
+  const std::uint8_t POISON = 0x5E;
+
+  /**
+   * Poison the unmarked objects in a particular region.
+   */
+  void poisonUnmarkedObjectsInRegion(GC_ObjectHeapIterator &objectIterator);
+
+  /**
+   * Walk the heap, for objects that are not marked we corrupt them to maximize
+   * the chance we will crash immediately if they are used.  For live objects
+   * validate that they have the expected eyecatcher */
+  void poisonUnmarkedObjects(MM_EnvironmentBase *env);
+
+#endif  // OMR_GC_PAINT_HEAP
 
   /**
    * Called on GC master thread near the end of a global collection. This is

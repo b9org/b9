@@ -17,13 +17,15 @@ class RunContext;
 class StartupContext;
 
 struct Globals {
-  MapMap* mapMap;
-  EmptyObjectMap* emptyObjectMap;
+  MapMap* mapMap = nullptr;
+  EmptyObjectMap* emptyObjectMap = nullptr;
 };
 
 class MemoryManager {
  public:
   explicit MemoryManager(ProcessRuntime& runtime);
+
+  MemoryManager(const MemoryManager&) = delete;
 
   ~MemoryManager();
 

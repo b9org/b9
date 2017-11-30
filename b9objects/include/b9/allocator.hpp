@@ -30,9 +30,21 @@ struct Allocator {
 #endif
 };
 
+inline void saveObject(Context& cx, Cell* p) {
+  cx.omrVmThread()->_savedObject1 = (void*)p;
+}
+
+inline void unsaveObject(Context& cx) {
+  cx.omrVmThread()->_savedObject1 = nullptr;
+}
+
 template <typename T, typename Allocation>
 T* allocate(Context& cx, Allocation& allocation) {
   auto p = (T*)OMR_GC_AllocateObject(cx.omrVmThread(), &allocation);
+  if (p == nullptr) throw std::bad_alloc();
+  saveObject(cx, p);
+  OMR_GC_SystemCollect(cx.omrVmThread(), 0);
+  unsaveObject(cx);
   return p;
 }
 

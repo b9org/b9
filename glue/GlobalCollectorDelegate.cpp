@@ -20,3 +20,50 @@
  *******************************************************************************/
 
 #include "GlobalCollectorDelegate.hpp"
+#include "Heap.hpp"
+#include "HeapRegionIterator.hpp"
+#include "MarkingScheme.hpp"
+#include "ObjectHeapIterator.hpp"
+#include "ObjectHeapIteratorAddressOrderedList.hpp"
+
+#if defined(OMR_GC_PAINT_HEAP)
+
+void MM_GlobalCollectorDelegate::poisonUnmarkedObjectsInRegion(
+    GC_ObjectHeapIterator &objectIterator) {
+  omrobjectptr_t omrobjptr = NULL;
+
+  while (NULL != (omrobjptr = objectIterator.nextObject())) {
+    if (!_markingScheme->isMarked(omrobjptr)) {
+      /* object will be collected. We write the full contents of the object with
+       * a known value. */
+      uintptr_t objsize =
+          _extensions->objectModel.getConsumedSizeInBytesWithHeader(omrobjptr);
+      memset(omrobjptr, POISON, (size_t)objsize);
+      MM_HeapLinkedFreeHeader::fillWithHoles(omrobjptr, objsize);
+    }
+  }
+}
+
+void MM_GlobalCollectorDelegate::poisonUnmarkedObjects(
+    MM_EnvironmentBase *env) {
+  /* this puts the heap into the state required to walk it */
+  // flushCachesForGC(env);
+
+  MM_HeapRegionManager *regionManager =
+      _extensions->getHeap()->getHeapRegionManager();
+  GC_HeapRegionIterator regionIterator(regionManager);
+
+  MM_HeapRegionDescriptor *hrd = NULL;
+  while (NULL != (hrd = regionIterator.nextRegion())) {
+    GC_ObjectHeapIteratorAddressOrderedList it(_extensions, hrd, false);
+    poisonUnmarkedObjectsInRegion(it);
+  }
+}
+
+#endif  // OMR_GC_PAINT_HEAP
+
+void MM_GlobalCollectorDelegate::postMarkProcessing(MM_EnvironmentBase *env) {
+#if defined(OMR_GC_PAINT_HEAP)
+  poisonUnmarkedObjects(env);
+#endif
+}

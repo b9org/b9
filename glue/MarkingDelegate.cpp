@@ -19,46 +19,46 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
  *******************************************************************************/
 
-#include "omr.h"
-#include "omrhashtable.h"
-
-#include "EnvironmentBase.hpp"
-#include "MarkingScheme.hpp"
-#include "OMRVMThreadListIterator.hpp"
-#include "omrExampleVM.hpp"
-
-#include "MarkingDelegate.hpp"
-
 #include <b9/context.hpp>
+#include <b9/context.inl.hpp>
 #include <b9/marking.hpp>
+#include <b9/memorymanager.hpp>
 #include <b9/memorymanager.inl.hpp>
 #include <b9/traverse.hpp>
 
-void MM_MarkingDelegate::scanRoots(MM_EnvironmentBase *env) {
-// b9::Context& cx = *(b9::Context*)env->getLanguageVMThread();
-// b9::Marker marker(_markingScheme);
-// manager.visitRoots(cx, marker);
+#include "EnvironmentBase.hpp"
+#include "MarkingDelegate.hpp"
+#include "MarkingScheme.hpp"
+#include "OMRVMThreadListIterator.hpp"
+#include "omr.h"
+#include "omrExampleVM.hpp"
+#include "omrhashtable.h"
 
-#if 0
-	OMR_VM_Example *omrVM = (OMR_VM_Example *)env->getOmrVM()->_language_vm;
-	J9HashTableState state;
-	RootEntry *rEntry = NULL;
-	rEntry = (RootEntry *)hashTableStartDo(omrVM->rootTable, &state);
-	while (rEntry != NULL) {
-		_markingScheme->markObject(env, rEntry->rootPtr);
-		rEntry = (RootEntry *)hashTableNextDo(&state);
-	}
-	OMR_VMThread *walkThread;
-	GC_OMRVMThreadListIterator threadListIterator(env->getOmrVM());
-	while((walkThread = threadListIterator.nextOMRVMThread()) != NULL) {
-		if (NULL != walkThread->_savedObject1) {
-			_markingScheme->markObject(env, (omrobjectptr_t)walkThread->_savedObject1);
-		}
-		if (NULL != walkThread->_savedObject2) {
-			_markingScheme->markObject(env, (omrobjectptr_t)walkThread->_savedObject2);
-		}
-	}
-#endif
+void MM_MarkingDelegate::scanRoots(MM_EnvironmentBase *env) {
+  auto& cx = b9::getContext(env);
+  auto& manager = cx.manager();
+  b9::Marker marker(_markingScheme);
+  manager.visitRoots(cx, marker);
+
+  OMR_VMThread *walkThread;
+  GC_OMRVMThreadListIterator threadListIterator(env->getOmrVM());
+  while ((walkThread = threadListIterator.nextOMRVMThread()) != NULL) {
+    if (NULL != walkThread->_savedObject1) {
+      _markingScheme->markObject(env,
+                                 (omrobjectptr_t)walkThread->_savedObject1, true);
+    }
+    if (NULL != walkThread->_savedObject2) {
+      _markingScheme->markObject(env,
+                                 (omrobjectptr_t)walkThread->_savedObject2, true);
+    }
+  }
+
+  const auto& roots = cx.stackRoots();
+  for (const auto& ref : roots) {
+	  auto p = ref.ptr();
+	  std::cout << "found root: " << p << std::endl;
+	  _markingScheme->markObject(env, p, true);
+  }
 }
 
 void MM_MarkingDelegate::masterCleanupAfterGC(MM_EnvironmentBase *env) {

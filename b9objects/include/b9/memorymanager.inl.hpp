@@ -16,6 +16,8 @@ inline MemoryManager::MemoryManager(ProcessRuntime& runtime)
   initOmrGc();
 
   StartupContext cx(*this);
+  OMR_GC_InitializeDispatcherThreads(cx.omrVmThread());
+
   initGlobals(cx);
 }
 
@@ -29,8 +31,12 @@ inline void MemoryManager::initOmrVm() {
   memset(&omrVm_, 0, sizeof(OMR_VM));
   omrVm_._runtime = &runtime_.omrRuntime();
   omrVm_._language_vm = this;
+  omrVm_._vmThreadList = nullptr;
+  omrVm_._gcOmrVMExtensions = nullptr;
+  omrVm_._languageThreadCount = 0;
 
   auto e = omr_attach_vm_to_runtime(&omrVm_);
+
   if (e != 0) {
     throw PlatformError(e);
   }

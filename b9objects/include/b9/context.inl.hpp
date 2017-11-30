@@ -21,6 +21,14 @@ inline MM_EnvironmentBase* Context::omrGcThread() const noexcept {
   return MM_EnvironmentBase::getEnvironment(omrVmThread());
 }
 
+inline Context& getContext(MM_EnvironmentBase& omrGcThread) {
+	return getContext(omrGcThread.getOmrVMThread());
+}
+
+inline Context& getContext(MM_EnvironmentBase* omrGcThread) {
+	return getContext(*omrGcThread);
+}
+
 }  // namespace b9
 
 #endif  // B9_CONTEXT_INL_HPP_

@@ -8,6 +8,7 @@
 #include <b9/context.hpp>
 #include <b9/runtime.hpp>
 
+#include <b9/rooting.inl.hpp>
 #include <b9/memorymanager.inl.hpp>
 
 #include <omrgc.h>
@@ -60,12 +61,21 @@ Object* newObject(Context& cx, Map* map) {
 ProcessRuntime runtime;
 
 TEST(MemoryManagerTest, startUpAndShutDown) {
-  MemoryManager memoryManager(runtime);
+  MemoryManager manager(runtime);
+  EXPECT_NE(manager.globals().mapMap, nullptr);
+  EXPECT_NE(manager.globals().emptyObjectMap, nullptr);
+  Context cx(manager);
+  EXPECT_NE(cx.globals().mapMap, nullptr);
+  EXPECT_NE(cx.globals().emptyObjectMap, nullptr);
+  MapMap* mapMap = allocateMapMap(cx);
+  EXPECT_EQ(mapMap, mapMap->map());
 }
 
 TEST(MemoryManagerTest, startUpAContext) {
   MemoryManager manager(runtime);
   Context cx(manager);
+  EXPECT_NE(cx.globals().mapMap, nullptr);
+  EXPECT_NE(cx.globals().emptyObjectMap, nullptr);
 }
 
 TEST(MemoryManagerTest, allocateTheMapMap) {
@@ -73,6 +83,24 @@ TEST(MemoryManagerTest, allocateTheMapMap) {
   Context cx(manager);
   MapMap* mapMap = allocateMapMap(cx);
   EXPECT_EQ(mapMap, mapMap->map());
+}
+
+TEST(MemoryManagerTest, loseAnObjects) {
+  MemoryManager manager(runtime);
+  Context cx(manager);
+  Object* object = allocateObject(cx);
+  EXPECT_EQ(object->map(), cx.globals().emptyObjectMap);
+  OMR_GC_SystemCollect(cx.omrVmThread(), 0);
+  // EXPECT_EQ(object->map(), (Map*)0x5e5e5e5e5e5e5e5eul);
+}
+
+TEST(MemoryManagerTest, keepAnObject) {
+  MemoryManager manager(runtime);
+  Context cx(manager);
+  RootRef<Object> object(cx, allocateObject(cx));
+  EXPECT_EQ(object->map(), cx.globals().emptyObjectMap);
+  OMR_GC_SystemCollect(cx.omrVmThread(), 0);
+  EXPECT_EQ(object->map(), cx.globals().emptyObjectMap);
 }
 
 class InterpreterTest : public ::testing::Test {

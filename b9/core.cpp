@@ -142,8 +142,8 @@ void ExecutionContext::strPushConstant(Parameter value) {
 
 /// ExecutionContext
 
-VirtualMachine::VirtualMachine(const Config &cfg)
-    : cfg_{cfg}, executionContext_{this, cfg}, compiler_{nullptr} {
+VirtualMachine::VirtualMachine(ProcessRuntime& runtime, const Config &cfg)
+    : cfg_{cfg}, memoryManager_(runtime), executionContext_{this, cfg}, compiler_{nullptr} {
   if (cfg_.verbose) std::cout << "VM initializing..." << std::endl;
 
   if (cfg_.jit) {

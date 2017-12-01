@@ -1,7 +1,9 @@
 #if !defined(B9_MEMORYMANAGER_HPP_)
 #define B9_MEMORYMANAGER_HPP_
 
+#include <b9/rooting.hpp>
 #include <b9/runtime.hpp>
+#include <unordered_set>
 
 namespace b9 {
 
@@ -21,6 +23,8 @@ struct Globals {
   EmptyObjectMap* emptyObjectMap = nullptr;
 };
 
+using ContextSet = std::unordered_set<Context*>;
+
 class MemoryManager {
  public:
   explicit MemoryManager(ProcessRuntime& runtime);
@@ -37,7 +41,18 @@ class MemoryManager {
 
   const Globals& globals() const { return globals_; }
 
+  MarkingFnVector userRoots() noexcept { return userRoots_; }
+
+  const MarkingFnVector userRoots() const noexcept { return userRoots_; }
+
   void visitRoots(Context& cx, Visitor& visitor);
+
+  const ContextSet& contexts() const { return contexts_; }
+
+  ContextSet& contexts() { return contexts_; }
+
+ protected:
+  friend class Context;
 
  private:
   void initOmrVm();
@@ -49,6 +64,8 @@ class MemoryManager {
   ProcessRuntime& runtime_;
   OMR_VM omrVm_;
   Globals globals_;
+  MarkingFnVector userRoots_;
+  ContextSet contexts_;
 };
 
 }  // namespace b9

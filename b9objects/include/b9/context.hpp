@@ -5,11 +5,12 @@
 #include <omrutil.h>
 #include <OMR_VMThread.hpp>
 #include <b9/memorymanager.hpp>
-#include <b9/runtime.hpp>
 #include <b9/rooting.hpp>
+#include <b9/runtime.hpp>
 #include <cstddef>
 #include <cstdint>
 #include <new>
+#include <unordered_set>
 
 class MM_EnvironmentBase;
 
@@ -44,18 +45,23 @@ class Context {
 
   RootRefSeq& stackRoots() noexcept { return stackRoots_; }
 
+  MarkingFnVector userRoots() noexcept { return userRoots_; }
+
+  const MarkingFnVector userRoots() const noexcept { return userRoots_; }
+
  private:
   MemoryManager& manager_;
   OMR_VMThread* omrVmThread_;
   RootRefSeq stackRoots_;
+  MarkingFnVector userRoots_;
 };
 
 inline Context& getContext(OMR_VMThread& omrVmThread) {
-	return *(Context*)omrVmThread._language_vmthread;
+  return *(Context*)omrVmThread._language_vmthread;
 }
 
 inline Context& getContext(OMR_VMThread* omrVmThread) {
-	return getContext(*omrVmThread);
+  return getContext(*omrVmThread);
 }
 
 /// A special limited context that is only used during startup or shutdown.
@@ -69,6 +75,7 @@ class StartupContext : public Context {
 
 /// A full runtime context.
 class RunContext : public Context {
+ public:
   RunContext(MemoryManager& manager) : Context(manager) {}
 };
 

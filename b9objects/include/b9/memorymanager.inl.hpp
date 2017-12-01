@@ -58,6 +58,21 @@ inline void MemoryManager::initGlobals(StartupContext& cx) {
 inline void MemoryManager::visitRoots(Context& cx, Visitor& visitor) {
   visitor.rootEdge(cx, this, globals_.mapMap);
   visitor.rootEdge(cx, this, globals_.emptyObjectMap);
+
+  for (auto& fn : userRoots()) {
+    fn(cx, visitor);
+  }
+
+#if 0
+  for (auto& c : contexts_) {
+    c.visitRoots(cx, visitor);
+  }
+
+  for (auto& r : userRoots_) {
+    *r(cx, visitor);
+  }
+#endif
+
 };
 
 }  // namespace b9

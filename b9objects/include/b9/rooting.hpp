@@ -1,6 +1,10 @@
 #if !defined B9_STACKROOTS_HPP_
 #define B9_STACKROOTS_HPP_
 
+#include <functional>
+#include <unordered_set>
+#include <vector>
+
 namespace b9 {
 
 class Cell;
@@ -119,32 +123,18 @@ class RootRefSeq {
   RootRef<Cell>* head_;
 };
 
+class Visitor;
+class Root;
+
+using MarkingFn = std::function<void(Context&, Visitor&)>;
+
+using MarkingFnVector = std::vector<MarkingFn>;
+
+// template <typename F>
+// class RootFn : public Root {
+// 	RootFn(RootSet& set, F)
+// };
+
 }  // namespace b9
-
-#if 0
-template <typename T, typename U = T>
-using Cons = std::pair<T, Cons<U>*>;
-
-namespace std {
-
-template <typename T, typename U>
-reinterpret_pointer_cast(RootRef<T>&) {}
-
-template <typename T>
-RootRef : public StackRoot<T> {}
-
-template <>
-RootRef : public StackRoot<T> {}
-
-class Root {
-  virtual void operator()(Visitor& visitor) = 0;
-};
-
-using RootTable = std::vector<Root>;
-
-class RootTable {};
-}  // namespace std
-
-#endif  // 0
 
 #endif  // B9_STACKROOTS_HPP_

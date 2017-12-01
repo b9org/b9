@@ -117,7 +117,7 @@ class InterpreterTest : public ::testing::Test {
 TEST_F(InterpreterTest, interpreter) {
   Config cfg;
 
-  VirtualMachine vm{cfg};
+  VirtualMachine vm{runtime, cfg};
   vm.load(module_);
 
   for (auto test : TEST_NAMES) {
@@ -129,7 +129,7 @@ TEST_F(InterpreterTest, jit) {
   Config cfg;
   cfg.jit = true;
 
-  VirtualMachine vm{cfg};
+  VirtualMachine vm{runtime, cfg};
   vm.load(module_);
   vm.generateAllCode();
 
@@ -143,7 +143,7 @@ TEST_F(InterpreterTest, jit_dc) {
   cfg.jit = true;
   cfg.directCall = true;
 
-  VirtualMachine vm{cfg};
+  VirtualMachine vm{runtime, cfg};
   vm.load(module_);
   vm.generateAllCode();
 
@@ -158,7 +158,7 @@ TEST_F(InterpreterTest, jit_pp) {
   cfg.directCall = true;
   cfg.passParam = true;
 
-  VirtualMachine vm{cfg};
+  VirtualMachine vm{runtime, cfg};
   vm.load(module_);
   vm.generateAllCode();
 
@@ -174,7 +174,7 @@ TEST_F(InterpreterTest, jit_lvms) {
   cfg.passParam = true;
   cfg.lazyVmState = true;
 
-  VirtualMachine vm{cfg};
+  VirtualMachine vm{runtime, cfg};
   vm.load(module_);
   vm.generateAllCode();
 
@@ -184,7 +184,7 @@ TEST_F(InterpreterTest, jit_lvms) {
 }
 
 TEST(MyTest, arguments) {
-  b9::VirtualMachine vm{{}};
+  b9::VirtualMachine vm{runtime, {}};
   auto m = std::make_shared<Module>();
   Instruction i[] = {{ByteCode::PUSH_FROM_VAR, 0},
                      {ByteCode::PUSH_FROM_VAR, 1},

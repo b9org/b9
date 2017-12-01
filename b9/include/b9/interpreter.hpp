@@ -5,6 +5,10 @@
 #include <b9/module.hpp>
 #include <b9/runtime.hpp>
 
+#include <b9/context.inl.hpp>
+#include <b9/memorymanager.inl.hpp>
+#include <b9/rooting.inl.hpp>
+
 #include <cstring>
 #include <map>
 #include <memory>
@@ -53,15 +57,13 @@ struct Stack {
 
 typedef StackElement (*JitFunction)(...);
 
-class ExecutionContext {
+inline bool isReference(StackElement value) {
+  return false;  // TODO
+}
+
+class ExecutionContext : public RunContext {
  public:
-  ExecutionContext(VirtualMachine *virtualMachine, const Config &cfg)
-      : stackBase_(this->stack_),
-        stackPointer_(this->stack_),
-        virtualMachine_(virtualMachine),
-        cfg_(cfg) {
-    std::memset(stack_, 0, sizeof(StackElement) * 1000);
-  }
+  ExecutionContext(VirtualMachine *virtualMachine, const Config &cfg);
 
   StackElement interpret(std::size_t functionIndex);
 
@@ -88,6 +90,22 @@ class ExecutionContext {
   Parameter intJmpLt(Parameter delta);
   Parameter intJmpLe(Parameter delta);
   void strPushConstant(Parameter value);
+
+  void visitStack(Context &cx, Visitor &visitor) {
+    const auto n = stackPointer_ - stackBase_;
+    std::cout << ">STACK BEGIN" << std::endl;
+    for (std::size_t i = 0; i < n; i++) {
+      StackElement e = stackBase_[i];
+      if (isReference(e)) {
+        visitor.rootEdge(cx, this, (Cell *)e);
+
+        std::cout << "STACK: ref: " << e << std::endl;
+      } else {
+        std::cout << "STACK: imm: " << e << std::endl;
+      }
+    }
+  }
+
   // TODO: void strJmpEq(Parameter delta);
   // TODO: void strJmpNeq(Parameter delta);
 
@@ -98,6 +116,7 @@ class ExecutionContext {
   StackElement *stackPointer_;
 
  private:
+  // Context cx_;
   StackElement stack_[1000];
   Instruction *programCounter_ = 0;
   StackElement *stackEnd_ = &stack_[1000];
@@ -107,7 +126,7 @@ class ExecutionContext {
 
 class VirtualMachine {
  public:
-  VirtualMachine(const Config &cfg);
+  VirtualMachine(ProcessRuntime& runtime, const Config &cfg);
 
   ~VirtualMachine() noexcept;
 
@@ -134,8 +153,13 @@ class VirtualMachine {
 
   const std::shared_ptr<const Module> &module() { return module_; }
 
+  MemoryManager &memoryManager() { return memoryManager_; }
+
+  const MemoryManager &memoryManager() const { return memoryManager_; }
+
  private:
   Config cfg_;
+  MemoryManager memoryManager_;
   ExecutionContext executionContext_;
   std::shared_ptr<Compiler> compiler_;
   std::shared_ptr<const Module> module_;
@@ -161,6 +185,18 @@ StackElement interpret_3(ExecutionContext *context,
                          StackElement p2, StackElement p3);
 
 void primitive_call(ExecutionContext *context, Parameter value);
+
+inline ExecutionContext::ExecutionContext(VirtualMachine *virtualMachine,
+                                   const Config &cfg)
+    : RunContext(virtualMachine->memoryManager()),
+      stackBase_(this->stack_),
+      stackPointer_(this->stack_),
+      virtualMachine_(virtualMachine),
+      cfg_(cfg) {
+  std::memset(stack_, 0, sizeof(StackElement) * 1000);
+
+  userRoots().push_back([this](Context &cx, Visitor &v) { this->visitStack(cx, v); });
+}
 
 }  // namespace b9
 

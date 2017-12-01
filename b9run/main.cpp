@@ -1,7 +1,11 @@
 #include <strings.h>
+#include <b9/context.inl.hpp>
 #include <b9/interpreter.hpp>
 #include <b9/jit.hpp>
 #include <b9/loader.hpp>
+#include <b9/memorymanager.inl.hpp>
+#include <b9/rooting.inl.hpp>
+#include <b9/runtime.hpp>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -105,8 +109,8 @@ static bool parseArguments(RunConfig& cfg, const int argc, char* argv[]) {
   return true;
 }
 
-static void run(const RunConfig& cfg) {
-  b9::VirtualMachine vm{cfg.b9};
+static void run(b9::ProcessRuntime& runtime, const RunConfig& cfg) {
+  b9::VirtualMachine vm{runtime, cfg.b9};
   b9::DlLoader loader{true};
 
   auto module = loader.loadModule(cfg.moduleName);
@@ -124,6 +128,7 @@ static void run(const RunConfig& cfg) {
 }
 
 int main(int argc, char* argv[]) {
+  b9::ProcessRuntime runtime;
   RunConfig cfg;
 
   if (!parseArguments(cfg, argc, argv)) {
@@ -136,7 +141,7 @@ int main(int argc, char* argv[]) {
   }
 
   try {
-    run(cfg);
+    run(runtime, cfg);
   } catch (const b9::DlException& e) {
     std::cerr << "Failed to load module: " << e.what() << std::endl;
     exit(EXIT_FAILURE);

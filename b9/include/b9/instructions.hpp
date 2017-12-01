@@ -67,6 +67,18 @@ enum class ByteCode : RawByteCode {
   STR_JMP_EQ = 0x16,
   // Jump if two strings are not equal
   STR_JMP_NEQ = 0x17,
+
+  // Object Bytecodes
+
+  NEW_OBJECT = 0x20,
+
+  PUSH_FROM_OBJECT = 0x21,
+
+  POP_INTO_OBJECT = 0x22,
+
+  CALL_INDIRECT = 0x23,
+
+  SYSTEM_COLLECT = 0x24,
 };
 
 inline const char *toString(ByteCode bc) {
@@ -118,6 +130,16 @@ inline const char *toString(ByteCode bc) {
       return "ByteCode::STR_JMP_EQ";
     case ByteCode::STR_JMP_NEQ:
       return "ByteCode::STR_JMP_NEQ";
+    case ByteCode::NEW_OBJECT:
+      return "ByteCode::NEW_OBJECT";
+    case ByteCode::PUSH_FROM_OBJECT:
+      return "ByteCode::PUSH_FROM_OBJECT";
+    case ByteCode::POP_INTO_OBJECT:
+      return "ByteCode::POP_INTO_OBJECT";
+    case ByteCode::CALL_INDIRECT:
+      return "ByteCode::CALL_INDIRECT";
+    case ByteCode::SYSTEM_COLLECT:
+      return "ByteCode::SYSTEM_COLLECT";
     default:
       return "UNKNOWN_BYTECODE";
   }

@@ -97,9 +97,8 @@ class ExecutionContext : public RunContext {
     for (std::size_t i = 0; i < n; i++) {
       StackElement e = stackBase_[i];
       if (isReference(e)) {
-        visitor.rootEdge(cx, this, (Cell *)e);
-
         std::cout << "STACK: ref: " << e << std::endl;
+        visitor.rootEdge(cx, this, (Cell *)e);
       } else {
         std::cout << "STACK: imm: " << e << std::endl;
       }
@@ -126,7 +125,7 @@ class ExecutionContext : public RunContext {
 
 class VirtualMachine {
  public:
-  VirtualMachine(ProcessRuntime& runtime, const Config &cfg);
+  VirtualMachine(ProcessRuntime &runtime, const Config &cfg);
 
   ~VirtualMachine() noexcept;
 
@@ -187,7 +186,7 @@ StackElement interpret_3(ExecutionContext *context,
 void primitive_call(ExecutionContext *context, Parameter value);
 
 inline ExecutionContext::ExecutionContext(VirtualMachine *virtualMachine,
-                                   const Config &cfg)
+                                          const Config &cfg)
     : RunContext(virtualMachine->memoryManager()),
       stackBase_(this->stack_),
       stackPointer_(this->stack_),
@@ -195,7 +194,8 @@ inline ExecutionContext::ExecutionContext(VirtualMachine *virtualMachine,
       cfg_(cfg) {
   std::memset(stack_, 0, sizeof(StackElement) * 1000);
 
-  userRoots().push_back([this](Context &cx, Visitor &v) { this->visitStack(cx, v); });
+  userRoots().push_back(
+      [this](Context &cx, Visitor &v) { this->visitStack(cx, v); });
 }
 
 }  // namespace b9

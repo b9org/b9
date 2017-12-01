@@ -91,6 +91,16 @@ class ExecutionContext : public RunContext {
   Parameter intJmpLe(Parameter delta);
   void strPushConstant(Parameter value);
 
+  void newObject();
+
+  void pushFromObject(Id slotId);
+
+  void popIntoObject(Id slotId);
+
+  void callIndirect();
+
+  void systemCollect();
+
   void visitStack(Context &cx, Visitor &visitor) {
     const auto n = stackPointer_ - stackBase_;
     std::cout << ">STACK BEGIN" << std::endl;

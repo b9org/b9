@@ -2,7 +2,10 @@
 #include <b9/interpreter.hpp>
 #include <b9/jit.hpp>
 #include <b9/loader.hpp>
+#include <b9/objects.inl.hpp>
+#include <b9/rooting.inl.hpp>
 
+#include <omrgc.h>
 #include "Jit.hpp"
 
 #include <sys/time.h>
@@ -132,6 +135,34 @@ void ExecutionContext::strPushConstant(Parameter value) {
   push((StackElement)virtualMachine_->getString(value));
 }
 
+// ( -- object )
+void ExecutionContext::newObject() {
+  auto ref = allocateObject(*this);
+  push((StackElement)ref);
+}
+
+// ( object -- value )
+void ExecutionContext::pushFromObject(Id slotId) {
+  Object *obj = (Object *)pop();
+  auto lookup = obj->get(*this, slotId);
+  if (std::get<bool>(lookup)) {
+  }
+}
+
+// ( object value -- )
+void ExecutionContext::popIntoObject(Id slot) {
+  // TODO: root the value, if it's a ptr
+  auto val = pop();
+  auto obj = (Object*)pop();
+  setSlot(*this, obj, slot, val);
+}
+
+void ExecutionContext::callIndirect() {
+  assert(0);  // TODO:
+}
+
+void ExecutionContext::systemCollect() { OMR_GC_SystemCollect(omrVmThread(), 0); }
+
 /* void strJmpEq(Parameter delta);
   TODO
 } */
@@ -142,8 +173,11 @@ void ExecutionContext::strPushConstant(Parameter value) {
 
 /// ExecutionContext
 
-VirtualMachine::VirtualMachine(ProcessRuntime& runtime, const Config &cfg)
-    : cfg_{cfg}, memoryManager_(runtime), executionContext_{this, cfg}, compiler_{nullptr} {
+VirtualMachine::VirtualMachine(ProcessRuntime &runtime, const Config &cfg)
+    : cfg_{cfg},
+      memoryManager_(runtime),
+      executionContext_{this, cfg},
+      compiler_{nullptr} {
   if (cfg_.verbose) std::cout << "VM initializing..." << std::endl;
 
   if (cfg_.jit) {
@@ -319,6 +353,18 @@ StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
         break;
       case ByteCode::STR_JMP_NEQ:
         // TODO
+        break;
+      case ByteCode::PUSH_FROM_OBJECT:
+        pushFromObject(instructionPointer->parameter());
+        break;
+      case ByteCode::POP_INTO_OBJECT:
+        popIntoObject(instructionPointer->parameter());
+        break;
+      case ByteCode::CALL_INDIRECT:
+        callIndirect();
+        break;
+      case ByteCode::SYSTEM_COLLECT:
+        systemCollect();
         break;
       default:
         assert(false);

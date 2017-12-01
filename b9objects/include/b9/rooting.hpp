@@ -22,9 +22,9 @@ class RootRefSeq;
 template <typename T>
 class RootRef {
  public:
-  RootRef(Context& cx, T* ptr) noexcept;
+  RootRef(Context& cx, T* ptr = nullptr) noexcept;
 
-  RootRef(RootRefSeq& seq, T* ptr) noexcept;
+  RootRef(RootRefSeq& seq, T* ptr = nullptr) noexcept;
 
   // RootRefs must be stack allocated.
   void* operator new(std::size_t) = delete;

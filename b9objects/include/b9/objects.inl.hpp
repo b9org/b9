@@ -92,19 +92,19 @@ inline Index Object::newSlot(Context& cx, Id id) {
   return m->index();
 }
 
-#if 0
-bool setSlot(Context& cx, Object* obj, Id slotId, Value value) {
+inline bool setSlot(Context& cx, Object* obj, Id slotId, Value value) {
   auto lookup = obj->index(slotId);
-  if(std::get<bool>(lookup)) {
+  if (std::get<bool>(lookup)) {
     auto index = std::get<Index>(lookup);
     obj->setAt(cx, index, value);
+    return false;
   } else {
-    RootRef root(cx, obj);
-    auto index = root->newSlot(slotId);
-    root.ptr->setAt(cx, index, value);
+    RootRef<Object> root(cx, obj);
+    auto index = root->newSlot(cx, slotId);
+    root->setAt(cx, index, value);
+    return true;
   }
 }
-#endif
 
 }  // namespace b9
 

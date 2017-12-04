@@ -101,7 +101,7 @@ class GC_ObjectModelDelegate {
         switch (map->kind()) {
           case b9::MapKind::EMPTY_OBJECT_MAP:
             return sizeof(b9::EmptyObjectMap);
-          case b9::MapKind::OBJECT_MAP:
+          case b9::MapKind::SLOT_MAP:
             return sizeof(b9::ObjectMap);
           case b9::MapKind::MAP_MAP:
             return sizeof(b9::MapMap);
@@ -110,7 +110,7 @@ class GC_ObjectModelDelegate {
         }
       }
       case b9::MapKind::EMPTY_OBJECT_MAP:
-      case b9::MapKind::OBJECT_MAP:
+      case b9::MapKind::SLOT_MAP:
         return sizeof(b9::Object);
       default:
         throw std::runtime_error("something bad happened");

@@ -30,40 +30,68 @@ namespace b9 {
 
 class Initializer {
  public:
-  virtual Cell* operator()(Cell* cell) = 0;
+  virtual Cell* operator()(Context& cx, Cell* cell) = 0;
 };
 
 struct MapMapInitializer : public Initializer {
-  virtual Cell* operator()(Cell* cell) override { return new (cell) MapMap(); }
+  virtual Cell* operator()(Context& cx, Cell* cell) override {
+    return new (cell) MapMap();
+  }
 };
 
-struct MapInitializer : public Initializer {
-  virtual Cell* operator()(Cell* cell) override {
-    return new (cell) Map(mapMap, kind);
+/// Note: Must be allocated AFTER the MapMap
+struct EmptyObjectMapInitializer : public Initializer {
+ public:
+  virtual Cell* operator()(Context& cx, Cell* cell) override {
+    auto map = cx.globals().mapMap;
+    return new (cell) EmptyObjectMap(map);
   }
-  MapMap* mapMap;
-  MapKind kind;
+};
+
+/// Note: Must be allocated AFTER the MapMap.
+struct SlotMapInitializer : public Initializer {
+ public:
+  SlotMapInitializer(Context& cx, Map* parent, Id slotId)
+      : parent_(cx, parent), slotId_(slotId) {}
+
+  virtual Cell* operator()(Context& cx, Cell* cell) override {
+    if (parent_->kind() == MapKind::EMPTY_OBJECT_MAP) {
+      auto parent = reinterpret_cast<EmptyObjectMap*>(parent_.ptr());
+      return new (cell) SlotMap(parent, slotId_);
+    } else {
+      assert(parent_->kind() == MapKind::SLOT_MAP);
+      auto parent = reinterpret_cast<SlotMap*>(parent_.ptr());
+      return new (cell) SlotMap(parent, slotId_);
+    }
+  }
+
+  RootRef<Map> parent_;
+  Id slotId_;
 };
 
 struct EmptyObjectInitializer : public Initializer {
  public:
-  virtual Cell* operator()(Cell* cell) override {
+  virtual Cell* operator()(Context& cx, Cell* cell) override {
+    auto map = cx.globals().emptyObjectMap;
     return new (cell) Object(map);
   }
-  EmptyObjectMap* map;
 };
 
 struct ObjectInitializer : public Initializer {
  public:
-  virtual Cell* operator()(Cell* cell) override {
-    return new (cell) Object(map);
+  ObjectInitializer(Context& cx, Object* base) : base_(cx, base) {}
+
+  virtual Cell* operator()(Context& cx, Cell* cell) override {
+    return new (cell) Object(*base_.ptr());
   }
-  ObjectMap* map;
+
+ private:
+  RootRef<Object> base_;
 };
 
-class Allocation : public ::MM_AllocateInitialization {
+class Allocation : public MM_AllocateInitialization {
  public:
-  Cell* initializeObject(Cell* p) { return init_(p); }
+  Cell* initializeObject(Context& cx, Cell* p) { return init_(cx, p); }
 
   Allocation(Context& cx, Initializer& init, std::size_t size,
              uintptr_t flags = 0)

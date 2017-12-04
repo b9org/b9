@@ -33,24 +33,24 @@ inline const Value* Object::slots() const { return slots_; }
 /// Note that {0, true} is the first slot in the object.
 inline std::pair<Index, bool> Object::index(Id id) {
   for (auto m = map(); m->kind() != MapKind::EMPTY_OBJECT_MAP;) {
-    // assert(m->kind() == MapKind::OBJECT_MAP);
-    auto om = (ObjectMap*)m;
-    if (om->id() == id) {
-      return {om->index(), true};
+    assert(m->kind() == MapKind::SLOT_MAP);
+    auto sm = reinterpret_cast<SlotMap*>(m);
+    if (sm->id() == id) {
+      return {sm->index(), true};
     }
-    m = om->parent();
+    m = sm->parent();
   }
-  return std::make_pair(0, false);
+  return {0, false};
 }
 
 inline std::pair<Value, bool> Object::get(Context& cx, Id id) {
+  std::pair<Value, bool> result{0, false};
   auto lookup = index(id);
-  if (lookup.second) {
-    Value value = slots_[lookup.first];
-    return std::make_pair(value, true);
-  } else {
-    return std::make_pair(0, false);
+  if (std::get<bool>(lookup)) {
+    auto index = std::get<Index>(lookup);
+    result = {slots_[index], true};
   }
+  return result;
 }
 
 /// Set the slot that corresponds to the id. If the slot doesn't exist,
@@ -73,13 +73,13 @@ inline void Object::setAt(Context& cx, Index index, Value value) {
 /// Allocate a new slot corresponding to the id. The object may not already
 /// have a slot with this Id matching. !CAN_GC!
 inline Index Object::newSlot(Context& cx, Id id) {
-  ObjectMap* m;
+  SlotMap* m;
   switch (map()->kind()) {
     case MapKind::EMPTY_OBJECT_MAP:
-      m = new (cx) ObjectMap((EmptyObjectMap*)map(), id);
+      m = new (cx) SlotMap((EmptyObjectMap*)map(), id);
       break;
-    case MapKind::OBJECT_MAP:
-      m = new (cx) ObjectMap((ObjectMap*)map(), id);
+    case MapKind::SLOT_MAP:
+      m = new (cx) SlotMap((SlotMap*)map(), id);
       break;
     default:
       throw std::runtime_error(

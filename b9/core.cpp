@@ -4,6 +4,7 @@
 #include <b9/loader.hpp>
 #include <b9/objects.inl.hpp>
 #include <b9/rooting.inl.hpp>
+#include <b9/value.hpp>
 
 #include <omrgc.h>
 #include "Jit.hpp"
@@ -55,16 +56,18 @@ void ExecutionContext::pushIntoVar(StackElement *args, Parameter offset) {
 }
 
 void ExecutionContext::intAdd() {
-  StackElement right = pop();
-  StackElement left = pop();
-  StackElement result = left + right;
+  std::int32_t right = pop().integer();
+  std::int32_t left = pop().integer();
+  Value result;
+  result.integer(left + right);
   push(result);
 }
 
 void ExecutionContext::intSub() {
-  StackElement right = pop();
-  StackElement left = pop();
-  StackElement result = left - right;
+  std::int32_t right = pop().integer();
+  std::int32_t left = pop().integer();
+  Value result;
+  result.integer(left - right);
   push(result);
 }
 
@@ -73,13 +76,15 @@ void ExecutionContext::intSub() {
 void ExecutionContext::intPushConstant(Parameter value) { push(value); }
 
 void ExecutionContext::intNot() {
-  StackElement i = pop();
-  push(!i);
+  std::int32_t i = pop().integer();
+  Value v;
+  v.integer(!i);
+  push(v);
 }
 
 Parameter ExecutionContext::intJmpEq(Parameter delta) {
-  StackElement right = pop();
-  StackElement left = pop();
+  std::int32_t right = pop().integer();
+  std::int32_t left = pop().integer();
   if (left == right) {
     return delta;
   }
@@ -87,8 +92,8 @@ Parameter ExecutionContext::intJmpEq(Parameter delta) {
 }
 
 Parameter ExecutionContext::intJmpNeq(Parameter delta) {
-  StackElement right = pop();
-  StackElement left = pop();
+  std::int32_t right = pop().integer();
+  std::int32_t left = pop().integer();
   if (left != right) {
     return delta;
   }
@@ -96,8 +101,8 @@ Parameter ExecutionContext::intJmpNeq(Parameter delta) {
 }
 
 Parameter ExecutionContext::intJmpGt(Parameter delta) {
-  StackElement right = pop();
-  StackElement left = pop();
+  std::int32_t right = pop().integer();
+  std::int32_t left = pop().integer();
   if (left > right) {
     return delta;
   }
@@ -105,8 +110,8 @@ Parameter ExecutionContext::intJmpGt(Parameter delta) {
 }
 
 Parameter ExecutionContext::intJmpGe(Parameter delta) {
-  StackElement right = pop();
-  StackElement left = pop();
+  std::int32_t right = pop().integer();
+  std::int32_t left = pop().integer();
   if (left >= right) {
     return delta;
   }
@@ -114,46 +119,52 @@ Parameter ExecutionContext::intJmpGe(Parameter delta) {
 }
 
 Parameter ExecutionContext::intJmpLt(Parameter delta) {
-  StackElement right = pop();
-  StackElement left = pop();
+  std::int32_t right = pop().integer();
+  std::int32_t left = pop().integer();
   if (left < right) {
     return delta;
   }
   return 0;
 }
 
+// ( left right -- )
 Parameter ExecutionContext::intJmpLe(Parameter delta) {
-  StackElement right = pop();
-  StackElement left = pop();
+  std::int32_t right = pop().integer();
+  std::int32_t left = pop().integer();
   if (left <= right) {
     return delta;
   }
   return 0;
 }
 
-void ExecutionContext::strPushConstant(Parameter value) {
-  push((StackElement)virtualMachine_->getString(value));
+// ( -- string )
+void ExecutionContext::strPushConstant(Parameter param) {
+  push(Value().integer(param));
 }
 
 // ( -- object )
 void ExecutionContext::newObject() {
-  auto ref = allocateObject(*this);
-  push((StackElement)ref);
+  auto ref = allocateEmptyObject(*this);
+  push(Value().ptr(ref));
 }
 
 // ( object -- value )
 void ExecutionContext::pushFromObject(Id slotId) {
-  Object *obj = (Object *)pop();
+  auto obj = pop().ptr<Object>();
   auto lookup = obj->get(*this, slotId);
   if (std::get<bool>(lookup)) {
+    push(std::get<Value>(lookup));
+  }
+  else {
+    throw std::runtime_error("Accessing an object's field that doesn't exist.");
   }
 }
 
 // ( object value -- )
 void ExecutionContext::popIntoObject(Id slot) {
   // TODO: root the value, if it's a ptr
+  auto obj = pop().ptr<Object>();
   auto val = pop();
-  auto obj = (Object*)pop();
   setSlot(*this, obj, slot, val);
 }
 
@@ -161,7 +172,10 @@ void ExecutionContext::callIndirect() {
   assert(0);  // TODO:
 }
 
-void ExecutionContext::systemCollect() { OMR_GC_SystemCollect(omrVmThread(), 0); }
+void ExecutionContext::systemCollect() {
+  std::cout << "SYSTEM COLLECT!!!" << std::endl;
+  OMR_GC_SystemCollect(omrVmThread(), 0);
+}
 
 /* void strJmpEq(Parameter delta);
   TODO
@@ -250,18 +264,18 @@ StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
           result = jitFunction();
         } break;
         case 1: {
-          StackElement p1 = pop();
+          RawValue p1 = pop();
           result = jitFunction(p1);
         } break;
         case 2: {
-          StackElement p2 = pop();
-          StackElement p1 = pop();
+          RawValue p2 = pop();
+          RawValue p1 = pop();
           result = jitFunction(p1, p2);
         } break;
         case 3: {
-          StackElement p3 = pop();
-          StackElement p2 = pop();
-          StackElement p1 = pop();
+          RawValue p3 = pop();
+          RawValue p2 = pop();
+          RawValue p1 = pop();
           result = (*jitFunction)(p1, p2, p3);
         } break;
         default:
@@ -353,6 +367,9 @@ StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
         break;
       case ByteCode::STR_JMP_NEQ:
         // TODO
+        break;
+      case ByteCode::NEW_OBJECT:
+        newObject();
         break;
       case ByteCode::PUSH_FROM_OBJECT:
         pushFromObject(instructionPointer->parameter());

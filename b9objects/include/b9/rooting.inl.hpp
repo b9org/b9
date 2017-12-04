@@ -19,8 +19,6 @@ inline RootRef<T>::RootRef(RootRefSeq& seq, T* ptr) noexcept
 template <typename T>
 inline RootRef<T>::~RootRef() noexcept {
   assert(seq_.head() == reinterpret_cast<RootRef<Cell>*>(this));
-  ptr_ = nullptr;
-  tail_ = nullptr;
   seq_.head(tail_);
 }
 

@@ -30,43 +30,51 @@ struct Allocator {
 #endif
 };
 
-inline void saveObject(Context& cx, Cell* p) {
-  cx.omrVmThread()->_savedObject1 = (void*)p;
-}
+constexpr bool B9_DEBUG_SLOW = true;
 
-inline void unsaveObject(Context& cx) {
-  cx.omrVmThread()->_savedObject1 = nullptr;
-}
+/// Common allocation path. Allocate an instance of T. Throws std::bad_alloc.
+template <typename T, typename Initializer>
+inline T* allocate(Context& cx, Initializer& init, std::size_t size = sizeof(T)) {
 
-template <typename T, typename Allocation>
-T* allocate(Context& cx, Allocation& allocation) {
+  Allocation allocation(cx, init, size);
   auto p = (T*)OMR_GC_AllocateObject(cx.omrVmThread(), &allocation);
-  if (p == nullptr) throw std::bad_alloc();
-  saveObject(cx, p);
-  OMR_GC_SystemCollect(cx.omrVmThread(), 0);
-  unsaveObject(cx);
+
+  if (p == nullptr) {
+    throw std::bad_alloc();
+  }
+
+  if (B9_DEBUG_SLOW) {
+    RootRef<T> root(cx, p);
+    OMR_GC_SystemCollect(cx.omrVmThread(), 0);
+    p = root.ptr();
+  }
+
   return p;
 }
 
 inline MapMap* allocateMapMap(Context& cx) {
   MapMapInitializer init;
-  Allocation allocation(cx, init, sizeof(MapMap));
-  return allocate<MapMap>(cx, allocation);
+  return allocate<MapMap>(cx, init);
 }
 
 inline EmptyObjectMap* allocateEmptyObjectMap(Context& cx) {
-  MapInitializer init;
-  init.mapMap = cx.globals().mapMap;
-  init.kind = MapKind::EMPTY_OBJECT_MAP;
-  Allocation allocation(cx, init, sizeof(EmptyObjectMap));
-  return allocate<EmptyObjectMap>(cx, allocation);
+  EmptyObjectMapInitializer init;
+  return allocate<EmptyObjectMap>(cx, init);
 }
 
-inline Object* allocateObject(Context& cx) {
+inline SlotMap* allocateSlotMap(Context& cx, Map* parent, Id slotId) {
+  SlotMapInitializer init(cx, parent, slotId);
+  return allocate<SlotMap>(cx, init);
+}
+
+inline Object* allocateEmptyObject(Context& cx) {
   EmptyObjectInitializer init;
-  init.map = cx.globals().emptyObjectMap;
-  Allocation allocation(cx, init, sizeof(Object));
-  return allocate<Object>(cx, allocation);
+  return allocate<Object>(cx, init);
+}
+
+inline Object* allocateObject(Context& cx, Object* base) {
+  ObjectInitializer init(cx, base);
+  return allocate<Object>(cx, init);
 }
 
 }  // namespace b9

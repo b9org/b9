@@ -1,6 +1,7 @@
 #if !defined(B9_OBJECTS_HPP_)
 #define B9_OBJECTS_HPP_
 
+#include <b9/value.hpp>
 #include <cstddef>
 #include <cstdint>
 #include <iostream>
@@ -18,10 +19,6 @@ class MemoryManager;
 /// converted to an ID. The ID used for a number of lookups. In particular, IDs
 /// are used for object-field lookup.
 using Id = std::uint32_t;
-
-///
-/// The Cell header
-///
 
 using RawCellHeader = std::uintptr_t;
 
@@ -46,6 +43,7 @@ class CellHeader {
   RawCellHeader value_;
 };
 
+/// A managed blob of memory. All Cells have a one slot header.
 class Cell {
  public:
   Cell(Map* map) : header_(map) {}
@@ -63,8 +61,12 @@ class Cell {
 
 class MapMap;
 
-enum class MapKind { OBJECT_MAP, MAP_MAP, EMPTY_OBJECT_MAP };
+enum class MapKind { SLOT_MAP, MAP_MAP, EMPTY_OBJECT_MAP };
 
+/// A description of a cell's layout, or shape. The Map is akin to a java class,
+/// except that Maps are typically very small. Every Cell has a Map. Maps may be
+/// shared by Cells. The MapKind can be examined to tell what kind of thing the
+/// cell is.
 class Map : public Cell {
  public:
   Map(MapMap* map, MapKind kind) noexcept;
@@ -77,6 +79,9 @@ class Map : public Cell {
   MapKind kind_;
 };
 
+/// A map that describes the shape of other Maps. The MapMap is self
+/// descriptive, IE mapMap->map() == mapMap. The MapMap is a heap-wide
+/// singleton.
 class MapMap : public Map {
  public:
   MapMap() : Map(this, MapKind::MAP_MAP) {}
@@ -86,26 +91,53 @@ inline Map::Map(MapMap* map, MapKind kind) noexcept : Cell(map), kind_(kind) {}
 
 inline MapMap* Map::mapMap() const { return (MapMap*)map(); }
 
-class EmptyObjectMap : public Map {
+/// A map that describes the layout of an object. ObjectMaps are either the
+/// EmptyObjectMap, or a SlotMap.
+class ObjectMap : public Map {
+ protected:
+  /// ObjectMap uses the same constructors as MapMap, but those constructors are
+  /// only callable from subclasses. ObjectMaps are not directly constructible.
+  using Map::Map;
+};
+
+/// A special ObjectMap that indicates an object has no slots. Every empty
+/// object has an empty object map. The EmptyObjectMap is the root of all
+/// ObjectMap lineages. The EmptyObjectMap is a heap-wide-singleton.
+class EmptyObjectMap : public ObjectMap {
  public:
-  EmptyObjectMap(MapMap* map) : Map(map, MapKind::EMPTY_OBJECT_MAP) {}
+  EmptyObjectMap(MapMap* map) : ObjectMap(map, MapKind::EMPTY_OBJECT_MAP) {}
 };
 
 using Index = std::uint8_t;
 
-class ObjectMap : public Map {
+/// The SlotMap is an ObjectMap that describes a slot (aka field or property) of
+/// an object.
+class SlotMap : public ObjectMap {
  public:
-  ObjectMap(EmptyObjectMap* parent, Id id)
-      : Map(parent->mapMap(), MapKind::OBJECT_MAP),
+  SlotMap(EmptyObjectMap* parent, Id id)
+      : ObjectMap(parent->mapMap(), MapKind::SLOT_MAP),
         parent_(parent),
         id_(id),
         index_(0) {}
 
-  ObjectMap(ObjectMap* parent, Id id)
-      : Map(parent->mapMap(), MapKind::OBJECT_MAP),
+  SlotMap(SlotMap* parent, Id id)
+      : ObjectMap(parent->mapMap(), MapKind::SLOT_MAP),
         parent_(parent),
         id_(id),
         index_(parent->index() + 1) {}
+
+  SlotMap(ObjectMap* parent, Id id)
+      : ObjectMap(parent->mapMap(), MapKind::SLOT_MAP),
+        parent_(parent),
+        id_(id),
+        index_(0) {
+    if (parent_->kind() == MapKind::EMPTY_OBJECT_MAP) {
+      index_ = 0;
+    } else {
+      assert(parent_->kind() == MapKind::SLOT_MAP);
+      index_ = reinterpret_cast<SlotMap*>(parent_)->index() + 1;
+    }
+  }
 
   constexpr Map* parent() const noexcept { return parent_; }
 
@@ -128,10 +160,9 @@ class ObjectMap : public Map {
   // MapTable* children_;
   Id id_;
   Index index_;
-};
+};  // namespace b9
 
-using Value = std::int32_t;
-
+/// A Cell with dynamically allocated slots.
 class Object : public Cell {
  public:
   Object(ObjectMap* map);

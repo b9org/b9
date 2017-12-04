@@ -45,9 +45,9 @@ class Context {
 
   RootRefSeq& stackRoots() noexcept { return stackRoots_; }
 
-  MarkingFnVector userRoots() noexcept { return userRoots_; }
+  MarkingFnVector& userRoots() noexcept { return userRoots_; }
 
-  const MarkingFnVector userRoots() const noexcept { return userRoots_; }
+  const MarkingFnVector& userRoots() const noexcept { return userRoots_; }
 
  private:
   MemoryManager& manager_;

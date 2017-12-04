@@ -24,6 +24,7 @@
 #include "GCExtensionsBase.hpp"
 #include "ObjectAllocationModel.hpp"
 #include "ObjectModel.hpp"
+#include "b9/context.inl.hpp"
 
 #if 0
 omrobjectptr_t
@@ -43,9 +44,10 @@ GC_ObjectModelDelegate::initializeAllocation(MM_EnvironmentBase *env, void *allo
 omrobjectptr_t GC_ObjectModelDelegate::initializeAllocation(
     MM_EnvironmentBase *env, void *allocatedBytes,
     MM_AllocateInitialization *a) {
+  auto& cx = b9::getContext(env);
   auto cell = (b9::Cell *)allocatedBytes;
   auto alloc = (b9::Allocation *)a;
-  return (omrobjectptr_t)alloc->initializeObject(cell);
+  return (omrobjectptr_t)alloc->initializeObject(cx, cell);
 }
 
 #if defined(OMR_GC_MODRON_SCAVENGER)

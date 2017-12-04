@@ -8,8 +8,8 @@
 #include <b9/context.hpp>
 #include <b9/runtime.hpp>
 
-#include <b9/rooting.inl.hpp>
 #include <b9/memorymanager.inl.hpp>
+#include <b9/rooting.inl.hpp>
 
 #include <omrgc.h>
 
@@ -88,7 +88,7 @@ TEST(MemoryManagerTest, allocateTheMapMap) {
 TEST(MemoryManagerTest, loseAnObjects) {
   MemoryManager manager(runtime);
   Context cx(manager);
-  Object* object = allocateObject(cx);
+  Object* object = allocateEmptyObject(cx);
   EXPECT_EQ(object->map(), cx.globals().emptyObjectMap);
   OMR_GC_SystemCollect(cx.omrVmThread(), 0);
   // EXPECT_EQ(object->map(), (Map*)0x5e5e5e5e5e5e5e5eul);
@@ -97,7 +97,7 @@ TEST(MemoryManagerTest, loseAnObjects) {
 TEST(MemoryManagerTest, keepAnObject) {
   MemoryManager manager(runtime);
   Context cx(manager);
-  RootRef<Object> object(cx, allocateObject(cx));
+  RootRef<Object> object(cx, allocateEmptyObject(cx));
   EXPECT_EQ(object->map(), cx.globals().emptyObjectMap);
   OMR_GC_SystemCollect(cx.omrVmThread(), 0);
   EXPECT_EQ(object->map(), cx.globals().emptyObjectMap);
@@ -196,6 +196,31 @@ TEST(MyTest, arguments) {
   vm.load(m);
   auto r = vm.run("add_args", {1, 2});
   EXPECT_EQ(r, 3);
+}
+
+extern "C" void b9_prim_print_string(ExecutionContext *context);
+
+TEST(ObjectTest, allocateSomething) {
+  b9::VirtualMachine vm{runtime, {}};
+  auto m = std::make_shared<Module>();
+  Instruction i[] = {
+      {ByteCode::NEW_OBJECT},            // new object
+      {ByteCode::POP_INTO_VAR, 0},       // store object into var0
+      {ByteCode::STR_PUSH_CONSTANT, 0},  // push "voila"
+      {ByteCode::PUSH_FROM_VAR, 0},      // push var0 aka object
+      {ByteCode::POP_INTO_OBJECT, 0},    // pop "voila" into object at slot 0
+      {ByteCode::SYSTEM_COLLECT},        // GC. Object is kept alive by var0
+      {ByteCode::PUSH_FROM_VAR, 0},      // push object
+      {ByteCode::PUSH_FROM_OBJECT, 0},   // get the string back
+      {ByteCode::PRIMITIVE_CALL, 0},     // call b9_prim_print_string, output is "voila"
+      {ByteCode::FUNCTION_RETURN},       // finish with constant 0
+      END_SECTION};
+  m->strings.push_back("voila");
+  m->functions.push_back(b9::FunctionSpec{"allocate_object", i, 0, 1});
+  m->primitives.push_back(b9_prim_print_string);
+  vm.load(m);
+  auto r = vm.run("allocate_object", {});
+  EXPECT_EQ(r, 0);
 }
 
 }  // namespace test

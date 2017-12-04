@@ -48,14 +48,14 @@ struct BadFunctionCallException : public std::runtime_error {
   using std::runtime_error::runtime_error;
 };
 
-using StackElement = std::int64_t;
+using StackElement = Value;
 
 struct Stack {
   StackElement *stackBase;
   StackElement *stackPointer;
 };
 
-typedef StackElement (*JitFunction)(...);
+typedef RawValue (*JitFunction)(...);
 
 inline bool isReference(StackElement value) {
   return false;  // TODO
@@ -101,17 +101,15 @@ class ExecutionContext : public RunContext {
 
   void systemCollect();
 
+  VirtualMachine* virtualMachine() const { return virtualMachine_; }
+
   void visitStack(Context &cx, Visitor &visitor) {
     const auto n = stackPointer_ - stackBase_;
     std::cout << ">STACK BEGIN" << std::endl;
     for (std::size_t i = 0; i < n; i++) {
       StackElement e = stackBase_[i];
-      if (isReference(e)) {
-        std::cout << "STACK: ref: " << e << std::endl;
-        visitor.rootEdge(cx, this, (Cell *)e);
-      } else {
-        std::cout << "STACK: imm: " << e << std::endl;
-      }
+      std::cout << "STACK[" << i << "]" << e << std::endl;
+      if (e.isPtr()) visitor.rootEdge(cx, this, (Cell*)e.ptr());
     }
   }
 

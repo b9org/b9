@@ -51,13 +51,17 @@ void MM_MarkingDelegate::scanRoots(MM_EnvironmentBase *env) {
       _markingScheme->markObject(env,
                                  (omrobjectptr_t)walkThread->_savedObject2, true);
     }
-  }
+}
 
   const auto& roots = cx.stackRoots();
   for (const auto& ref : roots) {
 	  auto p = ref.ptr();
 	  std::cout << "found root: " << p << std::endl;
 	  _markingScheme->markObject(env, p, true);
+  }
+
+  for (auto &fn : cx.userRoots()) {
+	  fn(cx, marker);
   }
 }
 

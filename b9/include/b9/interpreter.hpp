@@ -108,9 +108,10 @@ class ExecutionContext : public RunContext {
     std::cout << ">STACK BEGIN" << std::endl;
     for (std::size_t i = 0; i < n; i++) {
       StackElement e = stackBase_[i];
-      std::cout << "STACK[" << i << "]" << e << std::endl;
+      std::cout << ">STACK[" << i << "] = " << e << std::endl;
       if (e.isPtr()) visitor.rootEdge(cx, this, (Cell*)e.ptr());
     }
+    std::cout << ">STACK END" << std::endl;
   }
 
   // TODO: void strJmpEq(Parameter delta);

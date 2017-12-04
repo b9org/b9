@@ -4,7 +4,8 @@ add_executable (b9disassemble
 )
 
 target_link_libraries(b9disassemble
-        b9
+  PUBLIC
+    b9 gtest_main
 )
 
 function(b9disassemble_test module)

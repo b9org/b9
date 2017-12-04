@@ -27,10 +27,14 @@ bool parseNumber(std::istream &in, Number &out, long bytes = sizeof(Number)) {
 bool parseHeader(std::istream &in, char* buffer) {
   in.read(buffer, 8);
   auto gcount = in.gcount();
-  if (gcount != 8)
+  if (gcount != 8) {
+    std::cout << "Error: Corrupt header" << std::endl;
     return false;
-  if (0 != strncmp("b9module", buffer, gcount))
+  }
+  if (0 != strncmp("b9module", buffer, gcount)) {
+    std::cout << "Error: Corrupt header" << std::endl;
     return false;
+  }
   // TODO Set header in Module
   return true;
 }
@@ -40,6 +44,7 @@ bool parseSectionCode(std::istream &in, uint32_t &sectionCode) {
  if (!parseNumber(in, sectionCode, sizeof(sectionCode))) {
    return false;
  }
+ // TODO update this if-statement as we add more section codes
  if (sectionCode != 1) {
    std::cout << "Incorrect section code" << std::endl;
    return false;
@@ -93,6 +98,11 @@ void createModule(std::istream &in, std::ostream &out) {
 
 /* Disassemble Binary Module  */
 bool disassemble(std::istream &in, std::ostream &out) {
+  // Check for empty file 
+  if (in.peek() == std::istream::traits_type::eof()) {
+    std::cout << "Error: Empty input file" << std::endl;
+    return false;
+  }
   // Read header
   char buffer[8];
   if (parseHeader(in, buffer)) {

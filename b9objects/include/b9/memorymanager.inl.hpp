@@ -51,12 +51,12 @@ inline void MemoryManager::initOmrGc() {
 }
 
 inline void MemoryManager::initGlobals(StartupContext& cx) {
-  globals_.mapMap = allocateMapMap(cx);
+  globals_.metaMap = allocateMetaMap(cx);
   globals_.emptyObjectMap = allocateEmptyObjectMap(cx);
 }
 
 inline void MemoryManager::visitRoots(Context& cx, Visitor& visitor) {
-  visitor.rootEdge(cx, this, globals_.mapMap);
+  visitor.rootEdge(cx, this, globals_.metaMap);
   visitor.rootEdge(cx, this, globals_.emptyObjectMap);
 
   for (auto& fn : userRoots()) {

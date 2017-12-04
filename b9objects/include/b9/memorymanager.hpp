@@ -9,7 +9,7 @@ namespace b9 {
 
 class Cell;
 class Map;
-class MapMap;
+class MetaMap;
 class EmptyObjectMap;
 class Object;
 class Visitor;
@@ -19,7 +19,7 @@ class RunContext;
 class StartupContext;
 
 struct Globals {
-  MapMap* mapMap = nullptr;
+  MetaMap* metaMap = nullptr;
   EmptyObjectMap* emptyObjectMap = nullptr;
 };
 

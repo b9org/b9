@@ -33,22 +33,22 @@ class Initializer {
   virtual Cell* operator()(Context& cx, Cell* cell) = 0;
 };
 
-struct MapMapInitializer : public Initializer {
+struct MetaMapInitializer : public Initializer {
   virtual Cell* operator()(Context& cx, Cell* cell) override {
-    return new (cell) MapMap();
+    return new (cell) MetaMap();
   }
 };
 
-/// Note: Must be allocated AFTER the MapMap
+/// Note: Must be allocated AFTER the MetaMap
 struct EmptyObjectMapInitializer : public Initializer {
  public:
   virtual Cell* operator()(Context& cx, Cell* cell) override {
-    auto map = cx.globals().mapMap;
+    auto map = cx.globals().metaMap;
     return new (cell) EmptyObjectMap(map);
   }
 };
 
-/// Note: Must be allocated AFTER the MapMap.
+/// Note: Must be allocated AFTER the MetaMap.
 struct SlotMapInitializer : public Initializer {
  public:
   SlotMapInitializer(Context& cx, Map* parent, Id slotId)

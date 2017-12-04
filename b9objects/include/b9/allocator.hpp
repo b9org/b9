@@ -52,9 +52,9 @@ inline T* allocate(Context& cx, Initializer& init, std::size_t size = sizeof(T))
   return p;
 }
 
-inline MapMap* allocateMapMap(Context& cx) {
-  MapMapInitializer init;
-  return allocate<MapMap>(cx, init);
+inline MetaMap* allocateMetaMap(Context& cx) {
+  MetaMapInitializer init;
+  return allocate<MetaMap>(cx, init);
 }
 
 inline EmptyObjectMap* allocateEmptyObjectMap(Context& cx) {

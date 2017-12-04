@@ -104,7 +104,7 @@ class GC_ObjectModelDelegate {
           case b9::MapKind::SLOT_MAP:
             return sizeof(b9::ObjectMap);
           case b9::MapKind::MAP_MAP:
-            return sizeof(b9::MapMap);
+            return sizeof(b9::MetaMap);
           default:
             throw std::runtime_error("something bad happened");
         }

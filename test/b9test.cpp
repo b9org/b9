@@ -62,27 +62,27 @@ ProcessRuntime runtime;
 
 TEST(MemoryManagerTest, startUpAndShutDown) {
   MemoryManager manager(runtime);
-  EXPECT_NE(manager.globals().mapMap, nullptr);
+  EXPECT_NE(manager.globals().metaMap, nullptr);
   EXPECT_NE(manager.globals().emptyObjectMap, nullptr);
   Context cx(manager);
-  EXPECT_NE(cx.globals().mapMap, nullptr);
+  EXPECT_NE(cx.globals().metaMap, nullptr);
   EXPECT_NE(cx.globals().emptyObjectMap, nullptr);
-  MapMap* mapMap = allocateMapMap(cx);
-  EXPECT_EQ(mapMap, mapMap->map());
+  MetaMap* metaMap = allocateMetaMap(cx);
+  EXPECT_EQ(metaMap, metaMap->map());
 }
 
 TEST(MemoryManagerTest, startUpAContext) {
   MemoryManager manager(runtime);
   Context cx(manager);
-  EXPECT_NE(cx.globals().mapMap, nullptr);
+  EXPECT_NE(cx.globals().metaMap, nullptr);
   EXPECT_NE(cx.globals().emptyObjectMap, nullptr);
 }
 
-TEST(MemoryManagerTest, allocateTheMapMap) {
+TEST(MemoryManagerTest, allocateTheMetaMap) {
   MemoryManager manager(runtime);
   Context cx(manager);
-  MapMap* mapMap = allocateMapMap(cx);
-  EXPECT_EQ(mapMap, mapMap->map());
+  MetaMap* metaMap = allocateMetaMap(cx);
+  EXPECT_EQ(metaMap, metaMap->map());
 }
 
 TEST(MemoryManagerTest, loseAnObjects) {

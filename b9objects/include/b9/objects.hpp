@@ -59,7 +59,7 @@ class Cell {
   CellHeader header_;
 };
 
-class MapMap;
+class MetaMap;
 
 enum class MapKind { SLOT_MAP, MAP_MAP, EMPTY_OBJECT_MAP };
 
@@ -69,9 +69,9 @@ enum class MapKind { SLOT_MAP, MAP_MAP, EMPTY_OBJECT_MAP };
 /// cell is.
 class Map : public Cell {
  public:
-  Map(MapMap* map, MapKind kind) noexcept;
+  Map(MetaMap* map, MapKind kind) noexcept;
 
-  MapMap* mapMap() const;
+  MetaMap* metaMap() const;
 
   MapKind kind() const { return kind_; }
 
@@ -79,23 +79,23 @@ class Map : public Cell {
   MapKind kind_;
 };
 
-/// A map that describes the shape of other Maps. The MapMap is self
-/// descriptive, IE mapMap->map() == mapMap. The MapMap is a heap-wide
+/// A map that describes the shape of other Maps. The MetaMap is self
+/// descriptive, IE metaMap->map() == metaMap. The MetaMap is a heap-wide
 /// singleton.
-class MapMap : public Map {
+class MetaMap : public Map {
  public:
-  MapMap() : Map(this, MapKind::MAP_MAP) {}
+  MetaMap() : Map(this, MapKind::MAP_MAP) {}
 };
 
-inline Map::Map(MapMap* map, MapKind kind) noexcept : Cell(map), kind_(kind) {}
+inline Map::Map(MetaMap* map, MapKind kind) noexcept : Cell(map), kind_(kind) {}
 
-inline MapMap* Map::mapMap() const { return (MapMap*)map(); }
+inline MetaMap* Map::metaMap() const { return (MetaMap*)map(); }
 
 /// A map that describes the layout of an object. ObjectMaps are either the
 /// EmptyObjectMap, or a SlotMap.
 class ObjectMap : public Map {
  protected:
-  /// ObjectMap uses the same constructors as MapMap, but those constructors are
+  /// ObjectMap uses the same constructors as MetaMap, but those constructors are
   /// only callable from subclasses. ObjectMaps are not directly constructible.
   using Map::Map;
 };
@@ -105,7 +105,7 @@ class ObjectMap : public Map {
 /// ObjectMap lineages. The EmptyObjectMap is a heap-wide-singleton.
 class EmptyObjectMap : public ObjectMap {
  public:
-  EmptyObjectMap(MapMap* map) : ObjectMap(map, MapKind::EMPTY_OBJECT_MAP) {}
+  EmptyObjectMap(MetaMap* map) : ObjectMap(map, MapKind::EMPTY_OBJECT_MAP) {}
 };
 
 using Index = std::uint8_t;
@@ -115,19 +115,19 @@ using Index = std::uint8_t;
 class SlotMap : public ObjectMap {
  public:
   SlotMap(EmptyObjectMap* parent, Id id)
-      : ObjectMap(parent->mapMap(), MapKind::SLOT_MAP),
+      : ObjectMap(parent->metaMap(), MapKind::SLOT_MAP),
         parent_(parent),
         id_(id),
         index_(0) {}
 
   SlotMap(SlotMap* parent, Id id)
-      : ObjectMap(parent->mapMap(), MapKind::SLOT_MAP),
+      : ObjectMap(parent->metaMap(), MapKind::SLOT_MAP),
         parent_(parent),
         id_(id),
         index_(parent->index() + 1) {}
 
   SlotMap(ObjectMap* parent, Id id)
-      : ObjectMap(parent->mapMap(), MapKind::SLOT_MAP),
+      : ObjectMap(parent->metaMap(), MapKind::SLOT_MAP),
         parent_(parent),
         id_(id),
         index_(0) {
@@ -230,7 +230,7 @@ class IdGenerator {
 
 #if 0
   newObjectMap(Context& cx, ObjectMap* parent = nullptr) {
-    return new (cx->allocator()) ObjectMap(cx->mapMap(), parent);
+    return new (cx->allocator()) ObjectMap(cx->metaMap(), parent);
   }
 
   newObject(Context& cx, ObjectMap* map) { return new (cx) Object(map); }

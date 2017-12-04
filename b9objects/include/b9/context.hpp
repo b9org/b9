@@ -18,7 +18,7 @@ namespace b9 {
 
 class Cell;
 class Map;
-class MapMap;
+class MetaMap;
 class EmptyObjectMap;
 class ObjectMap;
 class Object;

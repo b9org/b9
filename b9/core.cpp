@@ -4,6 +4,7 @@
 #include <b9/loader.hpp>
 #include <b9/objects.inl.hpp>
 #include <b9/rooting.inl.hpp>
+#include <b9/allocator.inl.hpp>
 #include <b9/value.hpp>
 
 #include <omrgc.h>

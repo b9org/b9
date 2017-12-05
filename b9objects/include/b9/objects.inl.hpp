@@ -3,13 +3,7 @@
 
 #include <b9/context.hpp>
 #include <b9/objects.hpp>
-// #include <b9/allocator.hpp>
-
-/// !CAN_GC!
-inline void* operator new(std::size_t size, b9::Context& cx) {
-  std::cerr << "> allocating: " << size << "B\n";
-  return malloc(size);  // TODO
-}
+#include <b9/allocator.hpp>
 
 namespace b9 {
 
@@ -73,22 +67,9 @@ inline void Object::setAt(Context& cx, Index index, Value value) {
 /// Allocate a new slot corresponding to the id. The object may not already
 /// have a slot with this Id matching. !CAN_GC!
 inline Index Object::newSlot(Context& cx, Id id) {
-  SlotMap* m;
-  switch (map()->kind()) {
-    case MapKind::EMPTY_OBJECT_MAP:
-      m = new (cx) SlotMap((EmptyObjectMap*)map(), id);
-      break;
-    case MapKind::SLOT_MAP:
-      m = new (cx) SlotMap((SlotMap*)map(), id);
-      break;
-    default:
-      throw std::runtime_error(
-          "An object has a map that is neither an ObjectMap nor "
-          "EmptyObjectMap");
-      m = nullptr;
-      break;
-  }
-  map(m);
+  RootRef<Object> root(cx, this);
+  auto m = allocateSlotMap(cx, map(), id);
+  root->map(m);
   return m->index();
 }
 

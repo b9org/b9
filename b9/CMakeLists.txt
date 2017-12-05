@@ -4,6 +4,8 @@ add_library(b9 SHARED
 	hash.cpp
 	jit.cpp
 	primitives.cpp
+  serialize.cpp
+  deserialize.cpp
 )
 
 target_include_directories(b9

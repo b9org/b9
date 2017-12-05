@@ -6,6 +6,7 @@
 #include <vector>
 
 #include <gtest/gtest.h>
+#include <b9/serialize.hpp>
 
 namespace b9 {
 namespace test {
@@ -13,22 +14,21 @@ namespace test {
 TEST (DisassemblerTest, arguments) {
   b9::VirtualMachine vm {{}};
   auto m = std::make_shared<Module>();
-  Instruction i[] = {{ByteCode::INT_PUSH_CONSTANT, 1},
+  std::vector<Instruction> i =
+    {{ByteCode::INT_PUSH_CONSTANT, 1},
                      {ByteCode::INT_PUSH_CONSTANT, 2},
                      {ByteCode::INT_ADD, 0},
                      {ByteCode::FUNCTION_RETURN, 0},
                      END_SECTION};
   m->functions.push_back(b9::FunctionSpec{"simple_add", i, 2, 2});
+  //parseModule(m);
+  
+  
   vm.load(m);
   auto r = vm.run("simple_add", {1, 2});
   EXPECT_EQ(r, 3);
 }
   
-int main (int argc, char** argv) {
-  return 0; 
-}
-
-
 }  // namespace test
 }  // namespace b9
 

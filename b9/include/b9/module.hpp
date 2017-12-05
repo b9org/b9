@@ -24,6 +24,7 @@ struct FunctionSpec {
       : instructions{std::move(instructions)}, nargs{nargs}, nregs{nregs}, name{name} {}  
 
   std::vector<Instruction> instructions;
+  std::uint32_t index;
   std::uint32_t nargs;
   std::uint32_t nregs;
   std::string name;

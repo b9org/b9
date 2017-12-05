@@ -10,7 +10,7 @@
 
 namespace b9 {
 
-class FunctionSpec;
+class FunctionDef;
 class Stack;
 
 /// Function not found exception.

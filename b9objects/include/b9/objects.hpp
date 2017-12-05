@@ -61,7 +61,7 @@ class Cell {
 
 class MetaMap;
 
-enum class MapKind { SLOT_MAP, MAP_MAP, EMPTY_OBJECT_MAP };
+enum class MapKind { SLOT_MAP, META_MAP, EMPTY_OBJECT_MAP };
 
 /// A description of a cell's layout, or shape. The Map is akin to a java class,
 /// except that Maps are typically very small. Every Cell has a Map. Maps may be
@@ -84,7 +84,7 @@ class Map : public Cell {
 /// singleton.
 class MetaMap : public Map {
  public:
-  MetaMap() : Map(this, MapKind::MAP_MAP) {}
+  MetaMap() : Map(this, MapKind::META_MAP) {}
 };
 
 inline Map::Map(MetaMap* map, MapKind kind) noexcept : Cell(map), kind_(kind) {}

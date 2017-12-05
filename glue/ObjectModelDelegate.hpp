@@ -96,14 +96,14 @@ class GC_ObjectModelDelegate {
   MMINLINE uintptr_t getObjectSizeInBytesWithHeader(omrobjectptr_t address) {
     auto cell = (b9::Cell *)address;
     switch (cell->map()->kind()) {
-      case b9::MapKind::MAP_MAP: {
+      case b9::MapKind::META_MAP: {
         auto map = (b9::Map *)cell;
         switch (map->kind()) {
           case b9::MapKind::EMPTY_OBJECT_MAP:
             return sizeof(b9::EmptyObjectMap);
           case b9::MapKind::SLOT_MAP:
-            return sizeof(b9::ObjectMap);
-          case b9::MapKind::MAP_MAP:
+            return sizeof(b9::SlotMap);
+          case b9::MapKind::META_MAP:
             return sizeof(b9::MetaMap);
           default:
             throw std::runtime_error("something bad happened");

@@ -134,7 +134,7 @@ void MM_EnvironmentDelegate::acquireExclusiveVMAccess() {
 void MM_EnvironmentDelegate::releaseExclusiveVMAccess() {
   std::cerr << ">RELEASE EXCLUSIVE ACCESS" << std::endl;
   _env->getOmrVMThread()->exclusiveCount -= 1;
-  #if 0
+#if 0
   if (1 == _env->getOmrVMThread()->exclusiveCount) {
     OMR_VM_Example *exampleVM =
         (OMR_VM_Example *)_env->getOmrVM()->_language_vm;
@@ -146,7 +146,7 @@ void MM_EnvironmentDelegate::releaseExclusiveVMAccess() {
   } else if (1 < _env->getOmrVMThread()->exclusiveCount) {
     _env->getOmrVMThread()->exclusiveCount -= 1;
   }
-  #endif // 0
+#endif  // 0
 }
 
 /**
@@ -161,13 +161,13 @@ void MM_EnvironmentDelegate::releaseExclusiveVMAccess() {
  */
 uintptr_t MM_EnvironmentDelegate::relinquishExclusiveVMAccess(
     bool *deferredVMAccessRelease) {
-      assert(false);
-      return 0;
+  assert(false);
+  return 0;
 #if 0
   uintptr_t relinquishedExclusiveCount = _env->getOmrVMThread()->exclusiveCount;
   _env->getOmrVMThread()->exclusiveCount = 0;
   return relinquishedExclusiveCount;
-#endif // 0
+#endif  // 0
 }
 
 /**
@@ -181,5 +181,5 @@ void MM_EnvironmentDelegate::assumeExclusiveVMAccess(uintptr_t exclusiveCount) {
   assert(false);
 #if 0
   _env->getOmrVMThread()->exclusiveCount = exclusiveCount;
-#endif // 0
+#endif  // 0
 }

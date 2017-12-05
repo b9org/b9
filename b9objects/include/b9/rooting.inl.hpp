@@ -12,25 +12,24 @@ inline RootRef<T>::RootRef(Context& cx, T* ptr) noexcept
 
 template <typename T>
 inline RootRef<T>::RootRef(RootRefSeq& seq, T* ptr) noexcept
-    :  seq_(seq), node_(ptr, seq.head()) {
+    : seq_(seq), node_(ptr, seq.head()) {
   seq_.head(&node_);
 }
 
 template <typename T>
 template <typename U>
 inline RootRef<T>::RootRef(const RootRef<U>& other) noexcept
-  : RootRef(other.seq(), get<T*>(other)) {
-}
+    : RootRef(other.seq(), get<T*>(other)) {}
 
 template <typename T>
 template <typename U>
 inline RootRef<T>::RootRef(RootRef<U>&& other) noexcept
-  : seq_(other.seq()), node_(get<T*>(other), other.tail()) {
-    assert(other.isHead());
-    other.node_.first = nullptr;
-    other.node_.second = nullptr;
-    seq_.head(&node_);
-  }
+    : seq_(other.seq()), node_(get<T*>(other), other.tail()) {
+  assert(other.isHead());
+  other.node_.first = nullptr;
+  other.node_.second = nullptr;
+  seq_.head(&node_);
+}
 
 template <typename T>
 inline RootRef<T>::~RootRef() noexcept {

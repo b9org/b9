@@ -8,6 +8,7 @@
 #include <b9/context.hpp>
 #include <b9/runtime.hpp>
 
+#include <b9/allocator.inl.hpp>
 #include <b9/memorymanager.inl.hpp>
 #include <b9/rooting.inl.hpp>
 
@@ -198,7 +199,7 @@ TEST(MyTest, arguments) {
   EXPECT_EQ(r, 3);
 }
 
-extern "C" void b9_prim_print_string(ExecutionContext *context);
+extern "C" void b9_prim_print_string(ExecutionContext* context);
 
 TEST(ObjectTest, allocateSomething) {
   b9::VirtualMachine vm{runtime, {}};
@@ -212,8 +213,9 @@ TEST(ObjectTest, allocateSomething) {
       {ByteCode::SYSTEM_COLLECT},        // GC. Object is kept alive by var0
       {ByteCode::PUSH_FROM_VAR, 0},      // push object
       {ByteCode::PUSH_FROM_OBJECT, 0},   // get the string back
-      {ByteCode::PRIMITIVE_CALL, 0},     // call b9_prim_print_string, output is "voila"
-      {ByteCode::FUNCTION_RETURN},       // finish with constant 0
+      {ByteCode::PRIMITIVE_CALL,
+       0},  // call b9_prim_print_string, output is "voila"
+      {ByteCode::FUNCTION_RETURN},  // finish with constant 0
       END_SECTION};
   m->strings.push_back("voila");
   m->functions.push_back(b9::FunctionSpec{"allocate_object", i, 0, 1});

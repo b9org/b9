@@ -95,8 +95,9 @@ inline MetaMap* Map::metaMap() const { return (MetaMap*)map(); }
 /// EmptyObjectMap, or a SlotMap.
 class ObjectMap : public Map {
  protected:
-  /// ObjectMap uses the same constructors as MetaMap, but those constructors are
-  /// only callable from subclasses. ObjectMaps are not directly constructible.
+  /// ObjectMap uses the same constructors as MetaMap, but those constructors
+  /// are only callable from subclasses. ObjectMaps are not directly
+  /// constructible.
   using Map::Map;
 };
 

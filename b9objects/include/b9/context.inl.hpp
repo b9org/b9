@@ -1,8 +1,8 @@
 #if !defined(B9_CONTEXT_INL_HPP_)
 #define B9_CONTEXT_INL_HPP_
 
-#include <b9/context.hpp>
 #include <EnvironmentBase.hpp>
+#include <b9/context.hpp>
 
 namespace b9 {
 

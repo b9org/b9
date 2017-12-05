@@ -45,7 +45,7 @@ GC_ObjectModelDelegate::initializeAllocation(MM_EnvironmentBase *env, void *allo
 omrobjectptr_t GC_ObjectModelDelegate::initializeAllocation(
     MM_EnvironmentBase *env, void *allocatedBytes,
     MM_AllocateInitialization *a) {
-  auto& cx = b9::getContext(env);
+  auto &cx = b9::getContext(env);
   auto cell = (b9::Cell *)allocatedBytes;
   auto alloc = (b9::Allocation *)a;
   return (omrobjectptr_t)alloc->initializeObject(cx, cell);

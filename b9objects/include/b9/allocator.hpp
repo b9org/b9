@@ -13,7 +13,8 @@ constexpr bool B9_DEBUG_SLOW = true;
 
 /// Common allocation path. Allocate an instance of T. Throws std::bad_alloc.
 template <typename T, typename Initializer>
-inline T* allocate(Context& cx, Initializer& init, std::size_t size = sizeof(T));
+inline T* allocate(Context& cx, Initializer& init,
+                   std::size_t size = sizeof(T));
 
 inline MetaMap* allocateMetaMap(Context& cx);
 

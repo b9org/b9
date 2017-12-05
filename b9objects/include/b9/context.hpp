@@ -22,7 +22,7 @@ class MetaMap;
 class EmptyObjectMap;
 class ObjectMap;
 class Object;
-class RootRefSeq;
+class RefSeq;
 
 /// A GC context.
 class Context {

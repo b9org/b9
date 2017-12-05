@@ -1,10 +1,10 @@
+#include <b9/allocator.inl.hpp>
 #include <b9/hash.hpp>
 #include <b9/interpreter.hpp>
 #include <b9/jit.hpp>
 #include <b9/loader.hpp>
 #include <b9/objects.inl.hpp>
 #include <b9/rooting.inl.hpp>
-#include <b9/allocator.inl.hpp>
 #include <b9/value.hpp>
 
 #include <omrgc.h>
@@ -155,8 +155,7 @@ void ExecutionContext::pushFromObject(Id slotId) {
   auto lookup = obj->get(*this, slotId);
   if (std::get<bool>(lookup)) {
     push(std::get<Value>(lookup));
-  }
-  else {
+  } else {
     throw std::runtime_error("Accessing an object's field that doesn't exist.");
   }
 }

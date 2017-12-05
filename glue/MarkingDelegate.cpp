@@ -34,37 +34,37 @@
 #include "omrExampleVM.hpp"
 #include "omrhashtable.h"
 
-void MM_MarkingDelegate::scanRoots(MM_EnvironmentBase *env) {
+void MM_MarkingDelegate::scanRoots(MM_EnvironmentBase* env) {
   auto& cx = b9::getContext(env);
   auto& manager = cx.manager();
   b9::Marker marker(_markingScheme);
   manager.visitRoots(cx, marker);
 
-  OMR_VMThread *walkThread;
+  OMR_VMThread* walkThread;
   GC_OMRVMThreadListIterator threadListIterator(env->getOmrVM());
   while ((walkThread = threadListIterator.nextOMRVMThread()) != NULL) {
     if (NULL != walkThread->_savedObject1) {
-      _markingScheme->markObject(env,
-                                 (omrobjectptr_t)walkThread->_savedObject1, true);
+      _markingScheme->markObject(env, (omrobjectptr_t)walkThread->_savedObject1,
+                                 true);
     }
     if (NULL != walkThread->_savedObject2) {
-      _markingScheme->markObject(env,
-                                 (omrobjectptr_t)walkThread->_savedObject2, true);
+      _markingScheme->markObject(env, (omrobjectptr_t)walkThread->_savedObject2,
+                                 true);
     }
-}
+  }
 
   const auto& roots = cx.stackRoots();
   for (const auto& p : roots) {
-	  std::cout << "found root: " << p << std::endl;
-	  _markingScheme->markObject(env, p, true);
+    std::cout << "found root: " << p << std::endl;
+    _markingScheme->markObject(env, p, true);
   }
 
-  for (auto &fn : cx.userRoots()) {
-	  fn(cx, marker);
+  for (auto& fn : cx.userRoots()) {
+    fn(cx, marker);
   }
 }
 
-void MM_MarkingDelegate::masterCleanupAfterGC(MM_EnvironmentBase *env) {
+void MM_MarkingDelegate::masterCleanupAfterGC(MM_EnvironmentBase* env) {
 #if 0
 	OMRPORT_ACCESS_FROM_OMRVM(env->getOmrVM());
 	J9HashTableState state;

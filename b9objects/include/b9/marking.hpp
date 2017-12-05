@@ -15,8 +15,7 @@ class Marker : public Visitor {
   }
 
   virtual void rootEdge(Context& cx, void* a, Cell* b) override {
-    if (b != nullptr)
-      omrMarker_->markObject(cx.omrGcThread(), b, true);
+    if (b != nullptr) omrMarker_->markObject(cx.omrGcThread(), b, true);
   }
 
   MM_MarkingScheme* omrMarker_;

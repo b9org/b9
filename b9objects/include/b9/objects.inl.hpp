@@ -1,9 +1,9 @@
 #if !defined(B9_OBJECTS_INL_HPP_)
 #define B9_OBJECTS_INL_HPP_
 
+#include <b9/allocator.hpp>
 #include <b9/context.hpp>
 #include <b9/objects.hpp>
-#include <b9/allocator.hpp>
 
 namespace b9 {
 

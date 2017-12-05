@@ -72,7 +72,6 @@ inline void MemoryManager::visitRoots(Context& cx, Visitor& visitor) {
     *r(cx, visitor);
   }
 #endif
-
 };
 
 }  // namespace b9

@@ -56,11 +56,11 @@ struct SlotMapInitializer : public Initializer {
 
   virtual Cell* operator()(Context& cx, Cell* cell) override {
     if (parent_->kind() == MapKind::EMPTY_OBJECT_MAP) {
-      auto parent = reinterpret_cast<EmptyObjectMap*>(parent_.ptr());
+      auto parent = parent_.get<EmptyObjectMap>();
       return new (cell) SlotMap(parent, slotId_);
     } else {
       assert(parent_->kind() == MapKind::SLOT_MAP);
-      auto parent = reinterpret_cast<SlotMap*>(parent_.ptr());
+      auto parent = parent_.get<SlotMap>();
       return new (cell) SlotMap(parent, slotId_);
     }
   }
@@ -82,7 +82,7 @@ struct ObjectInitializer : public Initializer {
   ObjectInitializer(Context& cx, Object* base) : base_(cx, base) {}
 
   virtual Cell* operator()(Context& cx, Cell* cell) override {
-    return new (cell) Object(*base_.ptr());
+    return new (cell) Object(*base_.get());
   }
 
  private:

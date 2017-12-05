@@ -25,6 +25,7 @@
 #include "ObjectAllocationModel.hpp"
 #include "ObjectModel.hpp"
 #include "b9/context.inl.hpp"
+#include "b9/rooting.inl.hpp"
 
 #if 0
 omrobjectptr_t

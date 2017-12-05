@@ -54,8 +54,7 @@ void MM_MarkingDelegate::scanRoots(MM_EnvironmentBase *env) {
 }
 
   const auto& roots = cx.stackRoots();
-  for (const auto& ref : roots) {
-	  auto p = ref.ptr();
+  for (const auto& p : roots) {
 	  std::cout << "found root: " << p << std::endl;
 	  _markingScheme->markObject(env, p, true);
   }

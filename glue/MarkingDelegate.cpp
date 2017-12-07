@@ -25,6 +25,7 @@
 #include <b9/memorymanager.hpp>
 #include <b9/memorymanager.inl.hpp>
 #include <b9/traverse.hpp>
+#include <b9/objects.inl.hpp>
 
 #include "EnvironmentBase.hpp"
 #include "MarkingDelegate.hpp"
@@ -63,6 +64,29 @@ void MM_MarkingDelegate::scanRoots(MM_EnvironmentBase* env) {
     fn(cx, marker);
   }
 }
+
+uintptr_t MM_MarkingDelegate::scanObject(MM_EnvironmentBase* env,
+                                         omrobjectptr_t cell) {
+  auto map = cell->map();
+  _markingScheme->inlineMarkObjectNoCheck(env, map);
+
+  if (map->kind() != b9::MapKind::SLOT_MAP) {
+    // The cell is a leaf-object, like a map or empty object.
+    return 0;
+  }
+
+  auto slotMap = reinterpret_cast<b9::SlotMap*>(map);
+  auto object = reinterpret_cast<b9::Object*>(cell);
+
+  for(std::size_t i = 0; i < slotMap->index(); i++) {
+    b9::Value value = object->getAt(i);
+    if (value.isPtr()) {
+        _markingScheme->inlineMarkObjectNoCheck(env, map);
+    }
+  }
+
+  return 0;
+};
 
 void MM_MarkingDelegate::masterCleanupAfterGC(MM_EnvironmentBase* env) {
 #if 0

@@ -66,6 +66,8 @@ class MM_MarkingDelegate {
     return true;
   }
 
+  uintptr_t scanObject(MM_EnvironmentBase *env, omrobjectptr_t object);
+
   /**
    * This method is called on the master garbage collection thread at the
    * beginning of the marking phase of a global GC cycle. Any language-specific

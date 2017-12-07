@@ -52,13 +52,6 @@ const std::vector<const char*> TEST_NAMES = {
 };
 // clang-format on
 
-Object* newObject(Context& cx, Map* map) {
-  return nullptr;
-  // ObjectInitializer init(map, sizeof(Object), 0);
-  // auto p = OMR_GC_Allocate(cx.omrEnv(), init);
-  // return (Object*)p;
-}
-
 ProcessRuntime runtime;
 
 TEST(MemoryManagerTest, startUpAndShutDown) {
@@ -213,16 +206,99 @@ TEST(ObjectTest, allocateSomething) {
       {ByteCode::SYSTEM_COLLECT},        // GC. Object is kept alive by var0
       {ByteCode::PUSH_FROM_VAR, 0},      // push object
       {ByteCode::PUSH_FROM_OBJECT, 0},   // get the string back
-      {ByteCode::PRIMITIVE_CALL,
-       0},  // call b9_prim_print_string, output is "voila"
-      {ByteCode::FUNCTION_RETURN},  // finish with constant 0
+      {ByteCode::PRIMITIVE_CALL, 0},     // call b9_prim_print_string
+      {ByteCode::FUNCTION_RETURN},       // finish with constant 0
       END_SECTION};
-  m->strings.push_back("voila");
+  m->strings.push_back("Hello, World");
   m->functions.push_back(b9::FunctionSpec{"allocate_object", i, 0, 1});
   m->primitives.push_back(b9_prim_print_string);
   vm.load(m);
-  auto r = vm.run("allocate_object", {});
-  EXPECT_EQ(r, 0);
+  Value r = vm.run("allocate_object", {});
+  EXPECT_EQ(r, Value(Value::integer, 0));
+}
+
+// clang-format off
+std::vector<std::int32_t> integers = {
+  0, 1, -1, 42, -42,
+  std::numeric_limits<std::int32_t>::max(),
+  std::numeric_limits<std::int32_t>::min()
+};
+// clang-format on
+
+TEST(DoubleTest, canonicalNan) {
+  EXPECT_TRUE(std::isnan(makeDouble(CANONICAL_NAN)));
+}
+
+TEST(ValueTest, integerConstructorRoundTrip) {
+  for (auto i : integers) {
+    Value value(Value::integer, i);
+    auto i2 = value.getInteger();
+    EXPECT_EQ(i, i2);
+  }
+}
+
+TEST(ValueTest, setIntegerRoundTrip) {
+  for (auto i : integers) {
+    Value value;
+    value.setInteger(i);
+    auto i2 = value.getInteger();
+    EXPECT_EQ(i, i2);
+  }
+}
+
+TEST(ValueTest, canonicalNan) {
+  EXPECT_EQ((CANONICAL_NAN & Double::SIGN_MASK), 0);
+  EXPECT_NE((CANONICAL_NAN & BoxTag::MASK), BoxTag::VALUE);
+  EXPECT_NE(makeDouble(CANONICAL_NAN), makeDouble(CANONICAL_NAN));
+}
+
+TEST(ValueTest, doubleRoundTrip) {
+  const std::vector<double> doubles =  //
+      {0.0,
+       1.0,
+       43.21,
+       std::numeric_limits<double>::infinity(),
+       std::numeric_limits<double>::max(),
+       std::numeric_limits<double>::min()};
+
+  for (auto d : doubles) {
+    for (auto sign : {+1.0, -1.0}) {
+      d *= sign;
+      Value value;
+      value.setDouble(d);
+      EXPECT_EQ(d, value.getDouble());
+      EXPECT_FALSE(value.isBoxedValue());
+      EXPECT_TRUE(value.isDouble());
+    }
+  }
+}
+
+TEST(ValueTest, signalingNanDouble) {
+  Value value;
+  value.setDouble(std::numeric_limits<double>::signaling_NaN());
+  EXPECT_TRUE(std::isnan(value.getDouble()));
+  EXPECT_FALSE(value.isBoxedValue());
+  EXPECT_NE(value.getDouble(), makeDouble(CANONICAL_NAN));
+  EXPECT_EQ(value.raw(), CANONICAL_NAN);
+}
+
+TEST(ValueTest, quietNanDouble) {
+  Value value;
+  value.setDouble(std::numeric_limits<double>::quiet_NaN());
+  EXPECT_TRUE(std::isnan(value.getDouble()));
+  EXPECT_FALSE(value.isBoxedValue());
+  EXPECT_NE(value.getDouble(), makeDouble(CANONICAL_NAN));
+  EXPECT_EQ(value.raw(), CANONICAL_NAN);
+}
+
+TEST(ValueTest, pointerRoundTrip) {
+  for (void* p : {(void*)0, (void*)1, (void*)(-1 & VALUE_MASK)}) {
+    Value value;
+    value.setPtr(p);
+    EXPECT_EQ(p, value.getPtr());
+    EXPECT_TRUE(value.isBoxedValue());
+    EXPECT_TRUE(value.isPtr());
+  }
 }
 
 }  // namespace test

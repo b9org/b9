@@ -47,6 +47,10 @@ inline std::pair<Value, bool> Object::get(Context& cx, Id id) {
   return result;
 }
 
+inline Value Object::getAt(Index index) {
+  return slots_[index];
+}
+
 /// Set the slot that corresponds to the id. If the slot doesn't exist,
 /// allocate the slot and assign it. The result is the address of the slot.
 /// !CAN_GC!

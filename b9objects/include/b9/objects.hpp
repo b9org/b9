@@ -182,6 +182,8 @@ class Object : public Cell {
 
   std::pair<Value, bool> get(Context& cx, Id id);
 
+  Value getAt(Index index);
+
   /// Set the slot that corresponds to the id. If the slot doesn't exist,
   /// allocate the slot and assign it. The result is the address of the slot.
   /// !CAN_GC!

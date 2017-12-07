@@ -109,7 +109,7 @@ class ExecutionContext : public RunContext {
     for (std::size_t i = 0; i < n; i++) {
       StackElement e = stackBase_[i];
       std::cout << ">STACK[" << i << "] = " << e << std::endl;
-      if (e.isPtr()) visitor.rootEdge(cx, this, (Cell *)e.ptr());
+      if (e.isPtr()) visitor.rootEdge(cx, this, (Cell *)e.getPtr());
     }
     std::cout << ">STACK END" << std::endl;
   }

@@ -122,7 +122,7 @@ TEST_F(InterpreterTest, interpreter) {
   vm.load(module_);
 
   for (auto test : TEST_NAMES) {
-    EXPECT_TRUE(vm.run(test, {})) << "Test Failed: " << test;
+    EXPECT_TRUE(vm.run(test, {}).getInteger()) << "Test Failed: " << test;
   }
 }
 
@@ -135,7 +135,7 @@ TEST_F(InterpreterTest, jit) {
   vm.generateAllCode();
 
   for (auto test : TEST_NAMES) {
-    EXPECT_TRUE(vm.run(test, {})) << "Test Failed: " << test;
+    EXPECT_TRUE(vm.run(test, {}).getInteger()) << "Test Failed: " << test;
   }
 }
 
@@ -149,7 +149,7 @@ TEST_F(InterpreterTest, jit_dc) {
   vm.generateAllCode();
 
   for (auto test : TEST_NAMES) {
-    EXPECT_TRUE(vm.run(test, {})) << "Test Failed: " << test;
+    EXPECT_TRUE(vm.run(test, {}).getInteger()) << "Test Failed: " << test;
   }
 }
 
@@ -164,7 +164,7 @@ TEST_F(InterpreterTest, jit_pp) {
   vm.generateAllCode();
 
   for (auto test : TEST_NAMES) {
-    EXPECT_TRUE(vm.run(test, {})) << "Test Failed: " << test;
+    EXPECT_TRUE(vm.run(test, {}).getInteger()) << "Test Failed: " << test;
   }
 }
 
@@ -180,7 +180,7 @@ TEST_F(InterpreterTest, jit_lvms) {
   vm.generateAllCode();
 
   for (auto test : TEST_NAMES) {
-    EXPECT_TRUE(vm.run(test, {})) << "Test Failed: " << test;
+    EXPECT_TRUE(vm.run(test, {}).getInteger()) << "Test Failed: " << test;
   }
 }
 
@@ -195,8 +195,8 @@ TEST(MyTest, arguments) {
 
   m->functions.push_back(b9::FunctionSpec{"add_args", i, 2, 0});
   vm.load(m);
-  auto r = vm.run("add_args", {1, 2});
-  EXPECT_EQ(r, 3);
+  auto r = vm.run("add_args", {{Value::integer, 1}, {Value::integer, 2}});
+  EXPECT_EQ(r, Value(Value::integer, 3));
 }
 
 extern "C" void b9_prim_print_string(ExecutionContext* context);

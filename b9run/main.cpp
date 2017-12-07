@@ -103,7 +103,7 @@ static bool parseArguments(RunConfig& cfg, const int argc, char* argv[]) {
 
   // check for user defined arguments
   for (; i < argc; i++) {
-    cfg.usrArgs.push_back(std::atoi(argv[i]));
+    cfg.usrArgs.push_back({b9::Value::integer, std::atoi(argv[i])});
   }
 
   return true;

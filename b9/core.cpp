@@ -57,35 +57,37 @@ void ExecutionContext::pushIntoVar(StackElement *args, Parameter offset) {
 }
 
 void ExecutionContext::intAdd() {
-  std::int32_t right = pop().integer();
-  std::int32_t left = pop().integer();
+  std::int32_t right = pop().getInteger();
+  std::int32_t left = pop().getInteger();
   Value result;
-  result.integer(left + right);
+  result.setInteger(left + right);
   push(result);
 }
 
 void ExecutionContext::intSub() {
-  std::int32_t right = pop().integer();
-  std::int32_t left = pop().integer();
+  std::int32_t right = pop().getInteger();
+  std::int32_t left = pop().getInteger();
   Value result;
-  result.integer(left - right);
+  result.setInteger(left - right);
   push(result);
 }
 
 // CASCON2017 - Add intMul() and intDiv() here
 
-void ExecutionContext::intPushConstant(Parameter value) { push(value); }
+void ExecutionContext::intPushConstant(Parameter value) {
+  push({Value::integer, value});
+}
 
 void ExecutionContext::intNot() {
-  std::int32_t i = pop().integer();
+  std::int32_t i = pop().getInteger();
   Value v;
-  v.integer(!i);
+  v.setInteger(!i);
   push(v);
 }
 
 Parameter ExecutionContext::intJmpEq(Parameter delta) {
-  std::int32_t right = pop().integer();
-  std::int32_t left = pop().integer();
+  std::int32_t right = pop().getInteger();
+  std::int32_t left = pop().getInteger();
   if (left == right) {
     return delta;
   }
@@ -93,8 +95,8 @@ Parameter ExecutionContext::intJmpEq(Parameter delta) {
 }
 
 Parameter ExecutionContext::intJmpNeq(Parameter delta) {
-  std::int32_t right = pop().integer();
-  std::int32_t left = pop().integer();
+  std::int32_t right = pop().getInteger();
+  std::int32_t left = pop().getInteger();
   if (left != right) {
     return delta;
   }
@@ -102,26 +104,28 @@ Parameter ExecutionContext::intJmpNeq(Parameter delta) {
 }
 
 Parameter ExecutionContext::intJmpGt(Parameter delta) {
-  std::int32_t right = pop().integer();
-  std::int32_t left = pop().integer();
+  std::int32_t right = pop().getInteger();
+  std::int32_t left = pop().getInteger();
   if (left > right) {
     return delta;
   }
   return 0;
 }
 
+// ( left right -- )
 Parameter ExecutionContext::intJmpGe(Parameter delta) {
-  std::int32_t right = pop().integer();
-  std::int32_t left = pop().integer();
+  std::int32_t right = pop().getInteger();
+  std::int32_t left = pop().getInteger();
   if (left >= right) {
     return delta;
   }
   return 0;
 }
 
+// ( left right -- )
 Parameter ExecutionContext::intJmpLt(Parameter delta) {
-  std::int32_t right = pop().integer();
-  std::int32_t left = pop().integer();
+  std::int32_t right = pop().getInteger();
+  std::int32_t left = pop().getInteger();
   if (left < right) {
     return delta;
   }
@@ -130,8 +134,8 @@ Parameter ExecutionContext::intJmpLt(Parameter delta) {
 
 // ( left right -- )
 Parameter ExecutionContext::intJmpLe(Parameter delta) {
-  std::int32_t right = pop().integer();
-  std::int32_t left = pop().integer();
+  std::int32_t right = pop().getInteger();
+  std::int32_t left = pop().getInteger();
   if (left <= right) {
     return delta;
   }
@@ -140,18 +144,18 @@ Parameter ExecutionContext::intJmpLe(Parameter delta) {
 
 // ( -- string )
 void ExecutionContext::strPushConstant(Parameter param) {
-  push(Value().integer(param));
+  push(Value().setInteger(param));
 }
 
 // ( -- object )
 void ExecutionContext::newObject() {
   auto ref = allocateEmptyObject(*this);
-  push(Value().ptr(ref));
+  push(Value().setPtr(ref));
 }
 
 // ( object -- value )
 void ExecutionContext::pushFromObject(Id slotId) {
-  auto obj = pop().ptr<Object>();
+  auto obj = pop().getPtr<Object>();
   auto lookup = obj->get(*this, slotId);
   if (std::get<bool>(lookup)) {
     push(std::get<Value>(lookup));
@@ -163,7 +167,7 @@ void ExecutionContext::pushFromObject(Id slotId) {
 // ( object value -- )
 void ExecutionContext::popIntoObject(Id slot) {
   // TODO: root the value, if it's a ptr
-  auto obj = pop().ptr<Object>();
+  auto obj = pop().getPtr<Object>();
   auto val = pop();
   setSlot(*this, obj, slot, val);
 }
@@ -257,25 +261,25 @@ StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
       std::cout << "Calling " << function << " jit: " << jitFunction
                 << std::endl;
     }
-    StackElement result = 0;
+    RawValue result = 0;
     if (cfg_.passParam) {
       switch (argsCount) {
         case 0: {
           result = jitFunction();
         } break;
         case 1: {
-          RawValue p1 = pop();
+          RawValue p1 = pop().raw();
           result = jitFunction(p1);
         } break;
         case 2: {
-          RawValue p2 = pop();
-          RawValue p1 = pop();
+          RawValue p2 = pop().raw();
+          RawValue p1 = pop().raw();
           result = jitFunction(p1, p2);
         } break;
         case 3: {
-          RawValue p3 = pop();
-          RawValue p2 = pop();
-          RawValue p1 = pop();
+          RawValue p3 = pop().raw();
+          RawValue p2 = pop().raw();
+          RawValue p1 = pop().raw();
           result = (*jitFunction)(p1, p2, p3);
         } break;
         default:
@@ -288,7 +292,7 @@ StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
       if (cfg_.debug) std::cout << "passing parameters on the stack\n";
       result = jitFunction();
     }
-    return result;
+    return Value(result);
   }
 
   // interpret the method otherwise

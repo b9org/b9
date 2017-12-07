@@ -642,7 +642,7 @@ void MethodBuilder::handle_bc_jmp(
     std::vector<TR::BytecodeBuilder *> bytecodeBuilderTable,
     const Instruction *program, long bytecodeIndex) {
   Instruction instruction = program[bytecodeIndex];
-  StackElement delta = instruction.parameter() + 1;
+  int delta = instruction.parameter() + 1;
   int next_bc_index = bytecodeIndex + delta;
   TR::BytecodeBuilder *destBuilder = bytecodeBuilderTable[next_bc_index];
   builder->Goto(destBuilder);
@@ -654,7 +654,7 @@ void MethodBuilder::handle_bc_jmp_eq(
     const Instruction *program, long bytecodeIndex,
     TR::BytecodeBuilder *nextBuilder) {
   Instruction instruction = program[bytecodeIndex];
-  StackElement delta = instruction.parameter() + 1;
+  int delta = instruction.parameter() + 1;
   int next_bc_index = bytecodeIndex + delta;
   TR::BytecodeBuilder *jumpTo = bytecodeBuilderTable[next_bc_index];
 
@@ -671,7 +671,7 @@ void MethodBuilder::handle_bc_jmp_neq(
     const Instruction *program, long bytecodeIndex,
     TR::BytecodeBuilder *nextBuilder) {
   Instruction instruction = program[bytecodeIndex];
-  StackElement delta = instruction.parameter() + 1;
+  int delta = instruction.parameter() + 1;
   int next_bc_index = bytecodeIndex + delta;
   TR::BytecodeBuilder *jumpTo = bytecodeBuilderTable[next_bc_index];
 
@@ -688,7 +688,7 @@ void MethodBuilder::handle_bc_jmp_lt(
     const Instruction *program, long bytecodeIndex,
     TR::BytecodeBuilder *nextBuilder) {
   Instruction instruction = program[bytecodeIndex];
-  StackElement delta = instruction.parameter() + 1;
+  int delta = instruction.parameter() + 1;
   int next_bc_index = bytecodeIndex + delta;
   TR::BytecodeBuilder *jumpTo = bytecodeBuilderTable[next_bc_index];
 
@@ -705,7 +705,7 @@ void MethodBuilder::handle_bc_jmp_le(
     const Instruction *program, long bytecodeIndex,
     TR::BytecodeBuilder *nextBuilder) {
   Instruction instruction = program[bytecodeIndex];
-  StackElement delta = instruction.parameter() + 1;
+  int delta = instruction.parameter() + 1;
   int next_bc_index = bytecodeIndex + delta;
   TR::BytecodeBuilder *jumpTo = bytecodeBuilderTable[next_bc_index];
 
@@ -722,7 +722,7 @@ void MethodBuilder::handle_bc_jmp_gt(
     const Instruction *program, long bytecodeIndex,
     TR::BytecodeBuilder *nextBuilder) {
   Instruction instruction = program[bytecodeIndex];
-  StackElement delta = instruction.parameter() + 1;
+  int delta = instruction.parameter() + 1;
   int next_bc_index = bytecodeIndex + delta;
   TR::BytecodeBuilder *jumpTo = bytecodeBuilderTable[next_bc_index];
 
@@ -739,7 +739,7 @@ void MethodBuilder::handle_bc_jmp_ge(
     const Instruction *program, long bytecodeIndex,
     TR::BytecodeBuilder *nextBuilder) {
   Instruction instruction = program[bytecodeIndex];
-  StackElement delta = instruction.parameter() + 1;
+  int delta = instruction.parameter() + 1;
   int next_bc_index = bytecodeIndex + delta;
   TR::BytecodeBuilder *jumpTo = bytecodeBuilderTable[next_bc_index];
 

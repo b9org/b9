@@ -8,9 +8,9 @@
 
 namespace b9 {
 
-/// Linked list element.
-/// cons.first is an instance of T. cons.second is a pointer to the next
-/// Cons<T>. Cons supports forward iteration.
+/// Linked list element. A specialization of std::pair that supports forward
+/// iteration. cons.first is an instance of T. cons.second is a pointer to the
+/// next.
 template <typename T>
 class Cons : public std::pair<T, Cons<T>*> {
  public:

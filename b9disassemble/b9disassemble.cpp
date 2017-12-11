@@ -12,7 +12,7 @@ using namespace b9;
 
 extern "C" int main (int argc, char** argv) {
   // Test disassemble binary module 
-  bool ok = disassemble(std::cin, std::cout);
+  bool ok = disassemble(std::cin);
   if (!ok) {
     std::cout << "Failure in disassemble" << std::endl;
   } else {

@@ -390,7 +390,7 @@ void ExecutionContext::reset() {
 
 StackElement VirtualMachine::run(const std::string &name,
                                  const std::vector<StackElement> &usrArgs) {
-  return run(module_->findFunction(name), usrArgs);
+  return run(module_->getFunctionIndex(name), usrArgs);
 }
 
 StackElement VirtualMachine::run(const std::size_t functionIndex,

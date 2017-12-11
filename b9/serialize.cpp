@@ -40,13 +40,7 @@ bool parseModule (const std::shared_ptr<Module> &module) {
 	// Output function data for each function to file 
   for (int i = 0; i < functionCount; i++) {
 		std::string name = module->functions[i].name;
-    std::cout << "Function name is: " << name << std::endl;
-		uint32_t functionIndex = module->findFunction(name);
-    std::cout << std::hex;
-    std::cout << "Function index is: " << functionIndex << std::endl;
-    std::cout << "Number args is: " << module->functions[i].nargs << std::endl;
-    std::cout << "Number regs is: " << module->functions[i].nregs << std::endl;
-    std::cout << std::dec;
+		uint32_t functionIndex = module->getFunctionIndex(name);
 		writeNumber(testModule, functionIndex);
     writeNumber(testModule, module->functions[i].nargs);
     writeNumber(testModule, module->functions[i].nregs);

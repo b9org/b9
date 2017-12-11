@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <stdexcept>
 #include <vector>
+#include <iostream>
 
 namespace b9 {
 
@@ -49,7 +50,7 @@ struct Module {
   std::vector<PrimitiveFunction*> primitives;
   std::vector<const char*> strings;
 
-  std::size_t findFunction(const std::string& name) const {
+  std::size_t getFunctionIndex(const std::string& name) const {
     for (std::size_t i = 0; i < functions.size(); i++) {
       if (functions[i].name == name) {
         return i;
@@ -57,6 +58,16 @@ struct Module {
     }
     throw FunctionNotFoundException{name};
   }
+
+  std::string getFunctionName(const std::size_t index) const {
+    if (functions.size() < index) {
+      //throw FunctionNotFoundException{index};
+      std::cout << "No function at offset " << index << std::endl;
+      return NULL;
+    }
+    return functions[index].name;
+  }
+
 };
 
 }  // namespace b9

@@ -5,6 +5,7 @@
 
 #include <b9/deserialize.hpp>
 #include <b9/instructions.hpp>
+#include <b9/module.hpp>
 
 namespace b9 {
 
@@ -72,12 +73,23 @@ bool readInstructions(std::istream &in, std::shared_ptr<std::vector<Instruction>
 }
 
 /* Create Module  */
-void createModule(std::istream &in, std::ostream &out) {
-  
-
+bool createModule(std::istream &in, std::ostream &out) {
+  auto m = std::make_shared<Module>();
+  //m->functions.push_back(b9::FunctionSpec{functionName, instructions, nargs, nregs});
+	return true;	
 }
 
-bool disassemble(std::istream &in, std::ostream &out) {
+/* Print Module */
+bool printModule(std::istream &in, std::ostream &out) {
+	// Print the Module
+	static const char* modulePrint =
+    "B9 Module:\n"
+    "  Functions:\n";
+  
+  return true;    
+}
+
+bool disassemble(std::istream &in) {
   // Check for empty file
   if (in.peek() == std::istream::traits_type::eof()) {
     std::cout << "Error: Empty input file" << std::endl;
@@ -108,28 +120,31 @@ bool disassemble(std::istream &in, std::ostream &out) {
 		return false;
 	}
 	// Read function data
-  std::vector<uint32_t> functionData(3);
-  if (parseFunctionData(in, functionData)) {
-    std::cout << "Success in parseFunctionData" << std::endl;
-    std::cout << "Function index: " << functionData[0] << std::endl;
-    std::cout << "Number Arguments: " << functionData[1] << std::endl;
-    std::cout << "Number Registers: " << functionData[2] << std::endl;
-  } else {
-    std::cout << "Failure in parseFunctionData" << std::endl;
-  }
-  // Read bytecodes
-  auto instructions = std::make_shared<std::vector<Instruction>>();
-  if (readInstructions(in, instructions)) {
-    std::cout << "Success in readBytecodes" << std::endl;
-    std::cout << std::hex;
-    for (auto instruction : *instructions) {
-      std::cout << "Bytecode: " << instruction << std::endl;
+  for (int i = 0; i < functionCount; i++) {
+    std::vector<uint32_t> functionData(3);
+    if (parseFunctionData(in, functionData)) {
+      std::cout << "Success in parseFunctionData" << std::endl;
+      std::cout << "Function index: " << functionData[0] << std::endl;
+      std::cout << "Number Arguments: " << functionData[1] << std::endl;
+      std::cout << "Number Registers: " << functionData[2] << std::endl;
+    } else {
+      std::cout << "Failure in parseFunctionData" << std::endl;
     }
-    std::cout << std::dec;
-  } else {
-    std::cout << "Failure in readBytecodes" << std::endl;
-    return false;
+    // Read bytecodes
+    auto instructions = std::make_shared<std::vector<Instruction>>();
+    if (readInstructions(in, instructions)) {
+      std::cout << "Success in readBytecodes" << std::endl;
+      std::cout << std::hex;
+      for (auto instruction : *instructions) {
+        std::cout << "Bytecode: " << instruction << std::endl;
+      }
+      std::cout << std::dec;
+    } else {
+      std::cout << "Failure in readBytecodes" << std::endl;
+      return false;
+    }
   }
+
   return true;
 }
 

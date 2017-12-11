@@ -43,10 +43,10 @@ bool parseFunctionData(std::istream &in, std::vector<uint32_t> &functionData);
 bool readInstructions(std::istream &in, std::shared_ptr<std::vector<Instruction>> &instructions);
 
 /* Create Module  */
-void createModule(std::istream &in, std::ostream &out);
+bool createModule(std::istream &in, std::ostream &out);
 
 /* Disassemble Binary Module  */
-bool disassemble(std::istream &in, std::ostream &out);
+bool disassemble(std::istream &in);
 
 } // b9 namespace
 #endif // B9_DESERIALIZE_HPP_

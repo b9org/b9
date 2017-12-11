@@ -16,21 +16,21 @@ TEST (ParseBinaryTest, parseBinaryModule) {
   const char* pwd = getenv("PWD");
   std::cerr << pwd << std::endl;
   std::ifstream in("valid.mod", std::ios::in | std::ios::binary);
-	bool ok = disassemble(in, std::cout);
+	bool ok = disassemble(in);
   if (!ok) {
     std::cout << "Failure in disassemble using valid input file" << std::endl;
   } else {
     std::cout << "Success in disassemble using valid input file" << std::endl;
   }
 	std::ifstream in2("empty.mod", std::ios::in | std::ios::binary);
-	ok = disassemble(in2, std::cout);
+	ok = disassemble(in2);
 	if (!ok) {
 		std::cout << "Test failed as expected using empty input file" << std::endl;
 	} else {
 		std::cout << "Test passed but was expected to fail using empty input file" << std::endl;
 	}
 	std::ifstream in3("corrupt.mod", std::ios::in | std::ios::binary);
-	ok = disassemble(in3, std::cout);
+	ok = disassemble(in3);
 	if (!ok) {
 		std::cout << "Test failed as expected using corrupt input file" << std::endl;
 	} else {
@@ -39,7 +39,6 @@ TEST (ParseBinaryTest, parseBinaryModule) {
 }
 
 TEST (ReadModuleTest, readModule) {
-  b9::VirtualMachine vm {{}};
   auto m = std::make_shared<Module>();
   std::vector<Instruction> i =
     {{ByteCode::INT_PUSH_CONSTANT, 1},

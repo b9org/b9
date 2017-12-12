@@ -13,20 +13,24 @@ class Compiler;
 class ExecutionContext;
 class VirtualMachine;
 
-/// Function specification. Metadata about a function.
+/// Function specification copy constructor. Metadata about a function.
 struct FunctionSpec {
-  FunctionSpec(const std::string& name, const Instruction* address,
+  FunctionSpec(const std::string& name, const std::vector<Instruction> &instructions,
                std::uint32_t nargs = 0, std::uint32_t nregs = 0)
-      : address{address}, nargs{nargs}, nregs{nregs}, name{name} {}
+      : instructions{instructions}, nargs{nargs}, nregs{nregs}, name{name} {}
 
-  const Instruction* address;
+  FunctionSpec(const std::string& name, std::vector<Instruction> &&instructions,
+               std::uint32_t nargs = 0, std::uint32_t nregs = 0)
+      : instructions{std::move(instructions)}, nargs{nargs}, nregs{nregs}, name{name} {}  
+
+  std::vector<Instruction> instructions;
   std::uint32_t nargs;
   std::uint32_t nregs;
   std::string name;
 };
 
 inline std::ostream& operator<<(std::ostream& out, const FunctionSpec& f) {
-  return out << f.name << " (" << f.address << "): {nargs: " << f.nargs
+  return out << f.name << " (" << &(f.instructions) << "): {nargs: " << f.nargs
              << ", nregs: " << f.nregs << "}";
 }
 

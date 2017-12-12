@@ -249,7 +249,7 @@ bool MethodBuilder::inlineProgramIntoBuilder(
   bool success = true;
   maxInlineDepth--;
   const FunctionSpec *function = virtualMachine_->getFunction(functionIndex);
-  const Instruction *program = function->address;
+  const Instruction *program = function->instructions.data();
 
   // Create a BytecodeBuilder for each Bytecode
   auto numberOfBytecodes = computeNumberOfBytecodes(program);
@@ -500,7 +500,7 @@ bool MethodBuilder::generateILForBytecode(
     case ByteCode::FUNCTION_CALL: {
       const std::size_t callindex = instruction.parameter();
       const FunctionSpec *callee = virtualMachine_->getFunction(callindex);
-      const Instruction *tocall = callee->address;
+      const Instruction *tocall = callee->instructions.data();
       const std::uint32_t argsCount = callee->nargs;
       const std::uint32_t regsCount = callee->nregs;
 

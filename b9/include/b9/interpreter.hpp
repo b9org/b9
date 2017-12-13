@@ -117,7 +117,7 @@ class VirtualMachine {
   StackElement run(const std::string &name,
                    const std::vector<StackElement> &usrArgs);
 
-  const FunctionSpec *getFunction(std::size_t index);
+  const FunctionDef *getFunction(std::size_t index);
   PrimitiveFunction *getPrimitive(std::size_t index);
 
   JitFunction getJitAddress(std::size_t functionIndex);

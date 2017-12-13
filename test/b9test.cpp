@@ -128,7 +128,7 @@ TEST(MyTest, arguments) {
                      {ByteCode::FUNCTION_RETURN},
                      END_SECTION};
 
-  m->functions.push_back(b9::FunctionSpec{"add_args", i, 2, 0});
+  m->functions.push_back(b9::FunctionDef{"add_args", i, 2, 0});
   vm.load(m);
   auto r = vm.run("add_args", {1, 2});
   EXPECT_EQ(r, 3);

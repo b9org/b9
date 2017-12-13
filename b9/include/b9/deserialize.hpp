@@ -1,52 +1,50 @@
 #ifndef B9_DESERIALIZE_HPP_
 #define B9_DESERIALIZE_HPP_
 
+#include <b9/instructions.hpp>
+#include <b9/module.hpp>
+
 #include <iostream>
 #include <memory>
 #include <vector>
 #include <string.h>
 
-#include <b9/instructions.hpp>
-
 namespace b9 {
 
-/* Generic number parser */
-template <typename Number>
-bool parseNumber(std::istream &in, Number &out, long bytes = sizeof(Number)) {
+struct DeserializeException : public std::runtime_error {
+  using std::runtime_error::runtime_error;
+};
+
+inline bool readBytes(std::istream& in, char* buffer, long bytes) {
   long count = 0;
-  char* buffer = (char*)&out;
   do {
-    in.read(&buffer[count], bytes);
+    in.read(&buffer[count], bytes - count);
     count += in.gcount();
   } while (count < bytes && in.good());
-  std::cout << "The value is: " << out << std::endl;
-  if (count != bytes) {
-    std::cout << "Something went wrong with parseNumber" << std::endl;
-    return false;
-  }
-  return true;
+  return count == bytes;
 }
 
-/* Read header "b9module" from module */
-bool parseHeader(std::istream &in, char* buffer);
+/* Generic number reader */
+template <typename Number>
+bool readNumber(std::istream &in, Number &out, long bytes = sizeof(Number)) {
+  char* buffer = (char*)&out;
+  return readBytes(in, buffer, bytes);
+}
 
-/* Read Section Code  */
-bool parseSectionCode(std::istream &in, uint32_t &sectionCode);
+void readHeader(std::istream &in, char* buffer);
 
-/* Read Function Count  */
-bool parseFunctionCount(std::istream &in, uint32_t &functionCount);
+void readSectionCode(std::istream &in, uint32_t &sectionCode);
 
-/* Read function data  */
-bool parseFunctionData(std::istream &in, std::vector<uint32_t> &functionData);
+bool readFunctionCount(std::istream &in, uint32_t &functionCount);
 
-/* Read the bytecodes */
+bool readFunctionData(std::istream &in, std::vector<uint32_t> &functionData);
+
 bool readInstructions(std::istream &in, std::shared_ptr<std::vector<Instruction>> &instructions);
 
-/* Create Module  */
 bool createModule(std::istream &in, std::ostream &out);
 
-/* Disassemble Binary Module  */
-bool disassemble(std::istream &in);
+std::shared_ptr<Module> deserialize(std::istream &in);
 
 } // b9 namespace
+
 #endif // B9_DESERIALIZE_HPP_

@@ -346,7 +346,7 @@ PrimitiveFunction *VirtualMachine::getPrimitive(std::size_t index) {
   return module_->primitives[index];
 }
 
-const FunctionSpec *VirtualMachine::getFunction(std::size_t index) {
+const FunctionDef *VirtualMachine::getFunction(std::size_t index) {
   return &module_->functions[index];
 }
 

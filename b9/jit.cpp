@@ -91,7 +91,7 @@ Compiler::Compiler(VirtualMachine *virtualMachine, const Config &cfg)
 }
 
 JitFunction Compiler::generateCode(const std::size_t functionIndex) {
-  const FunctionSpec *function = virtualMachine_->getFunction(functionIndex);
+  const FunctionDef *function = virtualMachine_->getFunction(functionIndex);
   MethodBuilder methodBuilder(virtualMachine_, &types_, cfg_, functionIndex);
   if (cfg_.debug)
     std::cout << "MethodBuilder for function: " << function->name
@@ -122,7 +122,7 @@ MethodBuilder::MethodBuilder(VirtualMachine *virtualMachine,
       context_(virtualMachine->executionContext()),
       maxInlineDepth(cfg.maxInlineDepth),
       firstArgumentIndex(0) {
-  const FunctionSpec *function = virtualMachine_->getFunction(functionIndex);
+  const FunctionDef *function = virtualMachine_->getFunction(functionIndex);
   DefineLine(LINETOSTR(__LINE__));
   DefineFile(__FILE__);
 
@@ -176,7 +176,7 @@ void MethodBuilder::defineLocals(std::size_t argCount) {
     // for locals we pre-define all the locals we could use, for the toplevel
     // and all the inlined names which are simply referenced via a skew to reach
     // past callers functions args/temps
-    const FunctionSpec *function = virtualMachine_->getFunction(functionIndex_);
+    const FunctionDef *function = virtualMachine_->getFunction(functionIndex_);
     std::size_t topLevelLocals = function->nargs + function->nregs;
     if (cfg_.debug) {
       std::cout << "CREATING " << topLevelLocals << " topLevel with "
@@ -248,7 +248,7 @@ bool MethodBuilder::inlineProgramIntoBuilder(
     TR::BytecodeBuilder *jumpToBuilderForInlinedReturn) {
   bool success = true;
   maxInlineDepth--;
-  const FunctionSpec *function = virtualMachine_->getFunction(functionIndex);
+  const FunctionDef *function = virtualMachine_->getFunction(functionIndex);
   const Instruction *program = function->instructions.data();
 
   // Create a BytecodeBuilder for each Bytecode
@@ -294,7 +294,7 @@ bool MethodBuilder::inlineProgramIntoBuilder(
 
 bool MethodBuilder::buildIL() {
   // Set up arguments and locals, and adjust stack pointer if needed
-  const FunctionSpec *function = virtualMachine_->getFunction(functionIndex_);
+  const FunctionDef *function = virtualMachine_->getFunction(functionIndex_);
   if (cfg_.passParam) {
     int argsCount = function->nargs;
     int regsCount = function->nregs;
@@ -389,7 +389,7 @@ bool MethodBuilder::generateILForBytecode(
   }
 
   bool handled = true;
-  const FunctionSpec *function = virtualMachine_->getFunction(functionIndex);
+  const FunctionDef *function = virtualMachine_->getFunction(functionIndex);
 
   if (cfg_.debug) {
     if (jumpToBuilderForInlinedReturn != nullptr) {
@@ -499,7 +499,7 @@ bool MethodBuilder::generateILForBytecode(
     } break;
     case ByteCode::FUNCTION_CALL: {
       const std::size_t callindex = instruction.parameter();
-      const FunctionSpec *callee = virtualMachine_->getFunction(callindex);
+      const FunctionDef *callee = virtualMachine_->getFunction(callindex);
       const Instruction *tocall = callee->instructions.data();
       const std::uint32_t argsCount = callee->nargs;
       const std::uint32_t regsCount = callee->nregs;

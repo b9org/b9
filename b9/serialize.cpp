@@ -11,7 +11,7 @@
 namespace b9 {
 
 /* Write bytecode array to file  */
-bool writeBytecodes(std::ofstream &out, FunctionSpec &functionSpec) {
+bool writeBytecodes(std::ofstream &out, FunctionDef &functionSpec) {
 	for (auto instruction : functionSpec.instructions) {
     out << instruction;
 	}

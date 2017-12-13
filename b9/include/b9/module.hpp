@@ -14,16 +14,17 @@ class Compiler;
 class ExecutionContext;
 class VirtualMachine;
 
-/// Function specification copy constructor. Metadata about a function.
-struct FunctionSpec {
-  FunctionSpec(const std::string& name, const std::vector<Instruction> &instructions,
+// Function Definition
+struct FunctionDef {
+  // Copy Constructor
+  FunctionDef(const std::string& name, const std::vector<Instruction> &instructions,
                std::uint32_t nargs = 0, std::uint32_t nregs = 0)
       : instructions{instructions}, nargs{nargs}, nregs{nregs}, name{name} {}
-
-  FunctionSpec(const std::string& name, std::vector<Instruction> &&instructions,
+  // Move Constructor
+  FunctionDef(const std::string& name, std::vector<Instruction> &&instructions,
                std::uint32_t nargs = 0, std::uint32_t nregs = 0)
       : instructions{std::move(instructions)}, nargs{nargs}, nregs{nregs}, name{name} {}  
-
+  // Function Data
   std::vector<Instruction> instructions;
   std::uint32_t index;
   std::uint32_t nargs;
@@ -31,7 +32,7 @@ struct FunctionSpec {
   std::string name;
 };
 
-inline std::ostream& operator<<(std::ostream& out, const FunctionSpec& f) {
+inline std::ostream& operator<<(std::ostream& out, const FunctionDef& f) {
   return out << f.name << " (" << &(f.instructions) << "): {nargs: " << f.nargs
              << ", nregs: " << f.nregs << "}";
 }
@@ -46,7 +47,7 @@ struct FunctionNotFoundException : public std::runtime_error {
 
 /// An interpreter module.
 struct Module {
-  std::vector<FunctionSpec> functions;
+  std::vector<FunctionDef> functions;
   std::vector<PrimitiveFunction*> primitives;
   std::vector<const char*> strings;
 

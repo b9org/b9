@@ -122,7 +122,7 @@ TEST_F(InterpreterTest, jit_lvms) {
 TEST(MyTest, arguments) {
   b9::VirtualMachine vm{{}};
   auto m = std::make_shared<Module>();
-  Instruction i[] = {{ByteCode::PUSH_FROM_VAR, 0},
+  std::vector<Instruction> i = {{ByteCode::PUSH_FROM_VAR, 0},
                      {ByteCode::PUSH_FROM_VAR, 1},
                      {ByteCode::INT_ADD},
                      {ByteCode::FUNCTION_RETURN},

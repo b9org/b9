@@ -248,7 +248,7 @@ StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
   }
 
   // interpret the method otherwise
-  const Instruction *instructionPointer = function->address;
+  const Instruction *instructionPointer = function->instructions.data();
   StackElement *args = stackPointer_ - function->nargs;
   stackPointer_ += function->nregs;
 

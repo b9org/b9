@@ -21,6 +21,7 @@ bool parseNumber(std::istream &in, Number &out, long bytes = sizeof(Number)) {
   } while (count < bytes && in.good());
   std::cout << "The value is: " << out << std::endl;
   if (count != bytes) {
+    std::cout << "Something went wrong with parseNumber" << std::endl;
     return false;
   }
   return true;
@@ -43,6 +44,9 @@ bool readInstructions(std::istream &in, std::shared_ptr<std::vector<Instruction>
 
 /* Create Module  */
 void createModule(std::istream &in, std::ostream &out);
+
+/* Disassemble Binary Module  */
+bool disassemble(std::istream &in, std::ostream &out);
 
 } // b9 namespace
 #endif // B9_DESERIALIZE_HPP_

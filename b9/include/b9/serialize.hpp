@@ -7,6 +7,15 @@
 
 namespace b9 {
 
+/* Generic number writer */
+template <typename Number>
+bool writeNumber(std::ofstream &out, const Number &n) {
+  const long bytes = sizeof(Number);
+  auto buffer = reinterpret_cast<const char*>(&n);
+  out.write(buffer, bytes);
+  return out.good();
+}
+
 bool writeBytecodes(std::ofstream&, FunctionSpec&);
 bool parseModule (const std::shared_ptr<Module>&);
 

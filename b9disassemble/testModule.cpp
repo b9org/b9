@@ -7,11 +7,38 @@
 
 #include <gtest/gtest.h>
 #include <b9/serialize.hpp>
+#include <b9/deserialize.hpp>
 
 namespace b9 {
 namespace test {
 
-TEST (DisassemblerTest, arguments) {
+TEST (ParseBinaryTest, parseBinaryModule) {
+  const char* pwd = getenv("PWD");
+  std::cerr << pwd << std::endl;
+  std::ifstream in("valid.mod", std::ios::in | std::ios::binary);
+	bool ok = disassemble(in, std::cout);
+  if (!ok) {
+    std::cout << "Failure in disassemble using valid input file" << std::endl;
+  } else {
+    std::cout << "Success in disassemble using valid input file" << std::endl;
+  }
+	std::ifstream in2("empty.mod", std::ios::in | std::ios::binary);
+	ok = disassemble(in2, std::cout);
+	if (!ok) {
+		std::cout << "Test failed as expected using empty input file" << std::endl;
+	} else {
+		std::cout << "Test passed but was expected to fail using empty input file" << std::endl;
+	}
+	std::ifstream in3("corrupt.mod", std::ios::in | std::ios::binary);
+	ok = disassemble(in3, std::cout);
+	if (!ok) {
+		std::cout << "Test failed as expected using corrupt input file" << std::endl;
+	} else {
+		std::cout << "Test passed but was expected to fail using corrupt input file" << std::endl;
+	}	
+}
+
+TEST (ReadModuleTest, readModule) {
   b9::VirtualMachine vm {{}};
   auto m = std::make_shared<Module>();
   std::vector<Instruction> i =
@@ -21,12 +48,7 @@ TEST (DisassemblerTest, arguments) {
                      {ByteCode::FUNCTION_RETURN, 0},
                      END_SECTION};
   m->functions.push_back(b9::FunctionSpec{"simple_add", i, 2, 2});
-  //parseModule(m);
-  
-  
-  vm.load(m);
-  auto r = vm.run("simple_add", {1, 2});
-  EXPECT_EQ(r, 3);
+  parseModule(m);
 }
   
 }  // namespace test

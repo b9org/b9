@@ -17,11 +17,20 @@ target_link_libraries(b9serializeTest
     gtest_main
 )
 
+add_test(
+  NAME run_b9serializeTest
+  COMMAND b9serializeTest
+  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
 function(b9disassemble_test module)
-  add_test(diassemble_${module}
-  COMMAND b9disassemble ${module}
-) 
+  get_target_property(cmd b9disassemble OUTPUT_NAME)
+  add_test(
+    NAME disassemble_${module}
+    COMMAND sh -c "$<TARGET_FILE:b9disassemble> < ${CMAKE_CURRENT_SOURCE_DIR}/${module}"
+  ) 
 endfunction()
 
 b9disassemble_test(empty.mod)
 b9disassemble_test(valid.mod)
+b9disassemble_test(corrupt.mod)

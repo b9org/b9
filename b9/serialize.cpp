@@ -4,6 +4,7 @@
 #include <vector>
 #include <string.h>
 
+#include <b9/serialize.hpp>
 #include <b9/module.hpp>
 #include <b9/instructions.hpp>
 
@@ -14,24 +15,41 @@ bool writeBytecodes(std::ofstream &out, FunctionSpec &functionSpec) {
 	for (auto instruction : functionSpec.instructions) {
     out << instruction;
 	}
-	return true;
+  std::cout << std::dec;
+	//writeNumber(out, END_SECTION);
+  return true;
 } 
 
 bool parseModule (const std::shared_ptr<Module> &module) {
 	// Make new file "testModule.mod"
 	std::ofstream testModule;
-	testModule.open("testModule.mod");
+  testModule = std::ofstream("testModule.mod",/* std::ios::out |*/ std::ios::binary);
+	//testModule.open("testModule.mod");
 	// Define first 3 fields
-	std::string header = "b9module";
-	uint32_t sectionCode = 1;
-	uint32_t functionCount = sizeof(module->functions);
+	const char* const header = "b9module";
+	std::cout << std::hex;
+  uint32_t sectionCode = 1;
+	uint32_t functionCount = module->functions.size();
+  std::cout << "Section code is: " << sectionCode << std::endl;
+  std::cout << "Function count is: " << functionCount << std::endl;
+  std::cout << std::dec;
   // Output first 3 fields to file
-	testModule << header << sectionCode << functionCount; 
+	testModule << header;
+  writeNumber(testModule, sectionCode);
+  writeNumber(testModule, functionCount);
 	// Output function data for each function to file 
   for (int i = 0; i < functionCount; i++) {
 		std::string name = module->functions[i].name;
+    std::cout << "Function name is: " << name << std::endl;
 		uint32_t functionIndex = module->findFunction(name);
-		testModule << functionIndex << module->functions[i].nargs << module->functions[i].nregs;
+    std::cout << std::hex;
+    std::cout << "Function index is: " << functionIndex << std::endl;
+    std::cout << "Number args is: " << module->functions[i].nargs << std::endl;
+    std::cout << "Number regs is: " << module->functions[i].nregs << std::endl;
+    std::cout << std::dec;
+		writeNumber(testModule, functionIndex);
+    writeNumber(testModule, module->functions[i].nargs);
+    writeNumber(testModule, module->functions[i].nregs);
 	  writeBytecodes(testModule, module->functions[i]);
 	}
 	return true;

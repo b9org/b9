@@ -10,43 +10,39 @@
 
 namespace b9 {
 
-/* Write bytecode array to file  */
-bool writeBytecodes(std::ofstream &out, FunctionDef &functionSpec) {
-	for (auto instruction : functionSpec.instructions) {
-    out << instruction;
-	}
-  std::cout << std::dec;
-	//writeNumber(out, END_SECTION);
-  return true;
-} 
-
-bool parseModule (const std::shared_ptr<Module> &module) {
-	// Make new file "testModule.mod"
-	std::ofstream testModule;
-  testModule = std::ofstream("testModule.mod",/* std::ios::out |*/ std::ios::binary);
-	//testModule.open("testModule.mod");
-	// Define first 3 fields
-	const char* const header = "b9module";
+void writeInstructions(std::ofstream &out, FunctionDef &functionSpec) {
 	std::cout << std::hex;
-  uint32_t sectionCode = 1;
-	uint32_t functionCount = module->functions.size();
-  std::cout << "Section code is: " << sectionCode << std::endl;
-  std::cout << "Function count is: " << functionCount << std::endl;
-  std::cout << std::dec;
-  // Output first 3 fields to file
-	testModule << header;
-  writeNumber(testModule, sectionCode);
-  writeNumber(testModule, functionCount);
-	// Output function data for each function to file 
-  for (int i = 0; i < functionCount; i++) {
-		std::string name = module->functions[i].name;
-		uint32_t functionIndex = module->getFunctionIndex(name);
-		writeNumber(testModule, functionIndex);
-    writeNumber(testModule, module->functions[i].nargs);
-    writeNumber(testModule, module->functions[i].nregs);
-	  writeBytecodes(testModule, module->functions[i]);
+  for (auto instruction : functionSpec.instructions) {
+    writeNumber(out, instruction);
 	}
-	return true;
+  std::cout << std::dec;
+}
+
+void writeFunctionData(std::ofstream &out, const std::shared_ptr<Module> &module) {
+	for (auto function : module->functions) {
+    uint32_t index = module->getFunctionIndex(function.name);
+    writeNumber(out, index);
+    writeNumber(out, function.nargs);
+    writeNumber(out, function.nregs);
+	  writeInstructions(out, function);
+	}
+}
+
+void serialize (const std::shared_ptr<Module> &module) {
+  std::ofstream out;
+  auto f = module->functions;
+  // TODO implement some form of module naming 
+  out = std::ofstream("test.mod", std::ios::binary);
+  const char* const header = "b9module";
+	out << header;
+ 	uint32_t sectionCode = 1;
+	uint32_t functionCount = module->functions.size();
+	writeNumber(out, sectionCode);
+	writeNumber(out, functionCount);
+	
+	if (module->functions.size() > 0) {
+		writeFunctionData(out, module);
+	}
 }
 
 } // namespace b9

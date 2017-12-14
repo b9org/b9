@@ -16,8 +16,8 @@ bool writeNumber(std::ofstream &out, const Number &n) {
   return out.good();
 }
 
-bool writeBytecodes(std::ofstream&, FunctionDef&);
-bool parseModule (const std::shared_ptr<Module>&);
+void writeBytecodes(std::ofstream&, FunctionDef&);
+void serialize (const std::shared_ptr<Module>&);
 
 } // namspace b9
 

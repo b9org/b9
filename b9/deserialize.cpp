@@ -34,14 +34,6 @@ void readSectionCode(std::istream &in, uint32_t &sectionCode) {
  }
 }
 
-bool readFunctionData(std::istream &in, std::vector<uint32_t> &functionData) {
-  for (size_t i = 0; i < 3; i++) {
-    if (!readNumber(in, functionData[i])) 
-      return false;
-  }
-  return true;
-}
-
 bool readInstructions(std::istream &in, std::vector<Instruction> &instructions) {
   do {
     RawInstruction instruction;
@@ -61,8 +53,8 @@ bool printModule(std::istream &in, std::ostream &out) {
   return true;    
 }
 
-void readFunctionData(std::istream& in, FunctionDef &functionSpec) {
-  readNumber(in, functionSpec.index);
+void readFunctionData(std::istream& in, FunctionDef &functionSpec, uint32_t index) {
+  readNumber(in, index);
   readNumber(in, functionSpec.nargs);
   readNumber(in, functionSpec.nregs);
 }
@@ -75,7 +67,8 @@ void readFunctionSection(std::istream& in, std::shared_ptr<Module>& module) {
   for (uint32_t i = 0; i < functionCount; i++) {
     module->functions.emplace_back("unknown_function", std::vector<Instruction>{});
     FunctionDef& functionSpec = module->functions.back();;
-    readFunctionData(in, functionSpec);
+    uint32_t index = module->getFunctionIndex(functionSpec.name);
+    readFunctionData(in, functionSpec, index);
     
     if (!readInstructions(in, functionSpec.instructions)) {
       throw DeserializeException{"Error in read bytecodes"};  

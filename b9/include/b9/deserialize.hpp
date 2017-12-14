@@ -37,7 +37,7 @@ void readSectionCode(std::istream &in, uint32_t &sectionCode);
 
 bool readFunctionCount(std::istream &in, uint32_t &functionCount);
 
-bool readFunctionData(std::istream &in, std::vector<uint32_t> &functionData);
+void readFunctionData(std::istream &in, FunctionDef &functionSpec, uint32_t index);
 
 bool readInstructions(std::istream &in, std::shared_ptr<std::vector<Instruction>> &instructions);
 

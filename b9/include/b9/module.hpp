@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <vector>
 #include <iostream>
+#include <string> 
 
 namespace b9 {
 
@@ -25,11 +26,10 @@ struct FunctionDef {
                std::uint32_t nargs = 0, std::uint32_t nregs = 0)
       : instructions{std::move(instructions)}, nargs{nargs}, nregs{nregs}, name{name} {}  
   // Function Data
-  std::vector<Instruction> instructions;
-  std::uint32_t index;
+  std::string name;
   std::uint32_t nargs;
   std::uint32_t nregs;
-  std::string name;
+  std::vector<Instruction> instructions;
 };
 
 inline std::ostream& operator<<(std::ostream& out, const FunctionDef& f) {
@@ -62,9 +62,7 @@ struct Module {
 
   std::string getFunctionName(const std::size_t index) const {
     if (functions.size() < index) {
-      //throw FunctionNotFoundException{index};
-      std::cout << "No function at offset " << index << std::endl;
-      return NULL;
+      throw FunctionNotFoundException{std::to_string(index)};
     }
     return functions[index].name;
   }

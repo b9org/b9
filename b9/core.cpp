@@ -1,11 +1,14 @@
-#include <b9/allocator.inl.hpp>
-#include <b9/hash.hpp>
+
+// #include <b9/hash.hpp>
 #include <b9/interpreter.hpp>
 #include <b9/jit.hpp>
 #include <b9/loader.hpp>
-#include <b9/objects.inl.hpp>
-#include <b9/rooting.inl.hpp>
-#include <b9/value.hpp>
+
+#include <OMR/Om/Allocator.inl.hpp>
+#include <OMR/Om/Map.inl.hpp>
+#include <OMR/Om/Object.inl.hpp>
+#include <OMR/Om/RootRef.inl.hpp>
+#include <OMR/Om/Value.hpp>
 
 #include <omrgc.h>
 #include "Jit.hpp"
@@ -59,7 +62,7 @@ void ExecutionContext::pushIntoVar(StackElement *args, Parameter offset) {
 void ExecutionContext::intAdd() {
   std::int32_t right = pop().getInteger();
   std::int32_t left = pop().getInteger();
-  Value result;
+  StackElement result;
   result.setInteger(left + right);
   push(result);
 }
@@ -67,7 +70,7 @@ void ExecutionContext::intAdd() {
 void ExecutionContext::intSub() {
   std::int32_t right = pop().getInteger();
   std::int32_t left = pop().getInteger();
-  Value result;
+  StackElement result;
   result.setInteger(left - right);
   push(result);
 }
@@ -75,12 +78,12 @@ void ExecutionContext::intSub() {
 // CASCON2017 - Add intMul() and intDiv() here
 
 void ExecutionContext::intPushConstant(Parameter value) {
-  push({Value::integer, value});
+  push(StackElement().setInteger(value));
 }
 
 void ExecutionContext::intNot() {
   std::int32_t i = pop().getInteger();
-  Value v;
+  StackElement v;
   v.setInteger(!i);
   push(v);
 }
@@ -144,30 +147,30 @@ Parameter ExecutionContext::intJmpLe(Parameter delta) {
 
 // ( -- string )
 void ExecutionContext::strPushConstant(Parameter param) {
-  push(Value().setInteger(param));
+  push(OMR::Om::Value().setInteger(param));
 }
 
 // ( -- object )
 void ExecutionContext::newObject() {
-  auto ref = allocateEmptyObject(*this);
-  push(Value().setPtr(ref));
+  auto ref = OMR::Om::allocateEmptyObject(*this);
+  push(OMR::Om::Value().setPtr(ref));
 }
 
 // ( object -- value )
-void ExecutionContext::pushFromObject(Id slotId) {
-  auto obj = pop().getPtr<Object>();
+void ExecutionContext::pushFromObject(OMR::Om::Id slotId) {
+  auto obj = pop().getPtr<OMR::Om::Object>();
   auto lookup = obj->get(*this, slotId);
   if (std::get<bool>(lookup)) {
-    push(std::get<Value>(lookup));
+    push(std::get<OMR::Om::Value>(lookup));
   } else {
     throw std::runtime_error("Accessing an object's field that doesn't exist.");
   }
 }
 
 // ( object value -- )
-void ExecutionContext::popIntoObject(Id slot) {
+void ExecutionContext::popIntoObject(OMR::Om::Id slot) {
   // TODO: root the value, if it's a ptr
-  auto obj = pop().getPtr<Object>();
+  auto obj = pop().getPtr<OMR::Om::Object>();
   auto val = pop();
   setSlot(*this, obj, slot, val);
 }
@@ -191,7 +194,8 @@ void ExecutionContext::systemCollect() {
 
 /// ExecutionContext
 
-VirtualMachine::VirtualMachine(ProcessRuntime &runtime, const Config &cfg)
+VirtualMachine::VirtualMachine(OMR::Om::ProcessRuntime &runtime,
+                               const Config &cfg)
     : cfg_{cfg},
       memoryManager_(runtime),
       executionContext_{this, cfg},
@@ -261,25 +265,25 @@ StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
       std::cout << "Calling " << function << " jit: " << jitFunction
                 << std::endl;
     }
-    RawValue result = 0;
+    OMR::Om::RawValue result = 0;
     if (cfg_.passParam) {
       switch (argsCount) {
         case 0: {
           result = jitFunction();
         } break;
         case 1: {
-          RawValue p1 = pop().raw();
+          OMR::Om::RawValue p1 = pop().raw();
           result = jitFunction(p1);
         } break;
         case 2: {
-          RawValue p2 = pop().raw();
-          RawValue p1 = pop().raw();
+          OMR::Om::RawValue p2 = pop().raw();
+          OMR::Om::RawValue p1 = pop().raw();
           result = jitFunction(p1, p2);
         } break;
         case 3: {
-          RawValue p3 = pop().raw();
-          RawValue p2 = pop().raw();
-          RawValue p1 = pop().raw();
+          OMR::Om::RawValue p3 = pop().raw();
+          OMR::Om::RawValue p2 = pop().raw();
+          OMR::Om::RawValue p1 = pop().raw();
           result = (*jitFunction)(p1, p2, p3);
         } break;
         default:
@@ -292,7 +296,7 @@ StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
       if (cfg_.debug) std::cout << "passing parameters on the stack\n";
       result = jitFunction();
     }
-    return Value(result);
+    return OMR::Om::Value(result);
   }
 
   // interpret the method otherwise
@@ -376,10 +380,10 @@ StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
         newObject();
         break;
       case ByteCode::PUSH_FROM_OBJECT:
-        pushFromObject(instructionPointer->parameter());
+        pushFromObject(OMR::Om::Id(instructionPointer->parameter()));
         break;
       case ByteCode::POP_INTO_OBJECT:
-        popIntoObject(instructionPointer->parameter());
+        popIntoObject(OMR::Om::Id(instructionPointer->parameter()));
         break;
       case ByteCode::CALL_INDIRECT:
         callIndirect();

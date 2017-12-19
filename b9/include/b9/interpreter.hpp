@@ -3,11 +3,11 @@
 
 #include <b9/instructions.hpp>
 #include <b9/module.hpp>
-#include <b9/runtime.hpp>
 
-#include <b9/context.inl.hpp>
-#include <b9/memorymanager.inl.hpp>
-#include <b9/rooting.inl.hpp>
+#include <OMR/Om/Context.inl.hpp>
+#include <OMR/Om/MemoryManager.inl.hpp>
+#include <OMR/Om/RootRef.inl.hpp>
+#include <OMR/Om/Runtime.hpp>
 
 #include <cstring>
 #include <map>
@@ -48,20 +48,20 @@ struct BadFunctionCallException : public std::runtime_error {
   using std::runtime_error::runtime_error;
 };
 
-using StackElement = Value;
+using StackElement = OMR::Om::Value;
 
 struct Stack {
   StackElement *stackBase;
   StackElement *stackPointer;
 };
 
-typedef RawValue (*JitFunction)(...);
+typedef OMR::Om::RawValue (*JitFunction)(...);
 
 inline bool isReference(StackElement value) {
   return false;  // TODO
 }
 
-class ExecutionContext : public RunContext {
+class ExecutionContext : public OMR::Om::RunContext {
  public:
   ExecutionContext(VirtualMachine *virtualMachine, const Config &cfg);
 
@@ -93,9 +93,9 @@ class ExecutionContext : public RunContext {
 
   void newObject();
 
-  void pushFromObject(Id slotId);
+  void pushFromObject(OMR::Om::Id slotId);
 
-  void popIntoObject(Id slotId);
+  void popIntoObject(OMR::Om::Id slotId);
 
   void callIndirect();
 
@@ -103,13 +103,13 @@ class ExecutionContext : public RunContext {
 
   VirtualMachine *virtualMachine() const { return virtualMachine_; }
 
-  void visitStack(Context &cx, Visitor &visitor) {
+  void visitStack(OMR::Om::Context &cx, OMR::Om::Visitor &visitor) {
     const auto n = stackPointer_ - stackBase_;
     std::cout << ">STACK BEGIN" << std::endl;
     for (std::size_t i = 0; i < n; i++) {
       StackElement e = stackBase_[i];
       std::cout << ">STACK[" << i << "] = " << e << std::endl;
-      if (e.isPtr()) visitor.rootEdge(cx, this, (Cell *)e.getPtr());
+      if (e.isPtr()) visitor.rootEdge(cx, this, e.getPtr<OMR::Om::Cell>());
     }
     std::cout << ">STACK END" << std::endl;
   }
@@ -134,7 +134,7 @@ class ExecutionContext : public RunContext {
 
 class VirtualMachine {
  public:
-  VirtualMachine(ProcessRuntime &runtime, const Config &cfg);
+  VirtualMachine(OMR::Om::ProcessRuntime &runtime, const Config &cfg);
 
   ~VirtualMachine() noexcept;
 
@@ -161,13 +161,13 @@ class VirtualMachine {
 
   const std::shared_ptr<const Module> &module() { return module_; }
 
-  MemoryManager &memoryManager() { return memoryManager_; }
+  OMR::Om::MemoryManager &memoryManager() { return memoryManager_; }
 
-  const MemoryManager &memoryManager() const { return memoryManager_; }
+  const OMR::Om::MemoryManager &memoryManager() const { return memoryManager_; }
 
  private:
   Config cfg_;
-  MemoryManager memoryManager_;
+  OMR::Om::MemoryManager memoryManager_;
   ExecutionContext executionContext_;
   std::shared_ptr<Compiler> compiler_;
   std::shared_ptr<const Module> module_;
@@ -204,7 +204,7 @@ inline ExecutionContext::ExecutionContext(VirtualMachine *virtualMachine,
   std::memset(stack_, 0, sizeof(StackElement) * 1000);
 
   userRoots().push_back(
-      [this](Context &cx, Visitor &v) { this->visitStack(cx, v); });
+      [this](OMR::Om::Context &cx, OMR::Om::Visitor &v) { this->visitStack(cx, v); });
 }
 
 }  // namespace b9

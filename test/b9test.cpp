@@ -1,18 +1,11 @@
-#include <ObjectAllocationModel.hpp>
+
+
 #include <b9/interpreter.hpp>
 #include <b9/loader.hpp>
-#include <b9/objects.hpp>
-#include <b9/objects.inl.hpp>
-// #include <omrgcallocate.hpp>
-#include <b9/allocator.hpp>
-#include <b9/context.hpp>
-#include <b9/runtime.hpp>
 
-#include <b9/allocator.inl.hpp>
-#include <b9/memorymanager.inl.hpp>
-#include <b9/rooting.inl.hpp>
 
-#include <omrgc.h>
+
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,6 +16,8 @@
 
 namespace b9 {
 namespace test {
+
+using namespace OMR::Om;
 
 // clang-format off
 const std::vector<const char*> TEST_NAMES = {
@@ -52,50 +47,7 @@ const std::vector<const char*> TEST_NAMES = {
 };
 // clang-format on
 
-ProcessRuntime runtime;
-
-TEST(MemoryManagerTest, startUpAndShutDown) {
-  MemoryManager manager(runtime);
-  EXPECT_NE(manager.globals().metaMap, nullptr);
-  EXPECT_NE(manager.globals().emptyObjectMap, nullptr);
-  Context cx(manager);
-  EXPECT_NE(cx.globals().metaMap, nullptr);
-  EXPECT_NE(cx.globals().emptyObjectMap, nullptr);
-  MetaMap* metaMap = allocateMetaMap(cx);
-  EXPECT_EQ(metaMap, metaMap->map());
-}
-
-TEST(MemoryManagerTest, startUpAContext) {
-  MemoryManager manager(runtime);
-  Context cx(manager);
-  EXPECT_NE(cx.globals().metaMap, nullptr);
-  EXPECT_NE(cx.globals().emptyObjectMap, nullptr);
-}
-
-TEST(MemoryManagerTest, allocateTheMetaMap) {
-  MemoryManager manager(runtime);
-  Context cx(manager);
-  MetaMap* metaMap = allocateMetaMap(cx);
-  EXPECT_EQ(metaMap, metaMap->map());
-}
-
-TEST(MemoryManagerTest, loseAnObjects) {
-  MemoryManager manager(runtime);
-  Context cx(manager);
-  Object* object = allocateEmptyObject(cx);
-  EXPECT_EQ(object->map(), cx.globals().emptyObjectMap);
-  OMR_GC_SystemCollect(cx.omrVmThread(), 0);
-  // EXPECT_EQ(object->map(), (Map*)0x5e5e5e5e5e5e5e5eul);
-}
-
-TEST(MemoryManagerTest, keepAnObject) {
-  MemoryManager manager(runtime);
-  Context cx(manager);
-  RootRef<Object> object(cx, allocateEmptyObject(cx));
-  EXPECT_EQ(object->map(), cx.globals().emptyObjectMap);
-  OMR_GC_SystemCollect(cx.omrVmThread(), 0);
-  EXPECT_EQ(object->map(), cx.globals().emptyObjectMap);
-}
+OMR::Om::ProcessRuntime runtime;
 
 class InterpreterTest : public ::testing::Test {
  public:
@@ -215,90 +167,6 @@ TEST(ObjectTest, allocateSomething) {
   vm.load(m);
   Value r = vm.run("allocate_object", {});
   EXPECT_EQ(r, Value(Value::integer, 0));
-}
-
-// clang-format off
-std::vector<std::int32_t> integers = {
-  0, 1, -1, 42, -42,
-  std::numeric_limits<std::int32_t>::max(),
-  std::numeric_limits<std::int32_t>::min()
-};
-// clang-format on
-
-TEST(DoubleTest, canonicalNan) {
-  EXPECT_TRUE(std::isnan(makeDouble(CANONICAL_NAN)));
-}
-
-TEST(ValueTest, integerConstructorRoundTrip) {
-  for (auto i : integers) {
-    Value value(Value::integer, i);
-    auto i2 = value.getInteger();
-    EXPECT_EQ(i, i2);
-  }
-}
-
-TEST(ValueTest, setIntegerRoundTrip) {
-  for (auto i : integers) {
-    Value value;
-    value.setInteger(i);
-    auto i2 = value.getInteger();
-    EXPECT_EQ(i, i2);
-  }
-}
-
-TEST(ValueTest, canonicalNan) {
-  EXPECT_EQ((CANONICAL_NAN & Double::SIGN_MASK), 0);
-  EXPECT_NE((CANONICAL_NAN & BoxTag::MASK), BoxTag::VALUE);
-  EXPECT_NE(makeDouble(CANONICAL_NAN), makeDouble(CANONICAL_NAN));
-}
-
-TEST(ValueTest, doubleRoundTrip) {
-  const std::vector<double> doubles =  //
-      {0.0,
-       1.0,
-       43.21,
-       std::numeric_limits<double>::infinity(),
-       std::numeric_limits<double>::max(),
-       std::numeric_limits<double>::min()};
-
-  for (auto d : doubles) {
-    for (auto sign : {+1.0, -1.0}) {
-      d *= sign;
-      Value value;
-      value.setDouble(d);
-      EXPECT_EQ(d, value.getDouble());
-      EXPECT_FALSE(value.isBoxedValue());
-      EXPECT_TRUE(value.isDouble());
-    }
-  }
-}
-
-TEST(ValueTest, signalingNanDouble) {
-  Value value;
-  value.setDouble(std::numeric_limits<double>::signaling_NaN());
-  EXPECT_TRUE(std::isnan(value.getDouble()));
-  EXPECT_FALSE(value.isBoxedValue());
-  EXPECT_NE(value.getDouble(), makeDouble(CANONICAL_NAN));
-  EXPECT_EQ(value.raw(), CANONICAL_NAN);
-}
-
-TEST(ValueTest, quietNanDouble) {
-  Value value;
-  value.setDouble(std::numeric_limits<double>::quiet_NaN());
-  EXPECT_TRUE(std::isnan(value.getDouble()));
-  EXPECT_FALSE(value.isBoxedValue());
-  EXPECT_NE(value.getDouble(), makeDouble(CANONICAL_NAN));
-  EXPECT_EQ(value.raw(), CANONICAL_NAN);
-}
-
-TEST(ValueTest, pointerRoundTrip) {
-  for (void* p : {(void*)0, (void*)1, (void*)(-1 & VALUE_MASK)}) {
-    Value value;
-    value.setPtr(p);
-    EXPECT_EQ(p, value.getPtr());
-    EXPECT_TRUE(value.isBoxedValue());
-    EXPECT_TRUE(value.isPtr());
-  }
 }
 
 }  // namespace test

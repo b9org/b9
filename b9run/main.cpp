@@ -1,11 +1,13 @@
-#include <strings.h>
-#include <b9/context.inl.hpp>
 #include <b9/interpreter.hpp>
 #include <b9/jit.hpp>
 #include <b9/loader.hpp>
-#include <b9/memorymanager.inl.hpp>
-#include <b9/rooting.inl.hpp>
-#include <b9/runtime.hpp>
+
+#include <OMR/Om/Context.inl.hpp>
+#include <OMR/Om/MemoryManager.inl.hpp>
+#include <OMR/Om/RootRef.inl.hpp>
+#include <OMR/Om/Runtime.hpp>
+
+#include <strings.h>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -103,13 +105,13 @@ static bool parseArguments(RunConfig& cfg, const int argc, char* argv[]) {
 
   // check for user defined arguments
   for (; i < argc; i++) {
-    cfg.usrArgs.push_back({b9::Value::integer, std::atoi(argv[i])});
+    cfg.usrArgs.push_back({OMR::Om::Value::integer, std::atoi(argv[i])});
   }
 
   return true;
 }
 
-static void run(b9::ProcessRuntime& runtime, const RunConfig& cfg) {
+static void run(OMR::Om::ProcessRuntime& runtime, const RunConfig& cfg) {
   b9::VirtualMachine vm{runtime, cfg.b9};
   b9::DlLoader loader{true};
 
@@ -128,7 +130,7 @@ static void run(b9::ProcessRuntime& runtime, const RunConfig& cfg) {
 }
 
 int main(int argc, char* argv[]) {
-  b9::ProcessRuntime runtime;
+  OMR::Om::ProcessRuntime runtime;
   RunConfig cfg;
 
   if (!parseArguments(cfg, argc, argv)) {

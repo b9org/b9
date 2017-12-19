@@ -80,7 +80,7 @@ class VirtualMachineState : public OMR::VirtualMachineState {
 
 Compiler::Compiler(VirtualMachine *virtualMachine, const Config &cfg)
     : virtualMachine_(virtualMachine), cfg_(cfg) {
-  auto stackElementType = types_.toIlType<RawValue>();
+  auto stackElementType = types_.toIlType<OMR::Om::RawValue>();
 
   // Stack
   types_.DefineStruct("executionContextType");
@@ -128,7 +128,7 @@ MethodBuilder::MethodBuilder(VirtualMachine *virtualMachine,
 
   DefineName(function->name.c_str());
 
-  stackElementType = types_->template toIlType<RawValue>();
+  stackElementType = types_->template toIlType<OMR::Om::RawValue>();
   stackElementPointerType = types_->PointerTo(stackElementType);
 
   addressPointerType = types_->PointerTo(Address);

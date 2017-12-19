@@ -16,11 +16,10 @@ add_executable(b9test
 
 target_link_libraries(b9test
 	PUBLIC
-		b9 gtest_main b9objects
+		b9 gtest_main
 )
 
 add_test(
 	NAME run_b9test
 	COMMAND env B9_TEST_MODULE=$<TARGET_FILE:interpreter_test> $<TARGET_FILE:b9test>
 )
-

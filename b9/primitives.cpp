@@ -9,7 +9,7 @@ using namespace b9;
 extern "C" void b9_prim_print_number(ExecutionContext *context) {
   StackElement number = context->pop();
   std::cout << number << std::endl;
-  context->push({OMR::Om::Value::integer, 0});
+  context->push(OMR::Om::Value(0));
 }
 
 /// ( string -- 0 )
@@ -18,13 +18,13 @@ extern "C" void b9_prim_print_string(ExecutionContext *context) {
   assert(value.isInteger());
   auto string = context->virtualMachine()->getString(value.getInteger());
   std::cout << string << std::endl;
-  context->push({OMR::Om::Value::integer, 0});
+  context->push(OMR::Om::Value(0));
 }
 
 /// ( -- table )
 extern "C" void b9_prim_hash_table_allocate(ExecutionContext *context) {
   // TODO: Result = pHeap p = hashTable_allocate(8);
-  context->push(OMR::Om::Value().setInteger(0));
+  context->push(OMR::Om::Value(0));
 }
 
 /// ( value key table -- success )
@@ -34,8 +34,7 @@ extern "C" void b9_prim_hash_table_put(ExecutionContext *context) {
   auto ht = context->pop().getInteger();
   // TODO: result = hashTable_put(context, (pHeap)ht, (hashTableKey)k,
   // (hashTableKey)v);
-  auto result = OMR::Om::Value().setInteger(0);
-  context->push(result);
+  context->push(OMR::Om::Value(0));
 }
 
 /// ( key table -- value )
@@ -43,5 +42,5 @@ extern "C" void b9_prim_hash_table_get(ExecutionContext *context) {
   StackElement k = context->pop();
   StackElement ht = context->pop();
   // TODO: result: hashTable_get(context, (pHeap)ht, (hashTableKey)k))
-  context->push(OMR::Om::Value().setInteger(0));
+  context->push(OMR::Om::Value(0));
 }

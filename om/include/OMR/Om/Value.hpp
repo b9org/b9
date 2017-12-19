@@ -31,8 +31,10 @@ static_assert(sizeof(RawValue) == sizeof(double),
 /// Note that for now, the tag's VALUE and MASK are the same, but this could
 /// change.
 namespace BoxTag {
-static constexpr RawValue VALUE = Infra::Double::SPECIAL_TAG | Infra::Double::NAN_SIGNAL_TAG;
-static constexpr RawValue MASK = Infra::Double::SPECIAL_TAG | Infra::Double::NAN_SIGNAL_TAG;
+static constexpr RawValue VALUE =
+    Infra::Double::SPECIAL_TAG | Infra::Double::NAN_SIGNAL_TAG;
+static constexpr RawValue MASK =
+    Infra::Double::SPECIAL_TAG | Infra::Double::NAN_SIGNAL_TAG;
 }  // namespace BoxTag
 
 /// Tags that indicate the kind of value stored in a boxed immediate.
@@ -85,19 +87,23 @@ static_assert(sizeof(ValueData) == sizeof(RawValue),
 /// NaN boxed value.
 class Value {
  public:
-  struct IntegerTag {};
-  static constexpr IntegerTag integer{};
-
   /// zero-initialize the RawData.
-
   constexpr Value() : data_{0} {}
 
   constexpr Value(const Value& other) : data_{other.raw()} {}
 
-  explicit constexpr Value(RawValue raw) : data_{raw} {}
+  explicit constexpr Value(RawValue r) : data_{r} {}
 
-  constexpr Value(IntegerTag, std::int32_t integer)
-      : data_{BoxKindTag::INTEGER | (integer & VALUE_MASK)} {}
+  explicit constexpr Value(std::int32_t i)
+      : data_{BoxKindTag::INTEGER | (RawValue(i) & VALUE_MASK)} {}
+
+  explicit Value(Cell* p)
+      : data_{BoxKindTag::POINTER |
+              (reinterpret_cast<RawValue>(p) & VALUE_MASK)} {}
+
+  explicit Value(double d) {
+    setDouble(d);
+  }
 
   /// Get the underlying raw storage.
   constexpr RawValue raw() const noexcept { return data_.asRawValue; }

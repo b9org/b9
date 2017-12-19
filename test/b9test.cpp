@@ -140,8 +140,8 @@ TEST(MyTest, arguments) {
 
   m->functions.push_back(b9::FunctionSpec{"add_args", i, 2, 0});
   vm.load(m);
-  auto r = vm.run("add_args", {{Value::integer, 1}, {Value::integer, 2}});
-  EXPECT_EQ(r, Value(Value::integer, 3));
+  auto r = vm.run("add_args", {OMR::Om::Value{1}, OMR::Om::Value{2}});
+  EXPECT_EQ(r, Value(3));
 }
 
 extern "C" void b9_prim_print_string(ExecutionContext* context);
@@ -166,7 +166,7 @@ TEST(ObjectTest, allocateSomething) {
   m->primitives.push_back(b9_prim_print_string);
   vm.load(m);
   Value r = vm.run("allocate_object", {});
-  EXPECT_EQ(r, Value(Value::integer, 0));
+  EXPECT_EQ(r, Value(0));
 }
 
 }  // namespace test

@@ -30,7 +30,7 @@ TEST(DoubleTest, canonicalNan) {
 
 TEST(ValueTest, integerConstructorRoundTrip) {
   for (auto i : integers) {
-    Value value(Value::integer, i);
+    Value value(i);
     auto i2 = value.getInteger();
     EXPECT_EQ(i, i2);
   }

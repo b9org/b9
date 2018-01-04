@@ -483,7 +483,7 @@ bool MethodBuilder::generateILForBytecode(
     case ByteCode::STR_PUSH_CONSTANT: {
       int index = instruction.parameter();
       push(builder, builder->ConstInt64(
-                        (int64_t)(char *)virtualMachine_->getString(index)));
+                        (int64_t)(virtualMachine_->getString(index)).c_str()));
       if (nextBytecodeBuilder)
         builder->AddFallThroughBuilder(nextBytecodeBuilder);
     } break;

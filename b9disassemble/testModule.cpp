@@ -25,12 +25,20 @@ TEST (ReadBinaryTest, validModule) {
 	auto module = deserialize(in);
 }
 
+TEST (PrintModuleTest, validModule) {
+  const char* pwd = getenv("PWD");
+  std::cerr << pwd << std::endl;
+  std::ifstream in("valid.mod", std::ios::in | std::ios::binary);
+	auto module = deserialize(in);
+	printModule(module);
+}
+
 TEST (ReadBinaryTest, corruptModule) {
 	std::ifstream in("corrupt.mod", std::ios::in | std::ios::binary);
   EXPECT_THROW(deserialize(in), DeserializeException);
 }
 
-TEST (ReadBinaryTest, readBinaryModule) {
+/*TEST (ReadBinaryTest, readBinaryModule) {
   std::ifstream in("valid.mod", std::ios::in | std::ios::binary);
   auto module = deserialize(in);
   for (auto it = module->functions.begin(); it != module->functions.end(); it++) {
@@ -46,7 +54,7 @@ TEST (ReadBinaryTest, readBinaryModule) {
       std::cout << std::dec; 
     }
   }
-}
+}*/
 
 TEST (ReadBinaryTest, runValidModule) {
   std::ifstream in("valid.mod", std::ios::in | std::ios::binary);
@@ -55,6 +63,20 @@ TEST (ReadBinaryTest, runValidModule) {
   vm.load(module);
   vm.run(0,{1,2});
 }
+
+/*TEST (ReadBinaryTest, readStrings) {
+  auto m = std::make_shared<Module>();
+  std::vector<Instruction> i =
+    {{ByteCode::INT_PUSH_CONSTANT, 2},
+    {ByteCode::INT_PUSH_CONSTANT, 2},
+    {ByteCode::INT_ADD},
+    {ByteCode::FUNCTION_RETURN},
+    END_SECTION};
+  m->functions.push_back(b9::FunctionDef{"add_args", i, 3, 4});
+
+  std::ifstream in("valid.mod", std::ios::in | std::ios::binary);
+  readStringSection(in, m);
+}*/
 
 TEST (WriteBinaryTest, writeModule) {
   auto m = std::make_shared<Module>();
@@ -65,8 +87,9 @@ TEST (WriteBinaryTest, writeModule) {
                      						END_SECTION};
   m->functions.push_back(b9::FunctionDef{"add_args", i, 3, 4});
   serialize(m);  
+  const char* testString = "arianne";
+  m->strings.push_back(testString);
 }
-
 
 }  // namespace test
 }  // namespace b9

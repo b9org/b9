@@ -129,7 +129,7 @@ Parameter ExecutionContext::intJmpLe(Parameter delta) {
 }
 
 void ExecutionContext::strPushConstant(Parameter value) {
-  push((StackElement)virtualMachine_->getString(value));
+  push((StackElement)(virtualMachine_->getString(value)).c_str());
 }
 
 /* void strJmpEq(Parameter delta);
@@ -361,7 +361,7 @@ JitFunction VirtualMachine::generateCode(const std::size_t functionIndex) {
   }
 }
 
-const char *VirtualMachine::getString(int index) {
+std::string VirtualMachine::getString(int index) {
   return module_->strings[index];
 }
 

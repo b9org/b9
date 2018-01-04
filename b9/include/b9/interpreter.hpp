@@ -127,7 +127,7 @@ class VirtualMachine {
   JitFunction generateCode(const std::size_t functionIndex);
   void generateAllCode();
 
-  const char *getString(int index);
+  std::string getString(int index);
 
   ExecutionContext *executionContext() { return &executionContext_; }
 

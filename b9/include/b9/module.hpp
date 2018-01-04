@@ -27,6 +27,7 @@ struct FunctionDef {
       : instructions{std::move(instructions)}, nargs{nargs}, nregs{nregs}, name{name} {}  
   // Function Data
   std::string name;
+  uint64_t index;
   std::uint32_t nargs;
   std::uint32_t nregs;
   std::vector<Instruction> instructions;
@@ -49,7 +50,7 @@ struct FunctionNotFoundException : public std::runtime_error {
 struct Module {
   std::vector<FunctionDef> functions;
   std::vector<PrimitiveFunction*> primitives;
-  std::vector<const char*> strings;
+  std::vector<std::string> strings;
 
   std::size_t getFunctionIndex(const std::string& name) const {
     for (std::size_t i = 0; i < functions.size(); i++) {

@@ -1,6 +1,7 @@
 #include <iostream>
 #include <memory>
 #include <vector>
+#include <cstring>
 #include <string.h>
 
 #include <b9/deserialize.hpp>
@@ -28,8 +29,8 @@ void readSectionCode(std::istream &in, uint32_t &sectionCode) {
  if (!readNumber(in, sectionCode)) {
    throw DeserializeException{"Error in Parse Section Code"};
  }
- // TODO -> Update this if-statement as we add more section codes
- if (sectionCode != 1) {
+ // TODO -> Update as we add more section codes
+ if (sectionCode != 1 || sectionCode != 2) {
    throw DeserializeException{"Error in Parse Section Code"};
  }
 }
@@ -45,12 +46,15 @@ bool readInstructions(std::istream &in, std::vector<Instruction> &instructions) 
   return true;
 }
 
-bool printModule(std::istream &in, std::ostream &out) {
-	static const char* modulePrint =
-    "B9 Module:\n"
-    "  Functions:\n";
-  
-  return true;    
+void readFunctionName(std::istream &in, std::string &functionName, uint32_t size) {
+	if (!readNumber(in, size)) {
+		throw DeserializeException{"Error reading size of function name"};
+	}
+	char temp[256];
+	if (!readBytes(in, temp, sizeof(uint32_t))) {
+		throw DeserializeException{"Error reading function name"};
+	}
+	functionName = temp;
 }
 
 void readFunctionData(std::istream& in, FunctionDef &functionSpec, uint32_t index) {
@@ -65,15 +69,44 @@ void readFunctionSection(std::istream& in, std::shared_ptr<Module>& module) {
 		throw DeserializeException{"Error reading function count"};
 	}
   for (uint32_t i = 0; i < functionCount; i++) {
-    module->functions.emplace_back("unknown_function", std::vector<Instruction>{});
-    FunctionDef& functionSpec = module->functions.back();;
-    uint32_t index = module->getFunctionIndex(functionSpec.name);
+    std::string functionName;
+		uint32_t size;
+		readFunctionName(in, functionName, size);
+		module->functions.emplace_back(functionName, std::vector<Instruction>{});
+    FunctionDef& functionSpec = module->functions.back();
+		uint32_t index = module->getFunctionIndex(functionSpec.name);
     readFunctionData(in, functionSpec, index);
     
     if (!readInstructions(in, functionSpec.instructions)) {
-      throw DeserializeException{"Error in read bytecodes"};  
+      throw DeserializeException{"Error in read instructions"};
     }
    }
+}
+
+void readString(std::istream &in, std::string toRead, uint32_t length) {
+  for (size_t i = 0; i < length; i++) {
+    if (in.eof()) {
+      throw DeserializeException{"Unexpected EOF"};
+    }
+    char current = in.get();
+    toRead.push_back(current);
+  }
+}
+
+void readStringSection(std::istream &in, std::shared_ptr<Module> &module) {
+  uint32_t stringCount;
+  if (!readNumber(in, stringCount, sizeof(stringCount))) {
+    throw DeserializeException{"Error reading string count"};
+  }
+  for (uint32_t i = 0; i < stringCount; i++) {
+    uint32_t length;
+    std::string toRead;
+    if (!readNumber(in, length, sizeof(length))) {
+      throw DeserializeException{"Error reading string length"};
+    }
+    readString(in, toRead, length);
+    module->strings.push_back(toRead);
+  }
 }
 
 void readSection(std::istream& in, std::shared_ptr<Module>& module) { 
@@ -87,9 +120,31 @@ void readSection(std::istream& in, std::shared_ptr<Module>& module) {
 	switch(sectionCode) {
   case 1:
 	  return readFunctionSection(in, module);
+  case 2:
+    return readStringSection(in, module);
   default:
     throw DeserializeException{"Invalid Section Code"};
   }
+}
+
+bool printModule(std::shared_ptr<Module>& module) {
+	uint32_t functionCount = sizeof(module->functions);
+  for (auto it = module->functions.begin(); it != module->functions.end(); it++) {
+    uint32_t index = 1;
+    std::cout << "Function Data: " << std::endl
+      << "  Name: " << it->name
+			<< ", Index: " << index
+      << ", Number Arguments: " << it->nargs
+      << ", Number Registers: " << it->nregs << std::endl;
+    std::cout << "Instructions: " << std:: endl;
+    for (auto instruction : it->instructions) {
+      std::cout << std::hex;
+      std::cout << "   " << instruction << std::endl;
+      std::cout << std::dec;
+    }
+		++index;
+  }
+  return true;
 }
 
 std::shared_ptr<Module> deserialize(std::istream &in) {

@@ -45,13 +45,11 @@ void readSectionCode(std::istream &in, uint32_t &sectionCode);
 
 bool readFunctionCount(std::istream &in, uint32_t &functionCount);
 
-void readFunctionName(std::istream &in, std::string &functionName);
-
 void readFunctionData(std::istream &in, FunctionDef &functionSpec, uint32_t index);
 
 bool readInstructions(std::istream &in, std::shared_ptr<std::vector<Instruction>> &instructions);
 
-void readString(std::istream &in, char* toRead, uint32_t length);
+void readString(std::istream &in, std::string &toRead, uint32_t length);
 
 void readStringSection(std::istream &in, std::shared_ptr<Module> &module);
 
@@ -59,7 +57,7 @@ bool createModule(std::istream &in, std::ostream &out);
 
 std::shared_ptr<Module> deserialize(std::istream &in);
 
-bool printModule(std::shared_ptr<Module>& module);
+void printModule(std::shared_ptr<Module>& module);
 
 } // b9 namespace
 

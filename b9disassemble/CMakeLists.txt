@@ -32,5 +32,6 @@ function(b9disassemble_test module)
 endfunction()
 
 b9disassemble_test(empty.mod)
-b9disassemble_test(valid.mod)
+b9disassemble_test(simple.mod)
 b9disassemble_test(corrupt.mod)
+b9disassemble_test(complex.mod)

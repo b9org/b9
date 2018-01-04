@@ -46,17 +46,6 @@ bool readInstructions(std::istream &in, std::vector<Instruction> &instructions) 
   return true;
 }
 
-void readFunctionName(std::istream &in, std::string &functionName, uint32_t size) {
-	if (!readNumber(in, size)) {
-		throw DeserializeException{"Error reading size of function name"};
-	}
-	char temp[256];
-	if (!readBytes(in, temp, sizeof(uint32_t))) {
-		throw DeserializeException{"Error reading function name"};
-	}
-	functionName = temp;
-}
-
 void readFunctionData(std::istream& in, FunctionDef &functionSpec, uint32_t index) {
   readNumber(in, index);
   readNumber(in, functionSpec.nargs);
@@ -71,8 +60,9 @@ void readFunctionSection(std::istream& in, std::shared_ptr<Module>& module) {
   for (uint32_t i = 0; i < functionCount; i++) {
     std::string functionName;
 		uint32_t size;
-		readFunctionName(in, functionName, size);
-		module->functions.emplace_back(functionName, std::vector<Instruction>{});
+		readNumber(in, size);
+    readString(in, functionName, size);
+    module->functions.emplace_back(functionName, std::vector<Instruction>{});
     FunctionDef& functionSpec = module->functions.back();
 		uint32_t index = module->getFunctionIndex(functionSpec.name);
     readFunctionData(in, functionSpec, index);
@@ -83,7 +73,7 @@ void readFunctionSection(std::istream& in, std::shared_ptr<Module>& module) {
    }
 }
 
-void readString(std::istream &in, std::string toRead, uint32_t length) {
+void readString(std::istream &in, std::string &toRead, uint32_t length) {
   for (size_t i = 0; i < length; i++) {
     if (in.eof()) {
       throw DeserializeException{"Unexpected EOF"};
@@ -127,24 +117,26 @@ void readSection(std::istream& in, std::shared_ptr<Module>& module) {
   }
 }
 
-bool printModule(std::shared_ptr<Module>& module) {
+void printModule(std::shared_ptr<Module>& module) {
 	uint32_t functionCount = sizeof(module->functions);
+  uint32_t index = 0;
   for (auto it = module->functions.begin(); it != module->functions.end(); it++) {
-    uint32_t index = 1;
-    std::cout << "Function Data: " << std::endl
-      << "  Name: " << it->name
-			<< ", Index: " << index
+    std::cout << "Function Data at index " << index << ": " << std::endl
+      << "   Name: " << it->name
       << ", Number Arguments: " << it->nargs
       << ", Number Registers: " << it->nregs << std::endl;
-    std::cout << "Instructions: " << std:: endl;
+    std::cout << "   Instructions: " << std:: endl;
     for (auto instruction : it->instructions) {
       std::cout << std::hex;
-      std::cout << "   " << instruction << std::endl;
+      std::cout << "      " << instruction << std::endl;
       std::cout << std::dec;
     }
 		++index;
   }
-  return true;
+  std::cout << "String Table:" << std::endl;
+  for (auto string : module->strings) {
+    std::cout << "   " << string << std::endl;
+  }
 }
 
 std::shared_ptr<Module> deserialize(std::istream &in) {

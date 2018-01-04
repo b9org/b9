@@ -18,19 +18,26 @@ TEST (ReadBinaryTest, emptyModule) {
 	EXPECT_THROW(deserialize(in), DeserializeException);
 }
 
-TEST (ReadBinaryTest, validModule) {
+TEST (ReadBinaryTest, simpleModule) {
   const char* pwd = getenv("PWD");
   std::cerr << pwd << std::endl;
-  std::ifstream in("valid.mod", std::ios::in | std::ios::binary);
+  std::ifstream in("simple.mod", std::ios::in | std::ios::binary);
 	auto module = deserialize(in);
 }
 
-TEST (PrintModuleTest, validModule) {
+TEST (PrintModuleTest, validModules) {
   const char* pwd = getenv("PWD");
   std::cerr << pwd << std::endl;
-  std::ifstream in("valid.mod", std::ios::in | std::ios::binary);
-	auto module = deserialize(in);
-	printModule(module);
+
+  std::cout << "*****TEST SIMPLE BINARY MODULE*****" << std::endl;
+  std::ifstream in1("simple.mod", std::ios::in | std::ios::binary);
+	auto module1 = deserialize(in1);
+	printModule(module1);
+
+  std::cout << "*****TEST COMPLEX BINARY MODULE*****" << std::endl;
+  std::ifstream in2("complex.mod", std::ios::in | std::ios::binary);
+  auto module2 = deserialize(in2);
+  printModule(module2);
 }
 
 TEST (ReadBinaryTest, corruptModule) {
@@ -39,7 +46,7 @@ TEST (ReadBinaryTest, corruptModule) {
 }
 
 /*TEST (ReadBinaryTest, readBinaryModule) {
-  std::ifstream in("valid.mod", std::ios::in | std::ios::binary);
+  std::ifstream in("simple.mod", std::ios::in | std::ios::binary);
   auto module = deserialize(in);
   for (auto it = module->functions.begin(); it != module->functions.end(); it++) {
     uint32_t index = module->getFunctionIndex(it->name);
@@ -57,7 +64,7 @@ TEST (ReadBinaryTest, corruptModule) {
 }*/
 
 TEST (ReadBinaryTest, runValidModule) {
-  std::ifstream in("valid.mod", std::ios::in | std::ios::binary);
+  std::ifstream in("simple.mod", std::ios::in | std::ios::binary);
 	auto module = deserialize(in);
   VirtualMachine vm{{}}; 
   vm.load(module);
@@ -74,7 +81,7 @@ TEST (ReadBinaryTest, runValidModule) {
     END_SECTION};
   m->functions.push_back(b9::FunctionDef{"add_args", i, 3, 4});
 
-  std::ifstream in("valid.mod", std::ios::in | std::ios::binary);
+  std::ifstream in("simple.mod", std::ios::in | std::ios::binary);
   readStringSection(in, m);
 }*/
 

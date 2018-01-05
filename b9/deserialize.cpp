@@ -62,7 +62,7 @@ void readFunctionSection(std::istream& in, std::shared_ptr<Module>& module) {
 		uint32_t size;
 		readNumber(in, size);
     readString(in, functionName, size);
-    module->functions.emplace_back(functionName, std::vector<Instruction>{});
+    module->functions.emplace_back(functionName, i, std::vector<Instruction>{});
     FunctionDef& functionSpec = module->functions.back();
 		uint32_t index = module->getFunctionIndex(functionSpec.name);
     readFunctionData(in, functionSpec, index);

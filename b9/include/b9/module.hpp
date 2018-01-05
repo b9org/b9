@@ -17,17 +17,20 @@ class VirtualMachine;
 
 // Function Definition
 struct FunctionDef {
+
   // Copy Constructor
-  FunctionDef(const std::string& name, const std::vector<Instruction> &instructions,
-               std::uint32_t nargs = 0, std::uint32_t nregs = 0)
-      : instructions{instructions}, nargs{nargs}, nregs{nregs}, name{name} {}
+  FunctionDef(const std::string& name, std::uint32_t index, const std::vector<Instruction> &instructions,
+      std::uint32_t nargs = 0, std::uint32_t nregs = 0)
+      : name{name}, index{index}, instructions{instructions}, nargs{nargs}, nregs{nregs} {}
+
   // Move Constructor
-  FunctionDef(const std::string& name, std::vector<Instruction> &&instructions,
-               std::uint32_t nargs = 0, std::uint32_t nregs = 0)
-      : instructions{std::move(instructions)}, nargs{nargs}, nregs{nregs}, name{name} {}  
+  FunctionDef(const std::string& name, std::uint32_t index, std::vector<Instruction> &&instructions,
+      std::uint32_t nargs = 0, std::uint32_t nregs = 0)
+      : name{name}, index{index}, instructions{std::move(instructions)}, nargs{nargs}, nregs{nregs} {}
+
   // Function Data
   std::string name;
-  uint64_t index;
+  uint32_t index;
   std::uint32_t nargs;
   std::uint32_t nregs;
   std::vector<Instruction> instructions;

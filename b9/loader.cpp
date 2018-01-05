@@ -36,7 +36,7 @@ void DlLoader::loadFunctions(const std::shared_ptr<Module>& module,
       ++ip;
     }
     instructions.push_back(END_SECTION);
-    module->functions.emplace_back(entry.name, std::move(instructions), entry.nargs,
+    module->functions.emplace_back(entry.name, i, std::move(instructions), entry.nargs,
                                    entry.nregs);
   }
 }

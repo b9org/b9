@@ -20,29 +20,44 @@ void writeInstructions(std::ofstream &out, FunctionDef &functionSpec) {
 
 void writeFunctionData(std::ofstream &out, const std::shared_ptr<Module> &module) {
 	for (auto function : module->functions) {
-    uint32_t index = module->getFunctionIndex(function.name);
-    writeNumber(out, index);
+    uint32_t nameSize = (function.name).length();
+    writeNumber(out, nameSize);
+    writeString(out, function.name);
+    writeNumber(out, function.index);
     writeNumber(out, function.nargs);
     writeNumber(out, function.nregs);
-	  writeInstructions(out, function);
-	}
+    writeInstructions(out, function);
+  }
 }
 
-void serialize (const std::shared_ptr<Module> &module) {
-  std::ofstream out;
-  auto f = module->functions;
-  // TODO implement some form of module naming 
-  out = std::ofstream("test.mod", std::ios::binary);
-  const char* const header = "b9module";
-	out << header;
+void writeFunctionSection(std::ofstream &out, const std::shared_ptr<Module> &module) {
  	uint32_t sectionCode = 1;
 	uint32_t functionCount = module->functions.size();
 	writeNumber(out, sectionCode);
 	writeNumber(out, functionCount);
-	
-	if (module->functions.size() > 0) {
-		writeFunctionData(out, module);
-	}
+  writeFunctionData(out, module);
+}
+
+void writeStringSection(std::ofstream &out, const std::shared_ptr<Module> module) {
+  uint32_t sectionCode = 2;
+  uint32_t stringCount = module->strings.size();
+  writeNumber(out, sectionCode);
+  writeNumber(out, stringCount);
+  for (auto string : module->strings) {
+    uint32_t stringLength = string.length();
+    writeNumber(out, stringLength);
+    writeString(out, string);
+  }
+}
+
+void serialize (const std::shared_ptr<Module> &module, std::string fileName) {
+  std::ofstream out;
+  auto f = module->functions;
+  out = std::ofstream(fileName, std::ios::binary);
+  std::string header = "b9module";
+  writeString(out, header);
+	writeFunctionSection(out, module);
+  writeStringSection(out, module);
 }
 
 } // namespace b9

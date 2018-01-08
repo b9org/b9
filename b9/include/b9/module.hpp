@@ -4,10 +4,10 @@
 #include <b9/instructions.hpp>
 
 #include <cstdint>
-#include <stdexcept>
-#include <vector>
 #include <iostream>
-#include <string> 
+#include <stdexcept>
+#include <string>
+#include <vector>
 
 namespace b9 {
 
@@ -17,16 +17,25 @@ class VirtualMachine;
 
 // Function Definition
 struct FunctionDef {
-
   // Copy Constructor
-  FunctionDef(const std::string& name, std::uint32_t index, const std::vector<Instruction> &instructions,
-      std::uint32_t nargs = 0, std::uint32_t nregs = 0)
-      : name{name}, index{index}, instructions{instructions}, nargs{nargs}, nregs{nregs} {}
+  FunctionDef(const std::string& name, std::uint32_t index,
+              const std::vector<Instruction>& instructions,
+              std::uint32_t nargs = 0, std::uint32_t nregs = 0)
+      : name{name},
+        index{index},
+        instructions{instructions},
+        nargs{nargs},
+        nregs{nregs} {}
 
   // Move Constructor
-  FunctionDef(const std::string& name, std::uint32_t index, std::vector<Instruction> &&instructions,
-      std::uint32_t nargs = 0, std::uint32_t nregs = 0)
-      : name{name}, index{index}, instructions{std::move(instructions)}, nargs{nargs}, nregs{nregs} {}
+  FunctionDef(const std::string& name, std::uint32_t index,
+              std::vector<Instruction>&& instructions, std::uint32_t nargs = 0,
+              std::uint32_t nregs = 0)
+      : name{name},
+        index{index},
+        instructions{std::move(instructions)},
+        nargs{nargs},
+        nregs{nregs} {}
 
   // Function Data
   std::string name;
@@ -70,7 +79,6 @@ struct Module {
     }
     return functions[index].name;
   }
-
 };
 
 }  // namespace b9

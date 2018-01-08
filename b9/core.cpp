@@ -285,7 +285,7 @@ StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
         intSub();
         break;
 
-      // CASCON2017 - Add INT_MUL and INT_DIV here
+        // CASCON2017 - Add INT_MUL and INT_DIV here
 
       case ByteCode::INT_PUSH_CONSTANT:
         intPushConstant(instructionPointer->parameter());
@@ -353,7 +353,7 @@ const FunctionDef *VirtualMachine::getFunction(std::size_t index) {
 JitFunction VirtualMachine::generateCode(const std::size_t functionIndex) {
   try {
     return compiler_->generateCode(functionIndex);
-  } catch (const CompilationException& e) {
+  } catch (const CompilationException &e) {
     auto f = getFunction(functionIndex);
     std::cerr << "Warning: Failed to compile " << f << std::endl;
     std::cerr << "    with error: " << e.what() << std::endl;

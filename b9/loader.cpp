@@ -29,15 +29,15 @@ void DlLoader::loadFunctions(const std::shared_ptr<Module>& module,
   auto table = loadSymbol<const DlFunctionTable>(handle, "b9_function_table");
   for (std::size_t i = 0; i < table->length; i++) {
     auto& entry = table->functions[i];
-    const Instruction *ip = entry.address;
+    const Instruction* ip = entry.address;
     auto instructions = std::vector<Instruction>();
     while (*ip != END_SECTION) {
-      instructions.push_back(*ip); 
+      instructions.push_back(*ip);
       ++ip;
     }
     instructions.push_back(END_SECTION);
-    module->functions.emplace_back(entry.name, i, std::move(instructions), entry.nargs,
-                                   entry.nregs);
+    module->functions.emplace_back(entry.name, i, std::move(instructions),
+                                   entry.nargs, entry.nregs);
   }
 }
 

@@ -123,10 +123,10 @@ TEST(MyTest, arguments) {
   b9::VirtualMachine vm{{}};
   auto m = std::make_shared<Module>();
   std::vector<Instruction> i = {{ByteCode::PUSH_FROM_VAR, 0},
-                     {ByteCode::PUSH_FROM_VAR, 1},
-                     {ByteCode::INT_ADD},
-                     {ByteCode::FUNCTION_RETURN},
-                     END_SECTION};
+                                {ByteCode::PUSH_FROM_VAR, 1},
+                                {ByteCode::INT_ADD},
+                                {ByteCode::FUNCTION_RETURN},
+                                END_SECTION};
   uint32_t index = 0;
   m->functions.push_back(b9::FunctionDef{"add_args", index, i, 2, 0});
   vm.load(m);

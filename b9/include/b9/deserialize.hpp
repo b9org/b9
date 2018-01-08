@@ -4,10 +4,10 @@
 #include <b9/instructions.hpp>
 #include <b9/module.hpp>
 
+#include <string.h>
 #include <iostream>
 #include <memory>
 #include <vector>
-#include <string.h>
 
 namespace b9 {
 
@@ -15,7 +15,7 @@ struct DeserializeException : public std::runtime_error {
   using std::runtime_error::runtime_error;
 };
 
-inline bool readBytes(std::istream& in, char* buffer, long bytes) {
+inline bool readBytes(std::istream &in, char *buffer, long bytes) {
   long count = 0;
   do {
     in.read(&buffer[count], bytes - count);
@@ -31,7 +31,7 @@ inline bool readBytes(std::istream& in, char* buffer, long bytes) {
 /* Generic number reader */
 template <typename Number>
 bool readNumber(std::istream &in, Number &out, long bytes = sizeof(Number)) {
-  char* buffer = (char*)&out;
+  char *buffer = (char *)&out;
   if (!readBytes(in, buffer, bytes)) {
     std::cout << "Error in readNumber" << std::endl;
     return false;
@@ -39,15 +39,17 @@ bool readNumber(std::istream &in, Number &out, long bytes = sizeof(Number)) {
   return true;
 }
 
-void readHeader(std::istream &in, char* buffer);
+void readHeader(std::istream &in, char *buffer);
 
 void readSectionCode(std::istream &in, uint32_t &sectionCode);
 
 bool readFunctionCount(std::istream &in, uint32_t &functionCount);
 
-void readFunctionData(std::istream &in, FunctionDef &functionSpec, uint32_t index);
+void readFunctionData(std::istream &in, FunctionDef &functionSpec,
+                      uint32_t index);
 
-bool readInstructions(std::istream &in, std::shared_ptr<std::vector<Instruction>> &instructions);
+bool readInstructions(std::istream &in,
+                      std::shared_ptr<std::vector<Instruction>> &instructions);
 
 void readString(std::istream &in, std::string &toRead, uint32_t length);
 
@@ -57,8 +59,8 @@ bool createModule(std::istream &in, std::ostream &out);
 
 std::shared_ptr<Module> deserialize(std::istream &in);
 
-void printModule(std::shared_ptr<Module>& module);
+void printModule(std::shared_ptr<Module> &module);
 
-} // b9 namespace
+}  // namespace b9
 
-#endif // B9_DESERIALIZE_HPP_
+#endif  // B9_DESERIALIZE_HPP_

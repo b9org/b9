@@ -262,7 +262,8 @@ bool MethodBuilder::inlineProgramIntoBuilder(
   }
 
   if (cfg_.debug)
-    std::cout << "Creating " << numberOfBytecodes << " bytecode builders" << std::endl;
+    std::cout << "Creating " << numberOfBytecodes << " bytecode builders"
+              << std::endl;
   std::vector<TR::BytecodeBuilder *> builderTable;
   builderTable.reserve(numberOfBytecodes);
   for (int i = 0; i < numberOfBytecodes; i++) {
@@ -371,13 +372,13 @@ bool MethodBuilder::generateILForBytecode(
     std::vector<TR::BytecodeBuilder *> bytecodeBuilderTable,
     const Instruction *program, ByteCode bytecode, long bytecodeIndex,
     TR::BytecodeBuilder *jumpToBuilderForInlinedReturn) {
-
   TR::BytecodeBuilder *builder = bytecodeBuilderTable[bytecodeIndex];
   Instruction instruction = program[bytecodeIndex];
   assert(bytecode == instruction.byteCode());
 
   if (nullptr == builder) {
-    if (cfg_.debug) std::cout << "unexpected NULL BytecodeBuilder!" << std::endl;
+    if (cfg_.debug)
+      std::cout << "unexpected NULL BytecodeBuilder!" << std::endl;
     return false;
   }
 
@@ -519,7 +520,8 @@ bool MethodBuilder::generateILForBytecode(
 
         if (cfg_.passParam) {
           if (cfg_.debug) {
-            std::cout << "Parameters are passed to the function call" << std::endl;
+            std::cout << "Parameters are passed to the function call"
+                      << std::endl;
           }
 
           // Attempt to inline the function we're calling
@@ -582,7 +584,8 @@ bool MethodBuilder::generateILForBytecode(
           }
         } else {
           if (cfg_.debug) {
-            std::cout << "Parameters are on stack to the function call" << std::endl;
+            std::cout << "Parameters are on stack to the function call"
+                      << std::endl;
           }
           TR::IlValue *result;
           builder->vmState()->Commit(builder);
@@ -605,7 +608,8 @@ bool MethodBuilder::generateILForBytecode(
         // only use interpreter to dispatch the calls
         if (cfg_.debug)
           std::cout << "Calling interpret_0 to dispatch call for "
-                    << callee->name << " with " << argsCount << " args" << std::endl;
+                    << callee->name << " with " << argsCount << " args"
+                    << std::endl;
         builder->vmState()->Commit(builder);
         TR::IlValue *result = builder->Call(
             "interpret_0", 2,
@@ -780,7 +784,8 @@ void MethodBuilder::drop(TR::BytecodeBuilder *builder) { pop(builder); }
 
 TR::IlValue *MethodBuilder::pop(TR::BytecodeBuilder *builder) {
   if (cfg_.lazyVmState) {
-    return dynamic_cast<VirtualMachineState *>(builder->vmState())->_stack->Pop(builder);
+    return dynamic_cast<VirtualMachineState *>(builder->vmState())
+        ->_stack->Pop(builder);
   }
   TR::IlValue *sp = builder->LoadIndirect(
       "executionContextType", "stackPointer", builder->ConstAddress(context_));
@@ -793,7 +798,8 @@ TR::IlValue *MethodBuilder::pop(TR::BytecodeBuilder *builder) {
 
 void MethodBuilder::push(TR::BytecodeBuilder *builder, TR::IlValue *value) {
   if (cfg_.lazyVmState) {
-    dynamic_cast<VirtualMachineState *>(builder->vmState())->_stack->Push(builder, value);
+    dynamic_cast<VirtualMachineState *>(builder->vmState())
+        ->_stack->Push(builder, value);
   } else {
     TR::IlValue *sp =
         builder->LoadIndirect("executionContextType", "stackPointer",

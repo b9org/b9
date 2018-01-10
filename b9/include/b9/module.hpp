@@ -45,9 +45,15 @@ struct FunctionDef {
   std::vector<Instruction> instructions;
 };
 
-inline std::ostream& operator<<(std::ostream& out, const FunctionDef& f) {
-  return out << f.name << " (" << &(f.instructions) << "): {nargs: " << f.nargs
-             << ", nregs: " << f.nregs << "}";
+inline void operator<<(std::ostream& out, const FunctionDef& f) {
+  out << "Function Name: " << f.name << ", Index: " << f.index << std::endl
+      << "   Number Arguments: " << f.nargs << ", Number Registers: " << f.nregs
+      << std::endl
+      << "   Instructions: " << std::endl;
+  for (auto instruction : f.instructions) {
+    out << "      " << instruction << std::endl;
+  }
+  out << std::endl;
 }
 
 // Primitive Function from Interpreter call
@@ -79,29 +85,20 @@ struct Module {
     }
     return functions[index].name;
   }
-
-	void printModule() {
-		int32_t index = 0;
-		for (auto it = functions.begin(); it != functions.end();
-				 it++) {
-			std::cout << "Function Data at index " << index << ": " << std::endl
-								<< "   Name: " << it->name << ", Number Arguments: " << it->nargs
-								<< ", Number Registers: " << it->nregs << std::endl;
-			std::cout << "   Instructions: " << std::endl;
-			for (auto instruction : it->instructions) {
-				std::cout << std::hex;
-				std::cout << "      " << instruction << std::endl;
-				std::cout << std::dec;
-			}
-			++index;
-		}
-		std::cout << "String Table:" << std::endl;
-		for (auto string : strings) {
-			std::cout << "   " << string << std::endl;
-		}
-	}
-
 };
+
+inline void operator<<(std::ostream& out, const Module& m) {
+  int32_t index = 0;
+  for (auto function : m.functions) {
+    out << function;
+    ++index;
+  }
+  out << "String Table:" << std::endl;
+  for (auto string : m.strings) {
+    out << "   " << string << std::endl;
+  }
+  out << std::endl;
+}
 
 }  // namespace b9
 

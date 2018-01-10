@@ -16,7 +16,9 @@ bool writeNumber(std::ofstream &out, const Number &n) {
   return out.good();
 }
 
-inline void writeString(std::ofstream &out, std::string toWrite) { out << toWrite; }
+inline void writeString(std::ofstream &out, std::string toWrite) {
+  out << toWrite;
+}
 
 void writeInstructions(std::ofstream &out, const FunctionDef &functionDef);
 

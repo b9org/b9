@@ -32,12 +32,13 @@ TEST(PrintModuleTest, validModules) {
   std::cout << "*****TEST PRINT SIMPLE BINARY MODULE*****" << std::endl;
   std::ifstream in1("simple.mod", std::ios::in | std::ios::binary);
   auto module1 = deserialize(in1);
-  module1->printModule();
+
+  std::cout << *module1;
 
   std::cout << "*****TEST PRINT COMPLEX BINARY MODULE*****" << std::endl;
   std::ifstream in2("complex.mod", std::ios::in | std::ios::binary);
   auto module2 = deserialize(in2);
-  module2->printModule();
+  std::cout << *module2;
 }
 
 TEST(ReadBinaryTest, corruptModule) {
@@ -78,9 +79,9 @@ TEST(WriteBinaryTest, writeModule) {
 TEST(ReadAndWriteBinary, readWriteModule) {
   std::ifstream in("complex.mod", std::ios::in | std::ios::binary);
   auto module = deserialize(in);
-	std::ofstream out;
-	out = std::ofstream("testReadWriteModule.mod", std::ios::binary);
-	serialize(*module, out);
+  std::ofstream out;
+  out = std::ofstream("testReadWriteModule.mod", std::ios::binary);
+  serialize(*module, out);
 }
 
 }  // namespace test

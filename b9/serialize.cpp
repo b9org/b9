@@ -18,8 +18,7 @@ void writeInstructions(std::ofstream &out, const FunctionDef &functionDef) {
   std::cout << std::dec;
 }
 
-void writeFunctionData(std::ofstream &out,
-                       const Module &module) {
+void writeFunctionData(std::ofstream &out, const Module &module) {
   for (auto function : module.functions) {
     uint32_t nameSize = (function.name).length();
     writeNumber(out, nameSize);
@@ -31,8 +30,7 @@ void writeFunctionData(std::ofstream &out,
   }
 }
 
-void writeFunctionSection(std::ofstream &out,
-                          const Module &module) {
+void writeFunctionSection(std::ofstream &out, const Module &module) {
   uint32_t sectionCode = 1;
   uint32_t functionCount = module.functions.size();
   writeNumber(out, sectionCode);
@@ -40,8 +38,7 @@ void writeFunctionSection(std::ofstream &out,
   writeFunctionData(out, module);
 }
 
-void writeStringSection(std::ofstream &out,
-                        const Module &module) {
+void writeStringSection(std::ofstream &out, const Module &module) {
   uint32_t sectionCode = 2;
   uint32_t stringCount = module.strings.size();
   writeNumber(out, sectionCode);

@@ -79,6 +79,28 @@ struct Module {
     }
     return functions[index].name;
   }
+
+	void printModule() {
+		int32_t index = 0;
+		for (auto it = functions.begin(); it != functions.end();
+				 it++) {
+			std::cout << "Function Data at index " << index << ": " << std::endl
+								<< "   Name: " << it->name << ", Number Arguments: " << it->nargs
+								<< ", Number Registers: " << it->nregs << std::endl;
+			std::cout << "   Instructions: " << std::endl;
+			for (auto instruction : it->instructions) {
+				std::cout << std::hex;
+				std::cout << "      " << instruction << std::endl;
+				std::cout << std::dec;
+			}
+			++index;
+		}
+		std::cout << "String Table:" << std::endl;
+		for (auto string : strings) {
+			std::cout << "   " << string << std::endl;
+		}
+	}
+
 };
 
 }  // namespace b9

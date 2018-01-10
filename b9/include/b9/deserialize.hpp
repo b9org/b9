@@ -21,22 +21,14 @@ inline bool readBytes(std::istream &in, char *buffer, long bytes) {
     in.read(&buffer[count], bytes - count);
     count += in.gcount();
   } while (count < bytes && in.good());
-  if (count != bytes) {
-    std::cout << "Error in readBytes" << std::endl;
-    return false;
-  }
-  return true;
+  return count == bytes;
 }
 
 /* Generic number reader */
 template <typename Number>
 bool readNumber(std::istream &in, Number &out, long bytes = sizeof(Number)) {
   char *buffer = (char *)&out;
-  if (!readBytes(in, buffer, bytes)) {
-    std::cout << "Error in readNumber" << std::endl;
-    return false;
-  }
-  return true;
+  return readBytes(in, buffer, bytes);
 }
 
 void readHeader(std::istream &in, char *buffer);
@@ -55,11 +47,7 @@ void readString(std::istream &in, std::string &toRead, uint32_t length);
 
 void readStringSection(std::istream &in, std::shared_ptr<Module> &module);
 
-bool createModule(std::istream &in, std::ostream &out);
-
 std::shared_ptr<Module> deserialize(std::istream &in);
-
-void printModule(std::shared_ptr<Module> &module);
 
 }  // namespace b9
 

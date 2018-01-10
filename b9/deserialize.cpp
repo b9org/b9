@@ -29,7 +29,6 @@ void readSectionCode(std::istream &in, uint32_t &sectionCode) {
   if (!readNumber(in, sectionCode)) {
     throw DeserializeException{"Error in Parse Section Code"};
   }
-  // TODO -> Update as we add more section codes
   if (sectionCode != 1 || sectionCode != 2) {
     throw DeserializeException{"Error in Parse Section Code"};
   }
@@ -116,28 +115,6 @@ void readSection(std::istream &in, std::shared_ptr<Module> &module) {
       return readStringSection(in, module);
     default:
       throw DeserializeException{"Invalid Section Code"};
-  }
-}
-
-void printModule(std::shared_ptr<Module> &module) {
-  uint32_t functionCount = sizeof(module->functions);
-  uint32_t index = 0;
-  for (auto it = module->functions.begin(); it != module->functions.end();
-       it++) {
-    std::cout << "Function Data at index " << index << ": " << std::endl
-              << "   Name: " << it->name << ", Number Arguments: " << it->nargs
-              << ", Number Registers: " << it->nregs << std::endl;
-    std::cout << "   Instructions: " << std::endl;
-    for (auto instruction : it->instructions) {
-      std::cout << std::hex;
-      std::cout << "      " << instruction << std::endl;
-      std::cout << std::dec;
-    }
-    ++index;
-  }
-  std::cout << "String Table:" << std::endl;
-  for (auto string : module->strings) {
-    std::cout << "   " << string << std::endl;
   }
 }
 

@@ -12,5 +12,5 @@ using namespace b9;
 
 extern "C" int main(int argc, char** argv) {
   auto module = deserialize(std::cin);
-  printModule(module);
+  module->printModule();
 }

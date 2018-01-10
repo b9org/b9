@@ -16,10 +16,17 @@ bool writeNumber(std::ofstream &out, const Number &n) {
   return out.good();
 }
 
-void writeString(std::ofstream &out, std::string toWrite) { out << toWrite; }
+inline void writeString(std::ofstream &out, std::string toWrite) { out << toWrite; }
 
-void writeBytecodes(std::ofstream &, FunctionDef &);
-void serialize(const std::shared_ptr<Module> &, std::string fileName);
+void writeInstructions(std::ofstream &out, const FunctionDef &functionDef);
+
+void writeFunctionData(std::ofstream &out, const Module &module);
+
+void writeFunctionSection(std::ofstream &out, const Module &module);
+
+void writeStringSection(std::ofstream &out, const Module &module);
+
+void serialize(const Module &module, std::ofstream &out);
 
 }  // namespace b9
 

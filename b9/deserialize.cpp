@@ -25,15 +25,6 @@ void readHeader(std::istream &in) {
   }
 }
 
-void readSectionCode(std::istream &in, uint32_t &sectionCode) {
-  if (!readNumber(in, sectionCode)) {
-    throw DeserializeException{"Error in Parse Section Code"};
-  }
-  if (sectionCode != 1 || sectionCode != 2) {
-    throw DeserializeException{"Error in Parse Section Code"};
-  }
-}
-
 bool readInstructions(std::istream &in,
                       std::vector<Instruction> &instructions) {
   do {
@@ -47,27 +38,29 @@ bool readInstructions(std::istream &in,
 }
 
 void readFunctionData(std::istream &in, FunctionDef &functionDef) {
-  readNumber(in, functionDef.index);
-  readNumber(in, functionDef.nargs);
-  readNumber(in, functionDef.nregs);
+  readString(in, functionDef.name);
+  bool ok = readNumber(in, functionDef.index) &&
+            readNumber(in, functionDef.nargs) &&
+            readNumber(in, functionDef.nregs);
+  ok || throw DeserializeException{"Error in read function data"};
 }
 
-void readFunction(std::istream &in, FunctionDef& functionDef) {
-    readString(in, functionDef.name);
-    readFunctionData(in, functionDef);
-    if (!readInstructions(in, functionDef.instructions)) {
-      throw DeserializeException{"Error in read instructions"};
-    }
+void readFunction(std::istream &in, FunctionDef &functionDef) {
+  readFunctionData(in, functionDef);
+  if (!readInstructions(in, functionDef.instructions)) {
+    throw DeserializeException{"Error in read instructions"};
+  }
 }
 
-void readFunctionSection(std::istream &in, std::shared_ptr<Module> &module) {
+void readFunctionSection(std::istream &in,
+                         std::vector<FunctionDef> &functions) {
   uint32_t functionCount;
   if (!readNumber(in, functionCount)) {
     throw DeserializeException{"Error reading function count"};
   }
   for (uint32_t i = 0; i < functionCount; i++) {
-    module->functions.emplace_back("", -1, std::vector<Instruction>{});
-    readFunction(in, module->functions.back());
+    functions.emplace_back("", -1, std::vector<Instruction>{});
+    readFunction(in, functions.back());
   }
 }
 
@@ -107,7 +100,7 @@ void readSection(std::istream &in, std::shared_ptr<Module> &module) {
 
   switch (sectionCode) {
     case 1:
-      return readFunctionSection(in, module);
+      return readFunctionSection(in, module->functions);
     case 2:
       return readStringSection(in, module->strings);
     default:

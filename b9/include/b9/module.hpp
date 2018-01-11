@@ -57,7 +57,7 @@ inline void operator<<(std::ostream& out, const FunctionDef& f) {
 }
 
 // Primitive Function from Interpreter call
-extern "C" typedef void(PrimitiveFunction)(ExecutionContext* virtualMachine);
+extern "C" typedef void(PrimitiveFunction)(ExecutionContext* context);
 
 /// Function not found exception.
 struct FunctionNotFoundException : public std::runtime_error {
@@ -78,7 +78,6 @@ struct Module {
     }
     throw FunctionNotFoundException{name};
   }
-
 };
 
 inline void operator<<(std::ostream& out, const Module& m) {

@@ -33,18 +33,15 @@ bool readNumber(std::istream &in, Number &out, long bytes = sizeof(Number)) {
 
 void readHeader(std::istream &in, char *buffer);
 
-void readSectionCode(std::istream &in, uint32_t &sectionCode);
-
-bool readFunctionCount(std::istream &in, uint32_t &functionCount);
-
 void readFunctionData(std::istream &in, FunctionDef &functionSpec);
 
-void readFunction(std::istream &in, std::shared_ptr<Module> &module);
+void readFunction(std::istream &in, FunctionDef &functionDef);
 
-bool readInstructions(std::istream &in,
-                      std::shared_ptr<std::vector<Instruction>> &instructions);
+bool readInstructions(std::istream &in, std::vector<Instruction> &instructions);
 
 void readString(std::istream &in, std::string &toRead);
+
+void readFunctionSection(std::istream &in, std::vector<FunctionDef> functions);
 
 void readStringSection(std::istream &in, std::vector<std::string> &strings);
 

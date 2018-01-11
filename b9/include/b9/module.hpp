@@ -79,12 +79,6 @@ struct Module {
     throw FunctionNotFoundException{name};
   }
 
-  std::string getFunctionName(const std::size_t index) const {
-    if (functions.size() < index) {
-      throw FunctionNotFoundException{std::to_string(index)};
-    }
-    return functions[index].name;
-  }
 };
 
 inline void operator<<(std::ostream& out, const Module& m) {

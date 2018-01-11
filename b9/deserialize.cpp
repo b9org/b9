@@ -16,7 +16,7 @@ void readHeader(std::istream &in) {
   }
 
   const char magic[] = {'b', '9', 'm', 'o', 'd', 'u', 'l', 'e'};
-  const long bytes = sizeof(magic);
+  const std::size_t bytes = sizeof(magic);
 
   char buffer[bytes];
   bool ok = readBytes(in, buffer, bytes);
@@ -46,11 +46,18 @@ bool readInstructions(std::istream &in,
   return true;
 }
 
-void readFunctionData(std::istream &in, FunctionDef &functionSpec,
-                      uint32_t index) {
-  readNumber(in, index);
-  readNumber(in, functionSpec.nargs);
-  readNumber(in, functionSpec.nregs);
+void readFunctionData(std::istream &in, FunctionDef &functionDef) {
+  readNumber(in, functionDef.index);
+  readNumber(in, functionDef.nargs);
+  readNumber(in, functionDef.nregs);
+}
+
+void readFunction(std::istream &in, FunctionDef& functionDef) {
+    readString(in, functionDef.name);
+    readFunctionData(in, functionDef);
+    if (!readInstructions(in, functionDef.instructions)) {
+      throw DeserializeException{"Error in read instructions"};
+    }
 }
 
 void readFunctionSection(std::istream &in, std::shared_ptr<Module> &module) {
@@ -59,22 +66,16 @@ void readFunctionSection(std::istream &in, std::shared_ptr<Module> &module) {
     throw DeserializeException{"Error reading function count"};
   }
   for (uint32_t i = 0; i < functionCount; i++) {
-    std::string functionName;
-    uint32_t size;
-    readNumber(in, size);
-    readString(in, functionName, size);
-    module->functions.emplace_back(functionName, i, std::vector<Instruction>{});
-    FunctionDef &functionSpec = module->functions.back();
-    uint32_t index = module->getFunctionIndex(functionSpec.name);
-    readFunctionData(in, functionSpec, index);
-
-    if (!readInstructions(in, functionSpec.instructions)) {
-      throw DeserializeException{"Error in read instructions"};
-    }
+    module->functions.emplace_back("", -1, std::vector<Instruction>{});
+    readFunction(in, module->functions.back());
   }
 }
 
-void readString(std::istream &in, std::string &toRead, uint32_t length) {
+void readString(std::istream &in, std::string &toRead) {
+  uint32_t length;
+  if (!readNumber(in, length, sizeof(length))) {
+    throw DeserializeException{"Error reading string length"};
+  }
   for (size_t i = 0; i < length; i++) {
     if (in.eof()) {
       throw DeserializeException{"Unexpected EOF"};
@@ -84,19 +85,15 @@ void readString(std::istream &in, std::string &toRead, uint32_t length) {
   }
 }
 
-void readStringSection(std::istream &in, std::shared_ptr<Module> &module) {
+void readStringSection(std::istream &in, std::vector<std::string> &strings) {
   uint32_t stringCount;
   if (!readNumber(in, stringCount, sizeof(stringCount))) {
     throw DeserializeException{"Error reading string count"};
   }
   for (uint32_t i = 0; i < stringCount; i++) {
-    uint32_t length;
     std::string toRead;
-    if (!readNumber(in, length, sizeof(length))) {
-      throw DeserializeException{"Error reading string length"};
-    }
-    readString(in, toRead, length);
-    module->strings.push_back(toRead);
+    readString(in, toRead);
+    strings.push_back(toRead);
   }
 }
 
@@ -112,7 +109,7 @@ void readSection(std::istream &in, std::shared_ptr<Module> &module) {
     case 1:
       return readFunctionSection(in, module);
     case 2:
-      return readStringSection(in, module);
+      return readStringSection(in, module->strings);
     default:
       throw DeserializeException{"Invalid Section Code"};
   }

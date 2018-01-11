@@ -9,26 +9,28 @@ namespace b9 {
 
 /* Generic number writer */
 template <typename Number>
-bool writeNumber(std::ofstream &out, const Number &n) {
+bool writeNumber(std::ostream &out, const Number &n) {
   const long bytes = sizeof(Number);
   auto buffer = reinterpret_cast<const char *>(&n);
   out.write(buffer, bytes);
   return out.good();
 }
 
-inline void writeString(std::ofstream &out, std::string toWrite) {
+inline void writeString(std::ostream &out, std::string toWrite) {
+  uint32_t length = toWrite.length();
+  writeNumber(out, length);
   out << toWrite;
 }
 
-void writeInstructions(std::ofstream &out, const FunctionDef &functionDef);
+void writeInstructions(std::ostream &out, const FunctionDef &functionDef);
 
-void writeFunctionData(std::ofstream &out, const Module &module);
+void writeFunctionData(std::ostream &out, const Module &module);
 
-void writeFunctionSection(std::ofstream &out, const Module &module);
+void writeFunctionSection(std::ostream &out, const Module &module);
 
-void writeStringSection(std::ofstream &out, const Module &module);
+void writeStringSection(std::ostream &out, const Module &module);
 
-void serialize(const Module &module, std::ofstream &out);
+void serialize(std::ostream &out, const Module &module);
 
 }  // namespace b9
 

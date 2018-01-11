@@ -37,15 +37,16 @@ void readSectionCode(std::istream &in, uint32_t &sectionCode);
 
 bool readFunctionCount(std::istream &in, uint32_t &functionCount);
 
-void readFunctionData(std::istream &in, FunctionDef &functionSpec,
-                      uint32_t index);
+void readFunctionData(std::istream &in, FunctionDef &functionSpec);
+
+void readFunction(std::istream &in, std::shared_ptr<Module> &module);
 
 bool readInstructions(std::istream &in,
                       std::shared_ptr<std::vector<Instruction>> &instructions);
 
-void readString(std::istream &in, std::string &toRead, uint32_t length);
+void readString(std::istream &in, std::string &toRead);
 
-void readStringSection(std::istream &in, std::shared_ptr<Module> &module);
+void readStringSection(std::istream &in, std::vector<std::string> &strings);
 
 std::shared_ptr<Module> deserialize(std::istream &in);
 

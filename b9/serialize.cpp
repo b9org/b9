@@ -10,7 +10,7 @@
 
 namespace b9 {
 
-void writeInstructions(std::ofstream &out, const FunctionDef &functionDef) {
+void writeInstructions(std::ostream &out, const FunctionDef &functionDef) {
   std::cout << std::hex;
   for (auto instruction : functionDef.instructions) {
     writeNumber(out, instruction);
@@ -18,10 +18,8 @@ void writeInstructions(std::ofstream &out, const FunctionDef &functionDef) {
   std::cout << std::dec;
 }
 
-void writeFunctionData(std::ofstream &out, const Module &module) {
+void writeFunctionData(std::ostream &out, const Module &module) {
   for (auto function : module.functions) {
-    uint32_t nameSize = (function.name).length();
-    writeNumber(out, nameSize);
     writeString(out, function.name);
     writeNumber(out, function.index);
     writeNumber(out, function.nargs);
@@ -30,7 +28,7 @@ void writeFunctionData(std::ofstream &out, const Module &module) {
   }
 }
 
-void writeFunctionSection(std::ofstream &out, const Module &module) {
+void writeFunctionSection(std::ostream &out, const Module &module) {
   uint32_t sectionCode = 1;
   uint32_t functionCount = module.functions.size();
   writeNumber(out, sectionCode);
@@ -38,22 +36,21 @@ void writeFunctionSection(std::ofstream &out, const Module &module) {
   writeFunctionData(out, module);
 }
 
-void writeStringSection(std::ofstream &out, const Module &module) {
+void writeStringSection(std::ostream &out, const Module &module) {
   uint32_t sectionCode = 2;
   uint32_t stringCount = module.strings.size();
   writeNumber(out, sectionCode);
   writeNumber(out, stringCount);
   for (auto string : module.strings) {
-    uint32_t stringLength = string.length();
-    writeNumber(out, stringLength);
     writeString(out, string);
   }
 }
 
-void serialize(const Module &module, std::ofstream &out) {
+void serialize(std::ostream &out, const Module &module) {
   auto f = module.functions;
-  std::string header = "b9module";
-  writeString(out, header);
+  const char header[] = {'b', '9', 'm', 'o', 'd', 'u', 'l', 'e'};
+  uint32_t length = 8;
+  out.write(header, length);
   writeFunctionSection(out, module);
   writeStringSection(out, module);
 }

@@ -31,11 +31,9 @@ void DlLoader::loadFunctions(const std::shared_ptr<Module>& module,
     auto& entry = table->functions[i];
     const Instruction* ip = entry.address;
     auto instructions = std::vector<Instruction>();
-    while (*ip != END_SECTION) {
-      instructions.push_back(*ip);
-      ++ip;
-    }
-    instructions.push_back(END_SECTION);
+    do {
+      instructions.push_back(*ip++);
+    } while (instructions.back() != END_SECTION);
     module->functions.emplace_back(entry.name, i, std::move(instructions),
                                    entry.nargs, entry.nregs);
   }

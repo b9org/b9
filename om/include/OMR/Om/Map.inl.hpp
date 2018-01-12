@@ -6,11 +6,17 @@
 namespace OMR {
 namespace Om {
 
-inline Map::Map(MetaMap* map, MapKind kind) noexcept : Cell(map), kind_(kind) {}
+inline void Map::construct(Context& cx, Map* self, Kind kind) {
+  MetaMap* meta = cx->globals().metaMap;
+  Cell::construct(cx, self, meta);
+  self->kind = kind;
+}
 
-inline MetaMap* Map::metaMap() const { return (MetaMap*)map(); }
+inline MetaMap* Map::metaMap(Context& cx, const Map* self) const {
+  return static_cast<MetaMap*>(self->map);
+}
 
 }  // namespace Om
-} // namespace OMR
+}  // namespace OMR
 
-#endif // OMR_OM_MAP_INL_HPP_
+#endif  // OMR_OM_MAP_INL_HPP_

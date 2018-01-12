@@ -28,6 +28,8 @@ inline Object* allocateEmptyObject(Context& cx);
 
 inline Object* allocateObject(Context& cx, Object* base);
 
+inline ArrayBuffer* allocateArrayBuffer(Context& cx, std::size_t size);
+
 }  // namespace Om
 }  // namespace OMR
 

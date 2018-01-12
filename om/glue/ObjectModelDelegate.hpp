@@ -26,6 +26,7 @@
 #include <OMR/Om/Map.hpp>
 #include <OMR/Om/Object.hpp>
 #include <OMR/Om/Runtime.hpp>
+#include <OMR/Om/SlotMap.hpp>
 
 #include "ForwardedHeader.hpp"
 #include "GCExtensionsBase.hpp"
@@ -50,31 +51,23 @@ class ObjectModelDelegate {
    * @param objectPtr the object to botain indirct reference from
    * @return a pointer to the indirect object, or NULL if none
    */
-  MMINLINE Cell* getIndirectObject(const Cell* cell) {
-    return nullptr;
-  }
+  MMINLINE Cell* getIndirectObject(const Cell* cell) { return nullptr; }
 
   /**
    * Get the fomrobjectptr_t offset of the slot containing the object header.
    */
-  MMINLINE uintptr_t getObjectHeaderSlotOffset() {
-    return 0;
-  }
+  constexpr uintptr_t getObjectHeaderSlotOffset() { return 0; }
 
   /**
    * Get the bit offset to the flags byte in object headers.
    */
-  MMINLINE uintptr_t getObjectHeaderSlotFlagsShift() {
-    return 0;
-  }
+  constexpr uintptr_t getObjectHeaderSlotFlagsShift() { return 0; }
 
   /**
    * Get the exact size of the object header, in bytes. This includes the size
    * of the metadata slot.
    */
-  constexpr MMINLINE uintptr_t getObjectHeaderSizeInBytes(Cell* cell) {
-    return 0;
-  }
+  constexpr uintptr_t getObjectHeaderSizeInBytes(Cell* cell) { return 0; }
 
   /**
    * Get the exact size of the object data, in bytes. This excludes the size of
@@ -86,12 +79,23 @@ class ObjectModelDelegate {
    * @return the exact size of an object, in bytes, excluding padding bytes and
    * header bytes
    */
-  MMINLINE uintptr_t
-  getObjectSizeInBytesWithoutHeader(omrobjectptr_t objectPtr) {
+  MMINLINE uintptr_t getObjectSizeInBytesWithoutHeader(Cell* objectPtr) {
     return getObjectSizeInBytesWithHeader(objectPtr) -
            getObjectHeaderSizeInBytes(objectPtr);
   }
 
+  MMINLINE uintptr_t getMapSizeInBytes(Map* map) {
+    switch (map->kind) {
+      case Map::Kind::EMPTY_OBJECT_MAP:
+        return sizeof(EmptyObjectMap);
+      case Map::Kind::SLOT_MAP:
+        return sizeof(SlotMap);
+      case Map::Kind::META_MAP:
+        return sizeof(MetaMap);
+      default:
+        throw std::runtime_error("Unrecognized map kind");
+    }
+  }
   /**
    * Get the exact size of the object, in bytes, including the object header and
    * data. This should not include any padding bytes added for alignment. If the
@@ -101,22 +105,10 @@ class ObjectModelDelegate {
    * @param[in] objectPtr points to the object to determine size for
    * @return the exact size of an object, in bytes, excluding padding bytes
    */
-  MMINLINE uintptr_t getObjectSizeInBytesWithHeader(omrobjectptr_t address) {
-    auto cell = (Cell *)address;
-    switch (cell->map()->kind()) {
-      case MapKind::META_MAP: {
-        auto map = (Map *)cell;
-        switch (map->kind()) {
-          case MapKind::EMPTY_OBJECT_MAP:
-            return sizeof(EmptyObjectMap);
-          case MapKind::SLOT_MAP:
-            return sizeof(SlotMap);
-          case MapKind::META_MAP:
-            return sizeof(MetaMap);
-          default:
-            throw std::runtime_error("Unrecognized map kind");
-        }
-      }
+  MMINLINE uintptr_t getObjectSizeInBytesWithHeader(Cell* cell) {
+    switch (cell->map()->kind) {
+      case Map::Kind::META_MAP:
+        return getMapSizeInBytes(static_cast<Map*>(cell));
       case MapKind::EMPTY_OBJECT_MAP:
       case MapKind::SLOT_MAP:
         return sizeof(Object);
@@ -126,14 +118,14 @@ class ObjectModelDelegate {
   }
 
   /**
-   * Get the total footprint of an object, in bytes, including the object header
-   * and all data. If the object has a discontiguous representation, this method
-   * should return the size of the root object plus the total of all the
-   * discontiguous parts of the object.
+   * Get the total footprint of an object, in bytes, including the object
+   * header and all data. If the object has a discontiguous representation,
+   * this method should return the size of the root object plus the total of
+   * all the discontiguous parts of the object.
    *
    * Languages that support indexable objects (e.g. arrays) must provide an
-   * implementation that distinguishes indexable and scalar objects and handles
-   * them appropriately.
+   * implementation that distinguishes indexable and scalar objects and
+   * handles them appropriately.
    *
    * @param[in] objectPtr points to the object to determine size for
    * @return the total size of an object, in bytes, including discontiguous
@@ -154,16 +146,17 @@ class ObjectModelDelegate {
    * object
    * @param[in] allocateInitialization points to the MM_AllocateInitialization
    * instance used to allocate the heap memory
-   * @return pointer to the initialized object, or NULL if initialization fails
+   * @return pointer to the initialized object, or NULL if initialization
+   * fails
    */
-  omrobjectptr_t initializeAllocation(MM_EnvironmentBase *env,
-                                      void *allocatedBytes,
-                                      MM_AllocateInitialization *init);
+  omrobjectptr_t initializeAllocation(MM_EnvironmentBase* env,
+                                      void* allocatedBytes,
+                                      MM_AllocateInitialization* init);
 
   /**
    * Returns TRUE if an object is indexable, FALSE otherwise. Languages that
-   * support indexable objects (e.g. arrays) must provide an implementation that
-   * distinguishes indexable from scalar objects.
+   * support indexable objects (e.g. arrays) must provide an implementation
+   * that distinguishes indexable from scalar objects.
    *
    * @param objectPtr pointer to the object
    * @return TRUE if object is indexable, FALSE otherwise
@@ -186,7 +179,7 @@ class ObjectModelDelegate {
    * encapsulating the object
    * @return TRUE if object is indexable, FALSE otherwise
    */
-  MMINLINE bool isIndexable(MM_ForwardedHeader *forwardedHeader) {
+  MMINLINE bool isIndexable(MM_ForwardedHeader* forwardedHeader) {
     return false;
   }
 
@@ -200,30 +193,30 @@ class ObjectModelDelegate {
    * @return The instance size (total) of the forwarded object
    */
   MMINLINE uintptr_t
-  getForwardedObjectSizeInBytes(MM_ForwardedHeader *forwardedHeader) {
+  getForwardedObjectSizeInBytes(MM_ForwardedHeader* forwardedHeader) {
     return getTotalFootprintInBytes(forwardedHeader->getPreservedSlot());
   }
 
   /**
    * Return true if the object holds references to heap objects not reachable
-   * from reference graph. For example, an object may be associated with a class
-   * and the class may have associated meta-objects that are in the heap but not
-   * directly reachable from the root set. This method is called to determine
-   * whether or not any such objects exist.
+   * from reference graph. For example, an object may be associated with a
+   * class and the class may have associated meta-objects that are in the heap
+   * but not directly reachable from the root set. This method is called to
+   * determine whether or not any such objects exist.
    *
    * @param thread points to calling thread
    * @param objectPtr points to an object
    * @return true if object holds indirect references to heap objects
    */
-  MMINLINE bool hasIndirectObjectReferents(CLI_THREAD_TYPE *thread,
+  MMINLINE bool hasIndirectObjectReferents(CLI_THREAD_TYPE* thread,
                                            omrobjectptr_t objectPtr) {
     return false;
   }
 
   /**
-   * Calculate the actual object size and the size adjusted to object alignment.
-   * The calculated object size includes any expansion bytes allocated if the
-   * object will grow when moved.
+   * Calculate the actual object size and the size adjusted to object
+   * alignment. The calculated object size includes any expansion bytes
+   * allocated if the object will grow when moved.
    *
    * @param[in] env points to the environment for the calling thread
    * @param[in] forwardedHeader pointer to the MM_ForwardedHeader instance
@@ -233,11 +226,11 @@ class ObjectModelDelegate {
    * @param[out] hotFieldAlignmentDescriptor pointer to hot field alignment
    * descriptor for class (or NULL)
    */
-  void calculateObjectDetailsForCopy(MM_EnvironmentBase *env,
-                                     MM_ForwardedHeader *forwardedHeader,
-                                     uintptr_t *objectCopySizeInBytes,
-                                     uintptr_t *objectReserveSizeInBytes,
-                                     uintptr_t *hotFieldAlignmentDescriptor);
+  void calculateObjectDetailsForCopy(MM_EnvironmentBase* env,
+                                     MM_ForwardedHeader* forwardedHeader,
+                                     uintptr_t* objectCopySizeInBytes,
+                                     uintptr_t* objectReserveSizeInBytes,
+                                     uintptr_t* hotFieldAlignmentDescriptor);
 #endif /* defined(OMR_GC_MODRON_SCAVENGER) */
 
   /**

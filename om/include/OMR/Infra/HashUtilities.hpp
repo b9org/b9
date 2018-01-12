@@ -13,12 +13,16 @@ namespace Hash {
 /// Combine two hashes to form a new hash.
 /// TODO: Write a real hash-mixing function
 constexpr HashNumber mix(HashNumber a, HashNumber b) {
+  return ((a ^ b) << 3) * 7;
+}
 
-	return ((a ^ b) << 3) * 7;
+template <typename T>
+constexpr HashNumber hash(const T& x) {
+  return std::hash<T>()(x);
 }
 
 }  // namespace Hash
 }  // namespace Infra
 }  // namespace OMR
 
-#endif // OMR_INFRA_HASHING_HPP_
+#endif  // OMR_INFRA_HASHING_HPP_

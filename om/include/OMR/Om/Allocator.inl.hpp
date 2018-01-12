@@ -12,7 +12,6 @@ struct RawAllocator {};
 /// Common allocation path. Allocate an instance of T. Throws std::bad_alloc.
 template <typename T, typename Initializer>
 inline T* allocate(Context& cx, Initializer& init, std::size_t size) {
-
   Allocation allocation(cx, init, size);
   auto p = (T*)OMR_GC_AllocateObject(cx.omrVmThread(), &allocation);
 
@@ -56,4 +55,4 @@ inline Object* allocateObject(Context& cx, Object* base) {
 
 }  // namespace Om
 }  // namespace OMR
-#endif // OMR_OM_ALLOCATOR_INL_HPP_
+#endif  // OMR_OM_ALLOCATOR_INL_HPP_

@@ -1,6 +1,7 @@
 #if !defined(OMR_OM_OBJECT_INL_HPP_)
 #define OMR_OM_OBJECT_INL_HPP_
 
+#include <OMR/Om/Cell.hpp>
 #include <OMR/Om/Object.hpp>
 
 #include <StandardWriteBarrier.hpp>
@@ -8,26 +9,30 @@
 namespace OMR {
 namespace Om {
 
-inline Object::Object(ObjectMap* map) : Cell(map) {
+inline Object* Object::allocate(Context& cx, Handle<ObjectMap> map) {
+  RootRef<Object> object = nulltptr; // TODO: implement allocation
+  construct(cx, object.reinterpret<Cell>(), map);
+  return object.ptr();
+}
+
+inline void Object::construct(Context& cx, Handle<Object> self,
+                              Handle<ObjectMap> map) {
+  Cell::construct(cx, self, map);
+  self->fixedSlots = fixedSlots;
   memset(slots_, 0, MAX_SLOTS * sizeof(Value));
+  MemVector<Value>::construct(cx, {self, &Object::dynamicSlots}, 0);
 }
 
-inline Object::Object(EmptyObjectMap* map) : Cell(map) {
-  memset(slots_, 0, MAX_SLOTS * sizeof(Value));
+inline void Object::clone(Context& xc, Handle<Object> base) {
+  allocate(cx, base->map);
 }
 
-inline Object::Object(Object& other) : Cell(other.map()) {
-  memcpy(slots_, other.slots_, MAX_SLOTS * sizeof(Value));
+inline void Object::set(Context& cx, Object* self, Index index, Value value) {
+  self->slots[index] = value;
 }
 
-inline Value* Object::slots() { return slots_; }
-
-inline const Value* Object::slots() const { return slots_; }
-
-/// Returns {index, true} on success, or {0, false} on failure.
-/// Note that {0, true} is the first slot in the object.
-inline std::pair<Index, bool> Object::index(Id id) {
-  for (auto m = map(); m->kind() != MapKind::EMPTY_OBJECT_MAP;) {
+inline bool Object::index(Context& cx, Object* self, Id id, Index& result) {
+  for (auto m = Cell::map(self); Map::kind(m) != MapKind::EMPTY_OBJECT_MAP;) {
     assert(m->kind() == MapKind::SLOT_MAP);
     auto sm = reinterpret_cast<SlotMap*>(m);
     if (sm->id() == id) {
@@ -38,17 +43,18 @@ inline std::pair<Index, bool> Object::index(Id id) {
   return {0, false};
 }
 
-inline std::pair<Value, bool> Object::get(Context& cx, Id id) {
-  std::pair<Value, bool> result{0, false};
-  auto lookup = index(id);
-  if (std::get<bool>(lookup)) {
-    auto index = std::get<Index>(lookup);
-    result = {slots_[index], true};
+inline bool Object::get(Context& cx, Object* self, Id id, Value& result) {
+  Index idx;
+  auto found = index(cx, self, id, idx);
+  if (found) {
+    get(cx, self, idx, result);
   }
-  return result;
+  return found;
 }
 
-inline Value Object::getAt(Index index) { return slots_[index]; }
+inline void Object::get(Context& cx, Object* self, Index index, Value& result) {
+  result = self->slots_[index];
+}
 
 /// Set the slot that corresponds to the id. If the slot doesn't exist,
 /// allocate the slot and assign it. The result is the address of the slot.
@@ -56,12 +62,15 @@ inline Value Object::getAt(Index index) { return slots_[index]; }
 inline bool Object::set(Context& cx, Id id, Value value) {
   auto lookup = index(id);
   if (std::get<bool>(lookup)) {
+    // TODO: WB.
     auto index = std::get<Index>(lookup);
-    setAt(cx, index, value);
+    set(cx, index, value);
     return true;
   }
   return false;
 }
+
+inline bool Object::set(Context& cx, Id id, Value value) {}
 
 inline void Object::setAt(Context& cx, Index index, Value value) noexcept {
   if (value.isPtr()) {
@@ -75,7 +84,8 @@ inline void Object::setAt(Context& cx, Index index, Object* value) noexcept {
   slots_[index].setPtr(value);
 }
 
-inline void Object::setAt(Context& cx, Index index, std::int32_t value) noexcept {
+inline void Object::setAt(Context& cx, Index index,
+                          std::int32_t value) noexcept {
   slots_[index].setInteger(value);
 }
 

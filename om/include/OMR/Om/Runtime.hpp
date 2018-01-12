@@ -1,5 +1,5 @@
-#if !defined(B9_RUNTIME_HPP_)
-#define B9_RUNTIME_HPP_
+#if !defined(OMR_OM_RUNTIME_HPP_)
+#define OMR_OM_RUNTIME_HPP_
 
 #include <omr.h>
 #include <omrport.h>
@@ -132,4 +132,4 @@ class ProcessRuntime {
 }  // namespace Om
 }  // namespace OMR
 
-#endif  // B9_RUNTIME_HPP_
+#endif  // OMR_OM_RUNTIME_HPP_

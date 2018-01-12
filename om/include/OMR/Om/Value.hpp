@@ -101,9 +101,7 @@ class Value {
       : data_{BoxKindTag::POINTER |
               (reinterpret_cast<RawValue>(p) & VALUE_MASK)} {}
 
-  explicit Value(double d) {
-    setDouble(d);
-  }
+  explicit Value(double d) { setDouble(d); }
 
   /// Get the underlying raw storage.
   constexpr RawValue raw() const noexcept { return data_.asRawValue; }

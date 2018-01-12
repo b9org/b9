@@ -1,6 +1,10 @@
 #ifndef OMR_OM_MEMORYMANAGER_HPP_
 #define OMR_OM_MEMORYMANAGER_HPP_
 
+#include <OMR/Om/Cell.hpp>
+#include <OMR/Om/EmptyObjectMap.hpp>
+#include <OMR/Om/MarkingFn.hpp>
+#include <OMR/Om/MetaMap.hpp>
 #include <OMR/Om/RootRef.hpp>
 #include <OMR/Om/Runtime.hpp>
 
@@ -9,11 +13,6 @@
 namespace OMR {
 namespace Om {
 
-class Cell;
-class Map;
-class MetaMap;
-class EmptyObjectMap;
-class Object;
 class Visitor;
 
 class Context;

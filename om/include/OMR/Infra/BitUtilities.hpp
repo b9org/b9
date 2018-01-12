@@ -27,7 +27,7 @@ constexpr bool isTagged(T value, T tag, T mask) {
   return (value & mask) == tag;
 }
 
-} // namespace Infra
-} // namespace OMR
+}  // namespace Infra
+}  // namespace OMR
 
-#endif // OMR_INFRA_BITUTILITIES_HPP_
+#endif  // OMR_INFRA_BITUTILITIES_HPP_

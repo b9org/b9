@@ -2,6 +2,7 @@
 #define OMR_OM_ROOTREF_HPP_
 
 #include <OMR/Infra/Cons.hpp>
+#include <OMR/Om/Cell.hpp>
 
 #include <functional>
 #include <unordered_set>
@@ -10,8 +11,6 @@
 
 namespace OMR {
 namespace Om {
-
-class Cell;
 
 /// The RefSeq is a sequence of consed GC References. The cons are unowned data,
 /// they must be manually allocated and freed.
@@ -68,7 +67,7 @@ class RootRef {
   inline RootRef(RootRefSeq& seq, T* ptr = nullptr) noexcept;
 
   /// Copy from other root ref. The resulting rootref is pushed onto the head of
-  /// other's sequence.
+  /// the sequence.
   template <typename U>
   inline RootRef(const RootRef<U>& other) noexcept;
 
@@ -97,6 +96,10 @@ class RootRef {
     return *this;
   }
 
+  T** raw() noexcept { return &node_.first; }
+
+  T* const* raw() const noexcept { return &node_.first; }
+
   bool isHead() const noexcept { return seq_.head() == &node_; }
 
   RefSeq& seq() const noexcept { return seq_; }
@@ -112,14 +115,6 @@ template <typename T, typename U>
 T get(RootRef<U>& root) {
   return root.template get<T>();
 }
-
-// TODO: Find new home for the MarkingFn APIs.
-
-class Visitor;
-
-using MarkingFn = std::function<void(Context&, Visitor&)>;
-
-using MarkingFnVector = std::vector<MarkingFn>;
 
 }  // namespace Om
 }  // namespace OMR

@@ -341,7 +341,7 @@ StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
         intSub();
         break;
 
-      // CASCON2017 - Add INT_MUL and INT_DIV here
+        // CASCON2017 - Add INT_MUL and INT_DIV here
 
       case ByteCode::INT_PUSH_CONSTANT:
         intPushConstant(instructionPointer->parameter());

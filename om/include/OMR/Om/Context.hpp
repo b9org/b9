@@ -1,6 +1,7 @@
 #if !defined(OMR_OM_CONTEXT_HPP_)
 #define OMR_OM_CONTEXT_HPP_
 
+#include <OMR/Om/MarkingFn.hpp>
 #include <OMR/Om/MemoryManager.hpp>
 #include <OMR/Om/RootRef.hpp>
 #include <OMR/Om/Runtime.hpp>

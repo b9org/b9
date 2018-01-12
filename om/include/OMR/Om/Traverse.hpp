@@ -1,8 +1,8 @@
 #if !defined(OMR_OM_TRAVERSE_HPP_)
 #define OMR_OM_TRAVERSE_HPP_
 
-#include <OMR/Om/Context.hpp>
 #include <OMR/Om/Cell.hpp>
+#include <OMR/Om/Context.hpp>
 
 namespace OMR {
 namespace Om {

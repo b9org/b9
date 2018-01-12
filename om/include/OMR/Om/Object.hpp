@@ -4,6 +4,7 @@
 #include <OMR/Om/Cell.hpp>
 #include <OMR/Om/Map.hpp>
 #include <OMR/Om/Value.hpp>
+#include <OMR/Om/SlotMap.hpp>
 
 #include <cstddef>
 #include <cstdint>
@@ -17,45 +18,35 @@ namespace Om {
 /// A Cell with dynamically allocated slots.
 class Object : public Cell {
  public:
-  Object(ObjectMap* map);
 
-  Object(EmptyObjectMap* map);
+  static Object* allocate(Context& cx, Handle<ObjectMap> map);
 
-  Object(Object& other);
+  static Object* clone(Context& cx, Handle<Object> base);
 
-  Value* slots();
+  static void construct(Context& cx, Handle<Object> self, Handle<ObjectMap> map);
 
-  const Value* slots() const;
+  static bool get(Context& cx, Object* self, Id id, Value& result);
 
-  /// Returns {index, true} on success, or {0, false} on failure.
-  /// Note that {0, true} is the first slot in the object.
-  std::pair<Index, bool> index(Id id);
+  static void get(Context& cx, Object* self, Index index, Value& result);
 
-  std::pair<Value, bool> get(Context& cx, Id id);
+  static void set(Context& cx, Object* self, Index index, Value value);
 
-  Value getAt(Index index);
+  static bool index(Context& cx, Object* self, Id id, Index& result);
 
   /// Set the slot that corresponds to the id. If the slot doesn't exist,
   /// allocate the slot and assign it. The result is the address of the slot.
   /// !CAN_GC!
-  bool set(Context& cx, Id id, Value value);
-
-  void setAt(Context& cx, Index index, Value value) noexcept;
-
-  void setAt(Context& cx, Index index, Object* value) noexcept;
-
-  void setAt(Context& cx, Index index, std::int32_t value) noexcept;
+  static bool set(Context& cx, Handle<Object> self, Id id, Value value);
 
   /// Allocate a new slot corresponding to the id. The object may not already
   /// have a slot with this Id matching. !CAN_GC!
   Index newSlot(Context& cx, Id id);
 
- private:
   static constexpr Index MAX_SLOTS = 32;
 
   Value slots_[MAX_SLOTS];
 };
-
+  
 }  // namespace Om
 }  // namespace OMR
 

@@ -100,4 +100,4 @@ class Cons : public std::pair<T, Cons<T>*> {
 }  // namespace Infra
 }  // namespace OMR
 
-#endif // OMR_INFRA_CONS_HPP_
+#endif  // OMR_INFRA_CONS_HPP_

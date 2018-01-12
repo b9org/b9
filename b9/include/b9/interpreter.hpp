@@ -203,8 +203,9 @@ inline ExecutionContext::ExecutionContext(VirtualMachine *virtualMachine,
       cfg_(cfg) {
   std::memset(stack_, 0, sizeof(StackElement) * 1000);
 
-  userRoots().push_back(
-      [this](OMR::Om::Context &cx, OMR::Om::Visitor &v) { this->visitStack(cx, v); });
+  userRoots().push_back([this](OMR::Om::Context &cx, OMR::Om::Visitor &v) {
+    this->visitStack(cx, v);
+  });
 }
 
 }  // namespace b9

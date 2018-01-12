@@ -22,23 +22,17 @@
 #if !defined(OMR_OM_OBJECTDESCRIPTION_H_)
 #define OMR_OM_OBJECTDESCRIPTION_H_
 
+#include <OMR/Om/Cell.hpp>
+
 #include "omr.h"
 #include "omrcomp.h"
-
-namespace OMR {
-namespace Om {
-
-class Cell;
-
-}  // namespace Om
-}  // namespace OMR
 
 /**
  * Object token definitions to be used by OMR components.
  */
-typedef OMR::Om::Cell* languageobjectptr_t;
-typedef OMR::Om::Cell* omrobjectptr_t;
-typedef OMR::Om::Cell* omrarrayptr_t;
+using languageobjectptr_t = OMR::Om::Cell*;
+using omrobjectptr_t = languageobjectptr_t;
+using omrarrayptr_t = languageobjectptr_t;
 
 #if defined(OMR_GC_COMPRESSED_POINTERS)
 typedef uint32_t fomrobject_t;

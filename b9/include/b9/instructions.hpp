@@ -106,7 +106,7 @@ inline const char *toString(ByteCode bc) {
     case ByteCode::INT_SUB:
       return "INT_SUB";
 
-    // CASCON2017 - Add INT_MUL and INT_DIV here
+      // CASCON2017 - Add INT_MUL and INT_DIV here
 
     case ByteCode::INT_PUSH_CONSTANT:
       return "INT_PUSH_CONSTANT";

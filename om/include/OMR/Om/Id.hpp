@@ -2,6 +2,7 @@
 #define OMR_OM_ID_HPP_
 
 #include <cstddef>
+#include <functional>
 
 namespace OMR {
 namespace Om {
@@ -25,6 +26,8 @@ class Id {
   bool isInteger() const { return (data_ & TAG_MASK) == FIXNUM_TAG; }
 
   constexpr RawId raw() const { return data_; }
+
+  std::size_t hash() const { return std::hash<RawId>()(data_); }
 
  private:
   static constexpr RawId HASH_SHIFT = 0x2;

@@ -7,6 +7,10 @@
 
 namespace b9 {
 
+struct SerializeException : public std::runtime_error {
+  using std::runtime_error::runtime_error;
+};
+
 /* Generic number writer */
 template <typename Number>
 bool writeNumber(std::ostream &out, const Number &n) {
@@ -22,11 +26,11 @@ inline void writeString(std::ostream &out, std::string toWrite) {
   out << toWrite;
 }
 
-void writeInstructions(std::ostream &out, const FunctionDef &functionDef);
+void writeInstructions(std::ostream &out, const std::vector<Instruction> &instructions);
 
-void writeFunctionData(std::ostream &out, const Module &module);
+void writeFunctionData(std::ostream &out, const FunctionDef &functionDef);
 
-void writeFunctionSection(std::ostream &out, const Module &module);
+void writeFunctionSection(std::ostream &out, const std::vector<FunctionDef> &functions);
 
 void writeStringSection(std::ostream &out, const Module &module);
 

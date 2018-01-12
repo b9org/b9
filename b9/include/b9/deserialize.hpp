@@ -41,7 +41,7 @@ bool readInstructions(std::istream &in, std::vector<Instruction> &instructions);
 
 void readString(std::istream &in, std::string &toRead);
 
-void readFunctionSection(std::istream &in, std::vector<FunctionDef> functions);
+void readFunctionSection(std::istream &in, std::vector<FunctionDef> &functions);
 
 void readStringSection(std::istream &in, std::vector<std::string> &strings);
 

@@ -10,30 +10,30 @@
 
 namespace b9 {
 
-void writeInstructions(std::ostream &out, const FunctionDef &functionDef) {
-  std::cout << std::hex;
-  for (auto instruction : functionDef.instructions) {
-    writeNumber(out, instruction);
-  }
-  std::cout << std::dec;
-}
-
-void writeFunctionData(std::ostream &out, const Module &module) {
-  for (auto function : module.functions) {
-    writeString(out, function.name);
-    writeNumber(out, function.index);
-    writeNumber(out, function.nargs);
-    writeNumber(out, function.nregs);
-    writeInstructions(out, function);
+void writeInstructions(std::ostream &out, const std::vector<Instruction> &instructions) {
+  for (auto instruction : instructions) {
+    if (!writeNumber(out, instruction)) {
+      throw SerializeException("Error writing instructions");
+    }
   }
 }
 
-void writeFunctionSection(std::ostream &out, const Module &module) {
+void writeFunctionData(std::ostream &out, const FunctionDef &functionDef) {
+  writeString(out, functionDef.name);
+  writeNumber(out, functionDef.index);
+  writeNumber(out, functionDef.nargs);
+  writeNumber(out, functionDef.nregs);
+  writeInstructions(out, functionDef.instructions);
+}
+
+void writeFunctionSection(std::ostream &out, const std::vector<FunctionDef> &functions) {
   uint32_t sectionCode = 1;
-  uint32_t functionCount = module.functions.size();
+  uint32_t functionCount = functions.size();
   writeNumber(out, sectionCode);
   writeNumber(out, functionCount);
-  writeFunctionData(out, module);
+  for (auto function : functions) {
+    writeFunctionData(out, function);
+  }
 }
 
 void writeStringSection(std::ostream &out, const Module &module) {
@@ -51,7 +51,7 @@ void serialize(std::ostream &out, const Module &module) {
   const char header[] = {'b', '9', 'm', 'o', 'd', 'u', 'l', 'e'};
   uint32_t length = 8;
   out.write(header, length);
-  writeFunctionSection(out, module);
+  writeFunctionSection(out, module.functions);
   writeStringSection(out, module);
 }
 

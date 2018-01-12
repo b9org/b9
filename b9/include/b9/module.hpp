@@ -56,13 +56,21 @@ inline void operator<<(std::ostream& out, const FunctionDef& f) {
   out << std::endl;
 }
 
-// Primitive Function from Interpreter call
-extern "C" typedef void(PrimitiveFunction)(ExecutionContext* context);
+inline bool operator==(const FunctionDef& f1, const FunctionDef& f2) {
+  if (f1.name != f2.name || f1.index != f2.index || 
+      f1.nargs != f2.nargs || f1.nregs != f2.nregs) {
+      return false;
+  }
+  return true;
+}
 
 /// Function not found exception.
 struct FunctionNotFoundException : public std::runtime_error {
   using std::runtime_error::runtime_error;
 };
+
+// Primitive Function from Interpreter call
+extern "C" typedef void(PrimitiveFunction)(ExecutionContext* context);
 
 /// An interpreter module.
 struct Module {

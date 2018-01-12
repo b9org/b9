@@ -42,7 +42,9 @@ void readFunctionData(std::istream &in, FunctionDef &functionDef) {
   bool ok = readNumber(in, functionDef.index) &&
             readNumber(in, functionDef.nargs) &&
             readNumber(in, functionDef.nregs);
-  ok || throw DeserializeException{"Error in read function data"};
+  if (!ok) {
+    throw DeserializeException{"Error in read function data"};
+  }
 }
 
 void readFunction(std::istream &in, FunctionDef &functionDef) {
@@ -52,8 +54,7 @@ void readFunction(std::istream &in, FunctionDef &functionDef) {
   }
 }
 
-void readFunctionSection(std::istream &in,
-                         std::vector<FunctionDef> &functions) {
+void readFunctionSection(std::istream &in, std::vector<FunctionDef> &functions) {
   uint32_t functionCount;
   if (!readNumber(in, functionCount)) {
     throw DeserializeException{"Error reading function count"};

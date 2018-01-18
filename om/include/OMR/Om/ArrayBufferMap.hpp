@@ -3,18 +3,22 @@
 
 #include <OMR/Om/MetaMap.hpp>
 
+#include <type_traits>
+
 namespace OMR {
 namespace Om {
 
-class ArrayBufferMap : public Map {
- public:
-  static void construct(Context& cx, ArrayBufferMap* self, MetaMap* meta);
+struct ArrayBufferMap {
+  union Base {
+    Map map;
+    Cell cell;
+  };
+
+  Base base;
 };
 
-inline void ArrayBufferMap::construct(Context& cx, ArrayBufferMap* self,
-                                      MetaMap* meta) {
-  Map::construct(cx, self, meta, Map::Kind::ARRAY_BUFFER_MAP);
-}
+static_assert(std::is_standard_layout<ArrayBufferMap>::value,
+              "ArrayBufferMap must be a StandardLayoutType");
 
 }  // namespace Om
 }  // namespace OMR

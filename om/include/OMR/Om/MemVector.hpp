@@ -12,22 +12,24 @@ namespace Om {
 /// vectors are not self contained objects, but are meant to be embedded in
 /// other Cell types.
 template <typename T>
-class MemVector {
- public:
+struct MemVector {
+
   static std::size_t capacity(Context& cx, const MemVector<T>* self) {
-    return self->buffer_->size / sizeof(T);
+    return self->buffer->size / sizeof(T);
   }
 
+  #if 0
   static std::size_t size(Context& cx, const MemVector<T>* self) {
-    return self->size_;
+    return self->size;
   }
+  #endif
 
   // TODO: Barrier::write(cx, handle.base(), &handle->buffer, newBuffer);
   static bool resize(Context& cx, const MemHandle<MemVector<T>>& self,
                      std::size_t size) {
-    auto newBuffer = ArrayBuffer<T>::reallocate(cx, self->buffer_, size);
+    auto newBuffer = ArrayBuffer<T>::reallocate(cx, self->buffer, size);
     if (newBuffer != nullptr) {
-      self->buffer_ = newBuffer;
+      self->buffer = newBuffer;
       return true;
     }
     return false;
@@ -40,14 +42,16 @@ class MemVector {
   // TODO: Barrier::store(cx, self, &Member::buffer, buffer);
   static void construct(Context& cx, const MemHandle<MemVector<T>>& self,
                         std::size_t size = 0) {
-    self->buffer_ = ArrayBuffer<T>::allocate(cx, size);
-    self->size_ = size;
+    self->buffer = ArrayBuffer<T>::allocate(cx, size);
+    self->size = size;
   }
 
- private:
-  std::size_t size_;
-  ArrayBuffer<T>* buffer_;
+  std::size_t size;
+  ArrayBuffer<T>* buffer;
 };
+
+static_assert(std::is_standard_layout<MemVector<char>>::value,
+  "MemVector must be a StandardLayoutType.");
 
 }  // namespace Om
 }  // namespace OMR

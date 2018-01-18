@@ -2,9 +2,13 @@
 #define OMR_OM_ALLOCATOR_HPP_
 
 #include <OMR/Om/Allocation.hpp>
+#include <OMR/Om/ArrayBuffer.hpp>
 #include <OMR/Om/Context.hpp>
 #include <OMR/Om/Object.hpp>
+#include <OMR/Om/ObjectMap.hpp>
 #include <OMR/Om/Runtime.hpp>
+#include <OMR/Om/SlotMap.hpp>
+// #include <OMR/Om/
 
 #include <omrgc.h>
 
@@ -28,7 +32,8 @@ inline Object* allocateEmptyObject(Context& cx);
 
 inline Object* allocateObject(Context& cx, Object* base);
 
-inline ArrayBuffer* allocateArrayBuffer(Context& cx, std::size_t size);
+template <typename T>
+inline ArrayBuffer<T>* allocateArrayBuffer(Context& cx, std::size_t size);
 
 }  // namespace Om
 }  // namespace OMR

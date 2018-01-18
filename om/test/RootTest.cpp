@@ -3,10 +3,10 @@
 
 #include <OMR/Om/Runtime.hpp>
 #include <OMR/Om/Context.inl.hpp>
-#include <OMR/Om/MemoryManager.inl.pp>
+#include <OMR/Om/MemoryManager.inl.hpp>
 #include <OMR/Om/RootRef.inl.hpp>
 #include <OMR/Om/Handle.hpp>
-#include <OMR/Om/MemberHandle.hpp>
+#include <OMR/Om/MemHandle.hpp>
 
 #include <gtest/gtest.h>
 

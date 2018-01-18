@@ -5,19 +5,23 @@
 #include <OMR/Om/Map.hpp>
 #include <OMR/Om/Value.hpp>
 #include <OMR/Om/SlotMap.hpp>
+#include <OMR/Om/MemVector.hpp>
 
 #include <cstddef>
 #include <cstdint>
 #include <iostream>
 #include <map>
 #include <new>
+#include <type_traits>
 
 namespace OMR {
 namespace Om {
 
 /// A Cell with dynamically allocated slots.
-class Object : public Cell {
- public:
+struct Object {
+  union Base {
+    Cell cell;
+  };
 
   static Object* allocate(Context& cx, Handle<ObjectMap> map);
 
@@ -44,9 +48,14 @@ class Object : public Cell {
 
   static constexpr Index MAX_SLOTS = 32;
 
-  Value slots_[MAX_SLOTS];
+  Base base;
+  MemVector<Value> dynamicSlots;
+  std::size_t fixedSlotCount;
+  Value fixedSlots[0];
 };
-  
+
+static_assert(std::is_standard_layout<Object>::value, "Object must be a StandardLayoutType.");
+
 }  // namespace Om
 }  // namespace OMR
 

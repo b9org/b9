@@ -14,7 +14,7 @@ inline RootRef<T>::RootRef(Context& cx, T* ptr) noexcept
 
 template <typename T>
 inline RootRef<T>::RootRef(RootRefSeq& seq, T* ptr) noexcept
-    : seq_(seq), node_(ptr, seq.head()) {
+    : seq_(seq), node_(&ptr->base.cell, seq.head()) {
   seq_.head(&node_);
 }
 

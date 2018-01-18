@@ -19,6 +19,8 @@
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
  *******************************************************************************/
 
+// TODO: Implement the Allocation Initializers
+
 #if !defined(OMR_OM_ALLOCATION_HPP_)
 #define OMR_OM_ALLOCATION_HPP_
 
@@ -38,7 +40,9 @@ class Initializer {
 
 struct MetaMapInitializer : public Initializer {
   virtual Cell* operator()(Context& cx, Cell* cell) override {
-    return new (cell) MetaMap();
+    auto map = reinterpret_cast<Map*>(cell);
+    new (map) MetaMap();
+    return reinterpret_cast<Cell*>(map);
   }
 };
 
@@ -47,7 +51,8 @@ struct EmptyObjectMapInitializer : public Initializer {
  public:
   virtual Cell* operator()(Context& cx, Cell* cell) override {
     auto map = cx.globals().metaMap;
-    return new (cell) EmptyObjectMap(map);
+    new (cell) EmptyObjectMap();
+    return cell;
   }
 };
 
@@ -58,14 +63,7 @@ struct SlotMapInitializer : public Initializer {
       : parent_(cx, parent), slotId_(slotId) {}
 
   virtual Cell* operator()(Context& cx, Cell* cell) override {
-    if (parent_->kind() == MapKind::EMPTY_OBJECT_MAP) {
-      auto parent = parent_.get<EmptyObjectMap>();
-      return new (cell) SlotMap(parent, slotId_);
-    } else {
-      assert(parent_->kind() == MapKind::SLOT_MAP);
-      auto parent = parent_.get<SlotMap>();
-      return new (cell) SlotMap(parent, slotId_);
-    }
+    return cell;
   }
 
   RootRef<Map> parent_;
@@ -76,7 +74,7 @@ struct EmptyObjectInitializer : public Initializer {
  public:
   virtual Cell* operator()(Context& cx, Cell* cell) override {
     auto map = cx.globals().emptyObjectMap;
-    return new (cell) Object(map);
+    return cell;  // TODO: new (cell) Object(map);
   }
 };
 
@@ -85,7 +83,7 @@ struct ObjectInitializer : public Initializer {
   ObjectInitializer(Context& cx, Object* base) : base_(cx, base) {}
 
   virtual Cell* operator()(Context& cx, Cell* cell) override {
-    return new (cell) Object(*base_.get());
+    return cell;  // TODO: new (cell) Object(*base_.get());
   }
 
  private:

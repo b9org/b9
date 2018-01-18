@@ -37,12 +37,14 @@ class Handle {
 
   template <typename U = T>
   constexpr U* ptr() const {
-    return *static_cast<U* const*>(root_);
+    static_assert(sizeof (U**) == sizeof(T**), "Pointers must be compatible.");
+    static_assert(sizeof (U*) == sizeof(T*), "Pointers must be compatible.");
+    return *reinterpret_cast<U* const*>(root_);
   }
 
   template <typename U = T>
   constexpr operator U*() const {
-      return ptr<U>();
+    return ptr<U>();
   }
 
  private:

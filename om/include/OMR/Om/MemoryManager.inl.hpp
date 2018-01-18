@@ -59,8 +59,8 @@ inline void MemoryManager::initGlobals(StartupContext& cx) {
 }
 
 inline void MemoryManager::visitRoots(Context& cx, Visitor& visitor) {
-  visitor.rootEdge(cx, this, globals_.metaMap);
-  visitor.rootEdge(cx, this, globals_.emptyObjectMap);
+  visitor.rootEdge(cx, this, &globals_.metaMap->base.cell);
+  visitor.rootEdge(cx, this, &globals_.emptyObjectMap->base.cell);
 
   for (auto& fn : userRoots()) {
     fn(cx, visitor);

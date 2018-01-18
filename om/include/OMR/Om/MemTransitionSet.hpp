@@ -28,6 +28,7 @@ class MemTransitionSet {
     SlotMap* map;
   };
 
+#if 0
   static bool lookup(Context& cx, const MemTransitionSet* self,
                      std::size_t hash, const SlotDescriptor& desc, SlotMap*& result) {
     const auto size = MemVector<Entry>::size(cx, &self->buffer);
@@ -66,6 +67,7 @@ class MemTransitionSet {
     MemVector<Entry>::construct(cx, {self, &MemTransitionSet::buffer}, 1);
     self->size = 0;
   }
+#endif
 
   std::size_t size;
   MemVector<Entry> buffer;

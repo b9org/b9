@@ -15,11 +15,32 @@ using Index = std::uint8_t;
 
 /// The SlotMap is an ObjectMap that describes a slot (aka field or property) of
 /// an object.
-class SlotMap : public ObjectMap {
- public:
+struct SlotMap {
+  union Base {
+    ObjectMap objectMap;
+    Map map;
+    Cell cell;
+  };
+  
+  Base base;
+  ObjectMap* parent;
+  SlotDescriptor desc;
+  Index index;
+};
+
+static_assert(std::is_standard_layout<SlotMap>::value,
+              "SlotMap must be a StandardLayoutType.");
+
+#if 0
+
+inline void construct(Context& cx, SlotMap* self, SlotMap* parent, const SlotDescriptor& desc) {
+  ObjectMap::construct(cx, reinterpret_cast<ObjectMap>(self), )
+}
+
+
   static void construct(Context& cx, SlotMap* self, SlotMap* parent,
                         const SlotDescriptor& desc) {
-    ObjectMap::construct(cx, self, Map::metaMap(cx, parent),
+    ObjectMap::construct(cx, self, Map::metaMap(parent->objectMap.map),
                          Map::Kind::SLOT_MAP);
     self->index = parent->index += 1;
     self->parent = parent;
@@ -46,10 +67,7 @@ class SlotMap : public ObjectMap {
     }
   }
 
-  ObjectMap* parent;
-  SlotDescriptor desc;
-  Index index;
-};
+#endif
 
 }  // namespace Om
 }  // namespace OMR

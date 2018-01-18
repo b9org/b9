@@ -9,8 +9,9 @@
 namespace OMR {
 namespace Om {
 
+#if 0
 inline Object* Object::allocate(Context& cx, Handle<ObjectMap> map) {
-  RootRef<Object> object = nulltptr; // TODO: implement allocation
+  RootRef<Object> object = nullptr; // TODO: implement allocation
   construct(cx, object.reinterpret<Cell>(), map);
   return object.ptr();
 }
@@ -111,6 +112,8 @@ inline bool setSlot(Context& cx, Object* obj, Id slotId, Value value) {
     return true;
   }
 }
+
+#endif
 
 }  // namespace Om
 }  // namespace OMR

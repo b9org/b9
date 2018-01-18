@@ -7,22 +7,24 @@
 namespace OMR {
 namespace Om {
 
-class MetaMap;
-
 /// A description of a cell's layout, or shape. The Map is akin to a java class,
 /// except that Maps are typically very small. Every Cell has a Map. Maps may be
 /// shared by Cells. The MapKind can be examined to tell what kind of thing the
 /// cell is.
-class Map : public Cell {
- public:
-  enum class Kind { SLOT_MAP, META_MAP, EMPTY_OBJECT_MAP, ARRAY_BUFFER_MAP };
+struct Map {
+  enum class Kind {
+    SLOT_MAP, META_MAP, EMPTY_OBJECT_MAP, ARRAY_BUFFER_MAP 
+  };
 
-  static void construct(Context& cx, Map* self, MetaMap* meta, Kind kind);
+  union Base {
+    Cell cell;
+  };
 
-  static MetaMap* metaMap(Context& cx, const Map* self);
-
+  Base base;
   Kind kind;
 };
+
+static_assert(std::is_standard_layout<Map>::value, "Map must be a StandardLayoutType.");
 
 }  // namespace Om
 }  // namespace OMR

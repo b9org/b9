@@ -47,7 +47,7 @@ struct Object {
   static Index newSlot(Context& cx, Handle<Object> self, Id id);
 
   static ObjectMap* objectMap(const Object* object) {
-    return reinterpret_cast<ObjectMap*>(object->base.cell.header.map());
+    return reinterpret_cast<ObjectMap*>(object->base.cell.map());
 }
 
   static constexpr Index MAX_SLOTS = 32;

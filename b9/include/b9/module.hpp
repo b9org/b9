@@ -56,12 +56,9 @@ inline void operator<<(std::ostream& out, const FunctionDef& f) {
   out << std::endl;
 }
 
-inline bool operator==(const FunctionDef& f1, const FunctionDef& f2) {
-  if (f1.name != f2.name || f1.index != f2.index || 
-      f1.nargs != f2.nargs || f1.nregs != f2.nregs) {
-      return false;
-  }
-  return true;
+inline bool operator==(const FunctionDef& lhs, const FunctionDef& rhs) {
+  return lhs.name == rhs.name && lhs.index == rhs.index &&
+         lhs.nargs == rhs.nargs && lhs.nregs == rhs.nregs;
 }
 
 /// Function not found exception.
@@ -99,6 +96,11 @@ inline void operator<<(std::ostream& out, const Module& m) {
     out << "   " << string << std::endl;
   }
   out << std::endl;
+}
+
+inline bool operator==(const Module& lhs, const Module& rhs) {
+  return lhs.functions == rhs.functions && lhs.strings == rhs.strings &&
+         lhs.primitives == rhs.primitives;
 }
 
 }  // namespace b9

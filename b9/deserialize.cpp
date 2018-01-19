@@ -10,18 +10,15 @@
 
 namespace b9 {
 
-void readHeader(std::istream &in) {
-  if (in.peek() == std::istream::traits_type::eof()) {
-    throw DeserializeException{"Empty Input File"};
+void readStringSection(std::istream &in, std::vector<std::string> &strings) {
+  uint32_t stringCount;
+  if (!readNumber(in, stringCount)) {
+    throw DeserializeException{"Error reading string count"};
   }
-
-  const char magic[] = {'b', '9', 'm', 'o', 'd', 'u', 'l', 'e'};
-  const std::size_t bytes = sizeof(magic);
-
-  char buffer[bytes];
-  bool ok = readBytes(in, buffer, bytes);
-  if (!ok || strncmp(magic, buffer, bytes) != 0) {
-    throw DeserializeException{"Corrupt Header"};
+  for (uint32_t i = 0; i < stringCount; i++) {
+    std::string toRead;
+    readString(in, toRead);
+    strings.push_back(toRead);
   }
 }
 
@@ -43,18 +40,19 @@ void readFunctionData(std::istream &in, FunctionDef &functionDef) {
             readNumber(in, functionDef.nargs) &&
             readNumber(in, functionDef.nregs);
   if (!ok) {
-    throw DeserializeException{"Error in read function data"};
+    throw DeserializeException{"Error reading function data"};
   }
 }
 
 void readFunction(std::istream &in, FunctionDef &functionDef) {
   readFunctionData(in, functionDef);
   if (!readInstructions(in, functionDef.instructions)) {
-    throw DeserializeException{"Error in read instructions"};
+    throw DeserializeException{"Error reading instructions"};
   }
 }
 
-void readFunctionSection(std::istream &in, std::vector<FunctionDef> &functions) {
+void readFunctionSection(std::istream &in,
+                         std::vector<FunctionDef> &functions) {
   uint32_t functionCount;
   if (!readNumber(in, functionCount)) {
     throw DeserializeException{"Error reading function count"};
@@ -62,41 +60,16 @@ void readFunctionSection(std::istream &in, std::vector<FunctionDef> &functions) 
   for (uint32_t i = 0; i < functionCount; i++) {
     functions.emplace_back("", -1, std::vector<Instruction>{});
     readFunction(in, functions.back());
-  }
-}
-
-void readString(std::istream &in, std::string &toRead) {
-  uint32_t length;
-  if (!readNumber(in, length, sizeof(length))) {
-    throw DeserializeException{"Error reading string length"};
-  }
-  for (size_t i = 0; i < length; i++) {
-    if (in.eof()) {
-      throw DeserializeException{"Unexpected EOF"};
+    if (functions[i].index != i) {
+      throw DeserializeException{"Invalid index"};
     }
-    char current = in.get();
-    toRead.push_back(current);
-  }
-}
-
-void readStringSection(std::istream &in, std::vector<std::string> &strings) {
-  uint32_t stringCount;
-  if (!readNumber(in, stringCount, sizeof(stringCount))) {
-    throw DeserializeException{"Error reading string count"};
-  }
-  for (uint32_t i = 0; i < stringCount; i++) {
-    std::string toRead;
-    readString(in, toRead);
-    strings.push_back(toRead);
   }
 }
 
 void readSection(std::istream &in, std::shared_ptr<Module> &module) {
   uint32_t sectionCode;
-  bool ok = readNumber(in, sectionCode);
-
-  if (!ok) {
-    throw DeserializeException{"Failed to read section code"};
+  if (!readNumber(in, sectionCode)) {
+    throw DeserializeException{"Error reading section code"};
   }
 
   switch (sectionCode) {
@@ -106,6 +79,21 @@ void readSection(std::istream &in, std::shared_ptr<Module> &module) {
       return readStringSection(in, module->strings);
     default:
       throw DeserializeException{"Invalid Section Code"};
+  }
+}
+
+void readHeader(std::istream &in) {
+  if (in.peek() == std::istream::traits_type::eof()) {
+    throw DeserializeException{"Empty Input File"};
+  }
+
+  const char magic[] = {'b', '9', 'm', 'o', 'd', 'u', 'l', 'e'};
+  const std::size_t bytes = sizeof(magic);
+
+  char buffer[bytes];
+  bool ok = readBytes(in, buffer, bytes);
+  if (!ok || strncmp(magic, buffer, bytes) != 0) {
+    throw DeserializeException{"Corrupt Header"};
   }
 }
 

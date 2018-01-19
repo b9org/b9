@@ -6,14 +6,9 @@
 namespace OMR {
 namespace Om {
 
-inline void Map::construct(Context& cx, Map* self, Kind kind) {
-  MetaMap* meta = cx->globals().metaMap;
-  Cell::construct(cx, self, meta);
-  self->kind = kind;
-}
-
-inline MetaMap* Map::metaMap(Context& cx, const Map* self) const {
-  return static_cast<MetaMap*>(self->map);
+inline void Map::construct(Context& cx, Map* self, MetaMap* meta, Kind kind) {
+  Cell::construct(cx, &self->base.cell, &meta->base.map);
+  kind = kind;
 }
 
 }  // namespace Om

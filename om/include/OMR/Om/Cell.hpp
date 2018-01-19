@@ -46,11 +46,19 @@ static_assert(std::is_standard_layout<CellHeader>::value,
 
 /// A managed blob of memory. All Cells have a one slot header.
 struct Cell {
+
+  static void construct(Context& cx, Cell* self, Map* map, std::uint8_t flags = 0);
+
   CellHeader header;
 };
 
 static_assert(std::is_standard_layout<Cell>::value,
               "Cell must be a StandardLayoutType");
+
+
+inline void Cell::construct(Context&cx, Cell* self, Map* map, std::uint8_t flags) {
+  self->header.set(map, flags);
+}
 
 }  // namespace Om
 }  // namespace OMR

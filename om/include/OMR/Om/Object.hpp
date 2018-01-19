@@ -29,13 +29,13 @@ struct Object {
 
   static void construct(Context& cx, Handle<Object> self, Handle<ObjectMap> map);
 
-  static bool get(Context& cx, Object* self, Id id, Value& result);
+  static bool get(Context& cx, const Object* self, Id id, Value& result);
 
-  static void get(Context& cx, Object* self, Index index, Value& result);
+  static void get(Context& cx, const Object* self, Index index, Value& result);
 
-  static void set(Context& cx, Object* self, Index index, Value value);
+  static void set(Context& cx, Object* self, Index index, Value value) noexcept;
 
-  static bool index(Context& cx, Object* self, Id id, Index& result);
+  static bool index(Context& cx, const Object* self, Id id, Index& result);
 
   /// Set the slot that corresponds to the id. If the slot doesn't exist,
   /// allocate the slot and assign it. The result is the address of the slot.
@@ -44,7 +44,11 @@ struct Object {
 
   /// Allocate a new slot corresponding to the id. The object may not already
   /// have a slot with this Id matching. !CAN_GC!
-  Index newSlot(Context& cx, Id id);
+  static Index newSlot(Context& cx, Handle<Object> self, Id id);
+
+  static ObjectMap* objectMap(const Object* object) {
+    return reinterpret_cast<ObjectMap*>(object->base.cell.header.map());
+}
 
   static constexpr Index MAX_SLOTS = 32;
 

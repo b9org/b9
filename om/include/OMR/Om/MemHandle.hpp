@@ -45,6 +45,8 @@ class MemHandle {
 
   T& operator*() const { return *Infra::ptradd<T>(base_, offset_); }
 
+//   template <typename M>
+//   M& operator->*(M T::* member)
   constexpr Handle<C> base() const { return base_; }
 
   MemHandle<T, C>& base(Handle<C>& base) {

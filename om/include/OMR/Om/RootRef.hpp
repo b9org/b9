@@ -3,6 +3,7 @@
 
 #include <OMR/Infra/Cons.hpp>
 #include <OMR/Om/Cell.hpp>
+#include <OMR/Om/Handle.hpp>
 
 #include <functional>
 #include <unordered_set>
@@ -96,15 +97,23 @@ class RootRef {
     return *this;
   }
 
-  T** raw() noexcept { return &node_.first; }
+  template <typename U = T>
+  U** address() noexcept { return reinterpret_cast<U**>(&node_.first); }
 
-  T* const* raw() const noexcept { return &node_.first; }
+  template <typename U = T>
+  U* const* address() const noexcept { return reinterpret_cast<U* const*>(&node_.first); }
 
   bool isHead() const noexcept { return seq_.head() == &node_; }
 
   RefSeq& seq() const noexcept { return seq_; }
 
   RefSeq::Node* tail() const noexcept { return node_.second; }
+
+#if 0
+  operator Handle<T>() const {
+    return Handle<T>(address());
+  }
+#endif
 
  private:
   RefSeq& seq_;

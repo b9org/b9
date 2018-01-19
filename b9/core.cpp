@@ -153,26 +153,42 @@ void ExecutionContext::strPushConstant(Parameter param) {
 // ( -- object )
 void ExecutionContext::newObject() {
   auto ref = OMR::Om::allocateEmptyObject(*this);
-  push(OMR::Om::Value().setPtr(ref));
+  push(OMR::Om::Value(ref));
 }
 
 // ( object -- value )
 void ExecutionContext::pushFromObject(OMR::Om::Id slotId) {
-  auto obj = pop().getPtr<OMR::Om::Object>();
-  auto lookup = obj->get(*this, slotId);
-  if (std::get<bool>(lookup)) {
-    push(std::get<OMR::Om::Value>(lookup));
-  } else {
+  auto value = pop();
+  if (!value.isPtr()) {
+    throw std::runtime_error("Accessing non-object value as an object.");
+  }
+  auto obj = value.getPtr<OMR::Om::Object>();
+  OMR::Om::Index index = 0;
+  auto found = OMR::Om::Object::index(*this, obj, slotId, index);
+  if (found) {
+    OMR::Om::Value result;
+    OMR::Om::Object::get(*this, obj, index, result);
+    push(result);
+  }
+  else {
     throw std::runtime_error("Accessing an object's field that doesn't exist.");
   }
 }
 
 // ( object value -- )
-void ExecutionContext::popIntoObject(OMR::Om::Id slot) {
-  // TODO: root the value, if it's a ptr
-  auto obj = pop().getPtr<OMR::Om::Object>();
-  auto val = pop();
-  setSlot(*this, obj, slot, val);
+void ExecutionContext::popIntoObject(OMR::Om::Id slotId) {
+  if (!stack_[0].isPtr()) {
+    throw std::runtime_error("Accessing non-object as an object");
+  }
+  auto object = pop().getPtr<OMR::Om::Object>();
+  OMR::Om::Index index;
+  auto found = OMR::Om::Object::index(*this, object, slotId, index);
+  if (!found) {
+    OMR::Om::RootRef<OMR::Om::Object> root(*this, object);
+    index = OMR::Om::Object::newSlot(*this, root, slotId);
+  }
+  auto value = pop();
+  OMR::Om::Object::set(*this, object, index, value);
 }
 
 void ExecutionContext::callIndirect() {

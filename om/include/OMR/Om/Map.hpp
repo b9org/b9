@@ -7,6 +7,8 @@
 namespace OMR {
 namespace Om {
 
+struct MetaMap;
+
 /// A description of a cell's layout, or shape. The Map is akin to a java class,
 /// except that Maps are typically very small. Every Cell has a Map. Maps may be
 /// shared by Cells. The MapKind can be examined to tell what kind of thing the
@@ -19,6 +21,10 @@ struct Map {
   union Base {
     Cell cell;
   };
+
+  static void construct(Context& cx, Map* self, MetaMap* meta, Kind kind);
+
+  static Cell* asCell(Map* map);
 
   Base base;
   Kind kind;

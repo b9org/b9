@@ -17,11 +17,11 @@ namespace Test {
 ProcessRuntime runtime;
 
 TEST(RootTest, basic) {
-	MemoryManager manager;
+	MemoryManager manager(runtime);
 	Context cx(manager);
 	RootRef<Object> root(cx, allocateEmptyObject(cx));
 	Handle<Object> handle(root);
-	MemberHandle<CellHeader> member(handle, &Object::)
+	MemHandle<Object::Base> member(handle, &Object::base);
 }
 
 }  // namespace Test

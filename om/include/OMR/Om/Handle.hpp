@@ -11,11 +11,11 @@ class Handle {
  public:
   template <typename U>
   constexpr Handle(Handle<U> other)
-      : root_(reinterpret_cast<T* const*>(other.root_)) {}
+      : root_(reinterpret_cast<T* const*>(other.raw())) {}
 
   template <typename U>
-  explicit constexpr Handle(const RootRef<U>& root)
-      : root_(reinterpret_cast<T**>(root.raw())) {}
+  constexpr Handle(const RootRef<U>& root)
+      : root_(reinterpret_cast<T* const*>(root.address())) {}
 
   T* get() const noexcept { return *root_; }
 
@@ -26,7 +26,7 @@ class Handle {
   T* operator->() const noexcept { return ptr(); }
 
   template <typename U>
-  U* operator->*(U T::*mptr) const noexcept {
+  U& operator->*(U T::* mptr) const noexcept {
     return ptr()->*mptr;
   }
 
@@ -37,8 +37,8 @@ class Handle {
 
   template <typename U = T>
   constexpr U* ptr() const {
-    static_assert(sizeof (U**) == sizeof(T**), "Pointers must be compatible.");
-    static_assert(sizeof (U*) == sizeof(T*), "Pointers must be compatible.");
+    static_assert(sizeof(U**) == sizeof(T**), "Pointers must be compatible.");
+    static_assert(sizeof(U*) == sizeof(T*), "Pointers must be compatible.");
     return *reinterpret_cast<U* const*>(root_);
   }
 

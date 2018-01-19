@@ -97,7 +97,8 @@ class Value {
   explicit constexpr Value(std::int32_t i)
       : data_{BoxKindTag::INTEGER | (RawValue(i) & VALUE_MASK)} {}
 
-  explicit Value(Cell* p)
+  template <typename T>
+  explicit Value(T* p)
       : data_{BoxKindTag::POINTER |
               (reinterpret_cast<RawValue>(p) & VALUE_MASK)} {}
 

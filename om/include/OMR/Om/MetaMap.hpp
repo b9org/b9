@@ -12,6 +12,7 @@ namespace Om {
 /// descriptive, IE metaMap->map() == metaMap. The MetaMap is a heap-wide
 /// singleton.
 struct MetaMap {
+
   union Base {
     Map map;
     Cell cell;

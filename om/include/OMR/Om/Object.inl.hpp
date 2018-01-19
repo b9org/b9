@@ -9,7 +9,8 @@
 namespace OMR {
 namespace Om {
 
-#if 0
+#if 0 //////////////////////////////////////////
+
 inline Object* Object::allocate(Context& cx, Handle<ObjectMap> map) {
   RootRef<Object> object = nullptr; // TODO: implement allocation
   construct(cx, object.reinterpret<Cell>(), map);
@@ -28,35 +29,37 @@ inline void Object::clone(Context& xc, Handle<Object> base) {
   allocate(cx, base->map);
 }
 
-inline void Object::set(Context& cx, Object* self, Index index, Value value) {
-  self->slots[index] = value;
-}
+#endif ////////////////////////////////////////////
 
-inline bool Object::index(Context& cx, Object* self, Id id, Index& result) {
-  for (auto m = Cell::map(self); Map::kind(m) != MapKind::EMPTY_OBJECT_MAP;) {
-    assert(m->kind() == MapKind::SLOT_MAP);
-    auto sm = reinterpret_cast<SlotMap*>(m);
-    if (sm->id() == id) {
-      return {sm->index(), true};
+inline bool Object::index(Context& cx, const Object* self, Id id, Index& result) {
+  const ObjectMap* objectMap = Object::objectMap(self);
+  while (objectMap->base.map.kind != Map::Kind::EMPTY_OBJECT_MAP) {
+    assert(objectMap->base.map.kind == Map::Kind::SLOT_MAP);
+    auto slotMap = reinterpret_cast<const SlotMap*>(objectMap);
+    if (slotMap->desc.id() == id) {
+      result = slotMap->index;
+      return true;
     }
-    m = sm->parent();
+    objectMap = slotMap->parent;
   }
-  return {0, false};
+  result = -1;
+  return false;
 }
 
-inline bool Object::get(Context& cx, Object* self, Id id, Value& result) {
-  Index idx;
-  auto found = index(cx, self, id, idx);
+inline bool Object::get(Context& cx, const Object* self, Id id, Value& result) {
+  Index index = -1;
+  auto found = Object::index(cx, self, id, index);
   if (found) {
-    get(cx, self, idx, result);
+    Object::get(cx, self, index, result);
   }
   return found;
 }
 
-inline void Object::get(Context& cx, Object* self, Index index, Value& result) {
-  result = self->slots_[index];
+inline void Object::get(Context& cx, const Object* self, Index index, Value& result) {
+  result = self->fixedSlots[index];
 }
 
+#if 0
 /// Set the slot that corresponds to the id. If the slot doesn't exist,
 /// allocate the slot and assign it. The result is the address of the slot.
 /// !CAN_GC!
@@ -72,48 +75,28 @@ inline bool Object::set(Context& cx, Id id, Value value) {
 }
 
 inline bool Object::set(Context& cx, Id id, Value value) {}
+#endif
 
-inline void Object::setAt(Context& cx, Index index, Value value) noexcept {
+inline void Object::set(Context& cx, Object* self, Index index, Value value) noexcept {
   if (value.isPtr()) {
     // standardWriteBarrier(cx, this, value.getPtr());
   }
-  slots_[index] = value;
-}
-
-inline void Object::setAt(Context& cx, Index index, Object* value) noexcept {
-  // standardWriteBarrier(cx, this, value);
-  slots_[index].setPtr(value);
-}
-
-inline void Object::setAt(Context& cx, Index index,
-                          std::int32_t value) noexcept {
-  slots_[index].setInteger(value);
+  self->fixedSlots[index] = value;
 }
 
 /// Allocate a new slot corresponding to the id. The object may not already
 /// have a slot with this Id matching. !CAN_GC!
-inline Index Object::newSlot(Context& cx, Id id) {
-  RootRef<Object> root(cx, this);
+inline Index Object::newSlot(Context& cx, Handle<Object> self, Id id) {
+#if 0
+  RootRef<ObjectMap> baseMap(Object::map(self));
+  SlotMap* newMap = SlotMap::derive(cx, baseMap, id);
   auto m = allocateSlotMap(cx, map(), id);
   root->map(m);
   return m->index();
-}
-
-inline bool setSlot(Context& cx, Object* obj, Id slotId, Value value) {
-  auto lookup = obj->index(slotId);
-  if (std::get<bool>(lookup)) {
-    auto index = std::get<Index>(lookup);
-    obj->setAt(cx, index, value);
-    return false;
-  } else {
-    RootRef<Object> root(cx, obj);
-    auto index = root->newSlot(cx, slotId);
-    root->setAt(cx, index, value);
-    return true;
-  }
-}
-
 #endif
+  assert(0);
+  return -1;
+}
 
 }  // namespace Om
 }  // namespace OMR

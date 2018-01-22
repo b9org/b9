@@ -21,7 +21,7 @@ TEST(RootTest, basic) {
 	Context cx(manager);
 	RootRef<Object> root(cx, allocateEmptyObject(cx));
 	Handle<Object> handle(root);
-	MemHandle<Object::Base> member(handle, &Object::base);
+	// MemHandle<Object::Base> member(handle, &Object::base);
 }
 
 }  // namespace Test

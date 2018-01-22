@@ -3,9 +3,9 @@
 
 #include <OMR/Om/Cell.hpp>
 #include <OMR/Om/Map.hpp>
-#include <OMR/Om/Value.hpp>
-#include <OMR/Om/SlotMap.hpp>
 #include <OMR/Om/MemVector.hpp>
+#include <OMR/Om/SlotMap.hpp>
+#include <OMR/Om/Value.hpp>
 
 #include <cstddef>
 #include <cstdint>
@@ -27,7 +27,8 @@ struct Object {
 
   static Object* clone(Context& cx, Handle<Object> base);
 
-  static void construct(Context& cx, Handle<Object> self, Handle<ObjectMap> map);
+  static void construct(Context& cx, Handle<Object> self,
+                        Handle<ObjectMap> map);
 
   static bool get(Context& cx, const Object* self, Id id, Value& result);
 
@@ -46,19 +47,28 @@ struct Object {
   /// have a slot with this Id matching. !CAN_GC!
   static Index newSlot(Context& cx, Handle<Object> self, Id id);
 
-  static ObjectMap* objectMap(const Object* object) {
-    return reinterpret_cast<ObjectMap*>(object->base.cell.map());
-}
-
   static constexpr Index MAX_SLOTS = 32;
 
-  Base base;
+  Base& base() { return base_; }
+
+  const Base& base() const { return base_; }
+
+  Cell& baseCell() { return base().cell; }
+
+  const Cell& baseCell() const { return base().cell; }
+
+  ObjectMap* map() const { return reinterpret_cast<ObjectMap*>(baseCell().map()); }
+
+  void map(ObjectMap* m) { baseCell().map(&m->baseMap()); }
+
+  Base base_;
   MemVector<Value> dynamicSlots;
   std::size_t fixedSlotCount;
   Value fixedSlots[0];
 };
 
-static_assert(std::is_standard_layout<Object>::value, "Object must be a StandardLayoutType.");
+static_assert(std::is_standard_layout<Object>::value,
+              "Object must be a StandardLayoutType.");
 
 }  // namespace Om
 }  // namespace OMR

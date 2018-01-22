@@ -14,17 +14,32 @@ class Context;
 /// A map that describes the layout of an object. ObjectMaps are either the
 /// EmptyObjectMap, or a SlotMap.
 struct ObjectMap {
-
-  static void construct(Context& cx, ObjectMap* self, MetaMap* meta,
-                        Map::Kind kind);
-
   union Base {
     Map map;
     Cell cell;
   };
 
-  Base base;
-  MemTransitionSet transitions;
+  static void construct(Context& cx, ObjectMap* self, MetaMap* meta,
+                        Map::Kind kind);
+
+  static SlotMap* transition(Context& cx, const SlotDescriptor& desc);
+
+  Base& base() { return base_; }
+
+  const Base& base() const { return base_; }
+
+  Map& baseMap() { return base().map; }
+
+  const Map& baseMap() const { return base().map; }
+
+  Cell& baseCell() { return base().cell; }
+
+  const Cell& baseCell() const { return base().cell; }
+
+  Map::Kind kind() const { return baseMap().kind(); }
+
+  Base base_;
+  MemTransitionSet transitions_;
 };
 
 static_assert(std::is_standard_layout<ObjectMap>::value,
@@ -32,7 +47,7 @@ static_assert(std::is_standard_layout<ObjectMap>::value,
 
 inline void ObjectMap::construct(Context& cx, ObjectMap* self, MetaMap* meta,
                                  Map::Kind kind) {
-  Map::construct(cx, &self->base.map, meta, kind);
+  Map::construct(cx, &self->baseMap(), meta, kind);
 }
 
 }  // namespace Om

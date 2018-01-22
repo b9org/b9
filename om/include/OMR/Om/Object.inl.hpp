@@ -32,9 +32,9 @@ inline void Object::clone(Context& xc, Handle<Object> base) {
 #endif ////////////////////////////////////////////
 
 inline bool Object::index(Context& cx, const Object* self, Id id, Index& result) {
-  const ObjectMap* objectMap = Object::objectMap(self);
-  while (objectMap->base.map.kind != Map::Kind::EMPTY_OBJECT_MAP) {
-    assert(objectMap->base.map.kind == Map::Kind::SLOT_MAP);
+  const ObjectMap* objectMap = self->map();
+  while (objectMap->kind() != Map::Kind::EMPTY_OBJECT_MAP) {
+    assert(objectMap->kind() == Map::Kind::SLOT_MAP);
     auto slotMap = reinterpret_cast<const SlotMap*>(objectMap);
     if (slotMap->desc.id() == id) {
       result = slotMap->index;

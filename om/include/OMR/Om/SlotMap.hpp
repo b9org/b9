@@ -16,22 +16,38 @@ using Index = std::uint8_t;
 /// The SlotMap is an ObjectMap that describes a slot (aka field or property) of
 /// an object.
 struct SlotMap {
-
-  static SlotMap* allocate(Context& cx);
-
-  static void construct(Context& cx, SlotMap* self, const ObjectMap* parent, const SlotDescriptor& desc);
-
-
-  /// Derive a new slot map. Do not add the slot map to the parent's transition table.
-  static SlotMap* derive(Context& cx, Handle<ObjectMap> parent, const SlotDescriptor& desc);
-
   union Base {
     ObjectMap objectMap;
     Map map;
     Cell cell;
   };
 
-  Base base;
+  static SlotMap* allocate(Context& cx);
+
+  static void construct(Context& cx, SlotMap* self, const ObjectMap* parent, const SlotDescriptor& desc);
+
+  /// Derive a new slot map. Do not add the slot map to the parent's transition table.
+  static SlotMap* derive(Context& cx, Handle<ObjectMap> parent, const SlotDescriptor& desc);
+
+  Base& base() { return base_; }
+
+  const Base& base() const { return base_; }
+
+  Cell& baseCell() { return base().cell; }
+
+  const Cell& baseCell() const { return base().cell; }
+
+  Map& baseMap() { return base().map; }
+  
+  const Map& baseMap() const { return base().map; }
+
+  ObjectMap& baseObjectMap() { return base().objectMap; }
+
+  const ObjectMap& baseObjectMap() const { return base().objectMap; }
+
+  Map::Kind kind() const { return baseMap().kind(); }
+
+  Base base_;
   ObjectMap* parent;
   SlotDescriptor desc;
   Index index;
@@ -47,8 +63,8 @@ inline SlotMap* SlotMap::allocate(Context& cx) {
 
 inline SlotMap* SlotMap::derive(Context& cx, Handle<ObjectMap> parent, const SlotDescriptor& desc) {
   auto child = SlotMap::allocate(cx);
-  ObjectMap::construct(cx, &child->base.objectMap, cx.globals().metaMap, Map::Kind::SLOT_MAP);
-  if (parent->base.map.kind == Map::Kind::SLOT_MAP) {
+  ObjectMap::construct(cx, &child->baseObjectMap(), cx.globals().metaMap, Map::Kind::SLOT_MAP);
+  if (parent->kind() == Map::Kind::SLOT_MAP) {
     auto p = reinterpret_cast<SlotMap*>(parent.ptr());
     child->index = p->index + 1;
   } else {

@@ -14,11 +14,28 @@ namespace Om {
 /// ObjectMap lineages. The EmptyObjectMap is a heap-wide-singleton.
 struct EmptyObjectMap {
   union Base {
+    ObjectMap objectMap;
     Map map;
     Cell cell;
   };
 
-  Base base;
+  Base& base() { return base_; }
+
+  const Base& base() const { return base_; }
+
+  ObjectMap& baseObjectMap() { return base().objectMap; }
+
+  const ObjectMap& baseObjectMap() const { return base().objectMap; }
+
+  Map& baseMap() { return base().map; }
+
+  const Map& baseMap() const { return base().map; }
+
+  Cell& baseCell() { return base().cell; }
+
+  const Cell& baseCell() const { return base().cell; }
+
+  Base base_;
 };
 
 static_assert(std::is_standard_layout<EmptyObjectMap>::value,

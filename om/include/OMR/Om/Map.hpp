@@ -14,9 +14,7 @@ struct MetaMap;
 /// shared by Cells. The MapKind can be examined to tell what kind of thing the
 /// cell is.
 struct Map {
-  enum class Kind {
-    SLOT_MAP, META_MAP, EMPTY_OBJECT_MAP, ARRAY_BUFFER_MAP 
-  };
+  enum class Kind { SLOT_MAP, META_MAP, EMPTY_OBJECT_MAP, ARRAY_BUFFER_MAP };
 
   union Base {
     Cell cell;
@@ -24,13 +22,24 @@ struct Map {
 
   static void construct(Context& cx, Map* self, MetaMap* meta, Kind kind);
 
-  static Cell* asCell(Map* map);
+  Base& base() { return base_; }
 
-  Base base;
-  Kind kind;
+  const Base& base() const { return base_; }
+
+  Cell& baseCell() { return base().cell; }
+
+  const Cell& baseCell() const { return base().cell; }
+
+  MetaMap* map() const { return reinterpret_cast<MetaMap*>(baseCell().map()); }
+
+  Kind kind() const { return kind_; }
+
+  Base base_;
+  Kind kind_;
 };
 
-static_assert(std::is_standard_layout<Map>::value, "Map must be a StandardLayoutType.");
+static_assert(std::is_standard_layout<Map>::value,
+              "Map must be a StandardLayoutType.");
 
 }  // namespace Om
 }  // namespace OMR

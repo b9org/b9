@@ -15,15 +15,11 @@ class Context;
 
 class MemoryManager;
 
-using RawCellHeader = std::uintptr_t;
-
-struct CellData {
-  RawCellHeader header;
-};
+using CellHeader = std::uintptr_t;
 
 /// A managed blob of memory. All Cells have a one slot header.
-struct Cell : private CellData {
-  static constexpr RawCellHeader FLAGS_MASK = 0xFF;
+struct Cell {
+  static constexpr CellHeader FLAGS_MASK = 0xFF;
   static constexpr std::size_t MAP_SHIFT = 8;
 
   static void construct(Context& cx, Cell* self, Map* map, std::uint8_t flags = 0);
@@ -32,16 +28,18 @@ struct Cell : private CellData {
   Map* map() const { return (Map*)(header >> MAP_SHIFT); }
 
   /// Set the map reference. No write barrier.
-  void map( Map* map) {
-    header = (RawCellHeader(map) << MAP_SHIFT) | (header & FLAGS_MASK);
+  void map(Map* map) {
+    header = (CellHeader(map) << MAP_SHIFT) | (header & FLAGS_MASK);
   }
 
   std::uint8_t flags() const { return std::uint8_t(header & FLAGS_MASK); }
 
   /// Set the map and the flags.
   void set(Map* m, std::uint8_t flags) {
-    header = (RawCellHeader(m) << MAP_SHIFT) | (flags & FLAGS_MASK);
+    header = (CellHeader(m) << MAP_SHIFT) | (flags & FLAGS_MASK);
   }
+
+  CellHeader header;
 };
 
 static_assert(std::is_standard_layout<Cell>::value,

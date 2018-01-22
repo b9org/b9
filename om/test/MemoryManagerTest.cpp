@@ -27,7 +27,7 @@ TEST(MemoryManagerTest, startUpAndShutDown) {
   EXPECT_NE(cx.globals().metaMap, nullptr);
   EXPECT_NE(cx.globals().emptyObjectMap, nullptr);
   MetaMap* metaMap = allocateMetaMap(cx);
-  EXPECT_EQ(&metaMap->base.map, metaMap->base.cell.map());
+  EXPECT_EQ(&metaMap->baseMap(), metaMap->baseCell().map());
 }
 
 TEST(MemoryManagerTest, startUpAContext) {
@@ -41,14 +41,14 @@ TEST(MemoryManagerTest, allocateTheMetaMap) {
   MemoryManager manager(runtime);
   Context cx(manager);
   MetaMap* metaMap = allocateMetaMap(cx);
-  EXPECT_EQ(&metaMap->base.map, metaMap->base.cell.map());
+  EXPECT_EQ(metaMap, metaMap->map());
 }
 
 TEST(MemoryManagerTest, loseAnObjects) {
   MemoryManager manager(runtime);
   Context cx(manager);
   Object* object = allocateEmptyObject(cx);
-  EXPECT_EQ(object->base.cell.map(), &cx.globals().emptyObjectMap->base.map);
+  EXPECT_EQ(object->map(), &cx.globals().emptyObjectMap->baseObjectMap());
   OMR_GC_SystemCollect(cx.omrVmThread(), 0);
   // EXPECT_EQ(object->map(), (Map*)0x5e5e5e5e5e5e5e5eul);
 }
@@ -57,9 +57,9 @@ TEST(MemoryManagerTest, keepAnObject) {
   MemoryManager manager(runtime);
   Context cx(manager);
   RootRef<Object> object(cx, allocateEmptyObject(cx));
-  EXPECT_EQ(object->base.cell.map(), &cx.globals().emptyObjectMap->base.map);
+  EXPECT_EQ(object->map(), &cx.globals().emptyObjectMap->baseObjectMap());
   OMR_GC_SystemCollect(cx.omrVmThread(), 0);
-  EXPECT_EQ(object->base.cell.map(), &cx.globals().emptyObjectMap->base.map);
+  EXPECT_EQ(object->map(), &cx.globals().emptyObjectMap->baseObjectMap());
 }
 
 }  // namespace Test

@@ -98,8 +98,7 @@ function CodeGen(f) {
     this.strings = {}
     this.nextStringIndex = 0;
 
-    this.primitives = {}
-    this.nextPrimitiveIndex = 0;
+    this.primitives = [ "print_string", "print_number"];
 
     this.labels = new Object();
     this.instructionIndex = 0;
@@ -127,26 +126,10 @@ function CodeGen(f) {
         throw "No Continue Destination Set, Invalid Break Statement";
     }
 
-    this.declarePrimitive = function(primitiveName, returnType, arguments, comment) {
-        var primitive = this.primitives[primitiveName];
-        if (this.primitives[primitiveName] == undefined) {
-            primitive = {
-                "name": primitiveName,
-                "returnType": returnType,
-                "arguments": arguments,
-                "index": this.nextPrimitiveIndex++
-            }
-        }
-        this.primitives[primitiveName] = primitive;
-    }
-
-    this.genPrimitive = function(primitiveName, args, comment) {
-        var primitive = this.primitives[primitiveName];
-        if (this.primitives[primitiveName] != undefined) {
-            this.outputInstruction("ByteCode::PRIMITIVE_CALL", primitive.index, 'Calling native: ' + primitive.name);
-            return true;
-        }
-        return false;
+    this.genPrimitive = function(name, args, comment) {
+        var index = this.primitives.indexOf(name.value);
+        this.outputInstruction("ByteCode::PRIMITIVE_CALL", index, 'Calling native: ' + name.value);
+        return true;
     }
 
     this.genCall = function(name, args, comment) {
@@ -157,10 +140,13 @@ function CodeGen(f) {
         if (name == "") {
             throw "Invalid Call with no name to call ";
         }
-        if (this.genPrimitive(name, args)) {
-            return;
+
+        if (name == "b9_primitive") {
+            this.genPrimitive(args[0], args.slice(1));
         }
-        this.genCall(name, args, comment);
+        else {
+            this.genCall(name, args.length, comment);
+        }
     }
 
     this.outputRawString = function(s) {
@@ -249,19 +235,6 @@ function CodeGen(f) {
         this.outputRawString('};');
         this.outputRawString('');
 
-        var out = this.primitives;
-        this.outputRawString('DlPrimitiveEntry b9_primitives[] = {');
-        for (key in out) {
-            this.outputRawString('    {"' + key + '", 0},');
-        }
-        this.outputRawString('    {0, 0}');
-        this.outputRawString('};');
-        this.outputRawString('');
-
-        this.outputRawString('DlPrimitiveTable b9_primitive_table = {');
-        this.outputRawString('    ' + Object.keys(out).length + ', b9_primitives');
-        this.outputRawString('};');
-        this.outputRawString('');
     };
 
     this.handle = function(element) {
@@ -523,18 +496,13 @@ function CodeGen(f) {
         decl.arguments.forEach(function(element) {
             element.isParameter = true;
         });
-
-        if (decl.callee.name == "primitive") {
-            // primitive does not "handleAll(decl.arguments);"
-            this.declarePrimitive(decl.arguments[0].value, decl.arguments[1].value, decl.arguments.slice(2));
-            return;
-        }
-
+ 
         this.handleAll(decl.arguments);
+
         if (decl.callee.type == "Identifier") {
             var offset = this.currentFunction.variableOffset(decl.callee.name);
             if (offset.offset == undefined || offset.global == 1) {
-                this.genCallOrPrimitive(decl.callee.name, decl.arguments.length);
+                this.genCallOrPrimitive(decl.callee.name, decl.arguments);
                 this.currentFunction.pushN(1 - decl.arguments.length);
                 return;
             } else {

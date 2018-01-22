@@ -330,6 +330,8 @@ StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
   return *(stackPointer_ - 1);
 }
 
+PrimitiveFunction *const VirtualMachine::primitives_[2];
+
 JitFunction VirtualMachine::getJitAddress(std::size_t functionIndex) {
   if (functionIndex >= compiledFunctions_.size()) {
     return nullptr;
@@ -343,7 +345,7 @@ void VirtualMachine::setJitAddress(std::size_t functionIndex,
 }
 
 PrimitiveFunction *VirtualMachine::getPrimitive(std::size_t index) {
-  return module_->primitives[index];
+  return primitives_[index];
 }
 
 const FunctionDef *VirtualMachine::getFunction(std::size_t index) {

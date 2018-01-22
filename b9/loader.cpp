@@ -12,7 +12,6 @@ std::shared_ptr<Module> DlLoader::loadModule(const std::string& name) const {
   auto handle = openLibrary(name);
   loadFunctions(module, handle);
   loadStrings(module, handle);
-  loadPrimitives(module, handle);
   return module;
 }
 
@@ -36,16 +35,6 @@ void DlLoader::loadFunctions(const std::shared_ptr<Module>& module,
     } while (instructions.back() != END_SECTION);
     module->functions.emplace_back(entry.name, i, std::move(instructions),
                                    entry.nargs, entry.nregs);
-  }
-}
-
-void DlLoader::loadPrimitives(const std::shared_ptr<Module>& module,
-                              void* handle) const {
-  auto table = loadSymbol<const DlPrimitiveTable>(handle, "b9_primitive_table");
-  for (std::size_t i = 0; i < table->length; i++) {
-    auto primitive =
-        loadSymbol<PrimitiveFunction>(RTLD_DEFAULT, table->primitives[i].name);
-    module->primitives.push_back(primitive);
   }
 }
 

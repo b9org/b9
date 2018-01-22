@@ -24,20 +24,6 @@ struct DlFunctionTable {
   const DlFunctionEntry* functions;
 };
 
-struct DlPrimitiveEntry {
-  const char* name;
-  std::uint32_t nargs;
-};
-
-/// Raw dynamic library primitives table.
-/// The primitives table is an array of primitive symbol names. Each symbol will
-/// be loaded out of the DL, and the corresponding address will be stored into
-/// the module primitives list.
-struct DlPrimitiveTable {
-  std::size_t length;
-  const DlPrimitiveEntry* primitives;
-};
-
 /// Raw dynamic library string table.
 /// The string table is an array of char strings.
 struct DlStringTable {
@@ -65,10 +51,6 @@ class DlLoader {
   /// Load the raw function table from the DL into the module.
   void loadFunctions(const std::shared_ptr<Module>& module,
                      void* const handle) const;
-
-  /// Load the raw primitives table from the DL into the module.
-  void loadPrimitives(const std::shared_ptr<Module>& module,
-                      void* handle) const;
 
   /// Load the raw dl string table from the DL into the module.
   void loadStrings(const std::shared_ptr<Module>& module, void* handle) const;

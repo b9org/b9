@@ -11,6 +11,11 @@
 #include <string>
 #include <vector>
 
+extern "C" {
+b9::PrimitiveFunction b9_prim_print_string;
+b9::PrimitiveFunction b9_prim_print_number;
+}
+
 namespace b9 {
 
 class Compiler;
@@ -134,6 +139,9 @@ class VirtualMachine {
   const std::shared_ptr<const Module> &module() { return module_; }
 
  private:
+  static constexpr PrimitiveFunction *const primitives_[] = {
+      b9_prim_print_string, b9_prim_print_number};
+
   Config cfg_;
   ExecutionContext executionContext_;
   std::shared_ptr<Compiler> compiler_;

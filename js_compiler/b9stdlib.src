@@ -1,26 +1,8 @@
-primitive("b9_prim_print_string", "void", "string");
-primitive("b9_prim_print_number", "void", "int");
-primitive("b9_prim_hash_table_allocate", "Int64");
-primitive("b9_prim_hash_table_put", "void", "string", "string");
-primitive("b9_prim_hash_table_get", "string", "string");
-
 function b9PrintString(a) {
-    b9_prim_print_string(a);
+    b9_primitive("print_string", a);
 }
 
 function b9PrintNumber(a) {
-    b9_prim_print_number(a);
-}
-
-function b9HashTableAllocate(a) {
-    b9_prim_hash_table_allocate(a);
-}
-
-function b9hashTableGet(a) {
-    b9_prim_hash_table_get(a);
-}
-
-function b9HashTablePut(a) {
-    b9_prim_hash_table_put(a);
+    b9_primitive("print_number", a);
 }
 

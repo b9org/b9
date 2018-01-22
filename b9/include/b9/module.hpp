@@ -72,7 +72,6 @@ extern "C" typedef void(PrimitiveFunction)(ExecutionContext* context);
 /// An interpreter module.
 struct Module {
   std::vector<FunctionDef> functions;
-  std::vector<PrimitiveFunction*> primitives;
   std::vector<std::string> strings;
 
   std::size_t getFunctionIndex(const std::string& name) const {
@@ -99,8 +98,7 @@ inline void operator<<(std::ostream& out, const Module& m) {
 }
 
 inline bool operator==(const Module& lhs, const Module& rhs) {
-  return lhs.functions == rhs.functions && lhs.strings == rhs.strings &&
-         lhs.primitives == rhs.primitives;
+  return lhs.functions == rhs.functions && lhs.strings == rhs.strings;
 }
 
 }  // namespace b9

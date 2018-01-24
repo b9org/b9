@@ -46,14 +46,11 @@ struct FunctionDef {
 };
 
 inline void operator<<(std::ostream& out, const FunctionDef& f) {
-  out << "Function Name: " << f.name << ", Index: " << f.index << std::endl
-      << "   Number Arguments: " << f.nargs << ", Number Registers: " << f.nregs
-      << std::endl
-      << "   Instructions: " << std::endl;
+  out << "(function \"" << f.name << "\" " << f.nargs << " " <<  f.nregs;
   for (auto instruction : f.instructions) {
-    out << "      " << instruction << std::endl;
+    out << std::endl << "  " << instruction;
   }
-  out << std::endl;
+  out << ")" << std::endl << std::endl;
 }
 
 inline bool operator==(const FunctionDef& lhs, const FunctionDef& rhs) {

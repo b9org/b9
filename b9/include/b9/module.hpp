@@ -87,9 +87,8 @@ inline void operator<<(std::ostream& out, const Module& m) {
     out << function;
     ++index;
   }
-  out << "String Table:" << std::endl;
   for (auto string : m.strings) {
-    out << "   " << string << std::endl;
+    out << "(string \"" << string << "\")" << std::endl;
   }
   out << std::endl;
 }

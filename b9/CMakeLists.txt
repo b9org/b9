@@ -6,6 +6,7 @@ add_library(b9 SHARED
 	primitives.cpp
 	serialize.cpp
 	deserialize.cpp
+  assemble.cpp
 )
 
 target_include_directories(b9

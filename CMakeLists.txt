@@ -53,7 +53,13 @@ endfunction(add_b9_src)
 function(add_b9_module module)
 	add_b9_src(${module})
 	add_library(${module} SHARED "${module}.cpp")
-	target_link_libraries("${module}" b9)
+	set_target_properties(${module}
+    		PROPERTIES
+      		PREFIX ""
+      		DEBUG_POSTFIX ""
+      		SUFFIX ".b9mod"
+  	)
+  	target_link_libraries("${module}" b9)
 endfunction(add_b9_module)
 
 # Add a b9 test program written in b9-js

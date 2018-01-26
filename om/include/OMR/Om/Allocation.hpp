@@ -30,6 +30,10 @@
 
 #include <AllocateInitialization.hpp>
 
+///@file
+/// These classes implement basic initialization of objects.
+/// Just enough to pay GC tax and walk the objects.
+
 namespace OMR {
 namespace Om {
 
@@ -40,54 +44,48 @@ class Initializer {
 
 struct MetaMapInitializer : public Initializer {
   virtual Cell* operator()(Context& cx, Cell* cell) override {
-    auto map = reinterpret_cast<Map*>(cell);
-    new (map) MetaMap();
-    return reinterpret_cast<Cell*>(map);
+    auto m = reinterpret_cast<MetaMap*>(cell);
+    m->baseMap().map(m);  // m describes its own shape.
+    m->baseMap().kind(Map::Kind::META_MAP);
+    return &m->baseCell();
   }
 };
 
-/// Note: Must be allocated AFTER the MetaMap
 struct EmptyObjectMapInitializer : public Initializer {
  public:
   virtual Cell* operator()(Context& cx, Cell* cell) override {
-    auto map = cx.globals().metaMap;
-    new (cell) EmptyObjectMap();
-    return cell;
+    auto m = reinterpret_cast<EmptyObjectMap*>(cell);
+    m->baseMap().map(cx.globals().metaMap);
+    m->baseMap().kind(Map::Kind::EMPTY_OBJECT_MAP);
+    return &m->baseCell();
   }
 };
 
-/// Note: Must be allocated AFTER the MetaMap.
 struct SlotMapInitializer : public Initializer {
- public:
-  SlotMapInitializer(Context& cx, Map* parent, Id slotId)
-      : parent_(cx, parent), slotId_(slotId) {}
+  SlotMapInitializer(Handle<ObjectMap> parent, const SlotDescriptor& desc)
+      : parent_(parent), desc_(desc) {}
 
   virtual Cell* operator()(Context& cx, Cell* cell) override {
-    return cell;
+    auto m = reinterpret_cast<SlotMap*>(cell);
+    m->baseMap().map(cx.globals().metaMap);
+    m->baseMap().kind(Map::Kind::SLOT_MAP);
+    m->parent(parent_.get());
+    m->slotDescriptor(desc_);
+    return &m->baseCell();
   }
 
-  RootRef<Map> parent_;
-  Id slotId_;
-};
-
-struct EmptyObjectInitializer : public Initializer {
- public:
-  virtual Cell* operator()(Context& cx, Cell* cell) override {
-    auto map = cx.globals().emptyObjectMap;
-    return cell;  // TODO: new (cell) Object(map);
-  }
+  Handle<ObjectMap> parent_;
+  SlotDescriptor desc_;
 };
 
 struct ObjectInitializer : public Initializer {
- public:
-  ObjectInitializer(Context& cx, Object* base) : base_(cx, base) {}
-
   virtual Cell* operator()(Context& cx, Cell* cell) override {
-    return cell;  // TODO: new (cell) Object(*base_.get());
+    auto o = reinterpret_cast<Object*>(cell);
+    o->map(map_);
+    return &o->baseCell();
   }
 
- private:
-  RootRef<Object> base_;
+  Handle<ObjectMap> map_;
 };
 
 class Allocation : public MM_AllocateInitialization {

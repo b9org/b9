@@ -16,26 +16,25 @@ class Cell;
 /// Contrasted
 template <typename T, typename C = Cell>
 struct MemRef {
-public:
-
-private:
+ public:
+ private:
   Ref<C> base;
   std::size_t offset;
 };
 
 template <typename T, typename M>
 MemberRef makeMembRef(T* cell, M* member) {
-	return MemberRef(cell, ptrdiff(cell, member));
+  return MemberRef(cell, ptrdiff(cell, member));
 }
 
 template <typename T>
 MemberRef makeMemberRef(T* cell, std::size_t offset) {
-	return MemberRef(cell, offset);
+  return MemberRef(cell, offset);
 }
 
 template <typename T, typename M>
-MemberRef<M> makeMemberRef(T* cell, M T::* member) {
-	return MemberRef(cell, ptrdiff(cell, &cell->*member));
+MemberRef<M> makeMemberRef(T* cell, M T::*member) {
+  return MemberRef(cell, ptrdiff(cell, &cell->*member));
 }
 
 }  // namespace Om

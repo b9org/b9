@@ -7,12 +7,13 @@
 namespace OMR {
 namespace Om {
 
-class Cell;
+struct Cell;
 
 /// A Member Handle. A handle to a field inside a cell. A MemHandle has two
 /// parts: a handle to the cell, and an offset into that cell. This class acts
 /// as a handle, which ensures that the base Cell is rooted, and is safe to hold
-/// across GC operations. See also: OMR::Om::Ref, OMR::Om::Root, OMR::Om::Handle, OMR::Om::MemRef.
+/// across GC operations. See also: OMR::Om::Ref, OMR::Om::Root,
+/// OMR::Om::Handle, OMR::Om::MemRef.
 template <typename T, typename C = Cell>
 class MemHandle {
  public:
@@ -45,8 +46,8 @@ class MemHandle {
 
   T& operator*() const { return *Infra::ptradd<T>(base_, offset_); }
 
-//   template <typename M>
-//   M& operator->*(M T::* member)
+  //   template <typename M>
+  //   M& operator->*(M T::* member)
   constexpr Handle<C> base() const { return base_; }
 
   MemHandle<T, C>& base(Handle<C>& base) {

@@ -24,10 +24,14 @@ struct SlotMap {
 
   static SlotMap* allocate(Context& cx);
 
-  static void construct(Context& cx, SlotMap* self, const ObjectMap* parent, const SlotDescriptor& desc);
+  static void construct(Context& cx, SlotMap* self, const ObjectMap* parent,
+                        const SlotDescriptor& desc);
 
-  /// Derive a new slot map. Do not add the slot map to the parent's transition table.
-  static SlotMap* derive(Context& cx, Handle<ObjectMap> parent, const SlotDescriptor& desc);
+  /// Derive a new slot map. Do not add the slot map to the parent's transition
+  /// table.
+  inline static SlotMap* allocateDerivation(Context& cx,
+                                            Handle<ObjectMap> parent,
+                                            const SlotDescriptor& desc);
 
   Base& base() { return base_; }
 
@@ -38,7 +42,7 @@ struct SlotMap {
   const Cell& baseCell() const { return base().cell; }
 
   Map& baseMap() { return base().map; }
-  
+
   const Map& baseMap() const { return base().map; }
 
   ObjectMap& baseObjectMap() { return base().objectMap; }
@@ -47,33 +51,30 @@ struct SlotMap {
 
   Map::Kind kind() const { return baseMap().kind(); }
 
+  Index index() const { return index_; }
+
+  ObjectMap* parent() const { return parent_; }
+
+  SlotMap& parent(ObjectMap* p) {
+    parent_ = p;
+    return *this;
+  }
+
+  const SlotDescriptor& slotDescriptor() const { return desc_; };
+
+  SlotMap& slotDescriptor(const SlotDescriptor& d) {
+    desc_ = d;
+    return *this;
+  }
+
   Base base_;
-  ObjectMap* parent;
-  SlotDescriptor desc;
-  Index index;
+  ObjectMap* parent_;
+  SlotDescriptor desc_;
+  Index index_;
 };
 
 static_assert(std::is_standard_layout<SlotMap>::value,
               "SlotMap must be a StandardLayoutType.");
-
-
-inline SlotMap* SlotMap::allocate(Context& cx) {
-  return nullptr;
-}
-
-inline SlotMap* SlotMap::derive(Context& cx, Handle<ObjectMap> parent, const SlotDescriptor& desc) {
-  auto child = SlotMap::allocate(cx);
-  ObjectMap::construct(cx, &child->baseObjectMap(), cx.globals().metaMap, Map::Kind::SLOT_MAP);
-  if (parent->kind() == Map::Kind::SLOT_MAP) {
-    auto p = reinterpret_cast<SlotMap*>(parent.ptr());
-    child->index = p->index + 1;
-  } else {
-    child->index = 0;
-  }
-  child->desc = desc;
-  // TODO: post write barrier on the child
-  return child;
-}
 
 #if 0
 

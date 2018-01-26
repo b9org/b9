@@ -13,7 +13,7 @@
 namespace OMR {
 namespace Om {
 
-class SlotMap;
+struct SlotMap;
 
 /// The TransitionSet is a collection of Maps for the purpose of tracking known
 /// object transitions. As objects grow slots, a chain of maps is built up. The

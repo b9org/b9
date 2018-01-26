@@ -47,8 +47,11 @@ TEST(MemoryManagerTest, allocateTheMetaMap) {
 TEST(MemoryManagerTest, loseAnObjects) {
   MemoryManager manager(runtime);
   Context cx(manager);
-  Object* object = allocateEmptyObject(cx);
-  EXPECT_EQ(object->map(), &cx.globals().emptyObjectMap->baseObjectMap());
+
+  RootRef<EmptyObjectMap> map(cx, allocateEmptyObjectMap(cx));
+  Object* object = allocateObject(cx, map);
+
+  EXPECT_NE(object->map(), nullptr);
   OMR_GC_SystemCollect(cx.omrVmThread(), 0);
   // EXPECT_EQ(object->map(), (Map*)0x5e5e5e5e5e5e5e5eul);
 }
@@ -56,10 +59,12 @@ TEST(MemoryManagerTest, loseAnObjects) {
 TEST(MemoryManagerTest, keepAnObject) {
   MemoryManager manager(runtime);
   Context cx(manager);
-  RootRef<Object> object(cx, allocateEmptyObject(cx));
-  EXPECT_EQ(object->map(), &cx.globals().emptyObjectMap->baseObjectMap());
+
+  RootRef<EmptyObjectMap> map(cx, allocateEmptyObjectMap(cx));
+  RootRef<Object> object(cx, allocateObject(cx, map));
+  EXPECT_EQ(object->map(), &map->baseObjectMap());
   OMR_GC_SystemCollect(cx.omrVmThread(), 0);
-  EXPECT_EQ(object->map(), &cx.globals().emptyObjectMap->baseObjectMap());
+  EXPECT_EQ(object->map(), &map->baseObjectMap());
 }
 
 }  // namespace Test

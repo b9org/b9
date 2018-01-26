@@ -6,6 +6,10 @@
 namespace OMR {
 namespace Om {
 
+#if 0
+inline Map::Map(MetaMap* meta, Kind kind) : base_(&meta->baseMap()), kind_(kind) {}
+#endif
+
 inline void Map::construct(Context& cx, Map* self, MetaMap* meta, Kind kind) {
   Cell::construct(cx, &self->baseCell(), &meta->baseMap());
   kind = kind;

@@ -19,10 +19,25 @@ struct ObjectMap {
     Cell cell;
   };
 
+  /// @{
+  /// @group High level API
+
   static void construct(Context& cx, ObjectMap* self, MetaMap* meta,
                         Map::Kind kind);
 
-  static SlotMap* transition(Context& cx, const SlotDescriptor& desc);
+  /// Create a slot map that derives base. Add the new slot map to the set of
+  /// known transistions from base.
+  static SlotMap* derive(Context& cx, Handle<ObjectMap> base,
+                         const SlotDescriptor& desc, std::size_t hash);
+
+  /// Look up a transition to a derived shape.
+  SlotMap* lookUpTransition(Context& cx, const SlotDescriptor& desc,
+                            std::size_t hash);
+
+  /// @}
+
+  /// @{
+  /// @group Base Accessors
 
   Base& base() { return base_; }
 
@@ -36,20 +51,15 @@ struct ObjectMap {
 
   const Cell& baseCell() const { return base().cell; }
 
+  /// @}
+
   Map::Kind kind() const { return baseMap().kind(); }
 
   Base base_;
-  MemTransitionSet transitions_;
 };
 
 static_assert(std::is_standard_layout<ObjectMap>::value,
               "ObjectMap must be a StandardLayoutType");
-
-inline void ObjectMap::construct(Context& cx, ObjectMap* self, MetaMap* meta,
-                                 Map::Kind kind) {
-  Map::construct(cx, &self->baseMap(), meta, kind);
-}
-
 }  // namespace Om
 }  // namespace OMR
 

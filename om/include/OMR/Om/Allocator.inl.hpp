@@ -38,21 +38,38 @@ inline EmptyObjectMap* allocateEmptyObjectMap(Context& cx) {
   return allocate<EmptyObjectMap>(cx, init);
 }
 
-inline SlotMap* allocateSlotMap(Context& cx, Map* parent, Id slotId) {
-  SlotMapInitializer init(cx, parent, slotId);
+inline SlotMap* allocateSlotMap(Context& cx, Handle<ObjectMap> parent,
+                                const SlotDescriptor& desc) {
+  SlotMapInitializer init(parent, desc);
   return allocate<SlotMap>(cx, init);
 }
 
-inline Object* allocateEmptyObject(Context& cx) {
-  EmptyObjectInitializer init;
+/// Allocate empty object.
+inline Object* allocateObject(Context& cx, Handle<EmptyObjectMap> map) {
+  ObjectInitializer init;
+  init.map_ = map.reinterpret<ObjectMap>();
   return allocate<Object>(cx, init);
 }
 
-inline Object* allocateObject(Context& cx, Object* base) {
-  ObjectInitializer init(cx, base);
+/// Allocate object with corresponding slot map;
+inline Object* allocateObject(Context& cx, Handle<SlotMap> map) {
+  ObjectInitializer init;
+  init.map_ = map.reinterpret<ObjectMap>();
   return allocate<Object>(cx, init);
+}
+
+inline Object* allocateEmptyObject(Context& cx) {
+  Object* object = nullptr;
+
+  RootRef<EmptyObjectMap> map(cx, allocateEmptyObjectMap(cx));
+  if (map.get() != nullptr) {
+    object = allocateObject(cx, map);
+  }
+
+  return object;
 }
 
 }  // namespace Om
 }  // namespace OMR
+
 #endif  // OMR_OM_ALLOCATOR_INL_HPP_

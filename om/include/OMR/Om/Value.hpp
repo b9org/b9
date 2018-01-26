@@ -14,6 +14,17 @@ namespace Om {
 /// @file
 /// Boxed Values
 
+/// The breakdown is:
+/// NaN box:   12 bits
+///  sign:     01 bits
+///  exponent: 11 bits
+/// tag:       04 bits
+///
+///  value kind: 03 bits ()
+///
+/// Value: 48 bits
+///
+
 /// A RawValue is the underlying integer type that Values encode information
 /// in. The RawValue has a ValueTag and 48 bits of storage encoded in it.
 using RawValue = std::uint64_t;
@@ -38,15 +49,18 @@ static constexpr RawValue MASK =
 }  // namespace BoxTag
 
 /// Tags that indicate the kind of value stored in a boxed immediate.
-/// The Kind tag occupies the lower 7 bits of the most significant byte in
+/// The Kind tag occupies the lower 3 bits of the most significant nibble in
 /// the mantissa. The top bit is the NAN_SIGNAL_TAG, and is always 1 for boxed
-/// values.
+/// values. The
 namespace KindTag {
-static constexpr std::size_t SHIFT = 32;
-static constexpr RawValue MASK = RawValue(0xEF) << SHIFT;
-static constexpr RawValue INTEGER = RawValue(0x01) << SHIFT;
-static constexpr RawValue POINTER = RawValue(0x02) << SHIFT;
+static constexpr std::size_t SHIFT = 42;
+static constexpr RawValue MASK = RawValue(0x7) << SHIFT;  // 3 low bits
+static constexpr RawValue INTEGER = RawValue(0x0) << SHIFT;
+static constexpr RawValue POINTER = RawValue(0x1) << SHIFT;
 }  // namespace KindTag
+
+static_assert((BoxTag::MASK & KindTag::MASK) == 0,
+              "Two masks must not overlap");
 
 /// Tags that indicate the RawValue is boxed AND a particular value.
 namespace BoxKindTag {
@@ -69,7 +83,7 @@ static constexpr bool canonicalizeNaN(RawValue value) {
   return Infra::Double::isNaN(value) ? CANONICAL_NAN : value;
 }
 
-class Cell;
+struct Cell;
 
 union ValueData {
   RawValue asRawValue;
@@ -100,7 +114,9 @@ class Value {
   template <typename T>
   explicit Value(T* p)
       : data_{BoxKindTag::POINTER |
-              (reinterpret_cast<RawValue>(p) & VALUE_MASK)} {}
+              (reinterpret_cast<RawValue>(p) & VALUE_MASK)} {
+    assert((reinterpret_cast<RawValue>(p) & ~VALUE_MASK) == 0);
+  }
 
   explicit Value(double d) { setDouble(d); }
 

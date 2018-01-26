@@ -70,9 +70,9 @@ void MarkingDelegate::scanRoots(MM_EnvironmentBase* env) {
 uintptr_t MarkingDelegate::scanObject(MM_EnvironmentBase* env,
                                       omrobjectptr_t cell) {
   auto map = cell->map();
-  _markingScheme->inlineMarkObjectNoCheck(env, map);
+  _markingScheme->inlineMarkObjectNoCheck(env, &map->baseCell());
 
-  if (map->kind() != MapKind::SLOT_MAP) {
+  if (map->kind() != Map::Kind::SLOT_MAP) {
     // The cell is a leaf-object, like a map or empty object.
     return 0;
   }
@@ -81,9 +81,10 @@ uintptr_t MarkingDelegate::scanObject(MM_EnvironmentBase* env,
   auto object = reinterpret_cast<Object*>(cell);
 
   for (std::size_t i = 0; i < slotMap->index(); i++) {
-    Value value = object->getAt(i);
-    if (value.isPtr()) {
-      _markingScheme->inlineMarkObjectNoCheck(env, map);
+    // TODO: object slot accessors.
+    Value slotValue = object->get(i);
+    if (slotValue.isPtr()) {
+      _markingScheme->inlineMarkObjectNoCheck(env, slotValue.getPtr<Cell>());
     }
   }
 

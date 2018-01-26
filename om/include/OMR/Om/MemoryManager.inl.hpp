@@ -31,6 +31,7 @@ inline MemoryManager::~MemoryManager() {
 }
 
 inline void MemoryManager::initOmrVm() {
+  std::cerr << "TRACE@MemoryManager::initOmrVm()" << std::endl;
   memset(&omrVm_, 0, sizeof(OMR_VM));
   omrVm_._runtime = &runtime_.omrRuntime();
   omrVm_._language_vm = this;

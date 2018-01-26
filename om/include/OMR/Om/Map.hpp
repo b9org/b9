@@ -32,7 +32,17 @@ struct Map {
 
   MetaMap* map() const { return reinterpret_cast<MetaMap*>(baseCell().map()); }
 
+  Map& map(MetaMap* m) {
+    baseCell().map(reinterpret_cast<Map*>(m));
+    return *this;
+  }
+
   Kind kind() const { return kind_; }
+
+  Map& kind(Kind k) {
+    kind_ = k;
+    return *this;
+  }
 
   Base base_;
   Kind kind_;

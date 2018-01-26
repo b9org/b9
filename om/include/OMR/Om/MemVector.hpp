@@ -13,16 +13,15 @@ namespace Om {
 /// other Cell types.
 template <typename T>
 struct MemVector {
-
   static std::size_t capacity(Context& cx, const MemVector<T>* self) {
     return self->buffer->size / sizeof(T);
   }
 
-  #if 0
+#if 0
   static std::size_t size(Context& cx, const MemVector<T>* self) {
     return self->size;
   }
-  #endif
+#endif
 
   // TODO: Barrier::write(cx, handle.base(), &handle->buffer, newBuffer);
   static bool resize(Context& cx, const MemHandle<MemVector<T>>& self,
@@ -51,7 +50,7 @@ struct MemVector {
 };
 
 static_assert(std::is_standard_layout<MemVector<char>>::value,
-  "MemVector must be a StandardLayoutType.");
+              "MemVector must be a StandardLayoutType.");
 
 }  // namespace Om
 }  // namespace OMR

@@ -97,11 +97,21 @@ class RootRef {
     return *this;
   }
 
-  template <typename U = T>
-  U** address() noexcept { return reinterpret_cast<U**>(&node_.first); }
+  bool operator==(const RootRef& rhs) const noexcept {
+    return get() == rhs.get();
+  }
+
+  bool operator==(T* ptr) const noexcept { return get() == ptr; }
 
   template <typename U = T>
-  U* const* address() const noexcept { return reinterpret_cast<U* const*>(&node_.first); }
+  U** address() noexcept {
+    return reinterpret_cast<U**>(&node_.first);
+  }
+
+  template <typename U = T>
+  U* const* address() const noexcept {
+    return reinterpret_cast<U* const*>(&node_.first);
+  }
 
   bool isHead() const noexcept { return seq_.head() == &node_; }
 
@@ -109,11 +119,7 @@ class RootRef {
 
   RefSeq::Node* tail() const noexcept { return node_.second; }
 
-#if 0
-  operator Handle<T>() const {
-    return Handle<T>(address());
-  }
-#endif
+  operator Handle<T>() const { return Handle<T>(address()); }
 
  private:
   RefSeq& seq_;

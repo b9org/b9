@@ -9,7 +9,7 @@
 namespace OMR {
 namespace Om {
 
-#if 0 //////////////////////////////////////////
+#if 0  //////////////////////////////////////////
 
 inline Object* Object::allocate(Context& cx, Handle<ObjectMap> map) {
   RootRef<Object> object = nullptr; // TODO: implement allocation
@@ -29,18 +29,20 @@ inline void Object::clone(Context& xc, Handle<Object> base) {
   allocate(cx, base->map);
 }
 
-#endif ////////////////////////////////////////////
+#endif  ////////////////////////////////////////////
 
-inline bool Object::index(Context& cx, const Object* self, Id id, Index& result) {
+inline bool Object::index(Context& cx, const Object* self,
+                          const SlotDescriptor& desc, Index& result) {
   const ObjectMap* objectMap = self->map();
+
   while (objectMap->kind() != Map::Kind::EMPTY_OBJECT_MAP) {
     assert(objectMap->kind() == Map::Kind::SLOT_MAP);
     auto slotMap = reinterpret_cast<const SlotMap*>(objectMap);
-    if (slotMap->desc.id() == id) {
-      result = slotMap->index;
+    if (slotMap->desc_ == desc) {
+      result = slotMap->index();
       return true;
     }
-    objectMap = slotMap->parent;
+    objectMap = slotMap->parent();
   }
   result = -1;
   return false;
@@ -55,47 +57,94 @@ inline bool Object::get(Context& cx, const Object* self, Id id, Value& result) {
   return found;
 }
 
-inline void Object::get(Context& cx, const Object* self, Index index, Value& result) {
-  result = self->fixedSlots[index];
+inline void Object::get(Context& cx, const Object* self, Index index,
+                        Value& result) {
+  result = self->get(index);
 }
 
-#if 0
 /// Set the slot that corresponds to the id. If the slot doesn't exist,
 /// allocate the slot and assign it. The result is the address of the slot.
 /// !CAN_GC!
-inline bool Object::set(Context& cx, Id id, Value value) {
-  auto lookup = index(id);
-  if (std::get<bool>(lookup)) {
-    // TODO: WB.
-    auto index = std::get<Index>(lookup);
-    set(cx, index, value);
-    return true;
+inline bool Object::set(Context& cx, Object* object, const SlotDescriptor& desc,
+                        Value value) {
+  std::size_t hash = desc.hash();
+
+  Index idx = -1;
+  bool found = index(cx, object, desc, idx);
+
+  if (!found) {
+    RootRef<Object> root(cx, object);
+    auto map =
+        transition(cx, root, desc, hash);  // TODO: Write barrier on transition
+    if (map == nullptr) {
+      return false;
+    }
+    idx = map->index();
+    object = root.get();
   }
-  return false;
+
+  set(cx, object, idx, value);  // TODO: Write barrier in set
+  return true;
 }
 
-inline bool Object::set(Context& cx, Id id, Value value) {}
-#endif
-
-inline void Object::set(Context& cx, Object* self, Index index, Value value) noexcept {
+inline void Object::set(Context& cx, Object* self, Index index,
+                        Value value) noexcept {
   if (value.isPtr()) {
     // standardWriteBarrier(cx, this, value.getPtr());
   }
-  self->fixedSlots[index] = value;
+  self->fixedSlots_[index] = value;
 }
 
-/// Allocate a new slot corresponding to the id. The object may not already
-/// have a slot with this Id matching. !CAN_GC!
-inline Index Object::newSlot(Context& cx, Handle<Object> self, Id id) {
+inline SlotMap* Object::lookUpTransition(Context& cx,
+                                         const SlotDescriptor& desc,
+                                         std::size_t hash) {
+  return map()->lookUpTransition(cx, desc, hash);
+}
+
 #if 0
-  RootRef<ObjectMap> baseMap(Object::map(self));
-  SlotMap* newMap = SlotMap::derive(cx, baseMap, id);
-  auto m = allocateSlotMap(cx, map(), id);
-  root->map(m);
-  return m->index();
+inline bool Object::takeExistingTransition(Context& cx, const ObjectDescription& desc, Index& result) {
+  auto hash = desc.hash();
+  return takeExistingTransition(desc, hash, result);
+}
 #endif
-  assert(0);
-  return -1;
+
+inline SlotMap* Object::takeExistingTransition(Context& cx,
+                                               const SlotDescriptor& desc,
+                                               std::size_t hash) {
+  SlotMap* derivation = lookUpTransition(cx, desc, hash);
+  if (derivation != nullptr) {
+    map(&derivation->baseObjectMap());
+    // TODO: Write barrier here?
+  }
+  return derivation;
+}
+
+#if 0
+inline Index Object::takeNewTransistion(Context& cx, Handle<Object> self, const SlotDescriptor& desc) {
+  auto hash = desc.hash();
+  return takeNewTransistion(cx, self, desc, hash);
+}
+#endif
+
+inline SlotMap* Object::takeNewTransition(Context& cx, Handle<Object> object,
+                                          const SlotDescriptor& desc,
+                                          std::size_t hash) {
+  RootRef<ObjectMap> base(cx, object->map());
+  SlotMap* derivation = ObjectMap::derive(cx, base, desc, hash);
+  object->map(&derivation->baseObjectMap());
+  return derivation;
+  // TODO: Write barrier on objects taking a new transition
+}
+
+inline SlotMap* Object::transition(Context& cx, Handle<Object> object,
+                                   const SlotDescriptor& desc,
+                                   std::size_t hash) {
+  SlotMap* derivation = object->takeExistingTransition(cx, desc, hash);
+  if (derivation == nullptr) {
+    derivation = takeNewTransition(cx, object, desc, hash);
+  }
+  return derivation;
+  // TODO: Write barrier on transitioning objects.
 }
 
 }  // namespace Om

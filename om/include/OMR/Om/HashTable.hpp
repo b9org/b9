@@ -4,9 +4,7 @@
 namespace OMR {
 namespace Om {
 
-struct HashTable {
-
-};
+struct HashTable {};
 
 }  // namespace Om
 }  // namespace OMR

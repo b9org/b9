@@ -28,9 +28,11 @@ inline EmptyObjectMap* allocateEmptyObjectMap(Context& cx);
 
 inline SlotMap* allocateSlotMap(Context& cx, Map* parent, Id slotId);
 
-inline Object* allocateEmptyObject(Context& cx);
+inline Object* allocateObject(Context& cx, Handle<EmptyObjectMap> map);
 
-inline Object* allocateObject(Context& cx, Object* base);
+inline Object* allocateObject(Context& cx, Handle<SlotMap> map);
+
+inline Object* allocateEmptyObject(Context& cx);
 
 template <typename T>
 inline ArrayBuffer<T>* allocateArrayBuffer(Context& cx, std::size_t size);

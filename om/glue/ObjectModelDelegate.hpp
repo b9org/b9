@@ -85,7 +85,7 @@ class ObjectModelDelegate {
   }
 
   MMINLINE uintptr_t getMapSizeInBytes(Map* map) {
-    switch (map->kind) {
+    switch (map->kind()) {
       case Map::Kind::EMPTY_OBJECT_MAP:
         return sizeof(EmptyObjectMap);
       case Map::Kind::SLOT_MAP:
@@ -106,11 +106,11 @@ class ObjectModelDelegate {
    * @return the exact size of an object, in bytes, excluding padding bytes
    */
   MMINLINE uintptr_t getObjectSizeInBytesWithHeader(Cell* cell) {
-    switch (cell->map()->kind) {
+    switch (cell->map()->kind()) {
       case Map::Kind::META_MAP:
-        return getMapSizeInBytes(static_cast<Map*>(cell));
-      case MapKind::EMPTY_OBJECT_MAP:
-      case MapKind::SLOT_MAP:
+        return getMapSizeInBytes(reinterpret_cast<Map*>(cell));
+      case Map::Kind::EMPTY_OBJECT_MAP:
+      case Map::Kind::SLOT_MAP:
         return sizeof(Object);
       default:
         throw std::runtime_error("Unrecognized cell type");

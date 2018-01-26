@@ -8,8 +8,8 @@
 namespace OMR {
 namespace Om {
 
-class Cell;
-class Map;
+struct Cell;
+struct Map;
 
 class Context;
 
@@ -22,7 +22,8 @@ struct Cell {
   static constexpr CellHeader FLAGS_MASK = 0xFF;
   static constexpr std::size_t MAP_SHIFT = 8;
 
-  static void construct(Context& cx, Cell* self, Map* map, std::uint8_t flags = 0);
+  static void construct(Context& cx, Cell* self, Map* map,
+                        std::uint8_t flags = 0);
 
   /// Get the map reference.
   Map* map() const { return (Map*)(header >> MAP_SHIFT); }
@@ -45,7 +46,8 @@ struct Cell {
 static_assert(std::is_standard_layout<Cell>::value,
               "Cell must be a StandardLayoutType");
 
-inline void Cell::construct(Context&cx, Cell* self, Map* map, std::uint8_t flags) {
+inline void Cell::construct(Context& cx, Cell* self, Map* map,
+                            std::uint8_t flags) {
   self->set(map, flags);
 }
 

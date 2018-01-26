@@ -169,8 +169,7 @@ void ExecutionContext::pushFromObject(OMR::Om::Id slotId) {
     OMR::Om::Value result;
     OMR::Om::Object::get(*this, obj, index, result);
     push(result);
-  }
-  else {
+  } else {
     throw std::runtime_error("Accessing an object's field that doesn't exist.");
   }
 }
@@ -180,15 +179,26 @@ void ExecutionContext::popIntoObject(OMR::Om::Id slotId) {
   if (!stack_[0].isPtr()) {
     throw std::runtime_error("Accessing non-object as an object");
   }
-  auto object = pop().getPtr<OMR::Om::Object>();
+
+#if 0
+  OMR::Om::SlotDescriptor desc(slotId);
+
+  auto o = pop().getPtr<OMR::Om::Object>();
+  OMR::Om::RootRef<Object> root(cx, o);
+  Object::set(cx, root, desc, value);
+
   OMR::Om::Index index;
-  auto found = OMR::Om::Object::index(*this, object, slotId, index);
+  auto found = OMR::Om::Object::index(*this, object, desc, hash, index);
+
   if (!found) {
-    OMR::Om::RootRef<OMR::Om::Object> root(*this, object);
-    index = OMR::Om::Object::newSlot(*this, root, slotId);
+    auto map = OMR::Om::Object::transition(*this, object, desc);
+    index = map->index();
   }
+
   auto value = pop();
   OMR::Om::Object::set(*this, object, index, value);
+#endif
+  assert(0);
 }
 
 void ExecutionContext::callIndirect() {

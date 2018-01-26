@@ -20,12 +20,13 @@ class MM_EnvironmentBase;
 namespace OMR {
 namespace Om {
 
-class Cell;
-class Map;
-class MetaMap;
-class EmptyObjectMap;
-class ObjectMap;
-class Object;
+struct Cell;
+struct Map;
+struct MetaMap;
+struct EmptyObjectMap;
+struct ObjectMap;
+struct Object;
+
 class RefSeq;
 
 /// A GC context.

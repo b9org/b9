@@ -1,8 +1,8 @@
 #if !defined(OMR_INFRA_POINTERUTILITIES_HPP_)
 #define OMR_INFRA_POINTERUTILITIES_HPP_
 
-#include <cstdint>
 #include <cstddef>
+#include <cstdint>
 
 namespace OMR {
 namespace Infra {

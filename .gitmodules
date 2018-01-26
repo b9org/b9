@@ -1,6 +1,7 @@
 [submodule "omr"]
 	path = third_party/omr
-	url = https://github.com/eclipse/omr
+	url = https://github.com/b9org/omr.git
+	branch = gc
 [submodule "googletest"]
 	path = third_party/googletest
 	url = https://github.com/google/googletest.git

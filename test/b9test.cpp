@@ -148,9 +148,9 @@ TEST(ObjectTest, allocateSomething) {
   Instruction i[] = {
       {ByteCode::NEW_OBJECT},            // new object
       {ByteCode::POP_INTO_VAR, 0},       // store object into var0
-      {ByteCode::STR_PUSH_CONSTANT, 0},  // push "voila"
+      {ByteCode::STR_PUSH_CONSTANT, 0},  // push "Hello, World"
       {ByteCode::PUSH_FROM_VAR, 0},      // push var0 aka object
-      {ByteCode::POP_INTO_OBJECT, 0},    // pop "voila" into object at slot 0
+      {ByteCode::POP_INTO_OBJECT, 0},    // pop "Hello, World" into object at slot 0
       {ByteCode::SYSTEM_COLLECT},        // GC. Object is kept alive by var0
       {ByteCode::PUSH_FROM_VAR, 0},      // push object
       {ByteCode::PUSH_FROM_OBJECT, 0},   // get the string back

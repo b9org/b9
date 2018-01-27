@@ -9,6 +9,8 @@
 #include <OMR/Om/Object.inl.hpp>
 #include <OMR/Om/RootRef.inl.hpp>
 #include <OMR/Om/Value.hpp>
+#include <OMR/Om/ObjectMap.inl.hpp>
+#include <OMR/Om/SlotMap.inl.hpp>
 
 #include <omrgc.h>
 #include "Jit.hpp"
@@ -174,35 +176,35 @@ void ExecutionContext::pushFromObject(OMR::Om::Id slotId) {
   }
 }
 
+namespace Om = ::OMR::Om;
+
 // ( object value -- )
 void ExecutionContext::popIntoObject(OMR::Om::Id slotId) {
   if (!stack_[0].isPtr()) {
     throw std::runtime_error("Accessing non-object as an object");
   }
 
-#if 0
-  OMR::Om::SlotDescriptor desc(slotId);
+  Om::Object* object = pop().getPtr<OMR::Om::Object>();
 
-  auto o = pop().getPtr<OMR::Om::Object>();
-  OMR::Om::RootRef<Object> root(cx, o);
-  Object::set(cx, root, desc, value);
+  Om::SlotDescriptor desc(slotId);
+  Om::Index idx = -1;
 
-  OMR::Om::Index index;
-  auto found = OMR::Om::Object::index(*this, object, desc, hash, index);
-
+  bool found = Om::Object::index(*this, object, desc, idx);
+ 
   if (!found) {
-    auto map = OMR::Om::Object::transition(*this, object, desc);
-    index = map->index();
+    std::size_t hash = desc.hash();
+    Om::RootRef<Om::Object> root(*this, object);
+    auto map = Om::Object::transition(*this, root, desc, hash);
+    idx = map->index();
+    object = root.get();
   }
 
-  auto value = pop();
-  OMR::Om::Object::set(*this, object, index, value);
-#endif
-  assert(0);
+  auto val = pop();
+  object->set(idx, val); // TODO: Write barrier the object on store.
 }
 
 void ExecutionContext::callIndirect() {
-  assert(0);  // TODO:
+  assert(0);  // TODO: Implement call indirect
 }
 
 void ExecutionContext::systemCollect() {

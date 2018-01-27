@@ -3,7 +3,7 @@
 
 #include <OMR/Om/SlotMap.hpp>
 
-#include <Allocator.hpp> // glue
+#include <OMR/Om/Allocator.hpp> // glue
 
 namespace OMR {
 namespace Om {

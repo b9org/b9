@@ -58,8 +58,8 @@ void MarkingDelegate::scanRoots(MM_EnvironmentBase* env) {
 
   const auto& roots = cx.stackRoots();
   for (const auto& p : roots) {
-    std::cout << "found root: " << p << std::endl;
-    _markingScheme->markObject(env, p, true);
+    std::cout << "NATIVE_STACK: " << p << std::endl;
+    _markingScheme->markObject(env, p);
   }
 
   for (auto& fn : cx.userRoots()) {

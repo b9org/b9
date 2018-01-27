@@ -3,6 +3,7 @@
 
 #include <OMR/Om/Allocator.hpp>
 #include <OMR/Om/Object.inl.hpp>
+#include <OMR/Om/RootRef.inl.hpp>
 
 namespace OMR {
 namespace Om {

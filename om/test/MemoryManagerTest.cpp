@@ -6,8 +6,10 @@
 #include <OMR/Om/Map.inl.hpp>
 #include <OMR/Om/MemoryManager.inl.hpp>
 #include <OMR/Om/Object.inl.hpp>
+#include <OMR/Om/ObjectMap.inl.hpp>
 #include <OMR/Om/RootRef.inl.hpp>
 #include <OMR/Om/Runtime.hpp>
+#include <OMR/Om/SlotMap.inl.hpp>
 
 #include <omrgc.h>
 
@@ -65,6 +67,38 @@ TEST(MemoryManagerTest, keepAnObject) {
   EXPECT_EQ(object->map(), &map->baseObjectMap());
   OMR_GC_SystemCollect(cx.omrVmThread(), 0);
   EXPECT_EQ(object->map(), &map->baseObjectMap());
+}
+
+TEST(MemoryManagerTest, objectTransition) {
+  MemoryManager manager(runtime);
+  Context cx(manager);
+
+  Object* obj = nullptr;
+
+  // allocate the object
+  {
+    RootRef<EmptyObjectMap> map(cx, allocateEmptyObjectMap(cx));
+    obj = allocateObject(cx, map);
+  }
+
+  SlotDescriptor slotd(Id(42));
+
+  // transition
+  {
+    RootRef<Object> obj_r(cx, obj);
+    Object::transition(cx, obj_r, slotd, slotd.hash());
+    obj = obj_r.get();
+  }
+
+  // check
+  {
+    auto map = reinterpret_cast<SlotMap*>(obj->map());
+    EXPECT_EQ(map->baseMap().map(), cx.globals().metaMap);
+    EXPECT_EQ(map->slotDescriptor(), slotd);
+    EXPECT_EQ(map->index(), 0);
+    EXPECT_EQ(map->kind(), Map::Kind::SLOT_MAP);
+    EXPECT_EQ(map->parent()->kind(), Map::Kind::EMPTY_OBJECT_MAP);
+  }
 }
 
 }  // namespace Test

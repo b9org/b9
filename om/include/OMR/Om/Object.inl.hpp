@@ -62,10 +62,11 @@ inline void Object::get(Context& cx, const Object* self, Index index,
   result = self->get(index);
 }
 
+#if 0
 /// Set the slot that corresponds to the id. If the slot doesn't exist,
 /// allocate the slot and assign it. The result is the address of the slot.
 /// !CAN_GC!
-inline bool Object::set(Context& cx, Object* object, const SlotDescriptor& desc,
+inline bool Object::set(Context& cx, Handle<Object> object, const SlotDescriptor& desc,
                         Value value) {
   std::size_t hash = desc.hash();
 
@@ -73,9 +74,7 @@ inline bool Object::set(Context& cx, Object* object, const SlotDescriptor& desc,
   bool found = index(cx, object, desc, idx);
 
   if (!found) {
-    RootRef<Object> root(cx, object);
-    auto map =
-        transition(cx, root, desc, hash);  // TODO: Write barrier on transition
+    auto map = transition(cx, handle, desc, hash);  // TODO: Write barrier on transition
     if (map == nullptr) {
       return false;
     }
@@ -86,6 +85,7 @@ inline bool Object::set(Context& cx, Object* object, const SlotDescriptor& desc,
   set(cx, object, idx, value);  // TODO: Write barrier in set
   return true;
 }
+#endif
 
 inline void Object::set(Context& cx, Object* self, Index index,
                         Value value) noexcept {

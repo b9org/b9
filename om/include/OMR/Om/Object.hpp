@@ -94,7 +94,7 @@ struct Object {
   Base base_;
   // TODO: Object dynamic slots: MemVector<Value> dynamicSlots;
   // TODO: Variable number of fixed slots
-  std::size_t fixedSlotCount_ = 32;
+  std::size_t fixedSlotCount_;
   Value fixedSlots_[32];
 };
 

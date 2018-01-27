@@ -82,6 +82,7 @@ struct ObjectInitializer : public Initializer {
   virtual Cell* operator()(Context& cx, Cell* cell) override {
     auto o = reinterpret_cast<Object*>(cell);
     o->map(map_);
+    o->fixedSlotCount_ = 32;
     return &o->baseCell();
   }
 

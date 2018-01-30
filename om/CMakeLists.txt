@@ -6,10 +6,11 @@ set(OMR_OM_TRACE OFF CACHE BOOL "Debug: Verbose tracing prints to stderr")
 
 # OMR Configuration
 set(OMR_GC ON CACHE INTERNAL "Enable the GC")
-set(OMR_GC_GLUE_TARGET   "omr_om_gc_glue"   CACHE STRING "The gc glue target, must be interface library")
-set(OMR_UTIL_GLUE_TARGET "omr_om_util_glue" CACHE STRING "The util glue target, must be interface library")
-set(OMR_RAS_GLUE_TARGET  "omr_om_ras_glue"  CACHE STRING "The ras glue target, must be interface library")
-set(OMR_CORE_GLUE_TARGET "omr_om_core_glue" CACHE STRING "The core glue target, must be and interface library")
+set(OMR_GC_GLUE_TARGET   "omr_om_gc_glue"   CACHE INTERNAL "The gc glue target, must be interface library")
+set(OMR_UTIL_GLUE_TARGET "omr_om_util_glue" CACHE INTERNAL "The util glue target, must be interface library")
+set(OMR_RAS_GLUE_TARGET  "omr_om_ras_glue"  CACHE INTERNAL "The ras glue target, must be interface library")
+set(OMR_CORE_GLUE_TARGET "omr_om_core_glue" CACHE INTERNAL "The core glue target, must be and interface library")
+set(OMR_TRACE_ROOT "${CMAKE_CURRENT_SRC_DIR}")
 
 configure_file(
 	include/OMR/Om/Config.hpp.in

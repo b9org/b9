@@ -14,7 +14,7 @@ struct SlotMapInitializer : public Initializer {
 
   virtual Cell* operator()(Context& cx, Cell* cell) override {
     auto m = reinterpret_cast<SlotMap*>(cell);
-    m->baseMap().map(cx.globals().metaMap);
+    m->baseMap().map(cx.globals().metaMap());
     m->baseMap().kind(Map::Kind::SLOT_MAP);
     m->parent(parent_.get());
     m->slotDescriptor(desc_);

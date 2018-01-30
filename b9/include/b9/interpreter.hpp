@@ -14,6 +14,7 @@
 #include <OMR/Om/Runtime.hpp>
 #include <OMR/Om/SlotMap.inl.hpp>
 #include <OMR/Om/TransitionSet.inl.hpp>
+#include <OMR/Om/Traverse.hpp>
 
 #include <cstring>
 #include <map>

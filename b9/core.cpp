@@ -5,6 +5,8 @@
 #include <b9/loader.hpp>
 
 #include <OMR/Om/Allocator.inl.hpp>
+#include <OMR/Om/ArrayBuffer.inl.hpp>
+#include <OMR/Om/ArrayBufferMap.inl.hpp>
 #include <OMR/Om/Map.inl.hpp>
 #include <OMR/Om/Object.inl.hpp>
 #include <OMR/Om/ObjectMap.inl.hpp>

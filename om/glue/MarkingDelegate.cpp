@@ -45,7 +45,7 @@ void MarkingDelegate::scanRoots(MM_EnvironmentBase* env) {
   auto& cx = getContext(env);
   auto& manager = cx.manager();
   Marker marker(_markingScheme);
-  manager.visitRoots(cx, marker);
+  manager.visit(cx, marker);
 
   OMR_VMThread* walkThread;
   GC_OMRVMThreadListIterator threadListIterator(env->getOmrVM());

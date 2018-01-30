@@ -2,6 +2,8 @@
 
 #include <OMR/Om/Allocation.hpp>
 #include <OMR/Om/Allocator.inl.hpp>
+#include <OMR/Om/ArrayBuffer.inl.hpp>
+#include <OMR/Om/ArrayBufferMap.inl.hpp>
 #include <OMR/Om/Context.hpp>
 #include <OMR/Om/Map.inl.hpp>
 #include <OMR/Om/MemoryManager.inl.hpp>
@@ -23,11 +25,11 @@ ProcessRuntime runtime;
 
 TEST(MemoryManagerTest, startUpAndShutDown) {
   MemoryManager manager(runtime);
-  EXPECT_NE(manager.globals().metaMap, nullptr);
-  EXPECT_NE(manager.globals().emptyObjectMap, nullptr);
+  EXPECT_NE(manager.globals().metaMap(), nullptr);
+  EXPECT_NE(manager.globals().emptyObjectMap(), nullptr);
   Context cx(manager);
-  EXPECT_NE(cx.globals().metaMap, nullptr);
-  EXPECT_NE(cx.globals().emptyObjectMap, nullptr);
+  EXPECT_NE(cx.globals().metaMap(), nullptr);
+  EXPECT_NE(cx.globals().emptyObjectMap(), nullptr);
   MetaMap* metaMap = MetaMap::allocate(cx);
   EXPECT_EQ(&metaMap->baseMap(), metaMap->baseCell().map());
 }
@@ -35,8 +37,8 @@ TEST(MemoryManagerTest, startUpAndShutDown) {
 TEST(MemoryManagerTest, startUpAContext) {
   MemoryManager manager(runtime);
   Context cx(manager);
-  EXPECT_NE(cx.globals().metaMap, nullptr);
-  EXPECT_NE(cx.globals().emptyObjectMap, nullptr);
+  EXPECT_NE(cx.globals().metaMap(), nullptr);
+  EXPECT_NE(cx.globals().emptyObjectMap(), nullptr);
 }
 
 TEST(MemoryManagerTest, allocateTheMetaMap) {
@@ -82,7 +84,7 @@ TEST(MemoryManagerTest, objectTransition) {
   // check
   {
     auto m = reinterpret_cast<SlotMap*>(obj1->map());
-    EXPECT_EQ(m->baseMap().map(), cx.globals().metaMap);
+    EXPECT_EQ(m->baseMap().map(), cx.globals().metaMap());
     EXPECT_EQ(m->slotDescriptor(), slotd);
     EXPECT_EQ(m->index(), 0);
     EXPECT_EQ(m->kind(), Map::Kind::SLOT_MAP);

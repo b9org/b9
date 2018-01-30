@@ -10,10 +10,12 @@ configure_file(
 	include/OMR/Om/Config.hpp
 )
 
-add_library(omr_om INTERFACE)
+add_library(omr_om
+	src/MemoryManager.cpp
+)
 
 target_include_directories(omr_om
-	INTERFACE
+	PUBLIC
 		include/
 		${CMAKE_CURRENT_BINARY_DIR}/include
 		../third_party/omr/include_core/
@@ -21,13 +23,13 @@ target_include_directories(omr_om
 )
 
 target_link_libraries(omr_om
-	INTERFACE
+	PUBLIC
 		omrgc
 		omrcore
 )
 
 target_compile_definitions(omr_om
-	INTERFACE
+	PUBLIC
 		-DUT_DIRECT_TRACE_REGISTRATION
 )
 

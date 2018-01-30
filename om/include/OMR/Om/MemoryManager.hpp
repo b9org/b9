@@ -8,24 +8,55 @@
 #include <OMR/Om/RootRef.hpp>
 #include <OMR/Om/Runtime.hpp>
 
-#include <unordered_set>
+#include <set>
+#include <stdexcept>
 
 namespace OMR {
 namespace Om {
 
-class Visitor;
+struct Cell;
+struct MetaMap;
+struct EmptyObjectMap;
+struct ArrayBufferMap;
 
+class Visitor;
 class Context;
 class RunContext;
 class StartupContext;
 
-struct Globals {
-  MetaMap* metaMap = nullptr;
-  EmptyObjectMap* emptyObjectMap = nullptr;
-  ArrayBufferMap* arrayBufferMap = nullptr;
+class StartupError : public ::std::runtime_error {
+  using runtime_error::runtime_error;
 };
 
-using ContextSet = std::unordered_set<Context*>;
+/// A collection of singleton GC cells. The collection is initialized at startup
+class Globals {
+ public:
+  MetaMap* metaMap() const noexcept { return metaMap_; }
+
+  EmptyObjectMap* emptyObjectMap() const noexcept { return emptyObjectMap_; }
+
+  ArrayBufferMap* arrayBufferMap() const noexcept { return arrayBufferMap_; }
+
+  template <typename VisitorT>
+  void visit(Context& cx, VisitorT& visitor) {
+    visitor.rootEdge(cx, this, (Cell*)metaMap_);
+    visitor.rootEdge(cx, this, (Cell*)emptyObjectMap_);
+    visitor.rootEdge(cx, this, (Cell*)arrayBufferMap_);
+  }
+
+ protected:
+  friend class MemoryManager;
+
+  /// Allocate the globals. Throws StartupError if any allocation fails.
+  void init(StartupContext& cx);
+
+ private:
+  MetaMap* metaMap_ = nullptr;
+  EmptyObjectMap* emptyObjectMap_ = nullptr;
+  ArrayBufferMap* arrayBufferMap_ = nullptr;
+};
+
+using ContextSet = ::std::set<Context*>;
 
 class MemoryManager {
  public:
@@ -47,7 +78,13 @@ class MemoryManager {
 
   const MarkingFnVector userRoots() const noexcept { return userRoots_; }
 
-  void visitRoots(Context& cx, Visitor& visitor);
+  template <typename VisitorT>
+  void visit(Context& cx, VisitorT& visitor) {
+    globals_.visit(cx, visitor);
+    for (auto& fn : userRoots()) {
+      fn(cx, visitor);
+    }
+  }
 
   const ContextSet& contexts() const { return contexts_; }
 
@@ -60,8 +97,6 @@ class MemoryManager {
   void initOmrVm();
 
   void initOmrGc();
-
-  void initGlobals(StartupContext& cx);
 
   ProcessRuntime& runtime_;
   OMR_VM omrVm_;

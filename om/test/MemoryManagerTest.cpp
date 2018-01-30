@@ -73,31 +73,30 @@ TEST(MemoryManagerTest, objectTransition) {
   MemoryManager manager(runtime);
   Context cx(manager);
 
-  Object* obj = nullptr;
-
-  // allocate the object
-  {
-    RootRef<EmptyObjectMap> map(cx, EmptyObjectMap::allocate(cx));
-    obj = Object::allocate(cx, map);
-  }
+  RootRef<EmptyObjectMap> emptyObjectMap(cx, EmptyObjectMap::allocate(cx));
+  RootRef<Object> obj1(cx, Object::allocate(cx, emptyObjectMap));
 
   SlotDescriptor slotd(Id(42));
-
-  // transition
-  {
-    RootRef<Object> obj_r(cx, obj);
-    Object::transition(cx, obj_r, slotd, slotd.hash());
-    obj = obj_r.get();
-  }
+  Object::transition(cx, obj1, slotd, slotd.hash());
 
   // check
   {
-    auto map = reinterpret_cast<SlotMap*>(obj->map());
-    EXPECT_EQ(map->baseMap().map(), cx.globals().metaMap);
-    EXPECT_EQ(map->slotDescriptor(), slotd);
-    EXPECT_EQ(map->index(), 0);
-    EXPECT_EQ(map->kind(), Map::Kind::SLOT_MAP);
-    EXPECT_EQ(map->parent()->kind(), Map::Kind::EMPTY_OBJECT_MAP);
+    auto m = reinterpret_cast<SlotMap*>(obj1->map());
+    EXPECT_EQ(m->baseMap().map(), cx.globals().metaMap);
+    EXPECT_EQ(m->slotDescriptor(), slotd);
+    EXPECT_EQ(m->index(), 0);
+    EXPECT_EQ(m->kind(), Map::Kind::SLOT_MAP);
+    EXPECT_EQ(m->parent()->kind(), Map::Kind::EMPTY_OBJECT_MAP);
+  }
+
+  // second object
+  {
+    RootRef<Object> obj2(cx, Object::allocate(cx, emptyObjectMap));
+    auto m = obj2->takeExistingTransition(cx, slotd, slotd.hash());
+    EXPECT_NE(m, nullptr);
+    EXPECT_EQ(&m->baseObjectMap(), obj1->map());
+    EXPECT_EQ(&m->baseObjectMap(), obj2->map());
+    EXPECT_EQ(obj2->map(), obj1->map());
   }
 }
 

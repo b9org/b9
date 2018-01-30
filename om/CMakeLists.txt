@@ -1,3 +1,9 @@
+# Om Debug Options
+
+set(OMR_OM_POISON_RECLAIMED_MEMORY OFF CACHE BOOL "Debug: Posion reclaimed memory")
+set(OMR_OM_COLLECT_ON_ALLOCATE OFF CACHE BOOL "Debug: do a full system collect on every allocation")
+set(OMR_OM_TRACE OFF CACHE BOOL "Debug: Verbose tracing prints to stderr")
+
 # OMR Configuration
 set(OMR_GC ON CACHE INTERNAL "Enable the GC")
 set(OMR_GC_GLUE_TARGET   "omr_om_gc_glue"   CACHE STRING "The gc glue target, must be interface library")

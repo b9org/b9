@@ -9,6 +9,10 @@
 #include <OMR/Om/Runtime.hpp>
 #include <OMR/Om/Traverse.hpp>
 
+#include <OMR/Om/ArrayBufferMap.inl.hpp>
+#include <OMR/Om/EmptyObjectMap.inl.hpp>
+#include <OMR/Om/MetaMap.inl.hpp>
+
 namespace OMR {
 namespace Om {
 
@@ -55,13 +59,23 @@ inline void MemoryManager::initOmrGc() {
 }
 
 inline void MemoryManager::initGlobals(StartupContext& cx) {
-  globals_.metaMap = allocateMetaMap(cx);
-  globals_.emptyObjectMap = allocateEmptyObjectMap(cx);
+  globals_.metaMap = MetaMap::allocate(cx);
+
+  // Tricky note: The object map's transition table is backed by an array
+  // buffer. If the array buffer map isn't brought up first, than the first
+  // empty object map allocated will not be able to allocate it's transition
+  // table.
+  globals_.arrayBufferMap = ArrayBufferMap::allocate(cx);
+
+  // TODO: The EmptyObjectMap isn't a global--it's allocated at each constructor
+  // site.
+  globals_.emptyObjectMap = EmptyObjectMap::allocate(cx);
 }
 
 inline void MemoryManager::visitRoots(Context& cx, Visitor& visitor) {
   visitor.rootEdge(cx, this, &globals_.metaMap->baseCell());
-  visitor.rootEdge(cx, this, &globals_.emptyObjectMap->baseCell());
+  visitor.rootEdge(cx, this, &globals_.arrayBufferMap->base().cell);
+  visitor.rootEdge(cx, this, &globals_.emptyObjectMap->base().cell);
 
   for (auto& fn : userRoots()) {
     fn(cx, visitor);

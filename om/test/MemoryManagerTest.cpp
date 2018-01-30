@@ -28,7 +28,7 @@ TEST(MemoryManagerTest, startUpAndShutDown) {
   Context cx(manager);
   EXPECT_NE(cx.globals().metaMap, nullptr);
   EXPECT_NE(cx.globals().emptyObjectMap, nullptr);
-  MetaMap* metaMap = allocateMetaMap(cx);
+  MetaMap* metaMap = MetaMap::allocate(cx);
   EXPECT_EQ(&metaMap->baseMap(), metaMap->baseCell().map());
 }
 
@@ -42,7 +42,7 @@ TEST(MemoryManagerTest, startUpAContext) {
 TEST(MemoryManagerTest, allocateTheMetaMap) {
   MemoryManager manager(runtime);
   Context cx(manager);
-  MetaMap* metaMap = allocateMetaMap(cx);
+  MetaMap* metaMap = MetaMap::allocate(cx);
   EXPECT_EQ(metaMap, metaMap->map());
 }
 
@@ -50,8 +50,8 @@ TEST(MemoryManagerTest, loseAnObjects) {
   MemoryManager manager(runtime);
   Context cx(manager);
 
-  RootRef<EmptyObjectMap> map(cx, allocateEmptyObjectMap(cx));
-  Object* object = allocateObject(cx, map);
+  RootRef<EmptyObjectMap> map(cx, EmptyObjectMap::allocate(cx));
+  Object* object = Object::allocate(cx, map);
 
   EXPECT_NE(object->map(), nullptr);
   OMR_GC_SystemCollect(cx.omrVmThread(), 0);
@@ -62,8 +62,8 @@ TEST(MemoryManagerTest, keepAnObject) {
   MemoryManager manager(runtime);
   Context cx(manager);
 
-  RootRef<EmptyObjectMap> map(cx, allocateEmptyObjectMap(cx));
-  RootRef<Object> object(cx, allocateObject(cx, map));
+  RootRef<EmptyObjectMap> map(cx, EmptyObjectMap::allocate(cx));
+  RootRef<Object> object(cx, Object::allocate(cx, map));
   EXPECT_EQ(object->map(), &map->baseObjectMap());
   OMR_GC_SystemCollect(cx.omrVmThread(), 0);
   EXPECT_EQ(object->map(), &map->baseObjectMap());
@@ -77,8 +77,8 @@ TEST(MemoryManagerTest, objectTransition) {
 
   // allocate the object
   {
-    RootRef<EmptyObjectMap> map(cx, allocateEmptyObjectMap(cx));
-    obj = allocateObject(cx, map);
+    RootRef<EmptyObjectMap> map(cx, EmptyObjectMap::allocate(cx));
+    obj = Object::allocate(cx, map);
   }
 
   SlotDescriptor slotd(Id(42));
@@ -101,6 +101,13 @@ TEST(MemoryManagerTest, objectTransition) {
   }
 }
 
+TEST(MemoryManagerTest, objectTransitionReuse) {
+  MemoryManager manager(runtime);
+  Context cx(manager);
+
+  RootRef<EmptyObjectMap> base_r(cx, EmptyObjectMap::allocate(cx));
+  RootRef<Object> obj_r(cx, Object::allocate(cx, base_r));
+}
 }  // namespace Test
 }  // namespace Om
 }  // namespace OMR

@@ -24,9 +24,9 @@
 #if !defined(OMR_OM_ALLOCATION_HPP_)
 #define OMR_OM_ALLOCATION_HPP_
 
-#include <OMR/Om/Context.inl.hpp>
-#include <OMR/Om/Map.hpp>
-#include <OMR/Om/Object.hpp>
+#include <OMR/Om/Cell.hpp>
+#include <OMR/Om/Context.hpp>
+#include <OMR/Om/Initializer.hpp>
 
 #include <AllocateInitialization.hpp>
 
@@ -36,58 +36,6 @@
 
 namespace OMR {
 namespace Om {
-
-class Initializer {
- public:
-  virtual Cell* operator()(Context& cx, Cell* cell) = 0;
-};
-
-struct MetaMapInitializer : public Initializer {
-  virtual Cell* operator()(Context& cx, Cell* cell) override {
-    auto m = reinterpret_cast<MetaMap*>(cell);
-    m->baseMap().map(m);  // m describes its own shape.
-    m->baseMap().kind(Map::Kind::META_MAP);
-    return &m->baseCell();
-  }
-};
-
-struct EmptyObjectMapInitializer : public Initializer {
- public:
-  virtual Cell* operator()(Context& cx, Cell* cell) override {
-    auto m = reinterpret_cast<EmptyObjectMap*>(cell);
-    m->baseMap().map(cx.globals().metaMap);
-    m->baseMap().kind(Map::Kind::EMPTY_OBJECT_MAP);
-    return &m->baseCell();
-  }
-};
-
-struct SlotMapInitializer : public Initializer {
-  SlotMapInitializer(Handle<ObjectMap> parent, const SlotDescriptor& desc)
-      : parent_(parent), desc_(desc) {}
-
-  virtual Cell* operator()(Context& cx, Cell* cell) override {
-    auto m = reinterpret_cast<SlotMap*>(cell);
-    m->baseMap().map(cx.globals().metaMap);
-    m->baseMap().kind(Map::Kind::SLOT_MAP);
-    m->parent(parent_.get());
-    m->slotDescriptor(desc_);
-    return &m->baseCell();
-  }
-
-  Handle<ObjectMap> parent_;
-  SlotDescriptor desc_;
-};
-
-struct ObjectInitializer : public Initializer {
-  virtual Cell* operator()(Context& cx, Cell* cell) override {
-    auto o = reinterpret_cast<Object*>(cell);
-    o->map(map_);
-    o->fixedSlotCount_ = 32;
-    return &o->baseCell();
-  }
-
-  Handle<ObjectMap> map_;
-};
 
 class Allocation : public MM_AllocateInitialization {
  public:

@@ -7,10 +7,10 @@
 #include <OMR/Om/Allocator.inl.hpp>
 #include <OMR/Om/Map.inl.hpp>
 #include <OMR/Om/Object.inl.hpp>
-#include <OMR/Om/RootRef.inl.hpp>
-#include <OMR/Om/Value.hpp>
 #include <OMR/Om/ObjectMap.inl.hpp>
+#include <OMR/Om/RootRef.inl.hpp>
 #include <OMR/Om/SlotMap.inl.hpp>
+#include <OMR/Om/Value.hpp>
 
 #include <omrgc.h>
 #include "Jit.hpp"
@@ -154,7 +154,7 @@ void ExecutionContext::strPushConstant(Parameter param) {
 
 // ( -- object )
 void ExecutionContext::newObject() {
-  auto ref = OMR::Om::allocateEmptyObject(*this);
+  auto ref = OMR::Om::Object::allocate(*this);
   push(OMR::Om::Value(ref));
 }
 
@@ -184,13 +184,13 @@ void ExecutionContext::popIntoObject(OMR::Om::Id slotId) {
     throw std::runtime_error("Accessing non-object as an object");
   }
 
-  Om::Object* object = pop().getPtr<OMR::Om::Object>();
+  Om::Object *object = pop().getPtr<OMR::Om::Object>();
 
   Om::SlotDescriptor desc(slotId);
   Om::Index idx = -1;
 
   bool found = Om::Object::index(*this, object, desc, idx);
- 
+
   if (!found) {
     std::size_t hash = desc.hash();
     Om::RootRef<Om::Object> root(*this, object);
@@ -200,7 +200,7 @@ void ExecutionContext::popIntoObject(OMR::Om::Id slotId) {
   }
 
   auto val = pop();
-  object->set(idx, val); // TODO: Write barrier the object on store.
+  object->set(idx, val);  // TODO: Write barrier the object on store.
 }
 
 void ExecutionContext::callIndirect() {

@@ -1,10 +1,13 @@
 #if !defined(OMR_OM_OBJECT_INL_HPP_)
 #define OMR_OM_OBJECT_INL_HPP_
 
-#include <OMR/Om/Cell.hpp>
 #include <OMR/Om/Object.hpp>
 
-#include <StandardWriteBarrier.hpp>
+#include <OMR/Om/Allocator.hpp>
+#include <OMR/Om/EmptyObjectMap.inl.hpp>
+#include <OMR/Om/SlotMap.inl.hpp>
+
+// #include <StandardWriteBarrier.hpp>
 
 namespace OMR {
 namespace Om {
@@ -38,7 +41,7 @@ inline bool Object::index(Context& cx, const Object* self,
   while (objectMap->kind() != Map::Kind::EMPTY_OBJECT_MAP) {
     assert(objectMap->kind() == Map::Kind::SLOT_MAP);
     auto slotMap = reinterpret_cast<const SlotMap*>(objectMap);
-    if (slotMap->desc_ == desc) {
+    if (slotMap->slotDescriptor() == desc) {
       result = slotMap->index();
       return true;
     }
@@ -61,31 +64,6 @@ inline void Object::get(Context& cx, const Object* self, Index index,
                         Value& result) {
   result = self->get(index);
 }
-
-#if 0
-/// Set the slot that corresponds to the id. If the slot doesn't exist,
-/// allocate the slot and assign it. The result is the address of the slot.
-/// !CAN_GC!
-inline bool Object::set(Context& cx, Handle<Object> object, const SlotDescriptor& desc,
-                        Value value) {
-  std::size_t hash = desc.hash();
-
-  Index idx = -1;
-  bool found = index(cx, object, desc, idx);
-
-  if (!found) {
-    auto map = transition(cx, handle, desc, hash);  // TODO: Write barrier on transition
-    if (map == nullptr) {
-      return false;
-    }
-    idx = map->index();
-    object = root.get();
-  }
-
-  set(cx, object, idx, value);  // TODO: Write barrier in set
-  return true;
-}
-#endif
 
 inline void Object::set(Context& cx, Object* self, Index index,
                         Value value) noexcept {
@@ -147,7 +125,37 @@ inline SlotMap* Object::transition(Context& cx, Handle<Object> object,
   // TODO: Write barrier on transitioning objects.
 }
 
+struct ObjectInitializer : public Initializer {
+  virtual Cell* operator()(Context& cx, Cell* cell) override {
+    auto o = reinterpret_cast<Object*>(cell);
+    o->map(map_);
+    o->fixedSlotCount_ = 32;
+    return &o->baseCell();
+  }
+
+  Handle<ObjectMap> map_;
+};
+
+/// Allocate empty object.
+inline Object* Object::allocate(Context& cx, Handle<EmptyObjectMap> map) {
+  ObjectInitializer init;
+  init.map_ = map.reinterpret<ObjectMap>();
+  return BaseAllocator::allocate<Object>(cx, init);
+}
+
+/// Allocate object with corresponding slot map;
+inline Object* Object::allocate(Context& cx, Handle<SlotMap> map) {
+  ObjectInitializer init;
+  init.map_ = map.reinterpret<ObjectMap>();
+  return BaseAllocator::allocate<Object>(cx, init);
+}
+
+inline Object* Object::allocate(Context& cx) {
+  RootRef<EmptyObjectMap> map(cx, EmptyObjectMap::allocate(cx));
+  return allocate(cx, map);
+}
+
 }  // namespace Om
 }  // namespace OMR
 
-#endif  // B9_OBJECTS_INL_HPP_
+#endif  // OMR_OM_OBJECT_INL_HPP_

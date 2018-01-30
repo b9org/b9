@@ -2,20 +2,19 @@
 #define OMR_OM_OBJECT_HPP_
 
 #include <OMR/Om/Cell.hpp>
+#include <OMR/Om/EmptyObjectMap.hpp>
+#include <OMR/Om/Handle.hpp>
 #include <OMR/Om/Map.hpp>
-#include <OMR/Om/MemVector.hpp>
+#include <OMR/Om/ObjectMap.hpp>
 #include <OMR/Om/SlotMap.hpp>
 #include <OMR/Om/Value.hpp>
 
-#include <cstddef>
-#include <cstdint>
-#include <iostream>
-#include <map>
-#include <new>
 #include <type_traits>
 
 namespace OMR {
 namespace Om {
+
+class Context;
 
 /// A Cell with dynamically allocated slots.
 struct Object {
@@ -23,12 +22,16 @@ struct Object {
     Cell cell;
   };
 
-  static Object* allocate(Context& cx, Handle<ObjectMap> map);
+  /// Allocate empty object.
+  static inline Object* allocate(Context& cx, Handle<EmptyObjectMap> map);
+
+  /// Allocate object with corresponding slot map;
+  static inline Object* allocate(Context& cx, Handle<SlotMap> map);
+
+  /// Allocate an empty object with a new EmptyObjectMap.
+  static inline Object* allocate(Context& cx);
 
   static Object* clone(Context& cx, Handle<Object> base);
-
-  static void construct(Context& cx, Handle<Object> self,
-                        Handle<ObjectMap> map);
 
   static SlotMap* takeNewTransition(Context& cx, Handle<Object> object,
                                     const SlotDescriptor& desc,
@@ -91,11 +94,35 @@ struct Object {
     fixedSlots_[i] = x;
   }
 
+  template <typename VisitorT>
+  void visit(Context& cx, VisitorT& visitor) {
+    baseCell().visit(cx, visitor);
+
+    if (map()->kind() == Map::Kind::EMPTY_OBJECT_MAP) {
+      return;
+    }
+
+    // TODO: Only visit the active slots of an object, known using
+    // map()->index().
+    for (Value val : fixedSlots_) {
+      if (val.isPtr()) {
+        visitor.edge(cx, (Cell*)this, val.getPtr<Cell>());
+      }
+    }
+  }
+
+ protected:
+  friend struct ObjectInitializer;
+
   Base base_;
-  // TODO: Object dynamic slots: MemVector<Value> dynamicSlots;
-  // TODO: Variable number of fixed slots
+  // TODO: Dynamic slots in objects: MemVector<Value> dynamicSlots;
+  // TODO: Variable number of fixed slots in objects
   std::size_t fixedSlotCount_;
   Value fixedSlots_[32];
+
+ private:
+  static void construct(Context& cx, Handle<Object> self,
+                        Handle<ObjectMap> map);
 };
 
 static_assert(std::is_standard_layout<Object>::value,

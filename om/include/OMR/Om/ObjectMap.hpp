@@ -2,18 +2,21 @@
 #define OMR_OM_OBJECTMAP_HPP_
 
 // #include <OMR/Om/Context.hpp>
+#include <OMR/Om/ArrayBuffer.hpp>
 #include <OMR/Om/Map.hpp>
-#include <OMR/Om/MemTransitionSet.hpp>
 #include <OMR/Om/SlotDescriptor.hpp>
+#include <OMR/Om/TransitionSet.hpp>
 
 namespace OMR {
 namespace Om {
 
 class Context;
+struct SlotMap;
 
 /// A map that describes the layout of an object. ObjectMaps are either the
 /// EmptyObjectMap, or a SlotMap.
 struct ObjectMap {
+ public:
   union Base {
     Map map;
     Cell cell;
@@ -22,8 +25,7 @@ struct ObjectMap {
   /// @{
   /// @group High level API
 
-  static void construct(Context& cx, ObjectMap* self, MetaMap* meta,
-                        Map::Kind kind);
+  static bool construct(Context& cx, Handle<ObjectMap> self);
 
   /// Create a slot map that derives base. Add the new slot map to the set of
   /// known transistions from base.
@@ -33,6 +35,13 @@ struct ObjectMap {
   /// Look up a transition to a derived shape.
   SlotMap* lookUpTransition(Context& cx, const SlotDescriptor& desc,
                             std::size_t hash);
+
+  /// @}
+
+  /// @group Initialization
+  /// @{
+
+  ObjectMap(MetaMap* meta, Map::Kind kind);
 
   /// @}
 
@@ -55,11 +64,19 @@ struct ObjectMap {
 
   Map::Kind kind() const { return baseMap().kind(); }
 
+  /// @{
+  /// @group GC Support
+
+  template <typename VisitorT>
+  inline void visit(Context& cx, VisitorT& visitor);
+
   Base base_;
+  TransitionSet transitions_;
 };
 
 static_assert(std::is_standard_layout<ObjectMap>::value,
               "ObjectMap must be a StandardLayoutType");
+
 }  // namespace Om
 }  // namespace OMR
 

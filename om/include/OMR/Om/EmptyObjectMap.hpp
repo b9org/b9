@@ -1,6 +1,7 @@
 #if !defined(OMR_OM_EMPTYOBJECTMAP_HPP_)
 #define OMR_OM_EMPTYOBJECTMAP_HPP_
 
+#include <OMR/Om/Handle.hpp>
 #include <OMR/Om/MetaMap.hpp>
 #include <OMR/Om/ObjectMap.hpp>
 
@@ -19,6 +20,12 @@ struct EmptyObjectMap {
     Cell cell;
   };
 
+  static EmptyObjectMap* allocate(Context& cx);
+
+  static bool construct(Context& cx, Handle<EmptyObjectMap> self);
+
+  EmptyObjectMap(MetaMap* meta) : base_{{meta, Map::Kind::EMPTY_OBJECT_MAP}} {}
+
   Base& base() { return base_; }
 
   const Base& base() const { return base_; }
@@ -34,6 +41,11 @@ struct EmptyObjectMap {
   Cell& baseCell() { return base().cell; }
 
   const Cell& baseCell() const { return base().cell; }
+
+  template <typename VisitorT>
+  void visit(Context& cx, VisitorT& visitor) {
+    baseObjectMap().visit(cx, visitor);
+  }
 
   Base base_;
 };

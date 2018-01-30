@@ -17,6 +17,8 @@ struct MetaMap {
     Cell cell;
   };
 
+  static MetaMap* allocate(Context& cx);
+
   Base& base() { return base_; }
 
   const Base& base() const { return base_; }
@@ -31,19 +33,16 @@ struct MetaMap {
 
   MetaMap* map() const { return baseMap().map(); }
 
+  template <typename VisitorT>
+  void visit(Context& cx, VisitorT& visitor) {
+    baseMap().visit(cx, visitor);
+  }
+
   Base base_;
 };
 
 static_assert(std::is_standard_layout<MetaMap>::value,
               "MetaMap must be a StandardLayoutType");
-
-#if 0
- public:
-  static void construct(Context& cx, MetaMap* self) {
-    // the MetaMap is it's own map.
-    Map::construct(cx, self, self, Map::Kind::META_MAP);
-  }
-#endif
 
 }  // namespace Om
 }  // namespace OMR

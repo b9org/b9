@@ -13,6 +13,7 @@ class Marker : public Visitor {
   Marker(MM_MarkingScheme* omrMarker) : omrMarker_(omrMarker) {}
 
   virtual void edge(Context& cx, Cell* a, Cell* b) override {
+    std::cerr << "Marking: " << b << " (via " << a << ")" << std::endl;
     omrMarker_->markObject(cx.omrGcThread(), b);
   }
 

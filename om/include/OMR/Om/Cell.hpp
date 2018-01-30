@@ -25,6 +25,8 @@ struct Cell {
   static void construct(Context& cx, Cell* self, Map* map,
                         std::uint8_t flags = 0);
 
+  inline Cell(Map* map, std::uint8_t flags = 0) { set(map, flags); }
+
   /// Get the map reference.
   Map* map() const { return (Map*)(header >> MAP_SHIFT); }
 
@@ -38,6 +40,11 @@ struct Cell {
   /// Set the map and the flags.
   void set(Map* m, std::uint8_t flags) {
     header = (CellHeader(m) << MAP_SHIFT) | (flags & FLAGS_MASK);
+  }
+
+  template <typename VisitorT>
+  void visit(Context& cx, VisitorT& visitor) {
+    visitor.edge(cx, this, (Cell*)map());
   }
 
   CellHeader header;

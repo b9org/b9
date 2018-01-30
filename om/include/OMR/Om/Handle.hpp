@@ -1,8 +1,6 @@
 #if !defined(OMR_OM_HANDLE_HPP_)
 #define OMR_OM_HANDLE_HPP_
 
-// #include <OMR/Om/RootRef.hpp>
-
 namespace OMR {
 namespace Om {
 

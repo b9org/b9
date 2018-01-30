@@ -31,6 +31,11 @@ class Array {
   ArrayBuffer* buffer_;
 };
 
+template <typename T>
+class Box {
+  ArrayBuffer* buffer_;
+};
+
 }  // namespace Om
 }  // namespace OMR
 

@@ -22,6 +22,7 @@ class StartupContext;
 struct Globals {
   MetaMap* metaMap = nullptr;
   EmptyObjectMap* emptyObjectMap = nullptr;
+  ArrayBufferMap* arrayBufferMap = nullptr;
 };
 
 using ContextSet = std::unordered_set<Context*>;

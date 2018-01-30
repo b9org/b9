@@ -7,6 +7,7 @@
 
 #include <OMR/Infra/BitUtilities.hpp>
 
+#include <cmath>
 #include <cstdint>
 
 namespace OMR {

@@ -33,11 +33,16 @@ void MM_GlobalCollectorDelegate::poisonUnmarkedObjectsInRegion(
   omrobjectptr_t omrobjptr = NULL;
 
   while (NULL != (omrobjptr = objectIterator.nextObject())) {
-    if (!_markingScheme->isMarked(omrobjptr)) {
-      /* object will be collected. We write the full contents of the object with
-       * a known value. */
-      uintptr_t objsize =
-          _extensions->objectModel.getConsumedSizeInBytesWithHeader(omrobjptr);
+    uintptr_t objsize =
+        _extensions->objectModel.getConsumedSizeInBytesWithHeader(omrobjptr);
+    bool ismarked = _markingScheme->isMarked(omrobjptr);
+
+    std::cerr << ">POISON @" << omrobjptr << "[" << objsize << "]"
+              << "=" << ismarked << std::endl;
+
+    if (!ismarked) {
+      /* object will be collected. We write the full contents of the object
+       * with a known value. */
       memset(omrobjptr, POISON, (size_t)objsize);
       MM_HeapLinkedFreeHeader::fillWithHoles(omrobjptr, objsize);
     }

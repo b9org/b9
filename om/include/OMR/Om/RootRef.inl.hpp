@@ -35,6 +35,7 @@ inline RootRef<T>::RootRef(RootRef<U>&& other) noexcept
 
 template <typename T>
 inline RootRef<T>::~RootRef() noexcept {
+  std::cerr << "RootRef<T>::~RootRef(this=" << this << ")" << std::endl;
   assert(isHead());
   seq_.head(node_.second);
 }

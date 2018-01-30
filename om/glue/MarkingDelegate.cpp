@@ -21,10 +21,14 @@
 
 #include "MarkingDelegate.hpp"
 
+#include <OMR/Om/ArrayBuffer.hpp>
 #include <OMR/Om/Context.inl.hpp>
 #include <OMR/Om/Marker.hpp>
 #include <OMR/Om/MemoryManager.inl.hpp>
 #include <OMR/Om/Object.inl.hpp>
+#include <OMR/Om/ObjectMap.inl.hpp>
+#include <OMR/Om/SlotMap.inl.hpp>
+#include <OMR/Om/TransitionSet.inl.hpp>
 #include <OMR/Om/Traverse.hpp>
 
 #include "EnvironmentBase.hpp"
@@ -67,25 +71,56 @@ void MarkingDelegate::scanRoots(MM_EnvironmentBase* env) {
   }
 }
 
+inline void scanMap(Context& cx, Marker& marker, Map* map) {
+  switch (map->kind()) {
+    case Map::Kind::SLOT_MAP:
+      reinterpret_cast<SlotMap*>(map)->visit(cx, marker);
+      break;
+    case Map::Kind::EMPTY_OBJECT_MAP:
+      reinterpret_cast<EmptyObjectMap*>(map)->visit(cx, marker);
+      break;
+    case Map::Kind::META_MAP:
+      reinterpret_cast<MetaMap*>(map)->visit(cx, marker);
+      break;
+    case Map::Kind::ARRAY_BUFFER_MAP:
+      reinterpret_cast<ArrayBufferMap*>(map)->visit(cx, marker);
+      break;
+    default:
+      assert(0);
+      break;
+  }
+}
+
+inline void scanObj(Context& cx, Marker& marker, Object* object) {
+  object->visit(cx, marker);
+}
+
+inline void scanArrayBuffer(Context& cx, Marker& marker,
+                            ArrayBuffer<char>* array) {
+  array->visit(cx, marker);
+}
+
 uintptr_t MarkingDelegate::scanObject(MM_EnvironmentBase* env,
                                       omrobjectptr_t cell) {
-  auto map = cell->map();
-  _markingScheme->inlineMarkObjectNoCheck(env, &map->baseCell());
+  std::cerr << "Scanning: " << cell << std::endl;
 
-  if (map->kind() != Map::Kind::SLOT_MAP) {
-    // The cell is a leaf-object, like a map or empty object.
-    return 0;
-  }
+  Context& cx = getContext(env->getOmrVMThread());
+  Marker marker(_markingScheme);
 
-  auto slotMap = reinterpret_cast<SlotMap*>(map);
-  auto object = reinterpret_cast<Object*>(cell);
-
-  for (std::size_t i = 0; i < slotMap->index(); i++) {
-    // TODO: object slot accessors.
-    Value slotValue = object->get(i);
-    if (slotValue.isPtr()) {
-      _markingScheme->inlineMarkObjectNoCheck(env, slotValue.getPtr<Cell>());
-    }
+  switch (cell->map()->kind()) {
+    case Map::Kind::META_MAP:
+      scanMap(cx, marker, reinterpret_cast<Map*>(cell));
+      break;
+    case Map::Kind::EMPTY_OBJECT_MAP:
+    case Map::Kind::SLOT_MAP:
+      scanObj(cx, marker, reinterpret_cast<Object*>(cell));
+      break;
+    case Map::Kind::ARRAY_BUFFER_MAP:
+      scanArrayBuffer(cx, marker, reinterpret_cast<ArrayBuffer<char>*>(cell));
+      break;
+    default:
+      assert(0);
+      break;
   }
 
   return 0;

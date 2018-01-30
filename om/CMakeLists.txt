@@ -5,11 +5,17 @@ set(OMR_UTIL_GLUE_TARGET "omr_om_util_glue" CACHE STRING "The util glue target, 
 set(OMR_RAS_GLUE_TARGET  "omr_om_ras_glue"  CACHE STRING "The ras glue target, must be interface library")
 set(OMR_CORE_GLUE_TARGET "omr_om_core_glue" CACHE STRING "The core glue target, must be and interface library")
 
+configure_file(
+	include/OMR/Om/Config.hpp.in
+	include/OMR/Om/Config.hpp
+)
+
 add_library(omr_om INTERFACE)
 
 target_include_directories(omr_om
 	INTERFACE
 		include/
+		${CMAKE_CURRENT_BINARY_DIR}/include
 		../third_party/omr/include_core/
 		${CMAKE_BINARY_DIR}/third_party/omr/
 )

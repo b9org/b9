@@ -2,11 +2,11 @@
 #define OMR_OM_MAP_HPP_
 
 #include <OMR/Om/Cell.hpp>
-#include <OMR/Om/Context.hpp>
 
 namespace OMR {
 namespace Om {
 
+class Context;
 struct MetaMap;
 
 /// A description of a cell's layout, or shape. The Map is akin to a java class,
@@ -21,6 +21,8 @@ struct Map {
   };
 
   static void construct(Context& cx, Map* self, MetaMap* meta, Kind kind);
+
+  Map(MetaMap* meta, Kind kind);
 
   Base& base() { return base_; }
 
@@ -42,6 +44,11 @@ struct Map {
   Map& kind(Kind k) {
     kind_ = k;
     return *this;
+  }
+
+  template <typename VisitorT>
+  void visit(Context& cx, VisitorT& visitor) {
+    baseCell().visit(cx, visitor);
   }
 
   Base base_;

@@ -4,10 +4,16 @@
 #include <b9/instructions.hpp>
 #include <b9/module.hpp>
 
+#include <OMR/Om/Allocator.inl.hpp>
 #include <OMR/Om/Context.inl.hpp>
+#include <OMR/Om/Map.inl.hpp>
 #include <OMR/Om/MemoryManager.inl.hpp>
+#include <OMR/Om/Object.inl.hpp>
+#include <OMR/Om/ObjectMap.inl.hpp>
 #include <OMR/Om/RootRef.inl.hpp>
 #include <OMR/Om/Runtime.hpp>
+#include <OMR/Om/SlotMap.inl.hpp>
+#include <OMR/Om/TransitionSet.inl.hpp>
 
 #include <cstring>
 #include <map>
@@ -17,6 +23,8 @@
 #include <vector>
 
 namespace b9 {
+
+namespace Om = ::OMR::Om;
 
 class Compiler;
 class ExecutionContext;
@@ -105,13 +113,13 @@ class ExecutionContext : public OMR::Om::RunContext {
 
   void visitStack(OMR::Om::Context &cx, OMR::Om::Visitor &visitor) {
     const auto n = stackPointer_ - stackBase_;
-    std::cout << ">STACK BEGIN" << std::endl;
+    std::cerr << ">VM_STACK BEGIN" << std::endl;
     for (std::size_t i = 0; i < n; i++) {
       StackElement e = stackBase_[i];
-      std::cout << ">STACK[" << i << "] = " << e << std::endl;
+      std::cout << ">>VM_STACK[" << i << "] = " << e << std::endl;
       if (e.isPtr()) visitor.rootEdge(cx, this, e.getPtr<OMR::Om::Cell>());
     }
-    std::cout << ">STACK END" << std::endl;
+    std::cerr << ">VM_STACK END" << std::endl;
   }
 
   // TODO: void strJmpEq(Parameter delta);

@@ -14,7 +14,7 @@ std::uintptr_t ptrdiff(T* base, U* p) {
 
 template <typename T, typename U = T>
 U* ptradd(T* base, std::uintptr_t offset) {
-  return reinterpret_cast<U*>(reinterpret_cast<const char*>(base) + offset);
+  return (U*)(((char*)base) + offset);
 }
 
 }  // namespace Infra

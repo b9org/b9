@@ -59,6 +59,7 @@ add_library(omr_om_core_glue INTERFACE)
 target_sources(omr_om_core_glue INTERFACE
 	${CMAKE_CURRENT_SOURCE_DIR}/LanguageVMGlue.c
 	${CMAKE_CURRENT_SOURCE_DIR}/omrExampleVM.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/Profiling.c
 )
 
 target_include_directories(omr_om_core_glue INTERFACE
@@ -68,7 +69,6 @@ target_include_directories(omr_om_core_glue INTERFACE
 
 add_library(omr_om_ras_glue INTERFACE)
 target_sources(omr_om_ras_glue INTERFACE
-	${CMAKE_CURRENT_SOURCE_DIR}/Profiling.c
 )
 
 target_include_directories(omr_om_ras_glue INTERFACE

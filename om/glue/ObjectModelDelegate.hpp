@@ -22,10 +22,10 @@
 #ifndef OBJECTMODELDELEGATE_HPP_
 #define OBJECTMODELDELEGATE_HPP_
 
-#include <OMR/Om/Context.hpp>
+#include <OMR/Om/ArrayBuffer.hpp>
+#include <OMR/Om/EmptyObjectMap.hpp>
 #include <OMR/Om/Map.hpp>
 #include <OMR/Om/Object.hpp>
-#include <OMR/Om/Runtime.hpp>
 #include <OMR/Om/SlotMap.hpp>
 
 #include "ForwardedHeader.hpp"
@@ -92,6 +92,8 @@ class ObjectModelDelegate {
         return sizeof(SlotMap);
       case Map::Kind::META_MAP:
         return sizeof(MetaMap);
+      case Map::Kind::ARRAY_BUFFER_MAP:
+        return sizeof(ArrayBufferMap);
       default:
         throw std::runtime_error("Unrecognized map kind");
     }
@@ -112,6 +114,9 @@ class ObjectModelDelegate {
       case Map::Kind::EMPTY_OBJECT_MAP:
       case Map::Kind::SLOT_MAP:
         return sizeof(Object);
+      case Map::Kind::ARRAY_BUFFER_MAP:
+        return reinterpret_cast<ArrayBuffer<char>*>(cell)
+            ->sizeInBytesWithHeader();
       default:
         throw std::runtime_error("Unrecognized cell type");
     }

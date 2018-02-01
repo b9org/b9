@@ -47,8 +47,8 @@ struct Object {
 
   static void set(Context& cx, Object* self, Index index, Value value) noexcept;
 
-  static bool index(Context& cx, const Object* self, const SlotDescriptor& desc,
-                    Index& result);
+  /// slot offset lookup
+  static bool index(Context& cx, const Object* self, Id id, Index& result);
 
   /// Set the slot that corresponds to the id. If the slot doesn't exist,
   /// allocate the slot and assign it. The result is the address of the slot.

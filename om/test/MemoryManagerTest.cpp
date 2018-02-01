@@ -78,7 +78,7 @@ TEST(MemoryManagerTest, objectTransition) {
   RootRef<EmptyObjectMap> emptyObjectMap(cx, EmptyObjectMap::allocate(cx));
   RootRef<Object> obj1(cx, Object::allocate(cx, emptyObjectMap));
 
-  SlotDescriptor slotd(Id(42));
+  SlotDescriptor slotd(SlotType(Id(0), CoreType::VALUE), Id(42));
   Object::transition(cx, obj1, slotd, slotd.hash());
 
   // check
@@ -109,6 +109,7 @@ TEST(MemoryManagerTest, objectTransitionReuse) {
   RootRef<EmptyObjectMap> base_r(cx, EmptyObjectMap::allocate(cx));
   RootRef<Object> obj_r(cx, Object::allocate(cx, base_r));
 }
+
 }  // namespace Test
 }  // namespace Om
 }  // namespace OMR

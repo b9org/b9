@@ -34,14 +34,17 @@ inline void Object::clone(Context& xc, Handle<Object> base) {
 
 #endif  ////////////////////////////////////////////
 
-inline bool Object::index(Context& cx, const Object* self,
-                          const SlotDescriptor& desc, Index& result) {
+/// TODO: Now that we support multiple CoreTypes, the result is not always the
+/// same type. We should be returning the type of slot as well.
+inline bool Object::index(Context& cx, const Object* self, Id id,
+                          Index& result) {
   const ObjectMap* objectMap = self->map();
 
   while (objectMap->kind() != Map::Kind::EMPTY_OBJECT_MAP) {
     assert(objectMap->kind() == Map::Kind::SLOT_MAP);
     auto slotMap = reinterpret_cast<const SlotMap*>(objectMap);
-    if (slotMap->slotDescriptor() == desc) {
+    if (slotMap->slotDescriptor().id() == id) {
+      assert(slotMap->slotDescriptor().coreType() == CoreType::VALUE);
       result = slotMap->index();
       return true;
     }

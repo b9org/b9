@@ -188,13 +188,14 @@ void ExecutionContext::popIntoObject(OMR::Om::Id slotId) {
 
   Om::Object *object = pop().getPtr<OMR::Om::Object>();
 
-  Om::SlotDescriptor desc(slotId);
   Om::Index idx = -1;
 
-  bool found = Om::Object::index(*this, object, desc, idx);
+  bool found = Om::Object::index(*this, object, slotId, idx);
 
   if (!found) {
-    std::size_t hash = desc.hash();
+    Om::SlotType type(Om::Id(0), Om::CoreType::VALUE);
+    Om::SlotDescriptor desc(type, slotId);
+    std::size_t hash(desc.hash());
     Om::RootRef<Om::Object> root(*this, object);
     auto map = Om::Object::transition(*this, root, desc, hash);
     idx = map->index();

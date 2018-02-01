@@ -16,6 +16,48 @@ namespace Om {
 
 class Context;
 
+/// An adapter class that provides macro operations on the map hierachy of an
+/// object. Most notably, the ObjectMapHierarchy is iterable.
+class ObjectMapHierachy {
+ public:
+  class Iterator {
+   protected:
+    friend class ObjectMapHierachy;
+
+    explicit constexpr Iterator(ObjectMap* start) noexcept : current_(start) {}
+
+    Iterator(const Iterator&) = default;
+
+    constexpr ObjectMap& operator*() const noexcept { return *current_; }
+
+    Iterator& operator++(int) noexcept {
+      if (current_->kind() == Map::Kind::EMPTY_OBJECT_MAP) {
+        current_ = nullptr;
+      } else {
+        assert(current_->kind() == Map::Kind::SLOT_MAP);
+        current_ = reinterpret_cast<SlotMap*>(current_)->parent();
+      }
+      return *this;
+    }
+
+    constexpr bool operator!=(const Iterator& rhs) const noexcept {
+      return current_ == rhs.current_;
+    }
+
+   private:
+    ObjectMap* current_;
+  };
+
+  constexpr ObjectMapHierachy(ObjectMap* start) : start_(start) {}
+
+  Iterator begin() const noexcept { return Iterator(start_); }
+
+  Iterator end() const noexcept { return Iterator(nullptr); }
+
+ private:
+  ObjectMap* start_;
+};
+
 /// A Cell with dynamically allocated slots.
 struct Object {
   union Base {
@@ -83,6 +125,8 @@ struct Object {
   }
 
   void map(ObjectMap* m) { baseCell().map(&m->baseMap()); }
+
+  ObjectMapHierachy mapHierarchy() const { return ObjectMapHierachy(map()); }
 
   Value get(Index i) const {
     assert(i < fixedSlotCount_);

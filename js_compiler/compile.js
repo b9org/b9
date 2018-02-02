@@ -1,18 +1,24 @@
 // convert subset of JavaScript to B9
-
+// fruitbat: includes the file system module (to work with FS on computer) 
 var fs = require('fs');
 var esprima = require('esprima');
+// fruitbat: splice() adds/removes items to/from array and returns the removed item(s)
+// args is set to the 2nd offset, or 3rd argument   
 var args = process.argv.splice(2);
 var files = [];
 
+
+// fruitbat: for each function argument (argument is a file), we push the file to the files array
 args.forEach(function(arg) {
     files.push(arg);
 });
 
+// fruitbat: for each file, load the primitive wrappers
 files.forEach(function(filename) {
     // Load the standard library
     var content = fs.readFileSync(__dirname + "/b9stdlib.src", 'utf-8');
     content += fs.readFileSync(filename, 'utf-8');
+    // fruitbat: parse to syntax tree
     var parsed = esprima.parse(content);
     var codegen = new CodeGen(filename);
     codegen.handleHeaders();
@@ -40,13 +46,16 @@ function FunctionContext(codegen, outer) {
         return this.outer;
     };
 
+    // fruitbat: changed to incrementStackCount
     this.pushN = function(count) {
         this.pushcount += count;
         if (this.pushcount > this.maxstack) {
             this.maxstack = this.pushcount;
         }
+
     }
 
+    // fruitbat: changed to dropTOS
     this.removeUnusedTOS = function(expected) {
         if (this.pushcount > expected) {
             this.codegen.outputInstruction("ByteCode::DROP", 0, "// unused TOS, drop return result to get to expected ");
@@ -54,11 +63,14 @@ function FunctionContext(codegen, outer) {
         }
     };
 
+    // fruitbat: changed to declareGlobalVar
     this.declareGlobal = function(vname) {
         this.codegen.globals[vname] = vname;
     }
     this.declareVariable = function(name) {
-        if (this.variableExists(name)) return;
+        if (this.variableExists(name)) 
+          return;
+        // fruitbat: set temp array at offset name to num arguments + num temporaries (increment temporaries)  
         this.temps[name] = this.argcount + this.tempcount++;
     };
     this.variableExists = function(name) {
@@ -81,14 +93,16 @@ function FunctionContext(codegen, outer) {
     };
 }
 
+// fruitbat: takes one file at a time
 function CodeGen(f) {
 
     this.filename = f;
 
-    // number labels globally 
+    // number labels globally ???
     this.label = 0;
 
     // functions get compiled all at the end, so all global definitions can be known
+    // fruitbat: is this a global definitions array or a functions array???
     this.deferred = [];
 
     // all the function specifications
@@ -100,16 +114,19 @@ function CodeGen(f) {
 
     this.primitives = [ "print_string", "print_number"];
 
-    this.labels = new Object();
+    this.labels = {};
     this.instructionIndex = 0;
     this.outputLines = [];
 
     this.globals = Object.create(null);
 
+    // fruitbat: declaring the main function???
     this.currentFunction = new FunctionContext(this, this.currentFunction); // top level function
     this.currentFunction.isTopLevel = true;
 
+    // fruitbat: anonymous function 
     this.outputProgram = function() {
+        // fruitbat: where does outputLines get initialized??? - above shows initialization of empty array
         for (var i = 0; i < this.outputLines.length; i++) {
             if (this.outputLines[i].computeText) {
                 console.log(this.outputLines[i].computeText());
@@ -198,6 +215,7 @@ function CodeGen(f) {
     };
 
     this.handleHeaders = function() {
+        // fruitbat: this is where we output the headers and namespace (not required) 
         this.outputRawString('#include <b9/interpreter.hpp>');
         this.outputRawString('#include <b9/loader.hpp>');
         this.outputRawString('');
@@ -265,6 +283,7 @@ function CodeGen(f) {
         this.currentContinue = saveContinue;
     }
 
+    // fruitbat: this shit ain't gettin' called tho
     this.handleSequenceExpression = function(decl) {
         //console.log("//handleSequenceExpression " + JSON.stringify(decl)); 
         var expressions = decl.expressions;
@@ -278,6 +297,7 @@ function CodeGen(f) {
 
     }
 
+    /* fruitbat: why are only 3 of these emitting bytecodes, and why is the first on a push constant?  */
     this.handleUnaryExpression = function(decl) {
         // console.log ("handleUnaryExpression " + JSON.stringify (decl));  
         if (decl.operator == '-' && decl.argument.type == 'Literal') {
@@ -427,7 +447,6 @@ function CodeGen(f) {
         });
         currentFunction.argcount = index;
 
-
         this.outputRawString("Instruction " + id + "[] = {", "", false);
 
         var declArgsAndTemps = new Object();
@@ -463,10 +482,10 @@ function CodeGen(f) {
     };
 
     this.processDeferred = function() {
-        var todo = this.deferred.shift();
-        while (todo) {
+        // fruitbat: remove/return first item in deferred fnc defs 
+        while (this.deferred.length > 0) {
+            var todo = this.deferred.shift();
             this.genFunctionDefinition(todo.id.name, todo)
-            todo = this.deferred.shift();
         }
     };
 

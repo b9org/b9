@@ -1,8 +1,8 @@
 #if !defined(OMR_OM_TRANSITIONSET_INL_HPP_)
 #define OMR_OM_TRANSITIONSET_INL_HPP_
 
-#include <OMR/Om/TransitionSet.hpp>
 #include <OMR/Om/ArrayBuffer.inl.hpp>
+#include <OMR/Om/TransitionSet.hpp>
 
 namespace OMR {
 namespace Om {
@@ -18,21 +18,24 @@ inline bool TransitionSet::construct(Context& cx,
   return true;
 }
 
-inline SlotMap* TransitionSet::lookup(const SlotDescriptor& desc,
-                                      std::size_t hash) const {
+inline ObjectMap* TransitionSet::lookup(
+    Infra::Span<const SlotDescriptor> descriptors, std::size_t hash) const {
   std::size_t sz = size();
 
   for (std::size_t i = 0; i < sz; i++) {
     std::size_t idx = (hash + i) % sz;
     auto map = table_->get(idx).map;
-    if (map != nullptr && map->slotDescriptor() == desc) {
+    if (map == nullptr) {
+      return nullptr;
+    }
+    if (descriptors == map->slotDescriptors()) {
       return map;
     }
   }
   return nullptr;
 }
 
-inline bool TransitionSet::tryStore(SlotMap* map, std::size_t hash) {
+inline bool TransitionSet::tryStore(ObjectMap* map, std::size_t hash) {
   std::size_t sz = size();
 
   for (std::size_t i = 0; i < sz; i++) {

@@ -3,7 +3,12 @@
 
 #include <OMR/Om/Context.hpp>
 
+#include <OMR/Om/Runtime.hpp>
+
+#include <mminitcore.h>
+#include <omrutil.h>
 #include <EnvironmentBase.hpp>
+#include <OMR_VMThread.hpp>
 
 namespace OMR {
 namespace Om {

@@ -2,7 +2,6 @@
 #define OMR_OM_ROOTREF_INL_HPP_
 
 #include <OMR/Om/RootRef.hpp>
-
 #include <OMR/Om/Context.inl.hpp>
 
 namespace OMR {

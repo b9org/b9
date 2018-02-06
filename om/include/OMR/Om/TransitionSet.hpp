@@ -1,6 +1,7 @@
 #if !defined(OMR_OM_MEMTRANSITIONSET_HPP_)
 #define OMR_OM_MEMTRANSITIONSET_HPP_
 
+#include <OMR/Infra/Span.hpp>
 #include <OMR/Om/ArrayBuffer.hpp>
 #include <OMR/Om/Id.hpp>
 #include <OMR/Om/MemHandle.hpp>
@@ -13,7 +14,8 @@
 namespace OMR {
 namespace Om {
 
-struct SlotMap;
+struct ObjectMap;
+class Context;
 
 /// The TransitionSet is a collection of Maps for the purpose of tracking known
 /// object transitions. As objects grow slots, a chain of maps is built up. The
@@ -24,7 +26,7 @@ struct SlotMap;
 class TransitionSet {
  public:
   struct Entry {
-    SlotMap* map;
+    ObjectMap* map;
   };
 
   static bool construct(Context& cx, MemHandle<TransitionSet> self);
@@ -33,10 +35,11 @@ class TransitionSet {
 
   std::size_t size() const { return table_->size(); }
 
-  SlotMap* lookup(const SlotDescriptor& desc, std::size_t hash) const;
+  ObjectMap* lookup(Infra::Span<const SlotDescriptor> desc,
+                    std::size_t hash) const;
 
   // try to store object in the table. if the table is full, fail.
-  bool tryStore(SlotMap* map, std::size_t hash);
+  bool tryStore(ObjectMap* map, std::size_t hash);
 
   template <typename VisitorT>
   void visit(Context& cx, VisitorT& visitor);

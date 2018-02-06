@@ -2,11 +2,9 @@
 #define OMR_OM_OBJECT_HPP_
 
 #include <OMR/Om/Cell.hpp>
-#include <OMR/Om/EmptyObjectMap.hpp>
 #include <OMR/Om/Handle.hpp>
 #include <OMR/Om/Map.hpp>
 #include <OMR/Om/ObjectMap.hpp>
-#include <OMR/Om/SlotMap.hpp>
 #include <OMR/Om/Value.hpp>
 
 #include <type_traits>
@@ -31,12 +29,11 @@ class ObjectMapHierachy {
     constexpr ObjectMap& operator*() const noexcept { return *current_; }
 
     Iterator& operator++(int) noexcept {
-      if (current_->kind() == Map::Kind::EMPTY_OBJECT_MAP) {
-        current_ = nullptr;
-      } else {
-        assert(current_->kind() == Map::Kind::SLOT_MAP);
-        current_ = reinterpret_cast<SlotMap*>(current_)->parent();
+      if (current_ == nullptr) {
+        return *this;
       }
+
+      current_ = current_->parent();
       return *this;
     }
 
@@ -64,24 +61,29 @@ struct Object {
     Cell cell;
   };
 
-  /// Allocate empty object.
-  static inline Object* allocate(Context& cx, Handle<EmptyObjectMap> map);
+  static constexpr std::size_t MAX_SLOTS = 32;
 
-  /// Allocate object with corresponding slot map;
-  static inline Object* allocate(Context& cx, Handle<SlotMap> map);
+  /// Allocate object with this map;
+  static inline Object* allocate(Context& cx, Handle<ObjectMap> map);
 
   /// Allocate an empty object with a new EmptyObjectMap.
   static inline Object* allocate(Context& cx);
 
   static Object* clone(Context& cx, Handle<Object> base);
 
-  static SlotMap* takeNewTransition(Context& cx, Handle<Object> object,
-                                    const SlotDescriptor& desc,
-                                    std::size_t hash);
+  // Take a layout/map transition that hasn't been cached. Before taking a new
+  // transition, users should use `lookupTransition` to ensure the transition
+  // hasn't been taken before. See also `transition`, a higher level call for
+  // transitioning across object layouts.
+  static ObjectMap* takeNewTransition(Context& cx, Handle<Object> object,
+                                      Infra::Span<const SlotDescriptor> desc,
+                                      std::size_t hash);
 
-  // take an existing transition or take a new one if we have to.
-  static SlotMap* transition(Context& cx, Handle<Object> object,
-                             const SlotDescriptor& desc, std::size_t hash);
+  /// Transition the object's shape by adding a set of new slots.
+  /// This function will reuse cached transitions.
+  static ObjectMap* transition(Context& cx, Handle<Object> object,
+                               Infra::Span<const SlotDescriptor> desc,
+                               std::size_t hash);
 
   static bool get(Context& cx, const Object* self, Id id, Value& result);
 
@@ -95,22 +97,16 @@ struct Object {
   /// Set the slot that corresponds to the id. If the slot doesn't exist,
   /// allocate the slot and assign it. The result is the address of the slot.
   /// !CAN_GC!
-  static bool set(Context& cx, Object* object, const SlotDescriptor& desc,
-                  Value value);
+  static bool set(Context& cx, Object* object,
+                  Infra::Span<const SlotDescriptor> desc, Value value);
 
-#if 0
-  /// Allocate a new slot corresponding to the id. The object may not already
-  /// have a slot with this Id matching. !CAN_GC!
-  static Index newSlot(Context& cx, Handle<Object> self, Id id);
-#endif
+  ObjectMap* lookUpTransition(Context& cx,
+                              Infra::Span<const SlotDescriptor> desc,
+                              std::size_t hash);
 
-  static constexpr Index MAX_SLOTS = 32;
-
-  SlotMap* lookUpTransition(Context& cx, const SlotDescriptor& desc,
-                            std::size_t hash);
-
-  SlotMap* takeExistingTransition(Context& cx, const SlotDescriptor& desc,
-                                  std::size_t hash);
+  ObjectMap* takeExistingTransition(Context& cx,
+                                    Infra::Span<const SlotDescriptor> desc,
+                                    std::size_t hash);
 
   Base& base() { return base_; }
 
@@ -138,16 +134,23 @@ struct Object {
     fixedSlots_[i] = x;
   }
 
+  /// True if this object has no slots.
+  bool empty() const {
+    return (map()->slotOffset() == 0) && (map()->slotCount() == 0);
+  }
+
   template <typename VisitorT>
   void visit(Context& cx, VisitorT& visitor) {
     baseCell().visit(cx, visitor);
 
-    if (map()->kind() == Map::Kind::EMPTY_OBJECT_MAP) {
+    if (empty()) {
       return;
     }
 
     // TODO: Only visit the active slots of an object, known using
-    // map()->index().
+    //   map()->index().
+    // TODO: Fix object's slot walking
+    // TODO: Check the CoreType of the slot before marking.
     for (Value val : fixedSlots_) {
       if (val.isPtr()) {
         visitor.edge(cx, (Cell*)this, val.getPtr<Cell>());

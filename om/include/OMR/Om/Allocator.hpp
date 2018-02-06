@@ -1,13 +1,13 @@
 #ifndef OMR_OM_ALLOCATOR_HPP_
 #define OMR_OM_ALLOCATOR_HPP_
 
-#include <OMR/Om/Allocation.hpp>
 #include <cstdlib>
 
 namespace OMR {
 namespace Om {
 
 struct Cell;
+class Context;
 
 constexpr bool DEBUG_SLOW = true;
 
@@ -19,5 +19,7 @@ struct BaseAllocator {
 
 }  // namespace Om
 }  // namespace OMR
+
+#include <OMR/Om/Allocator.inl.hpp>
 
 #endif  // OMR_OM_ALLOCATOR_HPP_

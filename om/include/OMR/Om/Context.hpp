@@ -4,11 +4,6 @@
 #include <OMR/Om/MarkingFn.hpp>
 #include <OMR/Om/MemoryManager.hpp>
 #include <OMR/Om/RootRef.hpp>
-#include <OMR/Om/Runtime.hpp>
-
-#include <mminitcore.h>
-#include <omrutil.h>
-#include <OMR_VMThread.hpp>
 
 #include <cstddef>
 #include <cstdint>
@@ -23,16 +18,18 @@ namespace Om {
 struct Cell;
 struct Map;
 struct MetaMap;
-struct EmptyObjectMap;
 struct ObjectMap;
 struct Object;
 
+class Globals;
 class RefSeq;
+
+/// TODO: Protect the Context constructor, force applications to use RunContext.
 
 /// A GC context.
 class Context {
  public:
-  static constexpr const char* THREAD_NAME = "b9_context";
+  static constexpr const char* THREAD_NAME = "OMR::Om::Context";
 
   Context(MemoryManager& manager);
 

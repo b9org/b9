@@ -20,11 +20,6 @@ void Globals::init(StartupContext& cx) {
   // empty object map allocated will not be able to allocate it's transition
   // table.
   arrayBufferMap_ = ArrayBufferMap::allocate(cx);
-
-  // TODO: The EmptyObjectMap isn't a global--it should be allocated at each
-  // constructor site.
-  // This must be allocated after the array buffer map.
-  emptyObjectMap_ = EmptyObjectMap::allocate(cx);
 }
 
 MemoryManager::MemoryManager(ProcessRuntime& runtime) : runtime_(runtime) {

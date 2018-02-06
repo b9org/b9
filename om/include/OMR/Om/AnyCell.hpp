@@ -4,10 +4,8 @@
 #include <OMR/Om/ArrayBuffer.hpp>
 #include <OMR/Om/ArrayBufferMap.hpp>
 #include <OMR/Om/Cell.hpp>
-#include <OMR/Om/EmptyObjectMap.hpp>
 #include <OMR/Om/Map.hpp>
 #include <OMR/Om/ObjectMap.hpp>
-#include <OMR/Om/SlotMap.hpp>
 #include <OMR/Om/MetaMap.hpp>
 #include <OMR/Om/Object.hpp>
 
@@ -18,16 +16,12 @@ union AnyObjectMap {
   Cell cell;
   Map map;
   ObjectMap objectMap;
-  SlotMap slotMap;
-  EmptyObjectMap emptyObjectMap;
 };
 
 union AnyMap {
   Cell cell;
   Map map;
   ObjectMap objectMap;
-  SlotMap slotMap;
-  EmptyObjectMap emptyObjectMap;
   MetaMap metaMap;
   ArrayBufferMap arrayBufferMap;
 };
@@ -37,8 +31,6 @@ union AnyCell {
   Object object;
   Map map;
   ObjectMap objectMap;
-  SlotMap slotMap;
-  EmptyObjectMap emptyObjectMap;
   MetaMap metaMap;
   ArrayBufferMap;
   ArrayBuffer;

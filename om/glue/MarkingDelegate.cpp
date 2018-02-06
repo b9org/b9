@@ -27,7 +27,6 @@
 #include <OMR/Om/MemoryManager.inl.hpp>
 #include <OMR/Om/Object.inl.hpp>
 #include <OMR/Om/ObjectMap.inl.hpp>
-#include <OMR/Om/SlotMap.inl.hpp>
 #include <OMR/Om/TransitionSet.inl.hpp>
 #include <OMR/Om/Traverse.hpp>
 
@@ -73,11 +72,8 @@ void MarkingDelegate::scanRoots(MM_EnvironmentBase* env) {
 
 inline void scanMap(Context& cx, Marker& marker, Map* map) {
   switch (map->kind()) {
-    case Map::Kind::SLOT_MAP:
-      reinterpret_cast<SlotMap*>(map)->visit(cx, marker);
-      break;
-    case Map::Kind::EMPTY_OBJECT_MAP:
-      reinterpret_cast<EmptyObjectMap*>(map)->visit(cx, marker);
+    case Map::Kind::OBJECT_MAP:
+      reinterpret_cast<ObjectMap*>(map)->visit(cx, marker);
       break;
     case Map::Kind::META_MAP:
       reinterpret_cast<MetaMap*>(map)->visit(cx, marker);
@@ -111,8 +107,7 @@ uintptr_t MarkingDelegate::scanObject(MM_EnvironmentBase* env,
     case Map::Kind::META_MAP:
       scanMap(cx, marker, reinterpret_cast<Map*>(cell));
       break;
-    case Map::Kind::EMPTY_OBJECT_MAP:
-    case Map::Kind::SLOT_MAP:
+    case Map::Kind::OBJECT_MAP:
       scanObj(cx, marker, reinterpret_cast<Object*>(cell));
       break;
     case Map::Kind::ARRAY_BUFFER_MAP:

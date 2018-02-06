@@ -23,10 +23,9 @@
 #define OBJECTMODELDELEGATE_HPP_
 
 #include <OMR/Om/ArrayBuffer.hpp>
-#include <OMR/Om/EmptyObjectMap.hpp>
 #include <OMR/Om/Map.hpp>
 #include <OMR/Om/Object.hpp>
-#include <OMR/Om/SlotMap.hpp>
+#include <OMR/Om/ObjectMap.hpp>
 
 #include "ForwardedHeader.hpp"
 #include "GCExtensionsBase.hpp"
@@ -86,10 +85,8 @@ class ObjectModelDelegate {
 
   MMINLINE uintptr_t getMapSizeInBytes(Map* map) {
     switch (map->kind()) {
-      case Map::Kind::EMPTY_OBJECT_MAP:
-        return sizeof(EmptyObjectMap);
-      case Map::Kind::SLOT_MAP:
-        return sizeof(SlotMap);
+      case Map::Kind::OBJECT_MAP:
+        return assert(0), 0;
       case Map::Kind::META_MAP:
         return sizeof(MetaMap);
       case Map::Kind::ARRAY_BUFFER_MAP:
@@ -111,9 +108,8 @@ class ObjectModelDelegate {
     switch (cell->map()->kind()) {
       case Map::Kind::META_MAP:
         return getMapSizeInBytes(reinterpret_cast<Map*>(cell));
-      case Map::Kind::EMPTY_OBJECT_MAP:
-      case Map::Kind::SLOT_MAP:
-        return sizeof(Object);
+      case Map::Kind::OBJECT_MAP:
+        return assert(0), 0;
       case Map::Kind::ARRAY_BUFFER_MAP:
         return reinterpret_cast<ArrayBuffer<char>*>(cell)
             ->sizeInBytesWithHeader();

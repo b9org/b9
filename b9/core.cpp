@@ -11,7 +11,6 @@
 #include <OMR/Om/Object.inl.hpp>
 #include <OMR/Om/ObjectMap.inl.hpp>
 #include <OMR/Om/RootRef.inl.hpp>
-#include <OMR/Om/SlotMap.inl.hpp>
 #include <OMR/Om/Value.hpp>
 
 #include <omrgc.h>
@@ -195,15 +194,17 @@ void ExecutionContext::popIntoObject(OMR::Om::Id slotId) {
   if (!found) {
     Om::SlotType type(Om::Id(0), Om::CoreType::VALUE);
     Om::SlotDescriptor desc(type, slotId);
-    std::size_t hash(desc.hash());
+    OMR::Infra::Span<Om::SlotDescriptor> descriptors(&desc, 1);
+    std::size_t hash(Om::hash(descriptors));
     Om::RootRef<Om::Object> root(*this, object);
-    auto map = Om::Object::transition(*this, root, desc, hash);
-    idx = map->index();
+    auto map = Om::Object::transition(*this, root, descriptors, hash);
+    auto offset = map->slotOffset();
     object = root.get();
   }
 
   auto val = pop();
-  object->set(idx, val);  // TODO: Write barrier the object on store.
+  assert(0);
+  // TODO: object->set(idx, val);  // TODO: Write barrier the object on store.
 }
 
 void ExecutionContext::callIndirect() {

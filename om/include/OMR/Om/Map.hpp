@@ -14,7 +14,7 @@ struct MetaMap;
 /// shared by Cells. The MapKind can be examined to tell what kind of thing the
 /// cell is.
 struct Map {
-  enum class Kind { SLOT_MAP, META_MAP, EMPTY_OBJECT_MAP, ARRAY_BUFFER_MAP };
+  enum class Kind { META_MAP, OBJECT_MAP, ARRAY_BUFFER_MAP };
 
   union Base {
     Cell cell;

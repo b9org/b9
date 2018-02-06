@@ -1,7 +1,7 @@
 #if !defined(OMR_OM_ARRAYBUFFER_INL_HPP_)
 #define OMR_OM_ARRAYBUFFER_INL_HPP_
 
-#include <OMR/Om/ArrayBuffer.hpp>
+#include <OMR/Om/ArrayBuffer.inl.hpp>
 
 #include <OMR/Om/Allocator.inl.hpp>
 #include <OMR/Om/Context.inl.hpp>

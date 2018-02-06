@@ -10,7 +10,6 @@
 #include <OMR/Om/ObjectMap.inl.hpp>
 #include <OMR/Om/RootRef.inl.hpp>
 #include <OMR/Om/Runtime.hpp>
-#include <OMR/Om/SlotMap.inl.hpp>
 #include <OMR/Om/TransitionSet.inl.hpp>
 
 #include <gtest/gtest.h>

@@ -2,7 +2,6 @@
 #define OMR_OM_MEMORYMANAGER_HPP_
 
 #include <OMR/Om/Cell.hpp>
-#include <OMR/Om/EmptyObjectMap.hpp>
 #include <OMR/Om/MarkingFn.hpp>
 #include <OMR/Om/MetaMap.hpp>
 #include <OMR/Om/RootRef.hpp>
@@ -16,7 +15,6 @@ namespace Om {
 
 struct Cell;
 struct MetaMap;
-struct EmptyObjectMap;
 struct ArrayBufferMap;
 
 class Visitor;
@@ -33,14 +31,11 @@ class Globals {
  public:
   MetaMap* metaMap() const noexcept { return metaMap_; }
 
-  EmptyObjectMap* emptyObjectMap() const noexcept { return emptyObjectMap_; }
-
   ArrayBufferMap* arrayBufferMap() const noexcept { return arrayBufferMap_; }
 
   template <typename VisitorT>
   void visit(Context& cx, VisitorT& visitor) {
     visitor.rootEdge(cx, this, (Cell*)metaMap_);
-    visitor.rootEdge(cx, this, (Cell*)emptyObjectMap_);
     visitor.rootEdge(cx, this, (Cell*)arrayBufferMap_);
   }
 
@@ -52,7 +47,6 @@ class Globals {
 
  private:
   MetaMap* metaMap_ = nullptr;
-  EmptyObjectMap* emptyObjectMap_ = nullptr;
   ArrayBufferMap* arrayBufferMap_ = nullptr;
 };
 

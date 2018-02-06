@@ -1,7 +1,8 @@
-#if !defined(OMR_OM_MAPDESCRIPTOR_HPP_)
-#define OMR_OM_MAPDESCRIPTOR_HPP_
+#if !defined(OMR_OM_SLOTDESCRIPTOR_HPP_)
+#define OMR_OM_SLOTDESCRIPTOR_HPP_
 
 #include <OMR/Infra/HashUtilities.hpp>
+#include <OMR/Infra/Span.hpp>
 #include <OMR/Om/Id.hpp>
 #include <OMR/Om/Value.hpp>
 
@@ -11,11 +12,17 @@
 namespace OMR {
 namespace Om {
 
-/// TODO: Move this somewhere else.
-using Ref = std::uint32_t;
+/// TODO: Move Ref somewhere else.
+using Ref = std::uintptr_t;
 
 /// Fundamental, built in types.
 /// At it's core, every SlotType is represented by one of these values.
+/// Om only really cares about 3 categories of slots values
+///   1. Naked GC pointer (REF)
+///   2. Boxed GC pointer (VALUE)
+///   3. Non-pointer
+/// Beyond those 3 categories, we just need to know the width, so we can iterate
+/// the object.
 enum class CoreType {
   /// Binary data slots, of various sizes.
   INT8,
@@ -42,7 +49,7 @@ constexpr std::size_t width(CoreType t) noexcept {
     case CoreType::INT64:
       return 8;
     case CoreType::DOUBLE:
-      return 8;
+      return sizeof(double);
     case CoreType::VALUE:
       return sizeof(Value);
     case CoreType::REF:
@@ -132,11 +139,53 @@ class SlotDescriptor {
   Id id_;
 };
 
+static_assert(sizeof(SlotDescriptor) == sizeof(SlotType) + sizeof(Id),
+              "SlotDescriptor must have no padding--needed for memcmp.");
+
 static_assert(
     std::is_standard_layout<SlotDescriptor>::value,
     "Slot Descriptors are heap allocated, so must be StandardLayoutType.");
 
+/// @group Span operations
+/// @{
+
+/// Deep hash of a Span of SlotDescriptors.
+inline std::size_t hash(const Infra::Span<const SlotDescriptor>& ds) {
+  std::size_t h = 7;
+  for (const SlotDescriptor& d : ds) {
+    Infra::Hash::mix(h, d.hash());
+  }
+  return h;
+}
+
+/// Deep compare of two spans of SlotDescriptors.
+/// The two spans must have the same length and data.
+inline bool operator==(const Infra::Span<const SlotDescriptor>& lhs,
+                       const Infra::Span<const SlotDescriptor>& rhs) {
+  if (lhs.length() != rhs.length()) {
+    return true;
+  }
+
+  if (lhs.value() == rhs.value()) {
+    return true;
+  }
+
+  // TODO: if SlotDescriptor padding is zero, this could be memcmp'd.
+  for (std::size_t i = 0; i < lhs.length(); i++) {
+    if (lhs[i] != rhs[i]) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+inline bool operator!=(const Infra::Span<const SlotDescriptor>& lhs,
+                       const Infra::Span<const SlotDescriptor>& rhs) {
+  return !(lhs == rhs);
+}
+
 }  // namespace Om
 }  // namespace OMR
 
-#endif  // OMR_OM_MAPDESCRIPTOR_HPP_
+#endif  // OMR_OM_SLOTDESCRIPTOR_HPP_

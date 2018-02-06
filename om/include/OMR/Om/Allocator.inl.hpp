@@ -2,6 +2,7 @@
 #define OMR_OM_ALLOCATOR_INL_HPP_
 
 #include <omrgc.h>
+#include <OMR/Om/Allocation.hpp>
 #include <OMR/Om/Allocator.hpp>
 #include <OMR/Om/Context.hpp>
 #include <OMR/Om/Handle.hpp>

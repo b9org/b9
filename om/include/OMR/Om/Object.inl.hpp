@@ -2,10 +2,7 @@
 #define OMR_OM_OBJECT_INL_HPP_
 
 #include <OMR/Om/Object.hpp>
-
 #include <OMR/Om/Allocator.hpp>
-#include <OMR/Om/EmptyObjectMap.inl.hpp>
-#include <OMR/Om/SlotMap.inl.hpp>
 
 // #include <StandardWriteBarrier.hpp>
 
@@ -38,17 +35,18 @@ inline void Object::clone(Context& xc, Handle<Object> base) {
 /// same type. We should be returning the type of slot as well.
 inline bool Object::index(Context& cx, const Object* self, Id id,
                           Index& result) {
-  const ObjectMap* objectMap = self->map();
+  const ObjectMap* m = self->map();
 
-  while (objectMap->kind() != Map::Kind::EMPTY_OBJECT_MAP) {
-    assert(objectMap->kind() == Map::Kind::SLOT_MAP);
-    auto slotMap = reinterpret_cast<const SlotMap*>(objectMap);
+  while (m->parent() != nullptr) {
+    assert(0);
+#if 0
     if (slotMap->slotDescriptor().id() == id) {
       assert(slotMap->slotDescriptor().coreType() == CoreType::VALUE);
       result = slotMap->index();
       return true;
     }
     objectMap = slotMap->parent();
+#endif
   }
   result = -1;
   return false;
@@ -76,10 +74,10 @@ inline void Object::set(Context& cx, Object* self, Index index,
   self->fixedSlots_[index] = value;
 }
 
-inline SlotMap* Object::lookUpTransition(Context& cx,
-                                         const SlotDescriptor& desc,
-                                         std::size_t hash) {
-  return map()->lookUpTransition(cx, desc, hash);
+inline ObjectMap* Object::lookUpTransition(
+    Context& cx, Infra::Span<const SlotDescriptor> descriptors,
+    std::size_t hash) {
+  return map()->lookUpTransition(cx, descriptors, hash);
 }
 
 #if 0
@@ -89,12 +87,12 @@ inline bool Object::takeExistingTransition(Context& cx, const ObjectDescription&
 }
 #endif
 
-inline SlotMap* Object::takeExistingTransition(Context& cx,
-                                               const SlotDescriptor& desc,
-                                               std::size_t hash) {
-  SlotMap* derivation = lookUpTransition(cx, desc, hash);
+inline ObjectMap* Object::takeExistingTransition(
+    Context& cx, Infra::Span<const SlotDescriptor> descriptors,
+    std::size_t hash) {
+  ObjectMap* derivation = lookUpTransition(cx, descriptors, hash);
   if (derivation != nullptr) {
-    map(&derivation->baseObjectMap());
+    map(derivation);
     // TODO: Write barrier here?
   }
   return derivation;
@@ -107,22 +105,22 @@ inline Index Object::takeNewTransistion(Context& cx, Handle<Object> self, const 
 }
 #endif
 
-inline SlotMap* Object::takeNewTransition(Context& cx, Handle<Object> object,
-                                          const SlotDescriptor& desc,
-                                          std::size_t hash) {
+inline ObjectMap* Object::takeNewTransition(
+    Context& cx, Handle<Object> object,
+    Infra::Span<const SlotDescriptor> descriptors, std::size_t hash) {
   RootRef<ObjectMap> base(cx, object->map());
-  SlotMap* derivation = ObjectMap::derive(cx, base, desc, hash);
-  object->map(&derivation->baseObjectMap());
+  ObjectMap* derivation = ObjectMap::derive(cx, base, descriptors, hash);
+  object->map(derivation);
   return derivation;
   // TODO: Write barrier on objects taking a new transition
 }
 
-inline SlotMap* Object::transition(Context& cx, Handle<Object> object,
-                                   const SlotDescriptor& desc,
-                                   std::size_t hash) {
-  SlotMap* derivation = object->takeExistingTransition(cx, desc, hash);
+inline ObjectMap* Object::transition(
+    Context& cx, Handle<Object> object,
+    Infra::Span<const SlotDescriptor> descriptors, std::size_t hash) {
+  ObjectMap* derivation = object->takeExistingTransition(cx, descriptors, hash);
   if (derivation == nullptr) {
-    derivation = takeNewTransition(cx, object, desc, hash);
+    derivation = takeNewTransition(cx, object, descriptors, hash);
   }
   return derivation;
   // TODO: Write barrier on transitioning objects.
@@ -139,22 +137,15 @@ struct ObjectInitializer : public Initializer {
   Handle<ObjectMap> map_;
 };
 
-/// Allocate empty object.
-inline Object* Object::allocate(Context& cx, Handle<EmptyObjectMap> map) {
-  ObjectInitializer init;
-  init.map_ = map.reinterpret<ObjectMap>();
-  return BaseAllocator::allocate<Object>(cx, init);
-}
-
 /// Allocate object with corresponding slot map;
-inline Object* Object::allocate(Context& cx, Handle<SlotMap> map) {
+inline Object* Object::allocate(Context& cx, Handle<ObjectMap> map) {
   ObjectInitializer init;
   init.map_ = map.reinterpret<ObjectMap>();
   return BaseAllocator::allocate<Object>(cx, init);
 }
 
 inline Object* Object::allocate(Context& cx) {
-  RootRef<EmptyObjectMap> map(cx, EmptyObjectMap::allocate(cx));
+  RootRef<ObjectMap> map(cx, ObjectMap::allocate(cx));
   return allocate(cx, map);
 }
 

@@ -2,6 +2,7 @@
 #define OMR_OM_MARKINGFN_HPP_
 
 #include <functional>
+#include <vector>
 
 namespace OMR {
 namespace Om {

@@ -29,15 +29,13 @@ enum class CoreType {
   INT16,
   INT32,
   INT64,
-  /// floating point double. 64 bits.
-  DOUBLE,
-  /// A polymorphic Value. It self-encodes it's type. See `Value`.
-  VALUE,
-  /// A reference to a managed Cell.
-  REF
+  FLOAT32,
+  FLOAT64,
+  VALUE,  //< A polymorphic `Value`.
+  REF //< A GC pointer.
 };
 
-/// Calculate the size of a CoreType. Fundamental types have
+/// Calculate the size of a CoreType. Fundamental types have a fixed size.
 constexpr std::size_t width(CoreType t) noexcept {
   switch (t) {
     case CoreType::INT8:
@@ -48,8 +46,10 @@ constexpr std::size_t width(CoreType t) noexcept {
       return 4;
     case CoreType::INT64:
       return 8;
-    case CoreType::DOUBLE:
-      return sizeof(double);
+    case CoreType::FLOAT32:
+      return 4;
+    case CoreType::FLOAT64:
+      return 8;
     case CoreType::VALUE:
       return sizeof(Value);
     case CoreType::REF:

@@ -21,6 +21,8 @@ add_library(omr_om
 	src/MemoryManager.cpp
 )
 
+set_property(TARGET omr_om PROPERTY POSITION_INDEPENDENT_CODE ON)
+
 target_include_directories(omr_om
 	PUBLIC
 		include/

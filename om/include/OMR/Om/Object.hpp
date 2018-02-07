@@ -19,27 +19,34 @@ class Context;
 class ObjectMapHierachy {
  public:
   class Iterator {
-   protected:
-    friend class ObjectMapHierachy;
-
+   public:
     explicit constexpr Iterator(ObjectMap* start) noexcept : current_(start) {}
 
     Iterator(const Iterator&) = default;
 
-    constexpr ObjectMap& operator*() const noexcept { return *current_; }
+    Iterator operator++(int) noexcept {
+      Iterator copy(*this);
+      current_ = current_->parent();
+      return copy;
+    }
 
-    Iterator& operator++(int) noexcept {
-      if (current_ == nullptr) {
-        return *this;
-      }
-
+    Iterator& operator++() noexcept {
       current_ = current_->parent();
       return *this;
     }
 
-    constexpr bool operator!=(const Iterator& rhs) const noexcept {
+    constexpr ObjectMap& operator*() const noexcept { return *current_; }
+
+    constexpr bool operator==(const Iterator& rhs) const noexcept {
       return current_ == rhs.current_;
     }
+
+    constexpr bool operator!=(const Iterator& rhs) const noexcept {
+      return current_ != rhs.current_;
+    }
+
+   protected:
+    friend class ObjectMapHierachy;
 
    private:
     ObjectMap* current_;
@@ -85,20 +92,18 @@ struct Object {
                                Infra::Span<const SlotDescriptor> desc,
                                std::size_t hash);
 
-  static bool get(Context& cx, const Object* self, Id id, Value& result);
+  static Value getValue(Context& cx, const Object* self,
+                        std::size_t offset) noexcept;
 
-  static void get(Context& cx, const Object* self, Index index, Value& result);
+  /// Set the slot that corresponds to the id.
+  static void setValue(Context& cx, Object* self, std::size_t offset,
+                       Value value) noexcept;
 
-  static void set(Context& cx, Object* self, Index index, Value value) noexcept;
+  /// Slot lookup by Id. The result is a SlotLookup, which describes the slot's
+  /// offset and type.
+  static bool lookup(Context& cx, const Object* self, Id id,
+                     ConstSlotLookup& result);
 
-  /// slot offset lookup
-  static bool index(Context& cx, const Object* self, Id id, Index& result);
-
-  /// Set the slot that corresponds to the id. If the slot doesn't exist,
-  /// allocate the slot and assign it. The result is the address of the slot.
-  /// !CAN_GC!
-  static bool set(Context& cx, Object* object,
-                  Infra::Span<const SlotDescriptor> desc, Value value);
 
   ObjectMap* lookUpTransition(Context& cx,
                               Infra::Span<const SlotDescriptor> desc,
@@ -124,16 +129,6 @@ struct Object {
 
   ObjectMapHierachy mapHierarchy() const { return ObjectMapHierachy(map()); }
 
-  Value get(Index i) const {
-    assert(i < fixedSlotCount_);
-    return fixedSlots_[0];
-  }
-
-  void set(Index i, Value x) {
-    assert(i < fixedSlotCount_);
-    fixedSlots_[i] = x;
-  }
-
   /// True if this object has no slots.
   bool empty() const {
     return (map()->slotOffset() == 0) && (map()->slotCount() == 0);
@@ -147,13 +142,19 @@ struct Object {
       return;
     }
 
-    // TODO: Only visit the active slots of an object, known using
-    //   map()->index().
-    // TODO: Fix object's slot walking
-    // TODO: Check the CoreType of the slot before marking.
-    for (Value val : fixedSlots_) {
-      if (val.isPtr()) {
-        visitor.edge(cx, (Cell*)this, val.getPtr<Cell>());
+    for (const ObjectMap& map : mapHierarchy()) {
+      for (const ConstSlotLookup lookup : map.constSlotDescriptors()) {
+        switch (lookup.descriptor->type().coreType()) {
+          case CoreType::VALUE: {
+            Value value = getValue(cx, this, lookup.offset);
+            if (value.isPtr()) {
+              visitor.edge(cx, (Cell*)this, value.getPtr<Cell>());
+            }
+          } break;
+          default:
+            // TODO: Support more CoreTypes in objects.
+            assert(0);
+        }
       }
     }
   }
@@ -165,7 +166,7 @@ struct Object {
   // TODO: Dynamic slots in objects: MemVector<Value> dynamicSlots;
   // TODO: Variable number of fixed slots in objects
   std::size_t fixedSlotCount_;
-  Value fixedSlots_[32];
+  char fixedSlots_[sizeof(Value) * 32];
 
  private:
   static void construct(Context& cx, Handle<Object> self,

@@ -9,14 +9,14 @@
 namespace OMR {
 namespace Om {
 
-/// Basic initialization of an ObjectMap.
 inline ObjectMap::ObjectMap(
     MetaMap* meta, ObjectMap* parent,
     const Infra::Span<const SlotDescriptor>& descriptors)
     : baseMap_(meta, Map::Kind::OBJECT_MAP),
-      parent_(nullptr),
+      parent_(parent),
       transitions_(),
-      slotOffset_(parent->slotOffset() + parent->slotWidth()),
+      // TODO: Find a clearer way to construct a map without a parent.
+      slotOffset_(parent ? (parent->slotOffset() + parent->slotWidth()) : 0),
       slotWidth_(0),
       slotCount_(descriptors.length()) {
   for (std::size_t i = 0; i < slotCount_; i++) {
@@ -54,7 +54,9 @@ inline ObjectMap* ObjectMap::allocate(
 }
 
 inline ObjectMap* ObjectMap::allocate(Context& cx) {
-  return allocate(cx, Handle<ObjectMap>(nullptr),
+  // TODO: Don't construct a bogus handle here, find a clearer way to do this.
+  ObjectMap* parent = nullptr;
+  return allocate(cx, Handle<ObjectMap>(parent),
                   Infra::Span<const SlotDescriptor>(nullptr, 0));
 }
 

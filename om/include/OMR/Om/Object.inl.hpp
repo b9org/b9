@@ -1,8 +1,8 @@
 #if !defined(OMR_OM_OBJECT_INL_HPP_)
 #define OMR_OM_OBJECT_INL_HPP_
 
-#include <OMR/Om/Object.hpp>
 #include <OMR/Om/Allocator.hpp>
+#include <OMR/Om/Object.hpp>
 
 // #include <StandardWriteBarrier.hpp>
 
@@ -33,45 +33,29 @@ inline void Object::clone(Context& xc, Handle<Object> base) {
 
 /// TODO: Now that we support multiple CoreTypes, the result is not always the
 /// same type. We should be returning the type of slot as well.
-inline bool Object::index(Context& cx, const Object* self, Id id,
-                          Index& result) {
-  const ObjectMap* m = self->map();
-
-  while (m->parent() != nullptr) {
-    assert(0);
-#if 0
-    if (slotMap->slotDescriptor().id() == id) {
-      assert(slotMap->slotDescriptor().coreType() == CoreType::VALUE);
-      result = slotMap->index();
-      return true;
+inline bool Object::lookup(Context& cx, const Object* self, Id id,
+                           ConstSlotLookup& result) {
+  for (const ObjectMap& map : self->mapHierarchy()) {
+    for (const ConstSlotLookup lookup : map.slotDescriptors()) {
+      if (lookup.descriptor->id() == id) {
+        result = lookup;
+        return true;
+      }
     }
-    objectMap = slotMap->parent();
-#endif
   }
-  result = -1;
   return false;
 }
 
-inline bool Object::get(Context& cx, const Object* self, Id id, Value& result) {
-  Index index = -1;
-  auto found = Object::index(cx, self, id, index);
-  if (found) {
-    Object::get(cx, self, index, result);
-  }
-  return found;
+inline Value Object::getValue(Context& cx, const Object* self,
+                              std::size_t offset) noexcept {
+  Value* pointer = (Value*)(self->fixedSlots_ + offset);
+  return *pointer;
 }
 
-inline void Object::get(Context& cx, const Object* self, Index index,
-                        Value& result) {
-  result = self->get(index);
-}
-
-inline void Object::set(Context& cx, Object* self, Index index,
-                        Value value) noexcept {
-  if (value.isPtr()) {
-    // standardWriteBarrier(cx, this, value.getPtr());
-  }
-  self->fixedSlots_[index] = value;
+inline void Object::setValue(Context& cx, Object* self, std::size_t offset,
+                             Value value) noexcept {
+  Value* pointer = (Value*)(self->fixedSlots_ + offset);
+  *pointer = value;
 }
 
 inline ObjectMap* Object::lookUpTransition(

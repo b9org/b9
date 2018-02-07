@@ -15,13 +15,137 @@ class Context;
 
 using Index = std::size_t;
 
-/// TODO: Find a better name for SlotLookup
 /// The result of a slot search or iteration operation. Slots are of varying
 /// width and types. The SlotLookup tells you everything you need to know to
 /// work with a slot.
 struct SlotLookup {
+  SlotDescriptor* descriptor;
   std::size_t offset;
-  const SlotDescriptor& desc;
+};
+
+/// Like `SlotLookup`, but the located SlotDescriptors are immutable.
+struct ConstSlotLookup {
+  const SlotDescriptor* descriptor;
+  std::size_t offset;
+};
+
+/// An iterator that also tracks slot offsets using the width of the
+/// slot's type.
+class SlotDescriptorIterator {
+ public:
+  SlotDescriptorIterator(SlotDescriptor* current, std::size_t offset = 0)
+      : current_(current), offset_(offset) {}
+
+  SlotDescriptorIterator operator++(int) {
+    SlotDescriptorIterator copy(*this);
+    offset_ += current_->type().width();
+    ++current_;
+    return copy;
+  }
+
+  SlotDescriptorIterator& operator++() {
+    offset_ += current_->type().width();
+    current_++;
+    return *this;
+  }
+
+  bool operator==(const SlotDescriptorIterator& rhs) const {
+    return (current_ == rhs.current_);
+  }
+
+  bool operator!=(const SlotDescriptorIterator& rhs) const {
+    return !(*this == rhs);
+  }
+
+  SlotLookup operator*() const { return {current_, offset_}; }
+
+ private:
+  SlotDescriptor* current_;
+  std::size_t offset_;
+};
+
+/// Like `SlotDescriptorIterator`, but the slot descriptors are immutable.
+class ConstSlotDescriptorIterator {
+ public:
+  ConstSlotDescriptorIterator(const SlotDescriptor* current,
+                              std::size_t offset = 0)
+      : current_(current), offset_(offset) {}
+
+  ConstSlotDescriptorIterator operator++(int) {
+    offset_ += current_->type().width();
+    current_++;
+    return *this;
+  }
+
+  ConstSlotDescriptorIterator& operator++() {
+    offset_ += current_->type().width();
+    current_++;
+    return *this;
+  }
+
+  bool operator==(const ConstSlotDescriptorIterator& rhs) const {
+    return (current_ == rhs.current_);
+  }
+
+  bool operator!=(const ConstSlotDescriptorIterator& rhs) const {
+    return !(*this == rhs);
+  }
+
+  ConstSlotLookup operator*() const { return {current_, offset_}; }
+
+ private:
+  const SlotDescriptor* current_;
+  std::size_t offset_;
+};
+
+/// An iterable view of the SlotDescriptors stored in an ObjectMap.
+struct ObjectMapSlotDescriptors {
+  ObjectMapSlotDescriptors(Infra::Span<SlotDescriptor> descriptors,
+                           std::size_t offset, std::size_t width)
+      : descriptors_(descriptors), offset_(offset), width_(width) {}
+
+  SlotDescriptorIterator begin() const {
+    return SlotDescriptorIterator(descriptors_.begin(), offset_);
+  }
+
+  SlotDescriptorIterator end() const {
+    return SlotDescriptorIterator(descriptors_.end(), offset_ + width_);
+  }
+
+  Infra::Span<SlotDescriptor> span() const {
+    return descriptors_;
+  }
+
+ private:
+  const Infra::Span<SlotDescriptor> descriptors_;
+  std::size_t offset_;
+  std::size_t width_;
+};
+
+/// An iterable view of the SlotDescriptors stored in an ObjectMap. The
+/// ObjectMap (and it's `SlotDescriptor`s) are immutable.
+struct ConstObjectMapSlotDescriptors {
+  ConstObjectMapSlotDescriptors(Infra::Span<const SlotDescriptor> descriptors,
+                                std::size_t offset, std::size_t width)
+      : descriptors_(descriptors), offset_(offset), width_(width) {}
+
+  // ConstObjectMapSlotDescriptors()
+  ConstSlotDescriptorIterator begin() const {
+    return ConstSlotDescriptorIterator(descriptors_.begin(), offset_);
+  }
+
+  ConstSlotDescriptorIterator end() const {
+    return ConstSlotDescriptorIterator(descriptors_.end(), offset_ + width_);
+  }
+
+  Infra::Span<const SlotDescriptor> span() const {
+    return descriptors_;
+  }
+
+ private:
+  const Infra::Span<const SlotDescriptor> descriptors_;
+  std::size_t offset_;  //< initial offset
+  std::size_t width_;   //< total width
 };
 
 /// A map that describes the layout of an object.
@@ -80,12 +204,19 @@ struct ObjectMap {
     return *this;
   }
 
-  Infra::Span<SlotDescriptor> slotDescriptors() noexcept {
-    return Infra::Span<SlotDescriptor>(descriptors_, slotCount_);
+  ObjectMapSlotDescriptors slotDescriptors() noexcept {
+    return ObjectMapSlotDescriptors({descriptors_, slotCount_}, slotOffset_,
+                                    slotWidth_);
   }
 
-  Infra::Span<const SlotDescriptor> slotDescriptors() const noexcept {
-    return Infra::Span<const SlotDescriptor>(descriptors_, slotCount_);
+  ConstObjectMapSlotDescriptors constSlotDescriptors() const noexcept {
+    return ConstObjectMapSlotDescriptors({descriptors_, slotCount_},
+                                         slotOffset_, slotWidth_);
+  }
+
+  ConstObjectMapSlotDescriptors slotDescriptors() const noexcept {
+    return ConstObjectMapSlotDescriptors({descriptors_, slotCount_},
+                                         slotOffset_, slotWidth_);
   }
 
   /// Number of slots described by this map.

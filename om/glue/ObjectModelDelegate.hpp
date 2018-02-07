@@ -83,10 +83,10 @@ class ObjectModelDelegate {
            getObjectHeaderSizeInBytes(objectPtr);
   }
 
-  MMINLINE uintptr_t getMapSizeInBytes(Map* map) {
+  MMINLINE uintptr_t getMapSizeInBytes(const Map* map) {
     switch (map->kind()) {
       case Map::Kind::OBJECT_MAP:
-        return assert(0), 0;
+        return ((const ObjectMap*)map)->allocSize();
       case Map::Kind::META_MAP:
         return sizeof(MetaMap);
       case Map::Kind::ARRAY_BUFFER_MAP:
@@ -109,9 +109,9 @@ class ObjectModelDelegate {
       case Map::Kind::META_MAP:
         return getMapSizeInBytes(reinterpret_cast<Map*>(cell));
       case Map::Kind::OBJECT_MAP:
-        return assert(0), 0;
+        return sizeof(Object); // TODO Calculate size based on object.
       case Map::Kind::ARRAY_BUFFER_MAP:
-        return reinterpret_cast<ArrayBuffer<char>*>(cell)
+        return reinterpret_cast<const ArrayBuffer<char>*>(cell)
             ->sizeInBytesWithHeader();
       default:
         throw std::runtime_error("Unrecognized cell type");

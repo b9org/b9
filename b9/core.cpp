@@ -166,11 +166,11 @@ void ExecutionContext::pushFromObject(OMR::Om::Id slotId) {
     throw std::runtime_error("Accessing non-object value as an object.");
   }
   auto obj = value.getPtr<OMR::Om::Object>();
-  OMR::Om::Index index = 0;
-  auto found = OMR::Om::Object::index(*this, obj, slotId, index);
+  OMR::Om::ConstSlotLookup lookup;
+  auto found = OMR::Om::Object::lookup(*this, obj, slotId, lookup);
   if (found) {
     OMR::Om::Value result;
-    OMR::Om::Object::get(*this, obj, index, result);
+    result = OMR::Om::Object::getValue(*this, obj, lookup.offset);
     push(result);
   } else {
     throw std::runtime_error("Accessing an object's field that doesn't exist.");
@@ -185,26 +185,28 @@ void ExecutionContext::popIntoObject(OMR::Om::Id slotId) {
     throw std::runtime_error("Accessing non-object as an object");
   }
 
+  std::size_t offset = 0;
   Om::Object *object = pop().getPtr<OMR::Om::Object>();
 
-  Om::Index idx = -1;
-
-  bool found = Om::Object::index(*this, object, slotId, idx);
-
-  if (!found) {
+  Om::ConstSlotLookup lookup;
+  bool found = Om::Object::lookup(*this, object, slotId, lookup);
+  if (found) {
+    offset = lookup.offset;
+  } else {
     Om::SlotType type(Om::Id(0), Om::CoreType::VALUE);
     Om::SlotDescriptor desc(type, slotId);
     OMR::Infra::Span<Om::SlotDescriptor> descriptors(&desc, 1);
     std::size_t hash(Om::hash(descriptors));
     Om::RootRef<Om::Object> root(*this, object);
     auto map = Om::Object::transition(*this, root, descriptors, hash);
+    assert(map != nullptr);
     auto offset = map->slotOffset();
     object = root.get();
   }
 
   auto val = pop();
-  assert(0);
-  // TODO: object->set(idx, val);  // TODO: Write barrier the object on store.
+  Om::Object::setValue(*this, object, lookup.offset, val); 
+ // TODO: Write barrier the object on store.
 }
 
 void ExecutionContext::callIndirect() {

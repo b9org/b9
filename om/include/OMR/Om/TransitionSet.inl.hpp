@@ -28,7 +28,7 @@ inline ObjectMap* TransitionSet::lookup(
     if (map == nullptr) {
       return nullptr;
     }
-    if (descriptors == map->slotDescriptors()) {
+    if (descriptors == map->slotDescriptors().span()) {
       return map;
     }
   }

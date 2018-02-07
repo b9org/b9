@@ -83,7 +83,7 @@ TEST(MemoryManagerTest, objectTransition) {
   {
     auto m = obj1->map();
     EXPECT_EQ(m->baseCell().map(), &cx.globals().metaMap()->baseMap());
-    EXPECT_EQ(m->slotDescriptors(), descriptors);
+    EXPECT_EQ(m->slotDescriptors().span(), span);
     EXPECT_EQ(m->slotCount(), 1);
     EXPECT_EQ(m->parent()->slotOffset(), 0);
   }

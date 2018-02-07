@@ -3,6 +3,7 @@
 
 #include <OMR/Om/Allocator.hpp>
 #include <OMR/Om/Context.hpp>
+#include <OMR/Om/Map.inl.hpp>
 #include <OMR/Om/ObjectMap.hpp>
 #include <OMR/Om/TransitionSet.inl.hpp>
 

@@ -32,7 +32,7 @@ enum class CoreType {
   FLOAT32,
   FLOAT64,
   VALUE,  //< A polymorphic `Value`.
-  REF //< A GC pointer.
+  REF     //< A GC pointer.
 };
 
 /// Calculate the size of a CoreType. Fundamental types have a fixed size.
@@ -97,38 +97,39 @@ class SlotType {
 class SlotAttr {
  public:
   /// Allocate a SlotAttr, where the type is {id: 0, coreType: VALUE}
-  constexpr SlotAttr(Id id) noexcept : type_(Id(0), CoreType::VALUE), id_(id) {}
+  constexpr explicit SlotAttr(Id id) noexcept
+      : type_(Id(0), CoreType::VALUE), id_(id) {}
 
   constexpr SlotAttr(const SlotAttr&) noexcept = default;
 
   constexpr SlotAttr(const SlotType& type, const Id& id) noexcept
       : type_(type), id_(id) {}
 
-  Id id() const { return id_; }
+  constexpr Id id() const noexcept { return id_; }
 
   SlotAttr& id(Id id) {
     id_ = id;
     return *this;
   }
 
-  SlotType& type() { return type_; }
+  SlotType& type() noexcept { return type_; }
 
-  const SlotType& type() const { return type_; }
+  constexpr const SlotType& type() const noexcept { return type_; }
 
-  SlotAttr& type(const SlotType& type) {
+  SlotAttr& type(const SlotType& type) noexcept {
     type_ = type;
     return *this;
   }
 
-  constexpr std::size_t hash() const {
+  constexpr std::size_t hash() const noexcept {
     return Infra::Hash::mix(id().hash(), type().hash());
   }
 
-  constexpr bool operator==(const SlotAttr& rhs) const {
+  constexpr bool operator==(const SlotAttr& rhs) const noexcept {
     return (id_ == rhs.id_) && (type_ == rhs.type_);
   }
 
-  constexpr bool operator!=(const SlotAttr& rhs) const {
+  constexpr bool operator!=(const SlotAttr& rhs) const noexcept {
     return (id_ != rhs.id_) || (type_ != rhs.type_);
   }
 

@@ -18,7 +18,7 @@ constexpr HashNumber mix(HashNumber a, HashNumber b) {
 
 template <typename T>
 constexpr HashNumber hash(const T& x) {
-  return std::hash<T>()(x);
+  return mix(x, x + 5);
 }
 
 }  // namespace Hash

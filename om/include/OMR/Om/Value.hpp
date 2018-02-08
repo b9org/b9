@@ -129,7 +129,7 @@ class Value {
     return *this;
   }
 
-  bool isBoxedValue() const noexcept {
+  bool constexpr isBoxedValue() const noexcept {
     return (raw() & BoxTag::MASK) == BoxTag::VALUE;
   }
 

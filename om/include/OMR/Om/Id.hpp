@@ -1,6 +1,8 @@
 #if !defined(OMR_OM_ID_HPP_)
 #define OMR_OM_ID_HPP_
 
+#include <OMR/Infra/HashUtilities.hpp>
+
 #include <cstddef>
 #include <functional>
 
@@ -17,17 +19,21 @@ class Id {
 
   constexpr explicit Id(RawId data) : data_(data) {}
 
-  bool operator==(const Id& rhs) const noexcept { return data_ == rhs.data_; }
+  constexpr bool operator==(const Id& rhs) const noexcept {
+    return data_ == rhs.data_;
+  }
 
-  bool operator!=(const Id& rhs) const noexcept { return data_ != rhs.data_; }
+  constexpr bool operator!=(const Id& rhs) const noexcept {
+    return data_ != rhs.data_;
+  }
 
-  bool isObject() const { return (data_ & TAG_MASK) == OBJECT_TAG; }
+  constexpr bool isObject() const { return (data_ & TAG_MASK) == OBJECT_TAG; }
 
-  bool isInteger() const { return (data_ & TAG_MASK) == FIXNUM_TAG; }
+  constexpr bool isInteger() const { return (data_ & TAG_MASK) == FIXNUM_TAG; }
 
   constexpr RawId raw() const { return data_; }
 
-  std::size_t hash() const { return std::hash<RawId>()(data_); }
+  constexpr std::size_t hash() const { return Infra::Hash::hash(data_); }
 
  private:
   static constexpr RawId HASH_SHIFT = 0x2;

@@ -162,12 +162,12 @@ void ExecutionContext::newObject() {
 namespace Om = ::OMR::Om;
 
 // ( object -- value )
-void ExecutionContext::pushFromObject(OMR::Om::Id slotId) {
+void ExecutionContext::pushFromObject(Om::Id slotId) {
   auto value = pop();
   if (!value.isPtr()) {
     throw std::runtime_error("Accessing non-object value as an object.");
   }
-  auto obj = value.getPtr<OMR::Om::Object>();
+  auto obj = value.getPtr<Om::Object>();
   Om::SlotDescriptor descriptor;
   auto found = Om::Object::lookup(*this, obj, slotId, descriptor);
   if (found) {
@@ -180,26 +180,22 @@ void ExecutionContext::pushFromObject(OMR::Om::Id slotId) {
 }
 
 // ( object value -- )
-void ExecutionContext::popIntoObject(OMR::Om::Id slotId) {
+void ExecutionContext::popIntoObject(Om::Id slotId) {
   if (!stack_[0].isPtr()) {
     throw std::runtime_error("Accessing non-object as an object");
   }
 
   std::size_t offset = 0;
-  Om::Object *object = pop().getPtr<OMR::Om::Object>();
+  auto object = pop().getPtr<Om::Object>();
 
   Om::SlotDescriptor descriptor;
   bool found = Om::Object::lookup(*this, object, slotId, descriptor);
 
   if (!found) {
-    // TODO: Find a succint way to set up slot descriptors for a transition
-    const Om::SlotType type(Om::Id(0), Om::CoreType::VALUE);
-    const Om::SlotAttr attr(type, slotId);
-    OMR::Infra::Span<const Om::SlotAttr> attributes(&attr, 1);
-    std::size_t hash(Om::hash(attributes));
+    static constexpr Om::SlotType type(Om::Id(0), Om::CoreType::VALUE);
 
     Om::RootRef<Om::Object> root(*this, object);
-    auto map = Om::Object::transition(*this, root, attributes, hash);
+    auto map = Om::Object::transition(*this, root, {{type, slotId}});
     assert(map != nullptr);
 
     // TODO: Get the descriptor fast after a single-slot transition.

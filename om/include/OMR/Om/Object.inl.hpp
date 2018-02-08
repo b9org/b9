@@ -98,6 +98,17 @@ inline ObjectMap* Object::takeNewTransition(
 }
 
 inline ObjectMap* Object::transition(Context& cx, Handle<Object> object,
+                                     std::initializer_list<SlotAttr> list) {
+  return transition(cx, object, {list.begin(), list.size()});
+}
+
+inline ObjectMap* Object::transition(Context& cx, Handle<Object> object,
+                                     Infra::Span<const SlotAttr> attributes) {
+  std::size_t hash = Om::hash(attributes);
+  return transition(cx, object, attributes, hash);
+}
+
+inline ObjectMap* Object::transition(Context& cx, Handle<Object> object,
                                      Infra::Span<const SlotAttr> attributes,
                                      std::size_t hash) {
   ObjectMap* derivation = object->takeExistingTransition(cx, attributes, hash);

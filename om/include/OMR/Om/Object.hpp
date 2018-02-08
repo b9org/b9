@@ -89,7 +89,14 @@ struct Object {
   /// Transition the object's shape by adding a set of new slots.
   /// This function will reuse cached transitions.
   static ObjectMap* transition(Context& cx, Handle<Object> object,
-                               Infra::Span<const SlotAttr> desc,
+                               std::initializer_list<SlotAttr> slots);
+
+  static ObjectMap* transition(Context& cx, Handle<Object> object,
+                               Infra::Span<const SlotAttr> slots);
+
+  /// Transition, but use a precomputer hash for the attributes.
+  static ObjectMap* transition(Context& cx, Handle<Object> object,
+                               Infra::Span<const SlotAttr> slots,
                                std::size_t hash);
 
   static Value getValue(Context& cx, const Object* self,

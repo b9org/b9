@@ -27,6 +27,7 @@
 #include <OMR/Om/MemoryManager.inl.hpp>
 #include <OMR/Om/Object.inl.hpp>
 #include <OMR/Om/ObjectMap.inl.hpp>
+#include <OMR/Om/RootRef.inl.hpp>
 #include <OMR/Om/TransitionSet.inl.hpp>
 #include <OMR/Om/Traverse.hpp>
 

@@ -109,7 +109,7 @@ class ObjectModelDelegate {
       case Map::Kind::META_MAP:
         return getMapSizeInBytes(reinterpret_cast<Map*>(cell));
       case Map::Kind::OBJECT_MAP:
-        return sizeof(Object); // TODO Calculate size based on object.
+        return sizeof(Object);
       case Map::Kind::ARRAY_BUFFER_MAP:
         return reinterpret_cast<const ArrayBuffer*>(cell)->allocSize();
       default:
@@ -237,7 +237,7 @@ class ObjectModelDelegate {
    * Constructor receives a copy of OMR's object flags mask, normalized to low
    * order byte.
    */
-  ObjectModelDelegate(fomrobject_t omrHeaderSlotFlagsMask) {}
+  constexpr ObjectModelDelegate(fomrobject_t omrHeaderSlotFlagsMask) {}
 };
 
 }  // namespace Om

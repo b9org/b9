@@ -54,7 +54,10 @@ constexpr std::size_t width(CoreType t) noexcept {
       return sizeof(Value);
     case CoreType::REF:
       return sizeof(Ref);
+    default:
+      break;
   }
+  return -1;
 }
 
 class SlotType {

@@ -73,17 +73,17 @@ TEST(MemoryManagerTest, objectTransition) {
   RootRef<ObjectMap> emptyObjectMap(cx, ObjectMap::allocate(cx));
   RootRef<Object> obj1(cx, Object::allocate(cx, emptyObjectMap));
 
-  const std::array<const SlotDescriptor, 1> descriptors{
-      {SlotDescriptor(SlotType(Id(0), CoreType::VALUE), Id(0))}};
+  const std::array<const SlotAttr, 1> attributes{
+      {SlotAttr(SlotType(Id(0), CoreType::VALUE), Id(0))}};
 
-  const Infra::Span<const Om::SlotDescriptor> span(descriptors);
+  const Infra::Span<const Om::SlotAttr> span(attributes);
   Object::transition(cx, obj1, span, Om::hash(span));
 
   // check
   {
     auto m = obj1->map();
     EXPECT_EQ(m->baseCell().map(), &cx.globals().metaMap()->baseMap());
-    EXPECT_EQ(m->slotDescriptors().span(), span);
+    EXPECT_EQ(m->slotAttrs(), span);
     EXPECT_EQ(m->slotCount(), 1);
     EXPECT_EQ(m->parent()->slotOffset(), 0);
   }
@@ -91,8 +91,7 @@ TEST(MemoryManagerTest, objectTransition) {
   // second object
   {
     RootRef<Object> obj2(cx, Object::allocate(cx, emptyObjectMap));
-    auto m =
-        obj2->takeExistingTransition(cx, descriptors, Om::hash(descriptors));
+    auto m = obj2->takeExistingTransition(cx, attributes, Om::hash(attributes));
     EXPECT_NE(m, nullptr);
     EXPECT_EQ(m, obj1->map());
     EXPECT_EQ(m, obj2->map());

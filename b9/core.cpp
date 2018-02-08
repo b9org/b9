@@ -159,6 +159,8 @@ void ExecutionContext::newObject() {
   push(OMR::Om::Value(ref));
 }
 
+namespace Om = ::OMR::Om;
+
 // ( object -- value )
 void ExecutionContext::pushFromObject(OMR::Om::Id slotId) {
   auto value = pop();
@@ -166,18 +168,16 @@ void ExecutionContext::pushFromObject(OMR::Om::Id slotId) {
     throw std::runtime_error("Accessing non-object value as an object.");
   }
   auto obj = value.getPtr<OMR::Om::Object>();
-  OMR::Om::ConstSlotLookup lookup;
-  auto found = OMR::Om::Object::lookup(*this, obj, slotId, lookup);
+  Om::SlotDescriptor descriptor;
+  auto found = Om::Object::lookup(*this, obj, slotId, descriptor);
   if (found) {
-    OMR::Om::Value result;
-    result = OMR::Om::Object::getValue(*this, obj, lookup.offset);
+    Om::Value result;
+    result = Om::Object::getValue(*this, obj, descriptor);
     push(result);
   } else {
     throw std::runtime_error("Accessing an object's field that doesn't exist.");
   }
 }
-
-namespace Om = ::OMR::Om;
 
 // ( object value -- )
 void ExecutionContext::popIntoObject(OMR::Om::Id slotId) {
@@ -188,25 +188,28 @@ void ExecutionContext::popIntoObject(OMR::Om::Id slotId) {
   std::size_t offset = 0;
   Om::Object *object = pop().getPtr<OMR::Om::Object>();
 
-  Om::ConstSlotLookup lookup;
-  bool found = Om::Object::lookup(*this, object, slotId, lookup);
-  if (found) {
-    offset = lookup.offset;
-  } else {
-    Om::SlotType type(Om::Id(0), Om::CoreType::VALUE);
-    Om::SlotDescriptor desc(type, slotId);
-    OMR::Infra::Span<Om::SlotDescriptor> descriptors(&desc, 1);
-    std::size_t hash(Om::hash(descriptors));
+  Om::SlotDescriptor descriptor;
+  bool found = Om::Object::lookup(*this, object, slotId, descriptor);
+
+  if (!found) {
+    // TODO: Find a succint way to set up slot descriptors for a transition
+    const Om::SlotType type(Om::Id(0), Om::CoreType::VALUE);
+    const Om::SlotAttr attr(type, slotId);
+    OMR::Infra::Span<const Om::SlotAttr> attributes(&attr, 1);
+    std::size_t hash(Om::hash(attributes));
+
     Om::RootRef<Om::Object> root(*this, object);
-    auto map = Om::Object::transition(*this, root, descriptors, hash);
+    auto map = Om::Object::transition(*this, root, attributes, hash);
     assert(map != nullptr);
-    auto offset = map->slotOffset();
+
+    // TODO: Get the descriptor fast after a single-slot transition.
+    Om::Object::lookup(*this, object, slotId, descriptor);
     object = root.get();
   }
 
   auto val = pop();
-  Om::Object::setValue(*this, object, lookup.offset, val); 
- // TODO: Write barrier the object on store.
+  Om::Object::setValue(*this, object, descriptor, val);
+  // TODO: Write barrier the object on store.
 }
 
 void ExecutionContext::callIndirect() {

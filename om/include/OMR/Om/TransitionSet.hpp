@@ -6,7 +6,7 @@
 #include <OMR/Om/Id.hpp>
 #include <OMR/Om/MemHandle.hpp>
 #include <OMR/Om/ObjectMap.hpp>
-#include <OMR/Om/SlotDescriptor.hpp>
+#include <OMR/Om/SlotAttr.hpp>
 
 #include <cstddef>
 #include <type_traits>
@@ -35,8 +35,7 @@ class TransitionSet {
 
   std::size_t size() const { return table_->size(); }
 
-  ObjectMap* lookup(Infra::Span<const SlotDescriptor> desc,
-                    std::size_t hash) const;
+  ObjectMap* lookup(Infra::Span<const SlotAttr> desc, std::size_t hash) const;
 
   // try to store object in the table. if the table is full, fail.
   bool tryStore(ObjectMap* map, std::size_t hash);

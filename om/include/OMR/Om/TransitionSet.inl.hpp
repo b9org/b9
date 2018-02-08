@@ -18,8 +18,8 @@ inline bool TransitionSet::construct(Context& cx,
   return true;
 }
 
-inline ObjectMap* TransitionSet::lookup(
-    Infra::Span<const SlotDescriptor> descriptors, std::size_t hash) const {
+inline ObjectMap* TransitionSet::lookup(Infra::Span<const SlotAttr> attributes,
+                                        std::size_t hash) const {
   std::size_t sz = size();
 
   for (std::size_t i = 0; i < sz; i++) {
@@ -28,7 +28,7 @@ inline ObjectMap* TransitionSet::lookup(
     if (map == nullptr) {
       return nullptr;
     }
-    if (descriptors == map->slotDescriptors().span()) {
+    if (attributes == map->slotAttrs()) {
       return map;
     }
   }

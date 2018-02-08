@@ -10,37 +10,35 @@
 namespace OMR {
 namespace Om {
 
-inline ObjectMap::ObjectMap(
-    MetaMap* meta, ObjectMap* parent,
-    const Infra::Span<const SlotDescriptor>& descriptors)
+inline ObjectMap::ObjectMap(MetaMap* meta, ObjectMap* parent,
+                            const Infra::Span<const SlotAttr>& attributes)
     : baseMap_(meta, Map::Kind::OBJECT_MAP),
       parent_(parent),
       transitions_(),
       // TODO: Find a clearer way to construct a map without a parent.
       slotOffset_(parent ? (parent->slotOffset() + parent->slotWidth()) : 0),
       slotWidth_(0),
-      slotCount_(descriptors.length()) {
+      slotCount_(attributes.length()) {
   for (std::size_t i = 0; i < slotCount_; i++) {
-    descriptors_[i] = descriptors[i];
-    slotWidth_ += descriptors[i].type().width();
+    attributes_[i] = attributes[i];
+    slotWidth_ += attributes[i].type().width();
   }
 }
 
 inline Cell* ObjectMapInitializer::operator()(Context& cx,
                                               Cell* cell) noexcept {
   auto meta = cx.globals().metaMap();
-  new (cell) ObjectMap(meta, parent, descriptors);
+  new (cell) ObjectMap(meta, parent, attributes);
   return cell;
 }
 
-inline ObjectMap* ObjectMap::allocate(
-    Context& cx, Handle<ObjectMap> parent,
-    Infra::Span<const SlotDescriptor> descriptors) {
+inline ObjectMap* ObjectMap::allocate(Context& cx, Handle<ObjectMap> parent,
+                                      Infra::Span<const SlotAttr> attributes) {
   ObjectMapInitializer init;
   init.parent = parent;
-  init.descriptors = descriptors;
+  init.attributes = attributes;
 
-  std::size_t size = calculateAllocSize(descriptors.length());
+  std::size_t size = calculateAllocSize(attributes.length());
   ObjectMap* result = BaseAllocator::allocate<ObjectMap>(cx, init, size);
 
   RootRef<ObjectMap> root(cx, result);
@@ -58,7 +56,7 @@ inline ObjectMap* ObjectMap::allocate(Context& cx) {
   // TODO: Don't construct a bogus handle here, find a clearer way to do this.
   ObjectMap* parent = nullptr;
   return allocate(cx, Handle<ObjectMap>(parent),
-                  Infra::Span<const SlotDescriptor>(nullptr, 0));
+                  Infra::Span<const SlotAttr>(nullptr, 0));
 }
 
 inline bool ObjectMap::construct(Context& cx, Handle<ObjectMap> self) {
@@ -66,15 +64,15 @@ inline bool ObjectMap::construct(Context& cx, Handle<ObjectMap> self) {
 }
 
 inline ObjectMap* ObjectMap::lookUpTransition(
-    Context& cx, const Infra::Span<const SlotDescriptor>& descriptors,
+    Context& cx, const Infra::Span<const SlotAttr>& attributes,
     std::size_t hash) {
-  return transitions_.lookup(descriptors, hash);
+  return transitions_.lookup(attributes, hash);
 }
 
 inline ObjectMap* ObjectMap::derive(
     Context& cx, Handle<ObjectMap> base,
-    const Infra::Span<const SlotDescriptor>& descriptors, std::size_t hash) {
-  ObjectMap* derivation = ObjectMap::allocate(cx, base, descriptors);
+    const Infra::Span<const SlotAttr>& attributes, std::size_t hash) {
+  ObjectMap* derivation = ObjectMap::allocate(cx, base, attributes);
   base->transitions_.tryStore(derivation, hash);
   // TODO: Write barrier? the object map
   return derivation;

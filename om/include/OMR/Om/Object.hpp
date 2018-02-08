@@ -83,34 +83,32 @@ struct Object {
   // hasn't been taken before. See also `transition`, a higher level call for
   // transitioning across object layouts.
   static ObjectMap* takeNewTransition(Context& cx, Handle<Object> object,
-                                      Infra::Span<const SlotDescriptor> desc,
+                                      Infra::Span<const SlotAttr> desc,
                                       std::size_t hash);
 
   /// Transition the object's shape by adding a set of new slots.
   /// This function will reuse cached transitions.
   static ObjectMap* transition(Context& cx, Handle<Object> object,
-                               Infra::Span<const SlotDescriptor> desc,
+                               Infra::Span<const SlotAttr> desc,
                                std::size_t hash);
 
   static Value getValue(Context& cx, const Object* self,
-                        std::size_t offset) noexcept;
+                        SlotIndex index) noexcept;
 
   /// Set the slot that corresponds to the id.
-  static void setValue(Context& cx, Object* self, std::size_t offset,
+  static void setValue(Context& cx, Object* self, SlotIndex index,
                        Value value) noexcept;
 
   /// Slot lookup by Id. The result is a SlotLookup, which describes the slot's
   /// offset and type.
   static bool lookup(Context& cx, const Object* self, Id id,
-                     ConstSlotLookup& result);
+                     SlotDescriptor& result);
 
-
-  ObjectMap* lookUpTransition(Context& cx,
-                              Infra::Span<const SlotDescriptor> desc,
+  ObjectMap* lookUpTransition(Context& cx, Infra::Span<const SlotAttr> desc,
                               std::size_t hash);
 
   ObjectMap* takeExistingTransition(Context& cx,
-                                    Infra::Span<const SlotDescriptor> desc,
+                                    Infra::Span<const SlotAttr> desc,
                                     std::size_t hash);
 
   Base& base() { return base_; }
@@ -143,10 +141,10 @@ struct Object {
     }
 
     for (const ObjectMap& map : mapHierarchy()) {
-      for (const ConstSlotLookup lookup : map.constSlotDescriptors()) {
-        switch (lookup.descriptor->type().coreType()) {
+      for (const SlotDescriptor descriptor : map.slotDescriptors()) {
+        switch (descriptor.attr().type().coreType()) {
           case CoreType::VALUE: {
-            Value value = getValue(cx, this, lookup.offset);
+            Value value = getValue(cx, this, descriptor);
             if (value.isPtr()) {
               visitor.edge(cx, (Cell*)this, value.getPtr<Cell>());
             }

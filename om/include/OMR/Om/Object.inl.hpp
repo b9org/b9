@@ -34,11 +34,11 @@ inline void Object::clone(Context& xc, Handle<Object> base) {
 /// TODO: Now that we support multiple CoreTypes, the result is not always the
 /// same type. We should be returning the type of slot as well.
 inline bool Object::lookup(Context& cx, const Object* self, Id id,
-                           ConstSlotLookup& result) {
+                           SlotDescriptor& result) {
   for (const ObjectMap& map : self->mapHierarchy()) {
-    for (const ConstSlotLookup lookup : map.slotDescriptors()) {
-      if (lookup.descriptor->id() == id) {
-        result = lookup;
+    for (const SlotDescriptor descriptor : map.slotDescriptors()) {
+      if (descriptor.attr().id() == id) {
+        result = descriptor;
         return true;
       }
     }
@@ -47,21 +47,20 @@ inline bool Object::lookup(Context& cx, const Object* self, Id id,
 }
 
 inline Value Object::getValue(Context& cx, const Object* self,
-                              std::size_t offset) noexcept {
-  Value* pointer = (Value*)(self->fixedSlots_ + offset);
+                              SlotIndex index) noexcept {
+  Value* pointer = (Value*)(self->fixedSlots_ + index.offset());
   return *pointer;
 }
 
-inline void Object::setValue(Context& cx, Object* self, std::size_t offset,
+inline void Object::setValue(Context& cx, Object* self, SlotIndex index,
                              Value value) noexcept {
-  Value* pointer = (Value*)(self->fixedSlots_ + offset);
+  Value* pointer = (Value*)(self->fixedSlots_ + index.offset());
   *pointer = value;
 }
 
 inline ObjectMap* Object::lookUpTransition(
-    Context& cx, Infra::Span<const SlotDescriptor> descriptors,
-    std::size_t hash) {
-  return map()->lookUpTransition(cx, descriptors, hash);
+    Context& cx, Infra::Span<const SlotAttr> attributes, std::size_t hash) {
+  return map()->lookUpTransition(cx, attributes, hash);
 }
 
 #if 0
@@ -72,9 +71,8 @@ inline bool Object::takeExistingTransition(Context& cx, const ObjectDescription&
 #endif
 
 inline ObjectMap* Object::takeExistingTransition(
-    Context& cx, Infra::Span<const SlotDescriptor> descriptors,
-    std::size_t hash) {
-  ObjectMap* derivation = lookUpTransition(cx, descriptors, hash);
+    Context& cx, Infra::Span<const SlotAttr> attributes, std::size_t hash) {
+  ObjectMap* derivation = lookUpTransition(cx, attributes, hash);
   if (derivation != nullptr) {
     map(derivation);
     // TODO: Write barrier here?
@@ -83,28 +81,28 @@ inline ObjectMap* Object::takeExistingTransition(
 }
 
 #if 0
-inline Index Object::takeNewTransistion(Context& cx, Handle<Object> self, const SlotDescriptor& desc) {
+inline Index Object::takeNewTransistion(Context& cx, Handle<Object> self, const SlotAttr& desc) {
   auto hash = desc.hash();
   return takeNewTransistion(cx, self, desc, hash);
 }
 #endif
 
 inline ObjectMap* Object::takeNewTransition(
-    Context& cx, Handle<Object> object,
-    Infra::Span<const SlotDescriptor> descriptors, std::size_t hash) {
+    Context& cx, Handle<Object> object, Infra::Span<const SlotAttr> attributes,
+    std::size_t hash) {
   RootRef<ObjectMap> base(cx, object->map());
-  ObjectMap* derivation = ObjectMap::derive(cx, base, descriptors, hash);
+  ObjectMap* derivation = ObjectMap::derive(cx, base, attributes, hash);
   object->map(derivation);
   return derivation;
   // TODO: Write barrier on objects taking a new transition
 }
 
-inline ObjectMap* Object::transition(
-    Context& cx, Handle<Object> object,
-    Infra::Span<const SlotDescriptor> descriptors, std::size_t hash) {
-  ObjectMap* derivation = object->takeExistingTransition(cx, descriptors, hash);
+inline ObjectMap* Object::transition(Context& cx, Handle<Object> object,
+                                     Infra::Span<const SlotAttr> attributes,
+                                     std::size_t hash) {
+  ObjectMap* derivation = object->takeExistingTransition(cx, attributes, hash);
   if (derivation == nullptr) {
-    derivation = takeNewTransition(cx, object, descriptors, hash);
+    derivation = takeNewTransition(cx, object, attributes, hash);
   }
   return derivation;
   // TODO: Write barrier on transitioning objects.

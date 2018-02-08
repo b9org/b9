@@ -5,7 +5,7 @@
 #include <OMR/Om/ArrayBuffer.hpp>
 #include <OMR/Om/Initializer.hpp>
 #include <OMR/Om/Map.hpp>
-#include <OMR/Om/SlotDescriptor.hpp>
+#include <OMR/Om/SlotAttr.hpp>
 #include <OMR/Om/TransitionSet.hpp>
 
 namespace OMR {
@@ -15,25 +15,62 @@ class Context;
 
 using Index = std::size_t;
 
-/// The result of a slot search or iteration operation. Slots are of varying
-/// width and types. The SlotLookup tells you everything you need to know to
-/// work with a slot.
-struct SlotLookup {
-  SlotDescriptor* descriptor;
-  std::size_t offset;
+/// An index into an object. A SlotIndex can be used to find the address of a
+/// slot inside an object. Turning an index into a useful value also requires
+/// that you know the type of the slot.
+/// TODO: Make SlotIndex only constructible by ObjectMaps and their iterators.
+class SlotIndex {
+ public:
+  SlotIndex() = default;
+
+  SlotIndex(const SlotIndex&) = default;
+
+  SlotIndex(std::size_t offset) : offset_(offset) {}
+
+  bool operator==(const SlotIndex& rhs) const noexcept {
+    return offset_ == rhs.offset_;
+  }
+
+  bool operator!=(const SlotIndex& rhs) const noexcept {
+    return offset_ != rhs.offset_;
+  }
+
+ protected:
+  friend struct ObjectMap;
+  friend struct Object;
+
+  std::size_t offset() const noexcept { return offset_; }
+
+ private:
+  std::size_t offset_;
 };
 
-/// Like `SlotLookup`, but the located SlotDescriptors are immutable.
-struct ConstSlotLookup {
-  const SlotDescriptor* descriptor;
-  std::size_t offset;
+/// Describes a slot's index and attributes. The SlotAtt is unowned data,
+/// typically stored in an ObjectMap, on the heap, so it's not safe to hold a
+/// slot index across a GC safepoint.
+class SlotDescriptor : public SlotIndex {
+ public:
+  SlotDescriptor() = default;
+
+  SlotDescriptor(const SlotDescriptor&) = default;
+
+  SlotDescriptor(SlotIndex index, const SlotAttr* attr)
+      : SlotIndex(index), attr_(attr) {}
+
+  const SlotAttr& attr() const noexcept { return *attr_; }
+
+ private:
+  const SlotAttr* attr_;
 };
+
+/// Like `SlotLookup`, but the located SlotAttrs are immutable.
 
 /// An iterator that also tracks slot offsets using the width of the
-/// slot's type.
+/// slot's type. Results in `SlotDescriptors`, fancy handles that describe a
+/// slot's type and offset.
 class SlotDescriptorIterator {
  public:
-  SlotDescriptorIterator(SlotDescriptor* current, std::size_t offset = 0)
+  SlotDescriptorIterator(const SlotAttr* current, std::size_t offset = 0)
       : current_(current), offset_(offset) {}
 
   SlotDescriptorIterator operator++(int) {
@@ -57,95 +94,40 @@ class SlotDescriptorIterator {
     return !(*this == rhs);
   }
 
-  SlotLookup operator*() const { return {current_, offset_}; }
+  SlotDescriptor operator*() const {
+    return SlotDescriptor{SlotIndex{offset_}, current_};
+  }
 
  private:
-  SlotDescriptor* current_;
+  const SlotAttr* current_;
   std::size_t offset_;
 };
 
-/// Like `SlotDescriptorIterator`, but the slot descriptors are immutable.
-class ConstSlotDescriptorIterator {
+/// An iterable view of the slot described by an ObjectMap.
+/// The Slot Attributes are unowned.
+class SlotDescriptorRange {
  public:
-  ConstSlotDescriptorIterator(const SlotDescriptor* current,
-                              std::size_t offset = 0)
-      : current_(current), offset_(offset) {}
-
-  ConstSlotDescriptorIterator operator++(int) {
-    offset_ += current_->type().width();
-    current_++;
-    return *this;
-  }
-
-  ConstSlotDescriptorIterator& operator++() {
-    offset_ += current_->type().width();
-    current_++;
-    return *this;
-  }
-
-  bool operator==(const ConstSlotDescriptorIterator& rhs) const {
-    return (current_ == rhs.current_);
-  }
-
-  bool operator!=(const ConstSlotDescriptorIterator& rhs) const {
-    return !(*this == rhs);
-  }
-
-  ConstSlotLookup operator*() const { return {current_, offset_}; }
-
- private:
-  const SlotDescriptor* current_;
-  std::size_t offset_;
-};
-
-/// An iterable view of the SlotDescriptors stored in an ObjectMap.
-struct ObjectMapSlotDescriptors {
-  ObjectMapSlotDescriptors(Infra::Span<SlotDescriptor> descriptors,
-                           std::size_t offset, std::size_t width)
-      : descriptors_(descriptors), offset_(offset), width_(width) {}
-
   SlotDescriptorIterator begin() const {
-    return SlotDescriptorIterator(descriptors_.begin(), offset_);
+    return SlotDescriptorIterator(attributes_.begin(), offset_);
   }
 
   SlotDescriptorIterator end() const {
-    return SlotDescriptorIterator(descriptors_.end(), offset_ + width_);
+    return SlotDescriptorIterator(attributes_.end(), offset_ + width_);
   }
 
-  Infra::Span<SlotDescriptor> span() const {
-    return descriptors_;
-  }
+  Infra::Span<const SlotAttr> attributes() const { return attributes_; }
+
+ protected:
+  friend struct ObjectMap;
+
+  SlotDescriptorRange(Infra::Span<const SlotAttr> attributes,
+                      std::size_t offset, std::size_t width)
+      : attributes_(attributes), offset_(offset), width_(width) {}
 
  private:
-  const Infra::Span<SlotDescriptor> descriptors_;
+  const Infra::Span<const SlotAttr> attributes_;
   std::size_t offset_;
   std::size_t width_;
-};
-
-/// An iterable view of the SlotDescriptors stored in an ObjectMap. The
-/// ObjectMap (and it's `SlotDescriptor`s) are immutable.
-struct ConstObjectMapSlotDescriptors {
-  ConstObjectMapSlotDescriptors(Infra::Span<const SlotDescriptor> descriptors,
-                                std::size_t offset, std::size_t width)
-      : descriptors_(descriptors), offset_(offset), width_(width) {}
-
-  // ConstObjectMapSlotDescriptors()
-  ConstSlotDescriptorIterator begin() const {
-    return ConstSlotDescriptorIterator(descriptors_.begin(), offset_);
-  }
-
-  ConstSlotDescriptorIterator end() const {
-    return ConstSlotDescriptorIterator(descriptors_.end(), offset_ + width_);
-  }
-
-  Infra::Span<const SlotDescriptor> span() const {
-    return descriptors_;
-  }
-
- private:
-  const Infra::Span<const SlotDescriptor> descriptors_;
-  std::size_t offset_;  //< initial offset
-  std::size_t width_;   //< total width
 };
 
 /// A map that describes the layout of an object.
@@ -156,7 +138,7 @@ struct ObjectMap {
 
   /// Allocate an object map that describes one slot.
   static ObjectMap* allocate(Context& cx, Handle<ObjectMap> parent,
-                             Infra::Span<const SlotDescriptor> descriptors);
+                             Infra::Span<const SlotAttr> attributes);
 
   /// Allocate an object map that describes no slots
   static ObjectMap* allocate(Context& cx);
@@ -167,12 +149,12 @@ struct ObjectMap {
   /// Create a slot map that derives base. Add the new slot map to the set of
   /// known transistions from base.
   static ObjectMap* derive(Context& cx, Handle<ObjectMap> base,
-                           const Infra::Span<const SlotDescriptor>& desc,
+                           const Infra::Span<const SlotAttr>& attr,
                            std::size_t hash);
 
   /// Look up a transition to a derived shape.
   ObjectMap* lookUpTransition(Context& cx,
-                              const Infra::Span<const SlotDescriptor>& desc,
+                              const Infra::Span<const SlotAttr>& attr,
                               std::size_t hash);
 
   /// @}
@@ -193,30 +175,18 @@ struct ObjectMap {
   /// @group Slot Queries
   /// @{
 
-  /// Assign the slot descriptors. `descriptors` is an array of length
-  /// `this->slotCount()`.
-  ObjectMap& slotDescriptors(SlotDescriptor* descriptors) noexcept {
-    this->slotWidth_ = 0;
-    for (std::size_t i = 0; i < slotCount_; i++) {
-      this->descriptors_[i] = descriptors[i];
-      this->slotWidth_ += descriptors[i].type().width();
-    }
-    return *this;
+  /// Get the Span of `SlotAttr` stored in the ObjectMap.
+  Infra::Span<SlotAttr> slotAttrs() noexcept {
+    return {attributes_, slotCount_};
   }
 
-  ObjectMapSlotDescriptors slotDescriptors() noexcept {
-    return ObjectMapSlotDescriptors({descriptors_, slotCount_}, slotOffset_,
-                                    slotWidth_);
+  Infra::Span<const SlotAttr> slotAttrs() const noexcept {
+    return {attributes_, slotCount_};
   }
 
-  ConstObjectMapSlotDescriptors constSlotDescriptors() const noexcept {
-    return ConstObjectMapSlotDescriptors({descriptors_, slotCount_},
-                                         slotOffset_, slotWidth_);
-  }
-
-  ConstObjectMapSlotDescriptors slotDescriptors() const noexcept {
-    return ConstObjectMapSlotDescriptors({descriptors_, slotCount_},
-                                         slotOffset_, slotWidth_);
+  /// Get the SlotDescriptors described by this map.
+  SlotDescriptorRange slotDescriptors() const noexcept {
+    return SlotDescriptorRange(slotAttrs(), slotOffset_, slotWidth_);
   }
 
   /// Number of slots described by this map.
@@ -254,12 +224,12 @@ struct ObjectMap {
 
   /// Calculate the allocation size
   static constexpr std::size_t calculateAllocSize(std::size_t slotCount) {
-    return sizeof(ObjectMap) + sizeof(SlotDescriptor) * slotCount;
+    return sizeof(ObjectMap) + sizeof(SlotAttr) * slotCount;
   }
 
   /// Initialize an object map that describes a slot.
   ObjectMap(MetaMap* meta, ObjectMap* parent,
-            const Infra::Span<const SlotDescriptor>& slots);
+            const Infra::Span<const SlotAttr>& slots);
 
   Map baseMap_;
   ObjectMap* parent_;
@@ -272,10 +242,10 @@ struct ObjectMap {
   std::size_t slotCount_;
   /// @}
 
-  /// Off the end of the SlotMap is storage for it's slot descriptors.
+  /// Off the end of the SlotMap is storage for it's slot attributes.
   /// We overallocate the slot map structure to provide storage for the array.
   /// `calculateAllocSize` returns
-  SlotDescriptor descriptors_[0];
+  SlotAttr attributes_[0];
 };
 
 static_assert(std::is_standard_layout<ObjectMap>::value,
@@ -293,7 +263,7 @@ struct ObjectMapInitializer : public Initializer {
   virtual Cell* operator()(Context& cx, Cell* cell) noexcept override;
 
   Handle<ObjectMap> parent;
-  Infra::Span<const SlotDescriptor> descriptors;
+  Infra::Span<const SlotAttr> attributes;
 };
 
 /// @group Conversion Functions

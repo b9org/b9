@@ -3,6 +3,7 @@
 
 #include <OMR/Infra/HashUtilities.hpp>
 #include <OMR/Om/ArrayBufferMap.hpp>
+#include <OMR/Om/Handle.hpp>
 
 #include <cassert>
 #include <type_traits>
@@ -13,87 +14,76 @@ namespace Om {
 /// A managed cell of memory providing general-purpose raw storage.
 /// Note that the ArrayBuffer is considered a leaf-object, references stored
 /// into the buffer must be explicitly marked.
-template <typename T = char>
 class ArrayBuffer {
  public:
-  union Base {
-    Cell cell;
-  };
+  using Size = std::size_t;
 
-  /// @group Allocating
+  /// @group Allocation
   /// @{
 
   /// Allocate a new ArrayBuffer<T>. GC Safepoint. size is the number of
   /// elements, not the size in bytes of the buffer.
-  static ArrayBuffer<T>* allocate(Context& cx, std::size_t size);
-
-#if 0
-  /// Allocate a new ArrayBuffer<T>. A GC safepoint.
-  static ArrayBuffer<T>* reallocate(Context& cx, ArrayBuffer<T>* self,
-                                    std::size_t size) {
-    return nullptr;
-  }
-#endif
+  static ArrayBuffer* allocate(Context& cx, Size size);
 
   /// @}
 
-  ArrayBuffer(ArrayBufferMap* map, std::size_t size);
-
-  Base& base() noexcept { return base_; }
-
-  /// @group Low level data accessors.
-  /// @{
-
-  T& get(std::size_t index) noexcept {
-    assert(index < size());
-    return data_[index];
-  }
-
-  const T& get(std::size_t index) const noexcept {
-    assert(index < size());
-    return data_[index];
-  }
-
-  T& set(std::size_t index, const T& value) noexcept {
-    return (data_[index] = value);
-  }
+  Cell& baseCell() noexcept { return baseCell_; }
 
   /// The array buffer has a generic method for calculating a hash of the data.
   /// In general, it is preferable that the user provides a less-general hashing
   /// function.
-  static std::size_t hash(const ArrayBuffer<T>* self) {
-    std::size_t hash = self->size_ + 1;
-    for (std::size_t i = 0; i < self->size_; i++) {
-      hash = Infra::Hash::mix(hash, self->data[i]);
+  std::size_t hash() const noexcept {
+    std::size_t hash = size_ + 7;
+    for (std::size_t i = 0; i < size_; i++) {
+      hash = Infra::Hash::mix(hash, data_[i]);
     }
     return hash;
   }
 
-  // Number of elements of T in array.
-  std::size_t size() const { return sizeInBytes() / sizeof(T); }
+  /// The full size of this heap object, in bytes.
+  std::size_t allocSize() const noexcept { return calcAllocSize(size_); }
 
-  /// Size of data array in bytes. Not the full size of the object, for that,
-  /// see footprint().
-  std::size_t sizeInBytes() const { return size_; }
+  /// The raw data pointer
+  void* data() noexcept { return data_; }
 
-  // Size of this object's allocation. Does not include sub-allocations.
-  std::size_t sizeInBytesWithHeader() const {
-    return sizeInBytes() + sizeof(ArrayBuffer);
-  }
+  const void* data() const noexcept { return data_; }
 
+  /// The size of the data buffer, in bytes.
+  Size size() const noexcept { return size_; }
+
+  /// @group GC Support
   template <typename VisitorT>
   void visit(Context& cx, VisitorT& visitor) {
-    base_.cell.visit(cx, visitor);
+    baseCell_.visit(cx, visitor);
   }
 
  protected:
-  Base base_;
-  std::size_t size_;  //< size in bytes of the data array.
-  T data_[0];
+  friend class ArrayBufferInitializer;
+  friend class ArrayBufferOffsets;
+
+  ArrayBuffer(ArrayBufferMap* map, std::size_t size);
+
+  Cell baseCell_;
+  Size size_;  //< size in bytes of the data array.
+  std::uintptr_t data_[0];
+
+ private:
+  /// Get the allocation size of an array buffer with storage for `dataSize`
+  /// bytes.
+  static std::size_t calcAllocSize(std::size_t dataSize) {
+    return dataSize + sizeof(ArrayBuffer);
+  }
 };
 
-static_assert(std::is_standard_layout<ArrayBuffer<char>>::value,
+static_assert(std::is_standard_layout<ArrayBuffer>::value,
               "ArrayBuffer must be a StandardLayoutType");
+
+class ArrayBufferOffsets {
+ public:
+  ArrayBufferOffsets() = delete;
+  static constexpr std::size_t size = offsetof(ArrayBuffer, size_);
+  static constexpr std::size_t data = offsetof(ArrayBuffer, data_);
+};
 
 }  // namespace Om
 }  // namespace OMR

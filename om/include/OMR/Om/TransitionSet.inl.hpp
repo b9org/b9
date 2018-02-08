@@ -9,22 +9,16 @@ namespace Om {
 
 inline bool TransitionSet::construct(Context& cx,
                                      MemHandle<TransitionSet> self) {
-  auto table = ArrayBuffer<Entry>::allocate(cx, 32);
-  assert(table != nullptr);
-  if (table == nullptr) {
-    return false;
-  }
-  self->table_ = table;
-  return true;
+  return MemArray<Entry>::construct(
+      cx, MemHandle<MemArray<Entry>>(self, &TransitionSet::table_), 32);
 }
 
 inline ObjectMap* TransitionSet::lookup(Infra::Span<const SlotAttr> attributes,
                                         std::size_t hash) const {
   std::size_t sz = size();
-
   for (std::size_t i = 0; i < sz; i++) {
     std::size_t idx = (hash + i) % sz;
-    auto map = table_->get(idx).map;
+    auto map = table_.at(idx).map;
     if (map == nullptr) {
       return nullptr;
     }
@@ -40,8 +34,8 @@ inline bool TransitionSet::tryStore(ObjectMap* map, std::size_t hash) {
 
   for (std::size_t i = 0; i < sz; i++) {
     std::size_t idx = (hash + i) % sz;
-    if (table_->get(idx).map == nullptr) {
-      table_->set(idx, {map});
+    if (table_[idx].map == nullptr) {
+      table_[idx] = Entry{map};
       return true;
     }
   }
@@ -50,14 +44,15 @@ inline bool TransitionSet::tryStore(ObjectMap* map, std::size_t hash) {
 
 template <typename VisitorT>
 inline void TransitionSet::visit(Context& cx, VisitorT& visitor) {
-  if (table_ == nullptr) {
+  if (!table_.initialized()) {
     return;
   }
 
-  visitor.edge(cx, (Cell*)this, (Cell*)table_);
+  // note that this visit will not walk the contents, just the buffer itself.
+  table_.visit(cx, visitor);
 
   for (std::size_t i = 0; i < size(); i++) {
-    const Entry& e = table_->get(i);
+    const Entry& e = table_[i];
     if (e.map != nullptr) {
       visitor.edge(cx, (Cell*)this, (Cell*)e.map);
     }

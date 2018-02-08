@@ -19,7 +19,7 @@ class MemHandle {
  public:
   template <typename U = C>
   MemHandle(Handle<U> base, T U::*p)
-      : base_(base), offset_(Infra::ptrdiff(base.ptr(), &(base->*p))) {}
+      : base_(base), offset_(Infra::ptrdiff(base.ptr(), &(base.ptr()->*p))) {}
 
   /// Construct a memb
   template <typename U = C>
@@ -29,7 +29,7 @@ class MemHandle {
   /// Copy a Member Handle
   template <typename U>
   MemHandle(const MemHandle<U>& other)
-      : base_(other.base_), offset_(other.offset_) {}
+      : base_(other.base()), offset_(other.offset()) {}
 
   /// Construct a nested member from another member handle.
   template <typename U, typename CU>
@@ -38,16 +38,21 @@ class MemHandle {
 
   /// Construct a nested member from another member handle.
   template <typename U>
-  MemHandle(const MemHandle& inner, T U::*member)
-      : base_(inner.base_),
-        offset_(Infra::ptrdiff(inner.base(), &inner->*member)) {}
+  MemHandle(const MemHandle<U>& inner, T U::*member)
+      : base_(inner.base()),
+        offset_(Infra::ptrdiff(inner.base().ptr(), &(inner.get()->*member))) {}
 
-  T* operator->() const { return Infra::ptradd<T>(base_, offset_); }
+  T* get() const noexcept { return Infra::ptradd<T>(base_, offset_); }
 
-  T& operator*() const { return *Infra::ptradd<T>(base_, offset_); }
+  T* operator->() const { return get(); }
 
-  //   template <typename M>
-  //   M& operator->*(M T::* member)
+  T& operator*() const { return *get(); }
+
+  template <typename MemberT>
+  MemberT& operator->*(MemberT T::*mptr) const {
+    return get()->*mptr;
+  }
+
   constexpr Handle<C> base() const { return base_; }
 
   MemHandle<T, C>& base(Handle<C>& base) {
@@ -55,11 +60,16 @@ class MemHandle {
     return *this;
   }
 
+  constexpr std::ptrdiff_t offset() const noexcept { return offset_; }
+
   constexpr operator T*() const {
     return Infra::ptradd<C, T>(base_.ptr(), offset_);
   }
 
- private:
+ protected:
+  template <typename X, typename Y>
+  friend class MemHandle;
+
   Handle<C> base_;
   std::ptrdiff_t offset_;
 };

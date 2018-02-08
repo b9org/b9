@@ -5,6 +5,7 @@
 #include <OMR/Om/ArrayBuffer.hpp>
 #include <OMR/Om/Id.hpp>
 #include <OMR/Om/MemHandle.hpp>
+#include <OMR/Om/MemVector.hpp>
 #include <OMR/Om/ObjectMap.hpp>
 #include <OMR/Om/SlotAttr.hpp>
 
@@ -31,9 +32,9 @@ class TransitionSet {
 
   static bool construct(Context& cx, MemHandle<TransitionSet> self);
 
-  TransitionSet() : table_(nullptr) {}
+  TransitionSet() = default;
 
-  std::size_t size() const { return table_->size(); }
+  std::size_t size() const { return table_.size(); }
 
   ObjectMap* lookup(Infra::Span<const SlotAttr> desc, std::size_t hash) const;
 
@@ -44,16 +45,13 @@ class TransitionSet {
   void visit(Context& cx, VisitorT& visitor);
 
  private:
-  ArrayBuffer<Entry>* table_;
+  MemArray<Entry> table_;
 };
 
 static_assert(std::is_standard_layout<TransitionSet>::value,
               "TransitionSet must be a StandardLayoutType.");
 
 static_assert(std::is_standard_layout<TransitionSet::Entry>::value,
-              "TransitionSet must be a StandardLayoutType.");
-
-static_assert(std::is_standard_layout<ArrayBuffer<TransitionSet::Entry>>::value,
               "TransitionSet must be a StandardLayoutType.");
 
 }  // namespace Om

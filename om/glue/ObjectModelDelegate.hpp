@@ -111,8 +111,7 @@ class ObjectModelDelegate {
       case Map::Kind::OBJECT_MAP:
         return sizeof(Object); // TODO Calculate size based on object.
       case Map::Kind::ARRAY_BUFFER_MAP:
-        return reinterpret_cast<const ArrayBuffer<char>*>(cell)
-            ->sizeInBytesWithHeader();
+        return reinterpret_cast<const ArrayBuffer*>(cell)->allocSize();
       default:
         throw std::runtime_error("Unrecognized cell type");
     }

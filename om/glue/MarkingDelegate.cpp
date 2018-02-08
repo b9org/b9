@@ -91,8 +91,7 @@ inline void scanObj(Context& cx, Marker& marker, Object* object) {
   object->visit(cx, marker);
 }
 
-inline void scanArrayBuffer(Context& cx, Marker& marker,
-                            ArrayBuffer<char>* array) {
+inline void scanArrayBuffer(Context& cx, Marker& marker, ArrayBuffer* array) {
   array->visit(cx, marker);
 }
 
@@ -111,7 +110,7 @@ uintptr_t MarkingDelegate::scanObject(MM_EnvironmentBase* env,
       scanObj(cx, marker, reinterpret_cast<Object*>(cell));
       break;
     case Map::Kind::ARRAY_BUFFER_MAP:
-      scanArrayBuffer(cx, marker, reinterpret_cast<ArrayBuffer<char>*>(cell));
+      scanArrayBuffer(cx, marker, reinterpret_cast<ArrayBuffer*>(cell));
       break;
     default:
       assert(0);

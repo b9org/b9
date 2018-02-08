@@ -96,9 +96,13 @@ class SlotType {
 
 class SlotAttr {
  public:
-  SlotAttr(const SlotAttr&) = default;
+  /// Allocate a SlotAttr, where the type is {id: 0, coreType: VALUE}
+  constexpr SlotAttr(Id id) noexcept : type_(Id(0), CoreType::VALUE), id_(id) {}
 
-  SlotAttr(const SlotType& type, const Id& id) : type_(type), id_(id) {}
+  constexpr SlotAttr(const SlotAttr&) noexcept = default;
+
+  constexpr SlotAttr(const SlotType& type, const Id& id) noexcept
+      : type_(type), id_(id) {}
 
   Id id() const { return id_; }
 

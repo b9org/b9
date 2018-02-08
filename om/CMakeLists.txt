@@ -42,5 +42,10 @@ target_compile_definitions(omr_om
 		-DUT_DIRECT_TRACE_REGISTRATION
 )
 
+target_compile_options(omr_om
+	PRIVATE
+		-Wall
+)
+
 add_subdirectory(glue)
 add_subdirectory(test)

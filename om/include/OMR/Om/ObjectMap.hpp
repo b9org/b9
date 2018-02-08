@@ -212,9 +212,7 @@ struct ObjectMap {
   template <typename VisitorT>
   inline void visit(Context& cx, VisitorT& visitor);
 
-  constexpr std::size_t allocSize() const {
-    return calculateAllocSize(slotCount());
-  }
+  std::size_t allocSize() const { return calculateAllocSize(slotCount()); }
 
   /// @}
 

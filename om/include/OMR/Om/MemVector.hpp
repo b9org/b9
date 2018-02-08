@@ -28,10 +28,17 @@ class MemArray {
   static bool resize(Context& cx, const MemHandle<MemArray<T>> self,
                      std::size_t size) {
     auto newBuffer = ArrayBuffer::allocate(cx, size * sizeof(T));
+
+    if (newBuffer == nullptr) {
+      return false;
+    }
+
     auto oldBuffer = self->buffer_;
     auto copySize = min(newBuffer->size(), oldBuffer->size());
     memcpy(oldBuffer->data(), newBuffer->data(), copySize);
+
     self->buffer_ = newBuffer;
+    return true;
   }
 
   constexpr MemArray() : buffer_(nullptr) {}

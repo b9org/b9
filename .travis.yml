@@ -38,4 +38,5 @@ script:
   - ctest --output-on-failure
 
 after_script:
-  - coveralls --exclude third_party --gcov /usr/bin/gcov-5 --gcov-options '\-lp' --build-root build
+  - echo $PWD
+  - coveralls --exclude third_party --gcov /usr/bin/gcov-5 --gcov-options '\-lp'

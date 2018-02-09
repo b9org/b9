@@ -81,14 +81,16 @@ static constexpr RawValue CANONICAL_NAN = Infra::Double::SPECIAL_TAG |
                                           Infra::Double::NAN_QUIET_TAG |
                                           Infra::Double::NAN_EXTRA_BITS_MASK;
 
-static constexpr bool isCanonicalNan(RawValue value) {
-  return (value & CANONICAL_NAN) == value;
+/// if value is a NaN, return the canonical NaN.
+static constexpr RawValue canonicalizeNaN(RawValue value) {
+  if (Infra::Double::isNaN(value)) {
+    return CANONICAL_NAN;
+  }
+  return value;
 }
 
-/// if value is a NaN, return the corresponding quiet canonical NaN. Note that
-/// currently, the NaN will lose it's sign.
-static constexpr RawValue canonicalizeNaN(RawValue value) {
-  return value & CANONICAL_NAN;
+static constexpr double canonicalizeNaN(double value) {
+  return Infra::Double::fromRaw(canonicalizeNaN(Infra::Double::toRaw(value)));
 }
 
 struct Cell;
@@ -144,10 +146,7 @@ class Value {
   constexpr bool isDouble() const noexcept { return !isBoxedValue(); }
 
   Value& setDouble(double d) noexcept {
-    if (std::isnan(d)) {
-      d = Infra::Double::fromRaw(CANONICAL_NAN);
-    }
-    return setDoubleUnsafe(d);
+    return setDoubleUnsafe(canonicalizeNaN(d));
   }
 
   Value& setDoubleUnsafe(double d) noexcept {

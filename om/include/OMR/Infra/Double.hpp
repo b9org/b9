@@ -47,18 +47,18 @@ static constexpr std::uint64_t NAN_EXTRA_BITS_MASK = 0x0007'FFFF'FFFF'FFFFul;
 /// True if value is any NaN. False if Inf or a valid number. A double is a NaN
 /// if it's tagged special and has a non-zero mantissa.
 static constexpr bool isNaN(std::uint64_t value) {
-  return areAllBitsSet(value, Double::SPECIAL_TAG) &&
-         areAnyBitsSet(value, Double::MANTISSA_MASK);
+  return areAllBitsSet(value, SPECIAL_TAG) &&
+         areAnyBitsSet(value, MANTISSA_MASK);
 }
 
 /// True for any quiet NaN.
 static constexpr bool isQNaN(std::uint64_t value) {
-  return isNaN(value) && areAllBitsSet(value, Double::NAN_QUIET_TAG);
+  return isNaN(value) && areAllBitsSet(value, NAN_QUIET_TAG);
 }
 
 /// True for any signaling NaN.
 static constexpr bool isSNaN(std::uint64_t value) {
-  return isNaN(value) && areNoBitsSet(value, Double::NAN_QUIET_TAG);
+  return isNaN(value) && areNoBitsSet(value, NAN_QUIET_TAG);
 }
 
 /// Reinterpret std::uint64_t to a double

@@ -37,7 +37,7 @@ install:
 script:
   - mkdir build && cd build
   - cmake -DB9_GCOV ..
-  - make -j8
+  - make -j8 || echo "RETRYING BUILD!" && make -j1 VERBOSE=1 # On failure, retry with verbose output
   - ctest --output-on-failure
 
 after_success:

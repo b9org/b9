@@ -24,10 +24,6 @@ std::vector<std::int32_t> integers = {
 };
 // clang-format on
 
-TEST(DoubleTest, canonicalNan) {
-  EXPECT_TRUE(std::isnan(Infra::Double::fromRaw(CANONICAL_NAN)));
-}
-
 TEST(ValueTest, integerConstructorRoundTrip) {
   for (auto i : integers) {
     Value value(i);
@@ -46,8 +42,11 @@ TEST(ValueTest, setIntegerRoundTrip) {
 }
 
 TEST(ValueTest, canonicalNan) {
-  EXPECT_EQ((CANONICAL_NAN & Infra::Double::SIGN_MASK), 0);
-  EXPECT_NE((CANONICAL_NAN & BoxTag::MASK), BoxTag::VALUE);
+  EXPECT_TRUE(std::isnan(Infra::Double::fromRaw(CANONICAL_NAN)));
+  EXPECT_FALSE(std::signbit(Infra::Double::fromRaw(CANONICAL_NAN)));
+  EXPECT_TRUE(Infra::Double::isNaN(CANONICAL_NAN));
+  EXPECT_TRUE(Infra::Double::isQNaN(CANONICAL_NAN));
+  EXPECT_FALSE(Infra::Double::isSNaN(CANONICAL_NAN));
   EXPECT_NE(Infra::Double::fromRaw(CANONICAL_NAN),
             Infra::Double::fromRaw(CANONICAL_NAN));
 }

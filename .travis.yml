@@ -29,8 +29,8 @@ install:
   - pip install --user cpp-coveralls
 
 before_script:
-  - export CXX="ccache g++-5"
-  - export CC="ccache gcc-5"
+  - export CXX="g++-5"
+  - export CC="gcc-5"
   - export GCOV="gcov-5"
 
 script:

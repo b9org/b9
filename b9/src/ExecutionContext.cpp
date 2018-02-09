@@ -1,0 +1,381 @@
+
+#include <b9/ExecutionContext.hpp>
+
+#include <b9/ExecutionContext.hpp>
+#include <b9/VirtualMachine.hpp>
+#include <b9/jit.hpp>
+#include <b9/loader.hpp>
+
+#include <OMR/Om/Allocator.inl.hpp>
+#include <OMR/Om/ArrayBuffer.inl.hpp>
+#include <OMR/Om/ArrayBufferMap.inl.hpp>
+#include <OMR/Om/Map.inl.hpp>
+#include <OMR/Om/Object.inl.hpp>
+#include <OMR/Om/ObjectMap.inl.hpp>
+#include <OMR/Om/RootRef.inl.hpp>
+#include <OMR/Om/Value.hpp>
+
+#include <omrgc.h>
+#include "Jit.hpp"
+
+#include <sys/time.h>
+#include <cassert>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <iostream>
+#include <sstream>
+#include <string>
+
+namespace b9 {
+
+ExecutionContext::ExecutionContext(VirtualMachine &virtualMachine,
+                                   const Config &cfg)
+    : omContext_(virtualMachine.memoryManager()),
+      virtualMachine_(&virtualMachine),
+      cfg_(&cfg) {
+  omContext().userRoots().push_back(
+      [this](Om::Context &cx, Om::Visitor &v) { this->visit(cx, v); });
+}
+
+void ExecutionContext::reset() {
+  stack_.reset();
+  programCounter_ = 0;
+}
+
+StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
+  auto function = virtualMachine_->getFunction(functionIndex);
+  auto argsCount = function->nargs;
+  auto jitFunction = virtualMachine_->getJitAddress(functionIndex);
+
+  if (jitFunction) {
+    if (cfg_->debug) {
+      std::cout << "Calling " << function << " jit: " << jitFunction
+                << std::endl;
+    }
+    OMR::Om::RawValue result = 0;
+    if (cfg_->passParam) {
+      switch (argsCount) {
+        case 0: {
+          result = jitFunction();
+        } break;
+        case 1: {
+          OMR::Om::RawValue p1 = pop().raw();
+          result = jitFunction(p1);
+        } break;
+        case 2: {
+          OMR::Om::RawValue p2 = pop().raw();
+          OMR::Om::RawValue p1 = pop().raw();
+          result = jitFunction(p1, p2);
+        } break;
+        case 3: {
+          OMR::Om::RawValue p3 = pop().raw();
+          OMR::Om::RawValue p2 = pop().raw();
+          OMR::Om::RawValue p1 = pop().raw();
+          result = (*jitFunction)(p1, p2, p3);
+        } break;
+        default:
+          throw std::runtime_error{"Need to add handlers for more parameters"};
+          break;
+      }
+    } else {
+      // Call the Jit'ed function, passing the parameters on the
+      // ExecutionContext stack.
+      if (cfg_->debug) std::cout << "passing parameters on the stack\n";
+      result = jitFunction();
+    }
+    return OMR::Om::Value(result);
+  }
+
+  // interpret the method otherwise
+  const Instruction *instructionPointer = function->address;
+
+  StackElement *args = stack_.top() - function->nargs;
+  stack_.pushn(function->nregs);
+
+  while (*instructionPointer != END_SECTION) {
+    switch (instructionPointer->byteCode()) {
+      case ByteCode::FUNCTION_CALL:
+        doFunctionCall(instructionPointer->parameter());
+        break;
+      case ByteCode::FUNCTION_RETURN: {
+        auto result = stack_.pop();
+        stack_.restore(args);
+        return result;
+        break;
+      }
+      case ByteCode::PRIMITIVE_CALL:
+        doPrimitiveCall(instructionPointer->parameter());
+        break;
+      case ByteCode::JMP:
+        instructionPointer += instructionPointer->parameter();
+        break;
+      case ByteCode::DUPLICATE:
+        // TODO
+        break;
+      case ByteCode::DROP:
+        doDrop();
+        break;
+      case ByteCode::PUSH_FROM_VAR:
+        doPushFromVar(args, instructionPointer->parameter());
+        break;
+      case ByteCode::POP_INTO_VAR:
+        // TODO bad name, push or pop?
+        doPushIntoVar(args, instructionPointer->parameter());
+        break;
+      case ByteCode::INT_ADD:
+        doIntAdd();
+        break;
+      case ByteCode::INT_SUB:
+        doIntSub();
+        break;
+
+        // CASCON2017 - Add INT_MUL and INT_DIV here
+
+      case ByteCode::INT_PUSH_CONSTANT:
+        doIntPushConstant(instructionPointer->parameter());
+        break;
+      case ByteCode::INT_NOT:
+        doIntNot();
+        break;
+      case ByteCode::INT_JMP_EQ:
+        instructionPointer += doIntJmpEq(instructionPointer->parameter());
+        break;
+      case ByteCode::INT_JMP_NEQ:
+        instructionPointer += doIntJmpNeq(instructionPointer->parameter());
+        break;
+      case ByteCode::INT_JMP_GT:
+        instructionPointer += doIntJmpGt(instructionPointer->parameter());
+        break;
+      case ByteCode::INT_JMP_GE:
+        instructionPointer += doIntJmpGe(instructionPointer->parameter());
+        break;
+      case ByteCode::INT_JMP_LT:
+        instructionPointer += doIntJmpLt(instructionPointer->parameter());
+        break;
+      case ByteCode::INT_JMP_LE:
+        instructionPointer += doIntJmpLe(instructionPointer->parameter());
+        break;
+      case ByteCode::STR_PUSH_CONSTANT:
+        doStrPushConstant(instructionPointer->parameter());
+        break;
+      case ByteCode::STR_JMP_EQ:
+        // TODO
+        break;
+      case ByteCode::STR_JMP_NEQ:
+        // TODO
+        break;
+      case ByteCode::NEW_OBJECT:
+        doNewObject();
+        break;
+      case ByteCode::PUSH_FROM_OBJECT:
+        doPushFromObject(OMR::Om::Id(instructionPointer->parameter()));
+        break;
+      case ByteCode::POP_INTO_OBJECT:
+        doPopIntoObject(OMR::Om::Id(instructionPointer->parameter()));
+        break;
+      case ByteCode::CALL_INDIRECT:
+        doCallIndirect();
+        break;
+      case ByteCode::SYSTEM_COLLECT:
+        doSystemCollect();
+        break;
+      default:
+        assert(false);
+        break;
+    }
+    instructionPointer++;
+    programCounter_++;
+  }
+  return *(stackPointer_ - 1);
+}
+
+void ExecutionContext::push(StackElement value) { stack_.push(value); }
+
+StackElement ExecutionContext::pop() { return stack_.pop(); }
+
+void ExecutionContext::doFunctionCall(Parameter value) {
+  auto f = virtualMachine_->getFunction((std::size_t)value);
+  auto result = interpret(value);
+  push(result);
+}
+
+void ExecutionContext::doFunctionReturn(StackElement returnVal) {
+  // TODO
+}
+
+void ExecutionContext::doPrimitiveCall(Parameter value) {
+  PrimitiveFunction *primitive = virtualMachine_->getPrimitive(value);
+  (*primitive)(this);
+}
+
+Parameter ExecutionContext::doJmp(Parameter offset) { return offset; }
+
+void ExecutionContext::doDuplicate() {
+  // TODO
+}
+
+void ExecutionContext::doDrop() { stack_.pop(); }
+
+void ExecutionContext::doPushFromVar(StackElement *args, Parameter offset) {
+  stack_.push(args[offset]);
+}
+
+void ExecutionContext::doPushIntoVar(StackElement *args, Parameter offset) {
+  args[offset] = stack_.pop();
+}
+
+void ExecutionContext::doIntAdd() {
+  std::int32_t right = stack_.pop().getInteger();
+  std::int32_t left = stack_.pop().getInteger();
+  StackElement result;
+  result.setInteger(left + right);
+  push(result);
+}
+
+void ExecutionContext::doIntSub() {
+  std::int32_t right = stack_.pop().getInteger();
+  std::int32_t left = stack_.pop().getInteger();
+  StackElement result;
+  result.setInteger(left - right);
+  push(result);
+}
+
+// CASCON2017 - Add intMul() and intDiv() here
+
+void ExecutionContext::doIntPushConstant(Parameter value) {
+  stack_.push(StackElement().setInteger(value));
+}
+
+void ExecutionContext::doIntNot() {
+  std::int32_t i = stack_.pop().getInteger();
+  StackElement v;
+  v.setInteger(!i);
+  push(v);
+}
+
+Parameter ExecutionContext::doIntJmpEq(Parameter delta) {
+  std::int32_t right = stack_.pop().getInteger();
+  std::int32_t left = stack_.pop().getInteger();
+  if (left == right) {
+    return delta;
+  }
+  return 0;
+}
+
+Parameter ExecutionContext::doIntJmpNeq(Parameter delta) {
+  std::int32_t right = stack_.pop().getInteger();
+  std::int32_t left = stack_.pop().getInteger();
+  if (left != right) {
+    return delta;
+  }
+  return 0;
+}
+
+Parameter ExecutionContext::dIntJmpGt(Parameter delta) {
+  std::int32_t right = stack_.pop().getInteger();
+  std::int32_t left = stack_.pop().getInteger();
+  if (left > right) {
+    return delta;
+  }
+  return 0;
+}
+
+// ( left right -- )
+Parameter ExecutionContext::doIntJmpGe(Parameter delta) {
+  std::int32_t right = stack_.pop().getInteger();
+  std::int32_t left = stack_.pop().getInteger();
+  if (left >= right) {
+    return delta;
+  }
+  return 0;
+}
+
+// ( left right -- )
+Parameter ExecutionContext::doIntJmpLt(Parameter delta) {
+  std::int32_t right = stack_.pop().getInteger();
+  std::int32_t left = stack_.pop().getInteger();
+  if (left < right) {
+    return delta;
+  }
+  return 0;
+}
+
+// ( left right -- )
+Parameter ExecutionContext::doIntJmpLe(Parameter delta) {
+  std::int32_t right = stack_.pop().getInteger();
+  std::int32_t left = stack_.pop().getInteger();
+  if (left <= right) {
+    return delta;
+  }
+  return 0;
+}
+
+// ( -- string )
+void ExecutionContext::doStrPushConstant(Parameter param) {
+  stack_.push(OMR::Om::Value().setInteger(param));
+}
+
+// ( -- object )
+void ExecutionContext::doNewObject() {
+  auto ref = OMR::Om::Object::allocate(*this);
+  stack_.push(OMR::Om::Value(ref));
+}
+
+// ( object -- value )
+void ExecutionContext::doPushFromObject(Om::Id slotId) {
+  auto value = stack_.pop();
+  if (!value.isPtr()) {
+    throw std::runtime_error("Accessing non-object value as an object.");
+  }
+  auto obj = value.getPtr<Om::Object>();
+  Om::SlotDescriptor descriptor;
+  auto found = Om::Object::lookup(*this, obj, slotId, descriptor);
+  if (found) {
+    Om::Value result;
+    result = Om::Object::getValue(*this, obj, descriptor);
+    stack_.push(result);
+  } else {
+    throw std::runtime_error("Accessing an object's field that doesn't exist.");
+  }
+}
+
+// ( object value -- )
+void ExecutionContext::doPopIntoObject(Om::Id slotId) {
+  if (!stack_.peek()) {
+    throw std::runtime_error("Accessing non-object as an object");
+  }
+
+  std::size_t offset = 0;
+  auto object = stack_.pop().getPtr<Om::Object>();
+
+  Om::SlotDescriptor descriptor;
+  bool found = Om::Object::lookup(*this, object, slotId, descriptor);
+
+  if (!found) {
+    static constexpr Om::SlotType type(Om::Id(0), Om::CoreType::VALUE);
+
+    Om::RootRef<Om::Object> root(*this, object);
+    auto map = Om::Object::transition(*this, root, {{type, slotId}});
+    assert(map != nullptr);
+
+    // TODO: Get the descriptor fast after a single-slot transition.
+    Om::Object::lookup(*this, object, slotId, descriptor);
+    object = root.get();
+  }
+
+  auto val = pop();
+  Om::Object::setValue(*this, object, descriptor, val);
+  // TODO: Write barrier the object on store.
+}
+
+void ExecutionContext::doCallIndirect() {
+  assert(0);  // TODO: Implement call indirect
+}
+
+void ExecutionContext::doSystemCollect() {
+  std::cout << "SYSTEM COLLECT!!!" << std::endl;
+  OMR_GC_SystemCollect(omrVmThread(), 0);
+}
+
+}  // namespace b9

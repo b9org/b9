@@ -1,10 +1,19 @@
 #ifndef B9_JIT_INCL
 #define B9_JIT_INCL
 
-#include <b9/interpreter.hpp>
+#include <b9/ExecutionContext.hpp>
+#include <b9/VirtualMachine.hpp>
+#include "b9/instructions.hpp"
 
 #include "ilgen/MethodBuilder.hpp"
 #include "ilgen/TypeDictionary.hpp"
+#include <Jit.hpp>
+#include "ilgen/BytecodeBuilder.hpp"
+#include "ilgen/MethodBuilder.hpp"
+#include "ilgen/TypeDictionary.hpp"
+#include "ilgen/VirtualMachineOperandStack.hpp"
+#include "ilgen/VirtualMachineRegister.hpp"
+#include "ilgen/VirtualMachineRegisterInStruct.hpp"
 
 #include <vector>
 
@@ -18,32 +27,49 @@ struct CompilationException : public std::runtime_error {
   using std::runtime_error::runtime_error;
 };
 
+/// A collection of basic, built in types.
+class GlobalTypes {
+ public:
+  GlobalTypes(TR::TypeDictionary &td);
+  TR::IlType *addressPtr;
+  TR::IlType *int64Ptr;
+  TR::IlType *int32Ptr;
+  TR::IlType *int16Ptr;
+
+  TR::IlType *stackElement;
+  TR::IlType *stackElementPtr;
+  TR::IlType *instruction;
+  TR::IlType *InstructionPtr;
+
+  TR::IlType *operandStack;
+  TR::IlType *executionContext;
+};
+
+class Compiler {
+ public:
+  Compiler(VirtualMachine &virtualMachine, const Config &cfg);
+  JitFunction generateCode(const std::size_t functionIndex);
+
+  const GlobalTypes &globalTypes() const { return globalTypes_; }
+
+  TR::TypeDictionary &typeDictionary() { return typeDictionary_; }
+
+  const TR::TypeDictionary &typeDictionary() const { return typeDictionary_; }
+
+ private:
+  TR::TypeDictionary typeDictionary_;
+  const GlobalTypes globalTypes_;
+  VirtualMachine &virtualMachine_;
+  const Config &cfg_;
+};
+
 class MethodBuilder : public TR::MethodBuilder {
  public:
-  MethodBuilder(VirtualMachine *virtualMachine, TR::TypeDictionary *types,
-                const Config &config, const std::size_t functionIndex);
+  MethodBuilder(Compiler &compiler, const std::size_t functionIndex);
 
   virtual bool buildIL();
 
  private:
-  VirtualMachine *virtualMachine_;
-  TR::TypeDictionary *types_;
-  const Config &cfg_;
-  const std::size_t functionIndex_;
-  ExecutionContext *context_;
-  int32_t maxInlineDepth;
-  int32_t firstArgumentIndex;
-
-  TR::IlType *executionContextType;
-  TR::IlType *stackPointerType;
-  TR::IlType *stackElementType;
-  TR::IlType *stackElementPointerType;
-
-  TR::IlType *addressPointerType;
-  TR::IlType *int64PointerType;
-  TR::IlType *int32PointerType;
-  TR::IlType *int16PointerType;
-
   void defineFunctions();
   void defineLocals(std::size_t nargs);
   void defineParameters(std::size_t nargs);
@@ -115,17 +141,52 @@ class MethodBuilder : public TR::MethodBuilder {
                         std::vector<TR::BytecodeBuilder *> bytecodeBuilderTable,
                         const Instruction *program, long bytecodeIndex,
                         TR::BytecodeBuilder *nextBuilder);
+
+  const GlobalTypes &globalTypes() const { return compiler_.globalTypes(); }
+
+  Compiler &compiler_;
+  const std::size_t functionIndex_;
+  int32_t maxInlineDepth;
+  int32_t firstArgumentIndex;
 };
 
-class Compiler {
+// Simulates all state of the virtual machine state while compiled code is
+// running. It simulates the stack and the pointer to the top of the stack.
+class VirtualMachineState : public OMR::VirtualMachineState {
  public:
-  Compiler(VirtualMachine *virtualMachine, const Config &cfg);
-  JitFunction generateCode(const std::size_t functionIndex);
+  VirtualMachineState() = default;
 
- private:
-  TR::TypeDictionary types_;
-  VirtualMachine *virtualMachine_;
-  const Config &cfg_;
+  VirtualMachineState(OMR::VirtualMachineOperandStack *stack,
+                      OMR::VirtualMachineRegister *stackTop)
+      : _stack(stack), _stackTop(stackTop) {}
+
+  void Commit(TR::IlBuilder *b) override {
+    _stack->Commit(b);
+    _stackTop->Commit(b);
+  }
+
+  void Reload(TR::IlBuilder *b) override {
+    _stackTop->Reload(b);
+    _stack->Reload(b);
+  }
+
+  VirtualMachineState *MakeCopy() override {
+    auto newState = new VirtualMachineState();
+    newState->_stack =
+        dynamic_cast<OMR::VirtualMachineOperandStack *>(_stack->MakeCopy());
+    newState->_stackTop =
+        dynamic_cast<OMR::VirtualMachineRegister *>(_stackTop->MakeCopy());
+    return newState;
+  }
+
+  void MergeInto(OMR::VirtualMachineState *other, TR::IlBuilder *b) override {
+    auto otherState = dynamic_cast<VirtualMachineState *>(other);
+    _stack->MergeInto(otherState->_stack, b);
+    _stackTop->MergeInto(otherState->_stackTop, b);
+  }
+
+  OMR::VirtualMachineOperandStack *_stack = nullptr;
+  OMR::VirtualMachineRegister *_stackTop = nullptr;
 };
 
 }  // namespace b9

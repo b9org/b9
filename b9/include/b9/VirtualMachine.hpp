@@ -1,6 +1,7 @@
 #ifndef B9_VIRTUALMACHINE_HPP_
 #define B9_VIRTUALMACHINE_HPP_
 
+#include <b9/OperandStack.hpp>
 #include <b9/instructions.hpp>
 #include <b9/module.hpp>
 
@@ -56,89 +57,7 @@ struct BadFunctionCallException : public std::runtime_error {
   using std::runtime_error::runtime_error;
 };
 
-using StackElement = OMR::Om::Value;
-
-struct Stack {
-  StackElement *stackBase;
-  StackElement *stackPointer;
-};
-
 typedef OMR::Om::RawValue (*JitFunction)(...);
-
-inline bool isReference(StackElement value) {
-  return false;  // TODO
-}
-
-class ExecutionContext : public OMR::Om::RunContext {
- public:
-  ExecutionContext(VirtualMachine *virtualMachine, const Config &cfg);
-
-  StackElement interpret(std::size_t functionIndex);
-
-  void push(StackElement value);
-  StackElement pop();
-
-  void functionCall(Parameter value);
-  void functionReturn(StackElement returnVal);
-  void primitiveCall(Parameter value);
-  Parameter jmp(Parameter offset);
-  void duplicate();
-  void drop();
-  void pushFromVar(StackElement *args, Parameter offset);
-  void pushIntoVar(StackElement *args, Parameter offset);
-  void intAdd();
-  void intSub();
-  // CASCON2017 - Add intMul() and intDiv() here
-  void intPushConstant(Parameter value);
-  void intNot();
-  Parameter intJmpEq(Parameter delta);
-  Parameter intJmpNeq(Parameter delta);
-  Parameter intJmpGt(Parameter delta);
-  Parameter intJmpGe(Parameter delta);
-  Parameter intJmpLt(Parameter delta);
-  Parameter intJmpLe(Parameter delta);
-  void strPushConstant(Parameter value);
-
-  void newObject();
-
-  void pushFromObject(OMR::Om::Id slotId);
-
-  void popIntoObject(OMR::Om::Id slotId);
-
-  void callIndirect();
-
-  void systemCollect();
-
-  VirtualMachine *virtualMachine() const { return virtualMachine_; }
-
-  void visitStack(OMR::Om::Context &cx, OMR::Om::Visitor &visitor) {
-    const auto n = stackPointer_ - stackBase_;
-    std::cerr << ">VM_STACK BEGIN" << std::endl;
-    for (std::size_t i = 0; i < n; i++) {
-      StackElement e = stackBase_[i];
-      std::cout << ">>VM_STACK[" << i << "] = " << e << std::endl;
-      if (e.isPtr()) visitor.rootEdge(cx, this, e.getPtr<OMR::Om::Cell>());
-    }
-    std::cerr << ">VM_STACK END" << std::endl;
-  }
-
-  // TODO: void strJmpEq(Parameter delta);
-  // TODO: void strJmpNeq(Parameter delta);
-
-  // Reset the stack and other internal data
-  void reset();
-
-  StackElement *stackBase_;
-  StackElement *stackPointer_;
-
- private:
-  // Context cx_;
-  StackElement stack_[1000];
-  Instruction *programCounter_ = 0;
-  StackElement *stackEnd_ = &stack_[1000];
-  VirtualMachine *virtualMachine_;
-  const Config &cfg_;
-};
 
 class VirtualMachine {
  public:
@@ -148,24 +67,28 @@ class VirtualMachine {
 
   /// Load a module into the VM.
   void load(std::shared_ptr<const Module> module);
+
   StackElement run(const std::size_t index,
                    const std::vector<StackElement> &usrArgs);
+
   StackElement run(const std::string &name,
                    const std::vector<StackElement> &usrArgs);
 
   const FunctionSpec *getFunction(std::size_t index);
+  
   PrimitiveFunction *getPrimitive(std::size_t index);
 
   JitFunction getJitAddress(std::size_t functionIndex);
+
   void setJitAddress(std::size_t functionIndex, JitFunction value);
 
   std::size_t getFunctionCount();
+
   JitFunction generateCode(const std::size_t functionIndex);
+
   void generateAllCode();
 
   const char *getString(int index);
-
-  ExecutionContext *executionContext() { return &executionContext_; }
 
   const std::shared_ptr<const Module> &module() { return module_; }
 
@@ -176,7 +99,6 @@ class VirtualMachine {
  private:
   Config cfg_;
   OMR::Om::MemoryManager memoryManager_;
-  ExecutionContext executionContext_;
   std::shared_ptr<Compiler> compiler_;
   std::shared_ptr<const Module> module_;
   std::vector<JitFunction> compiledFunctions_;
@@ -201,20 +123,6 @@ StackElement interpret_3(ExecutionContext *context,
                          StackElement p2, StackElement p3);
 
 void primitive_call(ExecutionContext *context, Parameter value);
-
-inline ExecutionContext::ExecutionContext(VirtualMachine *virtualMachine,
-                                          const Config &cfg)
-    : RunContext(virtualMachine->memoryManager()),
-      stackBase_(this->stack_),
-      stackPointer_(this->stack_),
-      virtualMachine_(virtualMachine),
-      cfg_(cfg) {
-  std::memset(stack_, 0, sizeof(StackElement) * 1000);
-
-  userRoots().push_back([this](OMR::Om::Context &cx, OMR::Om::Visitor &v) {
-    this->visitStack(cx, v);
-  });
-}
 
 }  // namespace b9
 

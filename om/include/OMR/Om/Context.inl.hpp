@@ -13,15 +13,15 @@
 namespace OMR {
 namespace Om {
 
-inline Context::Context(MemoryManager& manager) : manager_(manager) {
+inline Context::Context(MemoryManager& manager) : manager_(&manager) {
   auto e =
       OMR_Thread_Init(&manager.omrVm(), this, &omrVmThread_, "b9::Context");
-  manager_.contexts().insert(this);
+  manager_->contexts().insert(this);
   if (e != 0) throw std::runtime_error("Failed to attach OMR thread to OMR VM");
 }
 
 inline Context::~Context() noexcept {
-  manager_.contexts().erase(this);
+  manager_->contexts().erase(this);
   OMR_Thread_Free(omrVmThread_);
   // omrVmThread_ = nullptr_t;
 }

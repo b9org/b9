@@ -62,6 +62,10 @@ class ObjectMapHierachy {
   ObjectMap* start_;
 };
 
+struct ObjectDeclaration {
+
+};
+
 /// A Cell with dynamically allocated slots.
 struct Object {
   union Base {

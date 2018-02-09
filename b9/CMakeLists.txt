@@ -1,9 +1,9 @@
 add_library(b9 SHARED
-	core.cpp
-	loader.cpp
-	hash.cpp
-	jit.cpp
-	primitives.cpp
+	src/core.cpp
+	src/loader.cpp
+	src/jit.cpp
+	src/primitives.cpp
+	src/ExecutionContext.cpp
 )
 
 target_include_directories(b9

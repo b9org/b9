@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <new>
 #include <unordered_set>
+#include <type_traits>
 
 class MM_EnvironmentBase;
 
@@ -37,7 +38,7 @@ class Context {
 
   ~Context() noexcept;
 
-  MemoryManager& manager() const noexcept { return manager_; }
+  MemoryManager& manager() const noexcept { return *manager_; }
 
   const Globals& globals() const noexcept { return manager().globals(); }
 
@@ -52,11 +53,15 @@ class Context {
   const MarkingFnVector& userRoots() const noexcept { return userRoots_; }
 
  private:
-  MemoryManager& manager_;
+  MemoryManager* manager_;
   OMR_VMThread* omrVmThread_;
   RootRefSeq stackRoots_;
   MarkingFnVector userRoots_;
 };
+
+static_assert(
+    std::is_standard_layout<Context>::value,
+    "The Om context must be a StandardLayoutType for calculating JIT offsets.");
 
 inline Context& getContext(OMR_VMThread& omrVmThread) {
   return *(Context*)omrVmThread._language_vmthread;

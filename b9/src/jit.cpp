@@ -1,14 +1,7 @@
 #include "b9/jit.hpp"
+#include <b9/ExecutionContext.hpp>
+#include "b9/VirtualMachine.hpp"
 #include "b9/instructions.hpp"
-#include "b9/interpreter.hpp"
-
-#include "Jit.hpp"
-#include "ilgen/BytecodeBuilder.hpp"
-#include "ilgen/MethodBuilder.hpp"
-#include "ilgen/TypeDictionary.hpp"
-#include "ilgen/VirtualMachineOperandStack.hpp"
-#include "ilgen/VirtualMachineRegister.hpp"
-#include "ilgen/VirtualMachineRegisterInStruct.hpp"
 
 #include <dlfcn.h>
 #include <cassert>
@@ -25,79 +18,58 @@
 namespace b9 {
 
 extern "C" void b9PrintStack(ExecutionContext *context, int64_t pc,
-                             int64_t bytecode, int64_t param) {
-  StackElement *base = context->stackBase_;
-  std::cout << "Executing at pc: " << pc
-            << " bc: " << toString((ByteCode)bytecode) << ", " << param
-            << std::endl;
+                             Instruction instruction) {
   std::cout << "vvvvvvvvvvvvvvvvv" << std::endl;
-  while (base < context->stackPointer_) {
-    std::cout << base << ": Stack[" << base - context->stackBase_
-              << "] = " << *base << std::endl;
-    base++;
-  }
+  std::cout << "PC = " << pc << std::endl;
+  std::cout << "BC = " << instruction << std::endl;
+  printStack(std::cout, context->stack());
   std::cout << "^^^^^^^^^^^^^^^^^" << std::endl;
 }
 
-// Simulates all state of the virtual machine state while compiled code is
-// running. It simulates the stack and the pointer to the top of the stack.
-class VirtualMachineState : public OMR::VirtualMachineState {
- public:
-  VirtualMachineState() = default;
+GlobalTypes::GlobalTypes(TR::TypeDictionary &td) {
+  // Core Integer Types
 
-  VirtualMachineState(OMR::VirtualMachineOperandStack *stack,
-                      OMR::VirtualMachineRegister *stackTop)
-      : _stack(stack), _stackTop(stackTop) {}
+  addressPtr = td->PointerTo(TR::Address);
+  int64Ptr = td->PointerTo(TR::Int64);
+  int32Ptr = td->PointerTo(TR::Int32);
+  int16Ptr = td->PointerTo(TR::Int16);
 
-  void Commit(TR::IlBuilder *b) override {
-    _stack->Commit(b);
-    _stackTop->Commit(b);
-  }
+  // Basic VM Data
 
-  void Reload(TR::IlBuilder *b) override {
-    _stackTop->Reload(b);
-    _stack->Reload(b);
-  }
+  stackElement = td.toIlType<OMR::Om::RawValue>();
+  stackElementPtr = PointerTo(stackElement);
 
-  VirtualMachineState *MakeCopy() override {
-    auto newState = new VirtualMachineState();
-    newState->_stack =
-        dynamic_cast<OMR::VirtualMachineOperandStack *>(_stack->MakeCopy());
-    newState->_stackTop =
-        dynamic_cast<OMR::VirtualMachineRegister *>(_stackTop->MakeCopy());
-    return newState;
-  }
+  instruction = td.toIlType<RawInstruction>();
+  instructionPtr = PointerTo(instruction);
 
-  void MergeInto(OMR::VirtualMachineState *other, TR::IlBuilder *b) override {
-    auto otherState = dynamic_cast<VirtualMachineState *>(other);
-    _stack->MergeInto(otherState->_stack, b);
-    _stackTop->MergeInto(otherState->_stackTop, b);
-  }
+  // VM Structures
 
-  OMR::VirtualMachineOperandStack *_stack = nullptr;
-  OMR::VirtualMachineRegister *_stackTop = nullptr;
-};
+  operandStack = td.DefineStruct("b9::OperandStack");
+  operandStack->AddField("top_", stackElementPtr, OperandStackOffset::TOP);
+  operandStack->Close();
 
-Compiler::Compiler(VirtualMachine *virtualMachine, const Config &cfg)
-    : virtualMachine_(virtualMachine), cfg_(cfg) {
-  auto stackElementType = types_.toIlType<OMR::Om::RawValue>();
+  executionContext = td.DefineStruct("b9::ExecutionContext");
+  executionContext->AddField("stack_", operandStack,
+                             ExecutionContextOffset::STACK);
+  executionContext->Close();
+}
 
-  // Stack
-  types_.DefineStruct("executionContextType");
-  types_.DefineField("executionContextType", "stackPointer",
-                     types_.PointerTo(types_.PointerTo(stackElementType)),
-                     offsetof(struct ExecutionContext, stackPointer_));
-  types_.CloseStruct("executionContextType");
+Compiler::Compiler(VirtualMachine& virtualMachine, const Config &cfg)
+    : typeDictionary_(), globalTypes_(typeDict_), virtualMachine_(virtualMachine), cfg_(cfg) {
 }
 
 JitFunction Compiler::generateCode(const std::size_t functionIndex) {
-  const FunctionSpec *function = virtualMachine_->getFunction(functionIndex);
-  MethodBuilder methodBuilder(virtualMachine_, &types_, cfg_, functionIndex);
+
   if (cfg_.debug)
     std::cout << "MethodBuilder for function: " << function->name
               << " is constructed" << std::endl;
-  uint8_t *entry = nullptr;
-  auto rc = compileMethodBuilder(&methodBuilder, &entry);
+
+  const FunctionSpec *function = virtualMachine_->getFunction(functionIndex);
+  MethodBuilder methodBuilder(*this, cfg_, functionIndex);
+
+  uint8_t *result= nullptr;
+  auto rc = compileMethodBuilder(&methodBuilder, &result);
+
   if (rc != 0) {
     std::cout << "Failed to compile function: " << function->name
               << " nargs: " << function->nargs << std::endl;
@@ -108,7 +80,7 @@ JitFunction Compiler::generateCode(const std::size_t functionIndex) {
     std::cout << "Compilation completed with return code: " << rc
               << ", code address: " << entry << std::endl;
 
-  return (JitFunction)entry;
+  return (JitFunction)result;
 }
 
 MethodBuilder::MethodBuilder(VirtualMachine *virtualMachine,
@@ -116,7 +88,7 @@ MethodBuilder::MethodBuilder(VirtualMachine *virtualMachine,
                              const std::size_t functionIndex)
     : TR::MethodBuilder(types),
       virtualMachine_(virtualMachine),
-      types_(types),
+      compiler_(compiler&),
       cfg_(cfg),
       functionIndex_(functionIndex),
       context_(virtualMachine->executionContext()),
@@ -128,23 +100,12 @@ MethodBuilder::MethodBuilder(VirtualMachine *virtualMachine,
 
   DefineName(function->name.c_str());
 
-  stackElementType = types_->template toIlType<OMR::Om::RawValue>();
-  stackElementPointerType = types_->PointerTo(stackElementType);
-
-  addressPointerType = types_->PointerTo(Address);
-  int64PointerType = types_->PointerTo(Int64);
-  int32PointerType = types_->PointerTo(Int32);
-  int16PointerType = types_->PointerTo(Int16);
-
-  executionContextType = types_->LookupStruct("executionContextType");
-  stackPointerType = types_->PointerTo(executionContextType);
-
-  DefineReturnType(stackElementType);
+  DefineReturnType(globalTypes().stackElement);
 
   defineParameters(function->nargs);
 
   if (cfg.lazyVmState) {
-    DefineLocal("localContext", executionContextType);
+    DefineLocal("localContext", globalTypes().executionContext);
   }
 
   defineLocals(function->nargs);
@@ -166,7 +127,7 @@ static const char *argsAndTempNames[] = {
 void MethodBuilder::defineParameters(std::size_t argCount) {
   if (cfg_.passParam) {
     for (int i = 0; i < argCount; i++) {
-      DefineParameter(argsAndTempNames[i], stackElementType);
+      DefineParameter(argsAndTempNames[i], globalTypes().stackElement);
     }
   }
 }
@@ -185,7 +146,7 @@ void MethodBuilder::defineLocals(std::size_t argCount) {
     }
 
     for (std::size_t i = argCount; i < MAX_ARGS_TEMPS_AVAIL; i++) {
-      DefineLocal(argsAndTempNames[i], stackElementType);
+      DefineLocal(argsAndTempNames[i], globalTypes().stackElement);
     }
   } else {
     DefineLocal("returnSP", Address);
@@ -200,30 +161,30 @@ void MethodBuilder::defineFunctions() {
       auto name = function->name.c_str();
       DefineFunction(name, (char *)__FILE__, name,
                      (void *)virtualMachine_->getJitAddress(functionIndex),
-                     Int64, function->nargs, stackElementType, stackElementType,
-                     stackElementType, stackElementType, stackElementType,
-                     stackElementType, stackElementType, stackElementType);
+                     Int64, function->nargs, globalTypes().stackElement, globalTypes().stackElement,
+                     globalTypes().stackElement, globalTypes().stackElement, globalTypes().stackElement,
+                     globalTypes().stackElement, globalTypes().stackElement, globalTypes().stackElement);
     }
     functionIndex++;
   }
 
   DefineFunction((char *)"interpret_0", (char *)__FILE__, "interpret_0",
-                 (void *)&interpret_0, Int64, 2, addressPointerType,
+                 (void *)&interpret_0, Int64, 2, globalTypes().addressPtr,
                  int32PointerType);
   DefineFunction((char *)"interpret_1", (char *)__FILE__, "interpret_1",
-                 (void *)&interpret_1, Int64, 3, addressPointerType,
-                 int32PointerType, stackElementType);
+                 (void *)&interpret_1, Int64, 3, globalTypes().addressPtr,
+                 int32PointerType, globalTypes().stackElement);
   DefineFunction((char *)"interpret_2", (char *)__FILE__, "interpret_2",
-                 (void *)&interpret_2, Int64, 4, addressPointerType,
-                 int32PointerType, stackElementType, stackElementType);
+                 (void *)&interpret_2, Int64, 4, globalTypes().addressPtr,
+                 int32PointerType, globalTypes().stackElement, globalTypes().stackElement);
   DefineFunction((char *)"interpret_3", (char *)__FILE__, "interpret_3",
-                 (void *)&interpret_3, Int64, 5, addressPointerType,
-                 int32PointerType, stackElementType, stackElementType,
-                 stackElementType);
+                 (void *)&interpret_3, Int64, 5, globalTypes().addressPtr,
+                 int32PointerType, globalTypes().stackElement, globalTypes().stackElement,
+                 globalTypes().stackElement);
   DefineFunction((char *)"primitive_call", (char *)__FILE__, "primitive_call",
-                 (void *)&primitive_call, NoType, 2, addressPointerType, Int32);
+                 (void *)&primitive_call, NoType, 2, globalTypes().addressPtr, Int32);
   DefineFunction((char *)"b9PrintStack", (char *)__FILE__, "b9PrintStack",
-                 (void *)&b9PrintStack, NoType, 4, addressPointerType, Int64,
+                 (void *)&b9PrintStack, NoType, 4, globalTypes().addressPtr, Int64,
                  Int64, Int64);
 }
 
@@ -305,21 +266,21 @@ bool MethodBuilder::buildIL() {
   } else {
     // arguments are &sp[-number_of_args]
     // temps are pushes onto the stack to &sp[number_of_temps]
-    TR::IlValue *sp = this->LoadIndirect("executionContextType", "stackPointer",
+    TR::IlValue *sp = this->LoadIndirect("globalTypes().executionContext", "stackPointer",
                                          this->ConstAddress(context_));
     TR::IlValue *args = this->IndexAt(stackElementPointerType, sp,
                                       this->ConstInt32(0 - function->nargs));
     this->Store("returnSP", args);
     TR::IlValue *newSP = this->IndexAt(stackElementPointerType, sp,
                                        this->ConstInt32(function->nregs));
-    this->StoreIndirect("executionContextType", "stackPointer",
+    this->StoreIndirect("globalTypes().executionContext", "stackPointer",
                         this->ConstAddress(context_), newSP);
   }
 
   if (cfg_.lazyVmState) {
     this->Store("localContext", this->ConstAddress(context_));
     auto stackTop = new OMR::VirtualMachineRegisterInStruct(
-        this, "executionContextType", "localContext", "stackPointer", "SP");
+        this, "globalTypes().executionContext", "localContext", "stackPointer", "SP");
     auto stack = new OMR::VirtualMachineOperandStack(
         this, 32, stackElementPointerType, stackTop, true, 0);
     auto vms = new VirtualMachineState(stack, stackTop);
@@ -345,7 +306,7 @@ TR::IlValue *MethodBuilder::loadVarIndex(TR::IlBuilder *builder, int varindex) {
     TR::IlValue *address = builder->IndexAt(stackElementPointerType, args,
                                             builder->ConstInt32(varindex));
     result = builder->LoadAt(stackElementPointerType, address);
-    result = builder->ConvertTo(stackElementType, result);
+    result = builder->ConvertTo(globalTypes().stackElement, result);
   }
 
   return result;
@@ -426,7 +387,7 @@ bool MethodBuilder::generateILForBytecode(
         builder->vmState()->Commit(builder);
         auto result = pop(builder);
         if (!cfg_.passParam) {
-          builder->StoreIndirect("executionContextType", "stackPointer",
+          builder->StoreIndirect("globalTypes().executionContext", "stackPointer",
                                  builder->ConstAddress(context_),
                                  builder->Load("returnSP"));
         }
@@ -772,15 +733,16 @@ void MethodBuilder::handle_bc_add(TR::BytecodeBuilder *builder,
 
 void MethodBuilder::handle_bc_not(TR::BytecodeBuilder *builder,
                                   TR::BytecodeBuilder *nextBuilder) {
-  auto zero = builder->ConstInteger(stackElementType, 0);
+  auto zero = builder->ConstInteger(globalTypes().stackElement, 0);
   auto value = pop(builder);
   auto result =
-      builder->ConvertTo(stackElementType, builder->EqualTo(value, zero));
+      builder->ConvertTo(globalTypes().stackElement, builder->EqualTo(value, zero));
   push(builder, result);
   builder->AddFallThroughBuilder(nextBuilder);
 }
 
-void MethodBuilder::drop(TR::BytecodeBuilder *builder) { pop(builder); }
+void MethodBuilder::drop(TR::BytecodeBuilder *builder) {
+  pop(builder); }
 
 TR::IlValue *MethodBuilder::pop(TR::BytecodeBuilder *builder) {
   if (cfg_.lazyVmState) {
@@ -788,10 +750,10 @@ TR::IlValue *MethodBuilder::pop(TR::BytecodeBuilder *builder) {
         ->_stack->Pop(builder);
   }
   TR::IlValue *sp = builder->LoadIndirect(
-      "executionContextType", "stackPointer", builder->ConstAddress(context_));
+      "globalTypes().executionContext", "stackPointer", builder->ConstAddress(context_));
   TR::IlValue *newSP =
       builder->IndexAt(stackElementPointerType, sp, builder->ConstInt32(-1));
-  builder->StoreIndirect("executionContextType", "stackPointer",
+  builder->StoreIndirect("globalTypes().executionContext", "stackPointer",
                          builder->ConstAddress(context_), newSP);
   return builder->LoadAt(stackElementPointerType, newSP);
 }
@@ -802,13 +764,13 @@ void MethodBuilder::push(TR::BytecodeBuilder *builder, TR::IlValue *value) {
         ->_stack->Push(builder, value);
   } else {
     TR::IlValue *sp =
-        builder->LoadIndirect("executionContextType", "stackPointer",
+        builder->LoadIndirect("globalTypes().executionContext", "stackPointer",
                               builder->ConstAddress(context_));
     builder->StoreAt(builder->ConvertTo(stackElementPointerType, sp),
-                     builder->ConvertTo(stackElementType, value));
+                     builder->ConvertTo(globalTypes().stackElement, value));
     TR::IlValue *newSP =
         builder->IndexAt(stackElementPointerType, sp, builder->ConstInt32(1));
-    builder->StoreIndirect("executionContextType", "stackPointer",
+    builder->StoreIndirect("globalTypes().executionContext", "stackPointer",
                            builder->ConstAddress(context_), newSP);
   }
 }

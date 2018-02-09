@@ -4,6 +4,7 @@
 #include <OMR/Infra/BitUtilities.hpp>
 #include <OMR/Infra/Double.hpp>
 
+#include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <iostream>

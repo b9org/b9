@@ -30,13 +30,16 @@ install:
 
 before_script:
   - export CXX="ccache g++-5"
+  - export CC="ccache gcc-5"
+  - export GCOV="gcov-5"
 
 script:
   - mkdir build && cd build
   - cmake -DB9_GCOV=ON ..
-  - make -j8 || echo "RETRYING BUILD!" && make -j1 VERBOSE=1 # On failure, retry with verbose output
+  - make -j8 || echo "*BUILD_FAILURE*" && make -j1 VERBOSE=1 # On failure, retry with verbose output
   - ctest --output-on-failure
+  - cd "${TRAVIS_BUILD_DIR}"
 
 after_script:
-  - echo $PWD
-  - coveralls --exclude third_party --gcov /usr/bin/gcov-5 --gcov-options '\-lp'
+  - cd "$TRAVIS_BUILD_DIR}"
+  - coveralls --exclude third_party --gcov /usr/bin/gcov-5 --gcov-options '\-lp' --build-root build

@@ -19,10 +19,6 @@ addons:
 os:
   - linux
 
-env:
-  - CXX="ccache g++-5"
-
-# OMR compiles with g++, so ccache works for it
 cache:
   ccache: true
   directories:
@@ -32,6 +28,9 @@ install:
   - npm install
   - pip install --user cpp-coveralls
 
+before_script:
+  - export CXX="ccache g++-5"
+
 script:
   - mkdir build && cd build
   - cmake -DB9_GCOV=ON ..
@@ -39,4 +38,4 @@ script:
   - ctest --output-on-failure
 
 after_script:
-  - coveralls --exclude lib --exclude tests --gcov-options '\-lp'
+  - coveralls --exclude third_party --gcov-options '\-lp'

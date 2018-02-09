@@ -26,6 +26,17 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS true)
 
 enable_testing()
 
+# Code Coverage
+
+set(B9_GCOV OFF CACHE BOOL "Run tests with gcov to gather code coverage data.")
+
+if (B9_GCOV)
+	add_compile_options(
+		-fprofile-arcs
+		-ftest-coverage
+	)
+endif(B9_GCOV)
+
 # OMR Configuration
 
 set(OMR_COMPILER   ON  CACHE INTERNAL "Enable the Compiler.")

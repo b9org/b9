@@ -2,7 +2,7 @@
 
 # Do not set the language to c++, this over rides our environment variable CXX
 # below.
-language: C
+language: C++
 
 sudo: false
 
@@ -28,11 +28,17 @@ cache:
   directories:
     - node_modules
 
+before_install:
+  - pip install --user cpp-coveralls
+
 install:
-    - npm install
+  - npm install
 
 script:
-    - mkdir build && cd build
-    - cmake ..
-    - make -j8
-    - ctest --output-on-failure
+  - mkdir build && cd build
+  - cmake -DB9_GCOV ..
+  - make -j8
+  - ctest --output-on-failure
+
+after_success:
+  - coveralls --exclude lib --exclude tests --gcov-options '\-lp'

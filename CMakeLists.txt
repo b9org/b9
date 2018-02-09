@@ -34,6 +34,12 @@ if (B9_GCOV)
 	add_compile_options(
 		-fprofile-arcs
 		-ftest-coverage
+		-O0
+		-g
+	)
+	link_libraries(
+		-fprofile-arcs
+		-ftest-coverage
 	)
 endif(B9_GCOV)
 

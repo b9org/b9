@@ -35,6 +35,7 @@ target_link_libraries(omr_om
 	PUBLIC
 		omrgc
 		omrcore
+		omrutil
 )
 
 target_compile_definitions(omr_om

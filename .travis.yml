@@ -28,17 +28,15 @@ cache:
   directories:
     - node_modules
 
-before_install:
-  - pip install --user cpp-coveralls
-
 install:
   - npm install
+  - pip install --user cpp-coveralls
 
 script:
   - mkdir build && cd build
-  - cmake -DB9_GCOV ..
+  - cmake -DB9_GCOV=ON ..
   - make -j8 || echo "RETRYING BUILD!" && make -j1 VERBOSE=1 # On failure, retry with verbose output
   - ctest --output-on-failure
 
-after_success:
+after_script:
   - coveralls --exclude lib --exclude tests --gcov-options '\-lp'

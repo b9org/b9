@@ -34,12 +34,14 @@ void DlLoader::loadFunctions(const std::shared_ptr<Module>& module,
 
 void DlLoader::loadPrimitives(const std::shared_ptr<Module>& module,
                               void* handle) const {
+                               #if 0
   auto table = loadSymbol<const DlPrimitiveTable>(handle, "b9_primitive_table");
   for (std::size_t i = 0; i < table->length; i++) {
     auto primitive =
         loadSymbol<PrimitiveFunction>(RTLD_DEFAULT, table->primitives[i].name);
     module->primitives.push_back(primitive);
   }
+  #endif
 }
 
 void DlLoader::loadStrings(const std::shared_ptr<Module>& module,

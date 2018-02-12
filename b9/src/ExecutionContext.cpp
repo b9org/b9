@@ -53,22 +53,22 @@ StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
     if (cfg_->passParam) {
       switch (argsCount) {
         case 0: {
-          result = jitFunction();
+          result = jitFunction(this);
         } break;
         case 1: {
           OMR::Om::RawValue p1 = pop().raw();
-          result = jitFunction(p1);
+          result = jitFunction(this, p1);
         } break;
         case 2: {
           OMR::Om::RawValue p2 = pop().raw();
           OMR::Om::RawValue p1 = pop().raw();
-          result = jitFunction(p1, p2);
+          result = jitFunction(this, p1, p2);
         } break;
         case 3: {
           OMR::Om::RawValue p3 = pop().raw();
           OMR::Om::RawValue p2 = pop().raw();
           OMR::Om::RawValue p1 = pop().raw();
-          result = (*jitFunction)(p1, p2, p3);
+          result = (*jitFunction)(this, p1, p2, p3);
         } break;
         default:
           throw std::runtime_error{"Need to add handlers for more parameters"};
@@ -78,7 +78,7 @@ StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
       // Call the Jit'ed function, passing the parameters on the
       // ExecutionContext stack.
       if (cfg_->debug) std::cout << "passing parameters on the stack\n";
-      result = jitFunction();
+      result = jitFunction(this);
     }
     return OMR::Om::Value(result);
   }

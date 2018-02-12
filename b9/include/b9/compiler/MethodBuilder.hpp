@@ -4,6 +4,7 @@
 #include "b9/VirtualMachine.hpp"
 #include "b9/compiler/Compiler.hpp"
 #include "b9/compiler/GlobalTypes.hpp"
+#include "b9/compiler/VirtualMachineState.hpp"
 #include "b9/instructions.hpp"
 
 #include <Jit.hpp>

@@ -17,8 +17,9 @@ class Config;
 class FunctionSpec;
 class Stack;
 class VirtualMachine;
+class ExecutionContext;
 
-typedef OMR::Om::RawValue (*JitFunction)(...);
+typedef OMR::Om::RawValue (*JitFunction)(ExecutionContext* executionContext, ...);
 
 /// Function not found exception.
 struct CompilationException : public std::runtime_error {

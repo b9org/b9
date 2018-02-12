@@ -51,17 +51,21 @@ GlobalTypes::GlobalTypes(TR::TypeDictionary &td) {
 
   auto os = "b9::OperandStack";
   operandStack = td.DefineStruct(os);
-  td.DefineField(os, "top", stackElementPtr, OperandStackOffset::TOP);
-  td.DefineField(os, "stack", stackElementPtr, OperandStackOffset::STACK);
+  td.DefineField(os, "top_", stackElementPtr, OperandStackOffset::TOP);
+  td.DefineField(os, "stack_", stackElementPtr, OperandStackOffset::STACK);
   td.CloseStruct(os);
+
+  operandStackPtr = td.PointerTo(operandStack);
 
   auto ec = "b9::ExecutionContext";
   executionContext = td.DefineStruct(ec);
   // td.DefineField(ec, "omContext", ???, ExecutionContextOffset::OM_CONTEXT);
-  td.DefineField(ec, "stack", operandStack, ExecutionContextOffset::STACK);
+  td.DefineField(ec, "stack_", operandStack, ExecutionContextOffset::STACK);
   // td.DefineField(ec, "programCounter", ???,
   // ExecutionContextOffset::PROGRAM_COUNTER);
   td.CloseStruct(ec);
+
+  executionContextPtr = td.PointerTo(executionContext);
 }
 
 Compiler::Compiler(VirtualMachine &virtualMachine, const Config &cfg)

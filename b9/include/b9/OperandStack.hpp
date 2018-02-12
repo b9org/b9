@@ -20,7 +20,7 @@ class OperandStack {
 
   void reset() { top_ = &stack_[0]; }
 
-  void push(StackElement &value) {
+  void push(const StackElement &value) {
     *top_ = value;
     ++top_;
   }
@@ -30,9 +30,9 @@ class OperandStack {
     return top_;
   }
 
-  StackElement *pop() {
+  StackElement pop() {
     --top_;
-    return top_;
+    return *top_;
   }
 
   StackElement *popn(std::size_t n) {
@@ -53,7 +53,7 @@ class OperandStack {
   void restore(StackElement *top) { top_ = top; }
 
   template <typename VisitorT>
-  void visit(OMR::Om::Context &cx, VisitorT visitor) {
+  void visit(OMR::Om::Context &cx, VisitorT &visitor) {
     for (StackElement element : *this) {
       if (element.isPtr()) {
         visitor.rootEdge(cx, this, (Om::Cell *)element.getPtr());
@@ -80,7 +80,7 @@ inline std::ostream &printStack(std::ostream &out, OperandStack &stack) {
   return out;
 }
 
-class OperandStackOffset {
+struct OperandStackOffset {
   static constexpr std::size_t TOP = offsetof(OperandStack, top_);
   static constexpr std::size_t STACK = offsetof(OperandStack, stack_);
 };

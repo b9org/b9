@@ -23,7 +23,7 @@ class ExecutionContext {
     stack_.visit(cx, visitor);
   }
 
-  Om::RunContext& omContext() { return omContext_; }
+  Om::RunContext &omContext() { return omContext_; }
 
   operator Om::RunContext &() { return omContext_; }
 
@@ -33,6 +33,8 @@ class ExecutionContext {
 
   // Available externally for jit-to-primitive calls.
   void doPrimitiveCall(Parameter value);
+
+  friend std::ostream &operator<<(std::ostream &stream, const ExecutionContext &ec);
 
  private:
   friend class VirtualMachine;
@@ -55,8 +57,6 @@ class ExecutionContext {
   void doIntAdd();
 
   void doIntSub();
-
-  // CASCON2017 - Add intMul() and intDiv() here
 
   void doIntPushConstant(Parameter value);
 
@@ -93,7 +93,9 @@ class ExecutionContext {
   Instruction *programCounter_ = 0;
 };
 
-class ExecutionContextOffset {
+// static_assert(std::is_standard_layout<ExecutionContext>::value);
+
+struct ExecutionContextOffset {
   static constexpr std::size_t OM_CONTEXT =
       offsetof(ExecutionContext, omContext_);
   static constexpr std::size_t STACK = offsetof(ExecutionContext, stack_);

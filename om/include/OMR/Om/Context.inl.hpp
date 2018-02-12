@@ -23,7 +23,6 @@ inline Context::Context(MemoryManager& manager) : manager_(&manager) {
 inline Context::~Context() noexcept {
   manager_->contexts().erase(this);
   OMR_Thread_Free(omrVmThread_);
-  // omrVmThread_ = nullptr_t;
 }
 
 inline MM_EnvironmentBase* Context::omrGcThread() const noexcept {

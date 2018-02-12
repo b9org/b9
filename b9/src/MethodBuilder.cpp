@@ -1,100 +1,26 @@
-#include "b9/jit.hpp"
-#include <b9/ExecutionContext.hpp>
+#include "b9/compiler/MethodBuilder.hpp"
 #include "b9/VirtualMachine.hpp"
+#include "b9/compiler/Compiler.hpp"
 #include "b9/instructions.hpp"
 
-#include <dlfcn.h>
-#include <cassert>
-#include <cerrno>
-#include <cstddef>
-#include <cstdint>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <iostream>
-#include <sstream>
-#include <vector>
+#include <ilgen/VirtualMachineOperandStack.hpp>
+#include <ilgen/VirtualMachineRegister.hpp>
+#include <ilgen/VirtualMachineRegisterInStruct.hpp>
 
 namespace b9 {
 
-extern "C" void b9PrintStack(ExecutionContext *context, int64_t pc,
-                             Instruction instruction) {
-  std::cout << "vvvvvvvvvvvvvvvvv" << std::endl;
-  std::cout << "PC = " << pc << std::endl;
-  std::cout << "BC = " << instruction << std::endl;
-  printStack(std::cout, context->stack());
-  std::cout << "^^^^^^^^^^^^^^^^^" << std::endl;
-}
-
-GlobalTypes::GlobalTypes(TR::TypeDictionary &td) {
-  // Core Integer Types
-
-  addressPtr = td->PointerTo(TR::Address);
-  int64Ptr = td->PointerTo(TR::Int64);
-  int32Ptr = td->PointerTo(TR::Int32);
-  int16Ptr = td->PointerTo(TR::Int16);
-
-  // Basic VM Data
-
-  stackElement = td.toIlType<OMR::Om::RawValue>();
-  stackElementPtr = PointerTo(stackElement);
-
-  instruction = td.toIlType<RawInstruction>();
-  instructionPtr = PointerTo(instruction);
-
-  // VM Structures
-
-  operandStack = td.DefineStruct("b9::OperandStack");
-  operandStack->AddField("top_", stackElementPtr, OperandStackOffset::TOP);
-  operandStack->Close();
-
-  executionContext = td.DefineStruct("b9::ExecutionContext");
-  executionContext->AddField("stack_", operandStack,
-                             ExecutionContextOffset::STACK);
-  executionContext->Close();
-}
-
-Compiler::Compiler(VirtualMachine& virtualMachine, const Config &cfg)
-    : typeDictionary_(), globalTypes_(typeDict_), virtualMachine_(virtualMachine), cfg_(cfg) {
-}
-
-JitFunction Compiler::generateCode(const std::size_t functionIndex) {
-
-  if (cfg_.debug)
-    std::cout << "MethodBuilder for function: " << function->name
-              << " is constructed" << std::endl;
-
-  const FunctionSpec *function = virtualMachine_->getFunction(functionIndex);
-  MethodBuilder methodBuilder(*this, cfg_, functionIndex);
-
-  uint8_t *result= nullptr;
-  auto rc = compileMethodBuilder(&methodBuilder, &result);
-
-  if (rc != 0) {
-    std::cout << "Failed to compile function: " << function->name
-              << " nargs: " << function->nargs << std::endl;
-    throw b9::CompilationException{"IL generation failed"};
-  }
-
-  if (cfg_.debug)
-    std::cout << "Compilation completed with return code: " << rc
-              << ", code address: " << entry << std::endl;
-
-  return (JitFunction)result;
-}
-
-MethodBuilder::MethodBuilder(VirtualMachine *virtualMachine,
-                             TR::TypeDictionary *types, const Config &cfg,
+MethodBuilder::MethodBuilder(VirtualMachine &virtualMachine,
                              const std::size_t functionIndex)
-    : TR::MethodBuilder(types),
+    : TR::MethodBuilder(&virtualMachine.compiler()->typeDictionary()),
       virtualMachine_(virtualMachine),
-      compiler_(compiler&),
-      cfg_(cfg),
-      functionIndex_(functionIndex),
-      context_(virtualMachine->executionContext()),
-      maxInlineDepth(cfg.maxInlineDepth),
-      firstArgumentIndex(0) {
-  const FunctionSpec *function = virtualMachine_->getFunction(functionIndex);
+      cfg_(virtualMachine.config()),
+      globalTypes_(virtualMachine.compiler()->globalTypes()),
+      // typeDictionary_(virtualMachine->compiler()->typeDictionary()),
+      functionIndex_(functionIndex)
+{
+
+  const FunctionSpec *function = virtualMachine_.getFunction(functionIndex);
+
   DefineLine(LINETOSTR(__LINE__));
   DefineFile(__FILE__);
 
@@ -104,7 +30,7 @@ MethodBuilder::MethodBuilder(VirtualMachine *virtualMachine,
 
   defineParameters(function->nargs);
 
-  if (cfg.lazyVmState) {
+  if (cfg_.lazyVmState) {
     DefineLocal("localContext", globalTypes().executionContext);
   }
 
@@ -133,11 +59,12 @@ void MethodBuilder::defineParameters(std::size_t argCount) {
 }
 
 void MethodBuilder::defineLocals(std::size_t argCount) {
-  if (cfg_.passParam) {
+  if (cfg_.
+  passParam) {
     // for locals we pre-define all the locals we could use, for the toplevel
     // and all the inlined names which are simply referenced via a skew to reach
     // past callers functions args/temps
-    const FunctionSpec *function = virtualMachine_->getFunction(functionIndex_);
+    const FunctionSpec *function = virtualMachine_.getFunction(functionIndex_);
     std::size_t topLevelLocals = function->nargs + function->nregs;
     if (cfg_.debug) {
       std::cout << "CREATING " << topLevelLocals << " topLevel with "
@@ -155,37 +82,41 @@ void MethodBuilder::defineLocals(std::size_t argCount) {
 
 void MethodBuilder::defineFunctions() {
   int functionIndex = 0;
-  while (functionIndex < virtualMachine_->getFunctionCount()) {
-    if (virtualMachine_->getJitAddress(functionIndex) != nullptr) {
-      auto function = virtualMachine_->getFunction(functionIndex);
+  while (functionIndex < virtualMachine_.getFunctionCount()) {
+    if (virtualMachine_.getJitAddress(functionIndex) != nullptr) {
+      auto function = virtualMachine_.getFunction(functionIndex);
       auto name = function->name.c_str();
       DefineFunction(name, (char *)__FILE__, name,
-                     (void *)virtualMachine_->getJitAddress(functionIndex),
-                     Int64, function->nargs, globalTypes().stackElement, globalTypes().stackElement,
-                     globalTypes().stackElement, globalTypes().stackElement, globalTypes().stackElement,
-                     globalTypes().stackElement, globalTypes().stackElement, globalTypes().stackElement);
+                     (void *)virtualMachine_.getJitAddress(functionIndex),
+                     Int64, function->nargs, globalTypes().stackElement,
+                     globalTypes().stackElement, globalTypes().stackElement,
+                     globalTypes().stackElement, globalTypes().stackElement,
+                     globalTypes().stackElement, globalTypes().stackElement,
+                     globalTypes().stackElement);
     }
     functionIndex++;
   }
 
   DefineFunction((char *)"interpret_0", (char *)__FILE__, "interpret_0",
                  (void *)&interpret_0, Int64, 2, globalTypes().addressPtr,
-                 int32PointerType);
+                 globalTypes().int32Ptr);
   DefineFunction((char *)"interpret_1", (char *)__FILE__, "interpret_1",
                  (void *)&interpret_1, Int64, 3, globalTypes().addressPtr,
-                 int32PointerType, globalTypes().stackElement);
+                 globalTypes().int32Ptr, globalTypes().stackElement);
   DefineFunction((char *)"interpret_2", (char *)__FILE__, "interpret_2",
                  (void *)&interpret_2, Int64, 4, globalTypes().addressPtr,
-                 int32PointerType, globalTypes().stackElement, globalTypes().stackElement);
+                 globalTypes().int32Ptr, globalTypes().stackElement,
+                 globalTypes().stackElement);
   DefineFunction((char *)"interpret_3", (char *)__FILE__, "interpret_3",
                  (void *)&interpret_3, Int64, 5, globalTypes().addressPtr,
-                 int32PointerType, globalTypes().stackElement, globalTypes().stackElement,
-                 globalTypes().stackElement);
+                 globalTypes().int32Ptr, globalTypes().stackElement,
+                 globalTypes().stackElement, globalTypes().stackElement);
   DefineFunction((char *)"primitive_call", (char *)__FILE__, "primitive_call",
-                 (void *)&primitive_call, NoType, 2, globalTypes().addressPtr, Int32);
-  DefineFunction((char *)"b9PrintStack", (char *)__FILE__, "b9PrintStack",
-                 (void *)&b9PrintStack, NoType, 4, globalTypes().addressPtr, Int64,
-                 Int64, Int64);
+                 (void *)&primitive_call, NoType, 2, globalTypes().addressPtr,
+                 Int32);
+  // DefineFunction((char *)"b9PrintStack", (char *)__FILE__, "b9PrintStack",
+  //                (void *)&b9PrintStack, NoType, 4, globalTypes().addressPtr,
+  //                Int64, Int64, Int64);
 }
 
 #define QSTACK(b) (((VirtualMachineState *)(b)->vmState())->_stack)
@@ -209,7 +140,7 @@ bool MethodBuilder::inlineProgramIntoBuilder(
     TR::BytecodeBuilder *jumpToBuilderForInlinedReturn) {
   bool success = true;
   maxInlineDepth--;
-  const FunctionSpec *function = virtualMachine_->getFunction(functionIndex);
+  const FunctionSpec *function = virtualMachine_.getFunction(functionIndex);
   const Instruction *program = function->address;
 
   // Create a BytecodeBuilder for each Bytecode
@@ -256,7 +187,7 @@ bool MethodBuilder::inlineProgramIntoBuilder(
 
 bool MethodBuilder::buildIL() {
   // Set up arguments and locals, and adjust stack pointer if needed
-  const FunctionSpec *function = virtualMachine_->getFunction(functionIndex_);
+  const FunctionSpec *function = virtualMachine_.getFunction(functionIndex_);
   if (cfg_.passParam) {
     int argsCount = function->nargs;
     int regsCount = function->nregs;
@@ -266,8 +197,9 @@ bool MethodBuilder::buildIL() {
   } else {
     // arguments are &sp[-number_of_args]
     // temps are pushes onto the stack to &sp[number_of_temps]
-    TR::IlValue *sp = this->LoadIndirect("globalTypes().executionContext", "stackPointer",
-                                         this->ConstAddress(context_));
+    TR::IlValue *sp =
+        this->LoadIndirect("globalTypes().executionContext", "stackPointer",
+                           this->ConstAddress(context_));
     TR::IlValue *args = this->IndexAt(stackElementPointerType, sp,
                                       this->ConstInt32(0 - function->nargs));
     this->Store("returnSP", args);
@@ -280,7 +212,8 @@ bool MethodBuilder::buildIL() {
   if (cfg_.lazyVmState) {
     this->Store("localContext", this->ConstAddress(context_));
     auto stackTop = new OMR::VirtualMachineRegisterInStruct(
-        this, "globalTypes().executionContext", "localContext", "stackPointer", "SP");
+        this, "globalTypes().executionContext", "localContext", "stackPointer",
+        "SP");
     auto stack = new OMR::VirtualMachineOperandStack(
         this, 32, stackElementPointerType, stackTop, true, 0);
     auto vms = new VirtualMachineState(stack, stackTop);
@@ -351,7 +284,7 @@ bool MethodBuilder::generateILForBytecode(
   }
 
   bool handled = true;
-  const FunctionSpec *function = virtualMachine_->getFunction(functionIndex);
+  const FunctionSpec *function = virtualMachine_.getFunction(functionIndex);
 
   if (cfg_.debug) {
     if (jumpToBuilderForInlinedReturn != nullptr) {
@@ -363,7 +296,7 @@ bool MethodBuilder::generateILForBytecode(
               << std::endl;
     builder->vmState()->Commit(builder);
     builder->Call("b9PrintStack", 4,
-                  builder->ConstAddress(virtualMachine_->executionContext()),
+                  builder->ConstAddress(virtualMachine_.executionContext()),
                   builder->ConstInt64(bytecodeIndex),
                   builder->ConstInt64((int)bytecode),
                   builder->ConstInt64(instruction.parameter()));
@@ -387,9 +320,9 @@ bool MethodBuilder::generateILForBytecode(
         builder->vmState()->Commit(builder);
         auto result = pop(builder);
         if (!cfg_.passParam) {
-          builder->StoreIndirect("globalTypes().executionContext", "stackPointer",
-                                 builder->ConstAddress(context_),
-                                 builder->Load("returnSP"));
+          builder->StoreIndirect(
+              "globalTypes().executionContext", "stackPointer",
+              builder->ConstAddress(context_), builder->Load("returnSP"));
         }
         builder->Return(result);
       }
@@ -735,22 +668,22 @@ void MethodBuilder::handle_bc_not(TR::BytecodeBuilder *builder,
                                   TR::BytecodeBuilder *nextBuilder) {
   auto zero = builder->ConstInteger(globalTypes().stackElement, 0);
   auto value = pop(builder);
-  auto result =
-      builder->ConvertTo(globalTypes().stackElement, builder->EqualTo(value, zero));
+  auto result = builder->ConvertTo(globalTypes().stackElement,
+                                   builder->EqualTo(value, zero));
   push(builder, result);
   builder->AddFallThroughBuilder(nextBuilder);
 }
 
-void MethodBuilder::drop(TR::BytecodeBuilder *builder) {
-  pop(builder); }
+void MethodBuilder::drop(TR::BytecodeBuilder *builder) { pop(builder); }
 
 TR::IlValue *MethodBuilder::pop(TR::BytecodeBuilder *builder) {
   if (cfg_.lazyVmState) {
     return dynamic_cast<VirtualMachineState *>(builder->vmState())
         ->_stack->Pop(builder);
   }
-  TR::IlValue *sp = builder->LoadIndirect(
-      "globalTypes().executionContext", "stackPointer", builder->ConstAddress(context_));
+  TR::IlValue *sp =
+      builder->LoadIndirect("globalTypes().executionContext", "stackPointer",
+                            builder->ConstAddress(context_));
   TR::IlValue *newSP =
       builder->IndexAt(stackElementPointerType, sp, builder->ConstInt32(-1));
   builder->StoreIndirect("globalTypes().executionContext", "stackPointer",

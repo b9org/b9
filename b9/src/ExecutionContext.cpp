@@ -1,11 +1,9 @@
-
-#include <b9/ExecutionContext.hpp>
-
 #include <b9/ExecutionContext.hpp>
 #include <b9/VirtualMachine.hpp>
-#include <b9/jit.hpp>
+#include <b9/compiler/Compiler.hpp>
 #include <b9/loader.hpp>
 
+#include <omrgc.h>
 #include <OMR/Om/Allocator.inl.hpp>
 #include <OMR/Om/ArrayBuffer.inl.hpp>
 #include <OMR/Om/ArrayBufferMap.inl.hpp>
@@ -14,8 +12,6 @@
 #include <OMR/Om/ObjectMap.inl.hpp>
 #include <OMR/Om/RootRef.inl.hpp>
 #include <OMR/Om/Value.hpp>
-
-#include <omrgc.h>
 #include "Jit.hpp"
 
 #include <sys/time.h>
@@ -129,9 +125,6 @@ StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
       case ByteCode::INT_SUB:
         doIntSub();
         break;
-
-        // CASCON2017 - Add INT_MUL and INT_DIV here
-
       case ByteCode::INT_PUSH_CONSTANT:
         doIntPushConstant(instructionPointer->parameter());
         break;
@@ -187,7 +180,7 @@ StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
     instructionPointer++;
     programCounter_++;
   }
-  return *(stackPointer_ - 1);
+  throw std::runtime_error("Reached end of function");
 }
 
 void ExecutionContext::push(StackElement value) { stack_.push(value); }
@@ -241,8 +234,6 @@ void ExecutionContext::doIntSub() {
   push(result);
 }
 
-// CASCON2017 - Add intMul() and intDiv() here
-
 void ExecutionContext::doIntPushConstant(Parameter value) {
   stack_.push(StackElement().setInteger(value));
 }
@@ -272,7 +263,7 @@ Parameter ExecutionContext::doIntJmpNeq(Parameter delta) {
   return 0;
 }
 
-Parameter ExecutionContext::dIntJmpGt(Parameter delta) {
+Parameter ExecutionContext::doIntJmpGt(Parameter delta) {
   std::int32_t right = stack_.pop().getInteger();
   std::int32_t left = stack_.pop().getInteger();
   if (left > right) {
@@ -342,7 +333,7 @@ void ExecutionContext::doPushFromObject(Om::Id slotId) {
 
 // ( object value -- )
 void ExecutionContext::doPopIntoObject(Om::Id slotId) {
-  if (!stack_.peek()) {
+  if (!stack_.peek().isPtr()) {
     throw std::runtime_error("Accessing non-object as an object");
   }
 
@@ -375,7 +366,7 @@ void ExecutionContext::doCallIndirect() {
 
 void ExecutionContext::doSystemCollect() {
   std::cout << "SYSTEM COLLECT!!!" << std::endl;
-  OMR_GC_SystemCollect(omrVmThread(), 0);
+  OMR_GC_SystemCollect(omContext_.omrVmThread(), 0);
 }
 
 }  // namespace b9

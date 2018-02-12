@@ -1,0 +1,97 @@
+#include "b9/compiler/Compiler.hpp"
+#include "b9/ExecutionContext.hpp"
+#include "b9/VirtualMachine.hpp"
+#include "b9/compiler/GlobalTypes.hpp"
+#include "b9/compiler/MethodBuilder.hpp"
+#include "b9/instructions.hpp"
+
+#include <dlfcn.h>
+#include <cassert>
+#include <cerrno>
+#include <cstddef>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <iostream>
+#include <sstream>
+#include <vector>
+
+namespace b9 {
+
+// TODO delete this code and move it to a pretty printer
+// extern "C" void b9PrintStack(ExecutionContext *context, int64_t pc,
+//                              Instruction instruction) {
+//   std::cout << "vvvvvvvvvvvvvvvvv" << std::endl;
+//   std::cout << "PC = " << pc << std::endl;
+//   std::cout << "BC = " << instruction << std::endl;
+//   // TODO: fix print stack
+//   // printStack(std::cout, context->stack());
+//   std::cout << "^^^^^^^^^^^^^^^^^" << std::endl;
+// }
+
+GlobalTypes::GlobalTypes(TR::TypeDictionary &td) {
+
+  // Core Integer Types
+
+  addressPtr = td.PointerTo(TR::Address);
+  int64Ptr = td.PointerTo(TR::Int64);
+  int32Ptr = td.PointerTo(TR::Int32);
+  int16Ptr = td.PointerTo(TR::Int16);
+
+  // Basic VM Data
+
+  stackElement = td.toIlType<OMR::Om::RawValue>();
+  stackElementPtr = td.PointerTo(stackElement);
+
+  instruction = td.toIlType<RawInstruction>();
+  instructionPtr = td.PointerTo(instruction);
+
+  // VM Structures
+
+  auto os = "b9::OperandStack";
+  operandStack = td.DefineStruct(os);
+  td.DefineField(os, "top", stackElementPtr, OperandStackOffset::TOP);
+  td.DefineField(os, "stack", stackElementPtr, OperandStackOffset::STACK);
+  td.CloseStruct(os);
+
+  auto ec = "b9::ExecutionContext";
+  executionContext = td.DefineStruct(ec);
+  // td.DefineField(ec, "omContext", ???, ExecutionContextOffset::OM_CONTEXT);
+  td.DefineField(ec, "stack", operandStack, ExecutionContextOffset::STACK);
+  // td.DefineField(ec, "programCounter", ???,
+  // ExecutionContextOffset::PROGRAM_COUNTER);
+  td.CloseStruct(ec);
+}
+
+Compiler::Compiler(VirtualMachine &virtualMachine, const Config &cfg)
+    : typeDictionary_(),
+      globalTypes_(typeDictionary_),
+      virtualMachine_(virtualMachine),
+      cfg_(cfg) {}
+
+JitFunction Compiler::generateCode(const std::size_t functionIndex) {
+  const FunctionSpec *function = virtualMachine_.getFunction(functionIndex);
+  MethodBuilder methodBuilder(virtualMachine_, functionIndex);
+
+  if (cfg_.debug)
+    std::cout << "MethodBuilder for function: " << function->name
+              << " is constructed" << std::endl;
+
+  uint8_t *result = nullptr;
+  auto rc = compileMethodBuilder(&methodBuilder, &result);
+
+  if (rc != 0) {
+    std::cout << "Failed to compile function: " << function->name
+              << " nargs: " << function->nargs << std::endl;
+    throw b9::CompilationException{"IL generation failed"};
+  }
+
+  if (cfg_.debug)
+    std::cout << "Compilation completed with return code: " << rc
+              << ", code address: " << result << std::endl;
+
+  return (JitFunction)result;
+}
+
+}  // namespace b9

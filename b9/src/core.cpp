@@ -1,7 +1,6 @@
-
 #include <b9/VirtualMachine.hpp>
 #include <b9/ExecutionContext.hpp>
-#include <b9/jit.hpp>
+#include <b9/compiler/Compiler.hpp>
 #include <b9/loader.hpp>
 
 #include <OMR/Om/Allocator.inl.hpp>

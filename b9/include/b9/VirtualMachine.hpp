@@ -2,6 +2,7 @@
 #define B9_VIRTUALMACHINE_HPP_
 
 #include <b9/OperandStack.hpp>
+#include <b9/compiler/Compiler.hpp>
 #include <b9/instructions.hpp>
 #include <b9/module.hpp>
 
@@ -15,6 +16,7 @@
 #include <OMR/Om/Runtime.hpp>
 #include <OMR/Om/TransitionSet.inl.hpp>
 #include <OMR/Om/Traverse.hpp>
+#include <OMR/Om/Value.hpp>
 
 #include <cstring>
 #include <map>
@@ -75,7 +77,7 @@ class VirtualMachine {
                    const std::vector<StackElement> &usrArgs);
 
   const FunctionSpec *getFunction(std::size_t index);
-  
+
   PrimitiveFunction *getPrimitive(std::size_t index);
 
   JitFunction getJitAddress(std::size_t functionIndex);
@@ -95,6 +97,10 @@ class VirtualMachine {
   OMR::Om::MemoryManager &memoryManager() { return memoryManager_; }
 
   const OMR::Om::MemoryManager &memoryManager() const { return memoryManager_; }
+
+  std::shared_ptr<Compiler> compiler() { return compiler_; }
+
+  const Config &config() { return cfg_; }
 
  private:
   Config cfg_;

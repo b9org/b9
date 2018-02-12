@@ -1,9 +1,10 @@
 add_library(b9 SHARED
-	src/core.cpp
-	src/loader.cpp
-	src/jit.cpp
-	src/primitives.cpp
 	src/ExecutionContext.cpp
+	src/MethodBuilder.cpp
+	src/core.cpp
+	src/Compiler.cpp
+	src/loader.cpp
+	src/primitives.cpp
 )
 
 target_include_directories(b9

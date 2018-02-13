@@ -54,6 +54,7 @@ static const char *argsAndTempNames[] = {
 /// The remaining function arguments are only passed as native arguments in
 /// PassParam mode.
 void MethodBuilder::defineParameters(std::size_t argCount) {
+
   DefineParameter("executionContext", globalTypes().executionContextPtr);
 
   if (cfg_.passParam) {
@@ -100,21 +101,21 @@ void MethodBuilder::defineFunctions() {
   }
 
   DefineFunction((char *)"interpret_0", (char *)__FILE__, "interpret_0",
-                 (void *)&interpret_0, Int64, 2, globalTypes().addressPtr,
+                 (void *)&interpret_0, Int64, 2, globalTypes().executionContextPtr,
                  globalTypes().int32Ptr);
   DefineFunction((char *)"interpret_1", (char *)__FILE__, "interpret_1",
-                 (void *)&interpret_1, Int64, 3, globalTypes().addressPtr,
+                 (void *)&interpret_1, Int64, 3, globalTypes().executionContextPtr,
                  globalTypes().int32Ptr, globalTypes().stackElement);
   DefineFunction((char *)"interpret_2", (char *)__FILE__, "interpret_2",
-                 (void *)&interpret_2, Int64, 4, globalTypes().addressPtr,
+                 (void *)&interpret_2, Int64, 4, globalTypes().executionContextPtr,
                  globalTypes().int32Ptr, globalTypes().stackElement,
                  globalTypes().stackElement);
   DefineFunction((char *)"interpret_3", (char *)__FILE__, "interpret_3",
-                 (void *)&interpret_3, Int64, 5, globalTypes().addressPtr,
+                 (void *)&interpret_3, Int64, 5, globalTypes().executionContextPtr,
                  globalTypes().int32Ptr, globalTypes().stackElement,
                  globalTypes().stackElement, globalTypes().stackElement);
   DefineFunction((char *)"primitive_call", (char *)__FILE__, "primitive_call",
-                 (void *)&primitive_call, NoType, 2, globalTypes().addressPtr,
+                 (void *)&primitive_call, NoType, 2, globalTypes().executionContextPtr,
                  Int32);
   // DefineFunction((char *)"b9PrintStack", (char *)__FILE__, "b9PrintStack",
   //                (void *)&b9PrintStack, NoType, 4, globalTypes().addressPtr,
@@ -188,7 +189,9 @@ bool MethodBuilder::inlineProgramIntoBuilder(
 }
 
 bool MethodBuilder::buildIL() {
+
   const FunctionSpec *function = virtualMachine_.getFunction(functionIndex_);
+  setVMState(new OMR::VirtualMachineState());
 
   TR::IlValue *stack = StructFieldInstanceAddress(
       "b9::ExecutionContext", "stack_", Load("executionContext"));
@@ -242,7 +245,6 @@ bool MethodBuilder::buildIL() {
     auto vms = new VirtualMachineState(stack, stackTop);
     setVMState(vms);
   } else {
-    setVMState(new OMR::VirtualMachineState());
   }
 #endif
 
@@ -713,7 +715,7 @@ TR::IlValue *MethodBuilder::pop(TR::BytecodeBuilder *builder) {
 
   builder->StoreIndirect("b9::OperandStack", "top_", stack, newStackTop);
 
-  return builder->LoadAt(globalTypes().stackElement, newStackTop);
+  return builder->LoadAt(globalTypes().stackElementPtr, newStackTop);
 }
 
 void MethodBuilder::push(TR::BytecodeBuilder *builder, TR::IlValue *value) {

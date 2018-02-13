@@ -39,48 +39,18 @@ void ExecutionContext::reset() {
   programCounter_ = 0;
 }
 
+static Om::RawValue callJitFunction(JitFunction fn, ExecutionContext* executionContext) {
+  return fn(executionContext);
+}
+
 StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
   auto function = virtualMachine_->getFunction(functionIndex);
   auto argsCount = function->nargs;
   auto jitFunction = virtualMachine_->getJitAddress(functionIndex);
 
   if (jitFunction) {
-    if (cfg_->debug) {
-      std::cout << "Calling " << function << " jit: " << jitFunction
-                << std::endl;
-    }
-    OMR::Om::RawValue result = 0;
-    if (cfg_->passParam) {
-      switch (argsCount) {
-        case 0: {
-          result = jitFunction(this);
-        } break;
-        case 1: {
-          OMR::Om::RawValue p1 = pop().raw();
-          result = jitFunction(this, p1);
-        } break;
-        case 2: {
-          OMR::Om::RawValue p2 = pop().raw();
-          OMR::Om::RawValue p1 = pop().raw();
-          result = jitFunction(this, p1, p2);
-        } break;
-        case 3: {
-          OMR::Om::RawValue p3 = pop().raw();
-          OMR::Om::RawValue p2 = pop().raw();
-          OMR::Om::RawValue p1 = pop().raw();
-          result = (*jitFunction)(this, p1, p2, p3);
-        } break;
-        default:
-          throw std::runtime_error{"Need to add handlers for more parameters"};
-          break;
-      }
-    } else {
-      // Call the Jit'ed function, passing the parameters on the
-      // ExecutionContext stack.
-      if (cfg_->debug) std::cout << "passing parameters on the stack\n";
-      result = jitFunction(this);
-    }
-    return OMR::Om::Value(result);
+    auto result = callJitFunction(jitFunction, this);
+    return Om::Value(result);
   }
 
   // interpret the method otherwise

@@ -15,16 +15,22 @@ namespace Om {
 /// @file
 /// Boxed Values
 
+/// Values are encoded in floating point NaNs, using the set on NaNs not used
+/// for normal FP math.  All NaN FP values must have an exponent of -1.  The set
+/// of NaNs we use are known as signaling NaNs, which means the quiet bit must
+/// always be set to 0.  We set the `kind` in the tag to distinguish different
+/// kinds of Values, e.g. Pointers from Integers.  To make sure NULL Values are
+/// distiniguished from inifinity floating point numbers, the kind must be
+/// non-zero.
+///
 /// The breakdown is:
 /// NaN box:   12 bits
-///  sign:     01 bits
-///  exponent: 11 bits
+///  sign:        01 bits
+///  exponent:    11 bits
 /// tag:       04 bits
-///
-///  value kind: 03 bits ()
-///
-/// Value: 48 bits
-///
+///  quiet bit:   01 bits
+///  value kind:  03 bits
+/// Value:     48 bits
 
 /// A RawValue is the underlying integer type that Values encode information
 /// in. The RawValue has a ValueTag and 48 bits of storage encoded in it.
@@ -39,19 +45,15 @@ static_assert(sizeof(RawValue) == sizeof(double),
 /// must be canonicalized before being stored.
 ///
 /// The Tags in this namespace indicate that a RawValue is a boxed immediate.
-///
-/// Note that for now, the tag's VALUE and MASK are the same, but this could
-/// change.
 namespace BoxTag {
-static constexpr RawValue VALUE =
-    Infra::Double::SPECIAL_TAG | Infra::Double::NAN_SIGNAL_TAG;
+static constexpr RawValue VALUE = Infra::Double::SPECIAL_TAG;
 static constexpr RawValue MASK =
-    Infra::Double::SPECIAL_TAG | Infra::Double::NAN_SIGNAL_TAG;
+    Infra::Double::SPECIAL_TAG | Infra::Double::NAN_QUIET_TAG;
 }  // namespace BoxTag
 
 /// Tags that indicate the kind of value stored in a boxed immediate.
 /// The Kind tag occupies the lower 3 bits of the most significant nibble in
-/// the mantissa. The top bit is the NAN_SIGNAL_TAG, and is always 1 for boxed
+/// the mantissa. The top bit is the NAN_QUIET_TAG, and is always 0 for boxed
 /// values. The
 namespace KindTag {
 static constexpr std::size_t SHIFT = 42;
@@ -73,15 +75,23 @@ static constexpr RawValue POINTER = BoxTag::VALUE | KindTag::POINTER;
 static constexpr RawValue VALUE_MASK = ~BoxKindTag::MASK;
 
 /// The canonical NaN is a positive non-signaling NaN. When a NaN double is
-/// stored into a Value, the NaN is canonicalized. This is to prevent us from
-/// reading true NaNs that look like NaN-boxed values.
-static constexpr RawValue CANONICAL_NAN =
-    Infra::Double::SPECIAL_TAG | Infra::Double::NAN_EXTRA_BITS_MASK;
+/// stored into a Value, the NaN is canonicalized.  Doing so ensures that the
+/// NaN is made quiet and unsigned. This is to prevent us from reading true NaNs
+/// that look like NaN-boxed values.
+static constexpr RawValue CANONICAL_NAN = Infra::Double::SPECIAL_TAG |
+                                          Infra::Double::NAN_QUIET_TAG |
+                                          Infra::Double::NAN_EXTRA_BITS_MASK;
 
-/// if value is a NaN, return the corresponding quiet canonical NaN. Note that
-/// currently, the NaN will lose it's sign.
-static constexpr bool canonicalizeNaN(RawValue value) {
-  return Infra::Double::isNaN(value) ? CANONICAL_NAN : value;
+/// if value is a NaN, return the canonical NaN.
+static constexpr RawValue canonicalizeNaN(RawValue value) {
+  if (Infra::Double::isNaN(value)) {
+    return CANONICAL_NAN;
+  }
+  return value;
+}
+
+static constexpr double canonicalizeNaN(double value) {
+  return Infra::Double::fromRaw(canonicalizeNaN(Infra::Double::toRaw(value)));
 }
 
 struct Cell;
@@ -131,16 +141,13 @@ class Value {
   }
 
   bool constexpr isBoxedValue() const noexcept {
-    return (raw() & BoxTag::MASK) == BoxTag::VALUE;
+    return Infra::Double::isSNaN(raw());
   }
 
   constexpr bool isDouble() const noexcept { return !isBoxedValue(); }
 
   Value& setDouble(double d) noexcept {
-    if (std::isnan(d)) {
-      d = Infra::Double::fromRaw(CANONICAL_NAN);
-    }
-    return setDoubleUnsafe(d);
+    return setDoubleUnsafe(canonicalizeNaN(d));
   }
 
   Value& setDoubleUnsafe(double d) noexcept {

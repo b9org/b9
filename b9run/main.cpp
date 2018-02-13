@@ -122,7 +122,7 @@ static void run(OMR::Om::ProcessRuntime& runtime, const RunConfig& cfg) {
     vm.generateAllCode();
   }
 
-  size_t functionIndex = module->findFunction(cfg.mainFunction);
+  size_t functionIndex = module->getFunctionIndex(cfg.mainFunction);
   for (std::size_t i = 0; i < cfg.loopCount; i += 1) {
     auto result = vm.run(functionIndex, cfg.usrArgs);
     std::cout << std::endl << "=> " << result << std::endl;

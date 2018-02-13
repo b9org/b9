@@ -53,7 +53,7 @@ StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
   }
 
   // interpret the method otherwise
-  const Instruction *instructionPointer = function->address;
+  const Instruction *instructionPointer = function->instructions.data();
 
   StackElement *args = stack_.top() - function->nargs;
   stack_.pushn(function->nregs);

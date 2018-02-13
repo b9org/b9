@@ -17,7 +17,7 @@ MethodBuilder::MethodBuilder(VirtualMachine &virtualMachine,
       globalTypes_(virtualMachine.compiler()->globalTypes()),
       // typeDictionary_(virtualMachine->compiler()->typeDictionary()),
       functionIndex_(functionIndex) {
-  const FunctionSpec *function = virtualMachine_.getFunction(functionIndex);
+  const FunctionDef *function = virtualMachine_.getFunction(functionIndex);
 
   /// TODO: The __LINE__/__FILE__ stuff is 100% bogus, this is about as bad.
   DefineLine("<unknown");
@@ -68,7 +68,7 @@ void MethodBuilder::defineLocals(std::size_t argCount) {
     // for locals we pre-define all the locals we could use, for the toplevel
     // and all the inlined names which are simply referenced via a skew to reach
     // past callers functions args/temps
-    const FunctionSpec *function = virtualMachine_.getFunction(functionIndex_);
+    const FunctionDef *function = virtualMachine_.getFunction(functionIndex_);
     std::size_t topLevelLocals = function->nargs + function->nregs;
     if (cfg_.debug) {
       std::cout << "CREATING " << topLevelLocals << " topLevel with "
@@ -144,8 +144,8 @@ bool MethodBuilder::inlineProgramIntoBuilder(
     TR::BytecodeBuilder *jumpToBuilderForInlinedReturn) {
   bool success = true;
   maxInlineDepth--;
-  const FunctionSpec *function = virtualMachine_.getFunction(functionIndex);
-  const Instruction *program = function->address;
+  const FunctionDef *function = virtualMachine_.getFunction(functionIndex);
+  const Instruction *program = function->instructions.data();
 
   // Create a BytecodeBuilder for each Bytecode
   auto numberOfBytecodes = computeNumberOfBytecodes(program);
@@ -190,7 +190,7 @@ bool MethodBuilder::inlineProgramIntoBuilder(
 }
 
 bool MethodBuilder::buildIL() {
-  const FunctionSpec *function = virtualMachine_.getFunction(functionIndex_);
+  const FunctionDef *function = virtualMachine_.getFunction(functionIndex_);
   setVMState(new OMR::VirtualMachineState());
 
   TR::IlValue *stack = StructFieldInstanceAddress(
@@ -310,7 +310,7 @@ bool MethodBuilder::generateILForBytecode(
   }
 
   bool handled = true;
-  const FunctionSpec *function = virtualMachine_.getFunction(functionIndex);
+  const FunctionDef *function = virtualMachine_.getFunction(functionIndex);
 
   if (cfg_.debug) {
     if (jumpToBuilderForInlinedReturn != nullptr) {
@@ -419,8 +419,8 @@ bool MethodBuilder::generateILForBytecode(
     } break;
     case ByteCode::FUNCTION_CALL: {
       const std::size_t callindex = instruction.parameter();
-      const FunctionSpec *callee = virtualMachine_.getFunction(callindex);
-      const Instruction *tocall = callee->address;
+      const FunctionDef *callee = virtualMachine_.getFunction(callindex);
+      const Instruction *tocall = callee->instructions.data();
       const std::uint32_t argsCount = callee->nargs;
       const std::uint32_t regsCount = callee->nregs;
 

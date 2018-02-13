@@ -75,7 +75,7 @@ Compiler::Compiler(VirtualMachine &virtualMachine, const Config &cfg)
       cfg_(cfg) {}
 
 JitFunction Compiler::generateCode(const std::size_t functionIndex) {
-  const FunctionSpec *function = virtualMachine_.getFunction(functionIndex);
+  const FunctionDef *function = virtualMachine_.getFunction(functionIndex);
   MethodBuilder methodBuilder(virtualMachine_, functionIndex);
 
   if (cfg_.debug)

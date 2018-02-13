@@ -84,62 +84,62 @@ enum class ByteCode : RawByteCode {
 inline const char *toString(ByteCode bc) {
   switch (bc) {
     case ByteCode::END_SECTION:
-      return "ByteCode::END_SECTION";
+      return "end_section";
     case ByteCode::FUNCTION_CALL:
-      return "FUNCTION_CALL";
+      return "function_call";
     case ByteCode::FUNCTION_RETURN:
-      return "FUNCTION_RETURN";
+      return "function_return";
     case ByteCode::PRIMITIVE_CALL:
-      return "ByteCode::PRIMITIVE_CALL";
+      return "primitive_call";
     case ByteCode::JMP:
-      return "JMP";
+      return "jmp";
     case ByteCode::DUPLICATE:
-      return "DUPLICATE";
+      return "duplicate";
     case ByteCode::DROP:
-      return "DROP";
+      return "drop";
     case ByteCode::PUSH_FROM_VAR:
-      return "ByteCode::PUSH_FROM_VAR";
+      return "push_from_var";
     case ByteCode::POP_INTO_VAR:
-      return "POP_INTO_VAR";
+      return "pop_into_var";
     case ByteCode::INT_ADD:
-      return "INT_ADD";
+      return "int_add";
     case ByteCode::INT_SUB:
-      return "INT_SUB";
+      return "int_sub";
 
       // CASCON2017 - Add INT_MUL and INT_DIV here
 
     case ByteCode::INT_PUSH_CONSTANT:
-      return "INT_PUSH_CONSTANT";
+      return "int_push_constant";
     case ByteCode::INT_NOT:
-      return "ByteCode::INT_NOT";
+      return "int_not";
     case ByteCode::INT_JMP_EQ:
-      return "ByteCode::INT_JMP_EQ";
+      return "int_jmp_eq";
     case ByteCode::INT_JMP_NEQ:
-      return "ByteCode::INT_JMP_NEQ";
+      return "int_jmp_neq";
     case ByteCode::INT_JMP_GT:
-      return "ByteCode::INT_JMP_GT";
+      return "int_jmp_gt";
     case ByteCode::INT_JMP_GE:
-      return "ByteCode::INT_JMP_GE";
+      return "int_jmp_ge";
     case ByteCode::INT_JMP_LT:
-      return "ByteCode::INT_JMP_LT";
+      return "int_jmp_lt";
     case ByteCode::INT_JMP_LE:
-      return "ByteCode::INT_JMP_LE";
+      return "int_jmp_le";
     case ByteCode::STR_PUSH_CONSTANT:
-      return "ByteCode::STR_PUSH_CONSTANT";
+      return "str_push_constant";
     case ByteCode::STR_JMP_EQ:
-      return "ByteCode::STR_JMP_EQ";
+      return "str_jmp_eq";
     case ByteCode::STR_JMP_NEQ:
-      return "ByteCode::STR_JMP_NEQ";
+      return "str_jmp_neq";
     case ByteCode::NEW_OBJECT:
-      return "ByteCode::NEW_OBJECT";
+      return "new_object";
     case ByteCode::PUSH_FROM_OBJECT:
-      return "ByteCode::PUSH_FROM_OBJECT";
+      return "push_from_object";
     case ByteCode::POP_INTO_OBJECT:
-      return "ByteCode::POP_INTO_OBJECT";
+      return "pop_into_object";
     case ByteCode::CALL_INDIRECT:
-      return "ByteCode::CALL_INDIRECT";
+      return "call_indirect";
     case ByteCode::SYSTEM_COLLECT:
-      return "ByteCode::SYSTEM_COLLECT";
+      return "system_collect";
     default:
       return "UNKNOWN_BYTECODE";
   }
@@ -231,7 +231,7 @@ static constexpr Instruction END_SECTION{ByteCode::END_SECTION, 0};
 
 /// Print an Instruction.
 inline std::ostream &operator<<(std::ostream &out, Instruction i) {
-  return out << "{" << i.byteCode() << ", " << i.parameter() << "}";
+  return out << "(" << i.byteCode() << " " << i.parameter() << ")";
 }
 
 }  // namespace b9

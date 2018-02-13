@@ -16,7 +16,7 @@ namespace b9 {
 namespace Om = OMR::Om;
 
 class Config;
-class FunctionSpec;
+class FunctionDef;
 class Stack;
 class VirtualMachine;
 class ExecutionContext;

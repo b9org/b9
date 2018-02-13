@@ -1,3 +1,5 @@
+#include <vector>
+
 #include <dlfcn.h>
 #include <b9/loader.hpp>
 
@@ -10,7 +12,6 @@ std::shared_ptr<Module> DlLoader::loadModule(const std::string& name) const {
   auto handle = openLibrary(name);
   loadFunctions(module, handle);
   loadStrings(module, handle);
-  loadPrimitives(module, handle);
   return module;
 }
 
@@ -27,21 +28,14 @@ void DlLoader::loadFunctions(const std::shared_ptr<Module>& module,
   auto table = loadSymbol<const DlFunctionTable>(handle, "b9_function_table");
   for (std::size_t i = 0; i < table->length; i++) {
     auto& entry = table->functions[i];
-    module->functions.emplace_back(entry.name, entry.address, entry.nargs,
-                                   entry.nregs);
+    const Instruction* ip = entry.address;
+    auto instructions = std::vector<Instruction>();
+    do {
+      instructions.push_back(*ip++);
+    } while (instructions.back() != END_SECTION);
+    module->functions.emplace_back(entry.name, i, std::move(instructions),
+                                   entry.nargs, entry.nregs);
   }
-}
-
-void DlLoader::loadPrimitives(const std::shared_ptr<Module>& module,
-                              void* handle) const {
-                               #if 0
-  auto table = loadSymbol<const DlPrimitiveTable>(handle, "b9_primitive_table");
-  for (std::size_t i = 0; i < table->length; i++) {
-    auto primitive =
-        loadSymbol<PrimitiveFunction>(RTLD_DEFAULT, table->primitives[i].name);
-    module->primitives.push_back(primitive);
-  }
-  #endif
 }
 
 void DlLoader::loadStrings(const std::shared_ptr<Module>& module,
@@ -59,15 +53,5 @@ T* DlLoader::loadSymbol(void* handle, const char* symbol) const {
   if (msg) throw DlException{msg};
   return reinterpret_cast<T*>(p);
 };
-
-#if 0
-DlLoader::debugDump()
-if (this->debug_ > 0) {
-    for (int i = 0; i < functions_->functionCount_; i++) {
-      FunctionSpecification *functionSpec = functions_->functionTable_ + i;
-      std::cout << "Name: " << functionSpec->name_ << " byteCodes: " << functionSpec->byteCodes_;
-    }
-  }
-#endif  // 0
 
 }  // namespace b9

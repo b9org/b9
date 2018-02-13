@@ -4,7 +4,9 @@
 #include <b9/instructions.hpp>
 
 #include <cstdint>
+#include <iostream>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 namespace b9 {
@@ -13,38 +15,63 @@ class Compiler;
 class ExecutionContext;
 class VirtualMachine;
 
-/// Function specification. Metadata about a function.
-struct FunctionSpec {
-  FunctionSpec(const std::string& name, const Instruction* address,
-               std::uint32_t nargs = 0, std::uint32_t nregs = 0)
-      : address{address}, nargs{nargs}, nregs{nregs}, name{name} {}
+// Function Definition
+struct FunctionDef {
+  // Copy Constructor
+  FunctionDef(const std::string& name, std::uint32_t index,
+              const std::vector<Instruction>& instructions,
+              std::uint32_t nargs = 0, std::uint32_t nregs = 0)
+      : name{name},
+        index{index},
+        instructions{instructions},
+        nargs{nargs},
+        nregs{nregs} {}
 
-  const Instruction* address;
+  // Move Constructor
+  FunctionDef(const std::string& name, std::uint32_t index,
+              std::vector<Instruction>&& instructions, std::uint32_t nargs = 0,
+              std::uint32_t nregs = 0)
+      : name{name},
+        index{index},
+        instructions{std::move(instructions)},
+        nargs{nargs},
+        nregs{nregs} {}
+
+  // Function Data
+  std::string name;
+  uint32_t index;
   std::uint32_t nargs;
   std::uint32_t nregs;
-  std::string name;
+  std::vector<Instruction> instructions;
 };
 
-inline std::ostream& operator<<(std::ostream& out, const FunctionSpec& f) {
-  return out << f.name << " (" << f.address << "): {nargs: " << f.nargs
-             << ", nregs: " << f.nregs << "}";
+inline void operator<<(std::ostream& out, const FunctionDef& f) {
+  out << "(function \"" << f.name << "\" " << f.nargs << " " <<  f.nregs;
+  for (auto instruction : f.instructions) {
+    out << std::endl << "  " << instruction;
+  }
+  out << ")" << std::endl << std::endl;
 }
 
-// Primitive Function from Interpreter call
-extern "C" typedef void(PrimitiveFunction)(ExecutionContext* virtualMachine);
+inline bool operator==(const FunctionDef& lhs, const FunctionDef& rhs) {
+  return lhs.name == rhs.name && lhs.index == rhs.index &&
+         lhs.nargs == rhs.nargs && lhs.nregs == rhs.nregs;
+}
 
 /// Function not found exception.
 struct FunctionNotFoundException : public std::runtime_error {
   using std::runtime_error::runtime_error;
 };
 
+// Primitive Function from Interpreter call
+extern "C" typedef void(PrimitiveFunction)(ExecutionContext* context);
+
 /// An interpreter module.
 struct Module {
-  std::vector<FunctionSpec> functions;
-  std::vector<PrimitiveFunction*> primitives;
-  std::vector<const char*> strings;
+  std::vector<FunctionDef> functions;
+  std::vector<std::string> strings;
 
-  std::size_t findFunction(const std::string& name) const {
+  std::size_t getFunctionIndex(const std::string& name) const {
     for (std::size_t i = 0; i < functions.size(); i++) {
       if (functions[i].name == name) {
         return i;
@@ -53,6 +80,22 @@ struct Module {
     throw FunctionNotFoundException{name};
   }
 };
+
+inline void operator<<(std::ostream& out, const Module& m) {
+  int32_t index = 0;
+  for (auto function : m.functions) {
+    out << function;
+    ++index;
+  }
+  for (auto string : m.strings) {
+    out << "(string \"" << string << "\")" << std::endl;
+  }
+  out << std::endl;
+}
+
+inline bool operator==(const Module& lhs, const Module& rhs) {
+  return lhs.functions == rhs.functions && lhs.strings == rhs.strings;
+}
 
 }  // namespace b9
 

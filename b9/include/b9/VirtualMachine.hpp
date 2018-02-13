@@ -25,6 +25,11 @@
 #include <string>
 #include <vector>
 
+extern "C" {
+b9::PrimitiveFunction b9_prim_print_string;
+b9::PrimitiveFunction b9_prim_print_number;
+}
+
 namespace b9 {
 
 namespace Om = ::OMR::Om;
@@ -59,7 +64,7 @@ struct BadFunctionCallException : public std::runtime_error {
   using std::runtime_error::runtime_error;
 };
 
-typedef Om::Value (*JitFunction)(ExecutionContext* executionContext, ...);
+typedef Om::Value (*JitFunction)(ExecutionContext *executionContext, ...);
 
 class VirtualMachine {
  public:
@@ -76,7 +81,7 @@ class VirtualMachine {
   StackElement run(const std::string &name,
                    const std::vector<StackElement> &usrArgs);
 
-  const FunctionSpec *getFunction(std::size_t index);
+  const FunctionDef *getFunction(std::size_t index);
 
   PrimitiveFunction *getPrimitive(std::size_t index);
 
@@ -90,7 +95,7 @@ class VirtualMachine {
 
   void generateAllCode();
 
-  const char *getString(int index);
+  const std::string& getString(int index);
 
   const std::shared_ptr<const Module> &module() { return module_; }
 
@@ -103,6 +108,9 @@ class VirtualMachine {
   const Config &config() { return cfg_; }
 
  private:
+  static constexpr PrimitiveFunction *const primitives_[] = {
+      b9_prim_print_string, b9_prim_print_number};
+
   Config cfg_;
   OMR::Om::MemoryManager memoryManager_;
   std::shared_ptr<Compiler> compiler_;

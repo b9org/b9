@@ -128,13 +128,13 @@ TEST_F(InterpreterTest, jit_lvms) {
 TEST(MyTest, arguments) {
   b9::VirtualMachine vm{runtime, {}};
   auto m = std::make_shared<Module>();
-  Instruction i[] = {{ByteCode::PUSH_FROM_VAR, 0},
-                     {ByteCode::PUSH_FROM_VAR, 1},
-                     {ByteCode::INT_ADD},
-                     {ByteCode::FUNCTION_RETURN},
-                     END_SECTION};
-
-  m->functions.push_back(b9::FunctionSpec{"add_args", i, 2, 0});
+  std::vector<Instruction> i = {{ByteCode::PUSH_FROM_VAR, 0},
+                                {ByteCode::PUSH_FROM_VAR, 1},
+                                {ByteCode::INT_ADD},
+                                {ByteCode::FUNCTION_RETURN},
+                                END_SECTION};
+  uint32_t index = 0;
+  m->functions.push_back(b9::FunctionDef{"add_args", index, i, 2, 0});
   vm.load(m);
   auto r = vm.run("add_args", {OMR::Om::Value{1}, OMR::Om::Value{2}});
   EXPECT_EQ(r, Value(3));
@@ -143,10 +143,10 @@ TEST(MyTest, arguments) {
 TEST(MyTest, jitSimpleProgram) {
   b9::VirtualMachine vm{runtime, {.jit = true}};
   auto m = std::make_shared<Module>();
-  Instruction i[] = {{ByteCode::INT_PUSH_CONSTANT, 0xdead},
-                     {ByteCode::FUNCTION_RETURN},
-                     END_SECTION};
-  m->functions.push_back(b9::FunctionSpec{"add", i, 0, 0});
+  std::vector<Instruction> i = {{ByteCode::INT_PUSH_CONSTANT, 0xdead},
+                                {ByteCode::FUNCTION_RETURN},
+                                END_SECTION};
+  m->functions.push_back(b9::FunctionDef{"add", 0, i, 0, 0});
   vm.load(m);
   vm.generateAllCode();
   auto r = vm.run("add", {});
@@ -160,7 +160,7 @@ extern "C" void b9_prim_print_string(ExecutionContext* context);
 TEST(ObjectTest, allocateSomething) {
   b9::VirtualMachine vm{runtime, {}};
   auto m = std::make_shared<Module>();
-  Instruction i[] = {
+  std::vector<Instruction> i = {
       {ByteCode::NEW_OBJECT},            // new object
       {ByteCode::POP_INTO_VAR, 0},       // store object into var0
       {ByteCode::STR_PUSH_CONSTANT, 0},  // push "Hello, World"
@@ -174,8 +174,7 @@ TEST(ObjectTest, allocateSomething) {
       {ByteCode::FUNCTION_RETURN},      // finish with constant 0
       END_SECTION};
   m->strings.push_back("Hello, World");
-  m->functions.push_back(b9::FunctionSpec{"allocate_object", i, 0, 1});
-  m->primitives.push_back(b9_prim_print_string);
+  m->functions.push_back(b9::FunctionDef{"allocate_object", 0, i, 0, 1});
   vm.load(m);
   Value r = vm.run("allocate_object", {});
   EXPECT_EQ(r, Value(0));

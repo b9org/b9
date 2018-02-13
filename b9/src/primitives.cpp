@@ -19,4 +19,3 @@ extern "C" void b9_prim_print_string(ExecutionContext *context) {
   std::cout << string << std::endl;
   context->push(OMR::Om::Value(0));
 }
-

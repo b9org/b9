@@ -26,6 +26,8 @@
 
 namespace b9 {
 
+PrimitiveFunction *const VirtualMachine::primitives_[2];
+
 VirtualMachine::VirtualMachine(OMR::Om::ProcessRuntime &runtime,
                                const Config &cfg)
     : cfg_{cfg},
@@ -101,10 +103,10 @@ void VirtualMachine::setJitAddress(std::size_t functionIndex,
 }
 
 PrimitiveFunction *VirtualMachine::getPrimitive(std::size_t index) {
-  return module_->primitives[index];
+  return primitives_[index];
 }
 
-const FunctionSpec *VirtualMachine::getFunction(std::size_t index) {
+const FunctionDef *VirtualMachine::getFunction(std::size_t index) {
   return &module_->functions[index];
 }
 
@@ -119,7 +121,7 @@ JitFunction VirtualMachine::generateCode(const std::size_t functionIndex) {
   }
 }
 
-const char *VirtualMachine::getString(int index) {
+const std::string& VirtualMachine::getString(int index) {
   return module_->strings[index];
 }
 
@@ -143,7 +145,7 @@ void VirtualMachine::generateAllCode() {
 
 StackElement VirtualMachine::run(const std::string &name,
                                  const std::vector<StackElement> &usrArgs) {
-  return run(module_->findFunction(name), usrArgs);
+  return run(module_->getFunctionIndex(name), usrArgs);
 }
 
 StackElement VirtualMachine::run(const std::size_t functionIndex,

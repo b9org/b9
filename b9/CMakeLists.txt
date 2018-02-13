@@ -5,6 +5,9 @@ add_library(b9 SHARED
 	src/Compiler.cpp
 	src/loader.cpp
 	src/primitives.cpp
+	src/serialize.cpp
+	src/deserialize.cpp
+	src/assemble.cpp
 )
 
 target_include_directories(b9

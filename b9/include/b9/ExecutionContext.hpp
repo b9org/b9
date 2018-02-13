@@ -106,3 +106,11 @@ struct ExecutionContextOffset {
 }  // namespace b9
 
 #endif  // B9_EXECUTIONCONTEXT_HPP_
+
+/*
+    000
+   00000
+    000 MMM
+       MMMMM
+        MMM
+*/

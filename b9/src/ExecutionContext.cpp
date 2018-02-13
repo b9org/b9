@@ -39,18 +39,17 @@ void ExecutionContext::reset() {
   programCounter_ = 0;
 }
 
-static Om::RawValue callJitFunction(JitFunction fn, ExecutionContext* executionContext) {
-  return fn(executionContext);
-}
-
 StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
   auto function = virtualMachine_->getFunction(functionIndex);
   auto argsCount = function->nargs;
   auto jitFunction = virtualMachine_->getJitAddress(functionIndex);
 
+  fprintf(stderr, "****************************start\n");
+
   if (jitFunction) {
-    auto result = callJitFunction(jitFunction, this);
-    return Om::Value(result);
+    Om::Value result = jitFunction(this);
+    // std::cerr << ">>>>>>> result = " << result <<  " raw = " << result.raw() << std::endl;
+    return result;
   }
 
   // interpret the method otherwise

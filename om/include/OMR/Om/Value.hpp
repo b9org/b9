@@ -117,7 +117,7 @@ class Value {
 
   constexpr Value(const Value& other) : data_{other.raw()} {}
 
-  explicit constexpr Value(RawValue r) : data_{r} {}
+  // explicit constexpr Value(RawValue r) : data_{r} {}
 
   explicit constexpr Value(std::int32_t i)
       : data_{BoxKindTag::INTEGER | (RawValue(i) & VALUE_MASK)} {}
@@ -211,13 +211,13 @@ static_assert(
 
 inline std::ostream& operator<<(std::ostream& out, const Value& v) {
   if (v.isDouble()) {
-    return out << v.getDouble();
+    return out << "(double " << v.getDouble() << ")";
   } else if (v.isInteger()) {
-    return out << v.getInteger();
+    return out <<"(integer " << v.getInteger() << ")";
   } else if (v.isPtr()) {
-    return out << v.getPtr();
+    return out << "(ptr " << v.getPtr() << ")";
   } else {
-    return out << v.raw() << "!";
+    return out << "(unknown" << v.raw() << ")";
   }
 }
 

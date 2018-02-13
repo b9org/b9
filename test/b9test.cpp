@@ -150,6 +150,8 @@ TEST(MyTest, jitSimpleProgram) {
   vm.load(m);
   vm.generateAllCode();
   auto r = vm.run("add", {});
+  std::cout << "HEEEEEEELLLLLOOOOOO" << std::endl;
+
   EXPECT_EQ(r, Value(0xdead));
 }
 

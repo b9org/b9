@@ -26,11 +26,11 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS true)
 
 enable_testing()
 
-# Code Coverage
+# Optional debug and testing features
 
 set(B9_GCOV OFF CACHE BOOL "Run tests with gcov to gather code coverage data.")
 
-if (B9_GCOV)
+if(B9_GCOV)
 	add_compile_options(
 		-fprofile-arcs
 		-ftest-coverage
@@ -42,6 +42,28 @@ if (B9_GCOV)
 		-ftest-coverage
 	)
 endif(B9_GCOV)
+
+set(B9_ASAN OFF CACHE BOOL "Build b9 with clang address sanitizer enabled.")
+
+if(B9_ASAN)
+	add_compile_options(
+		-fsanitize=address -fno-omit-frame-pointer
+	)
+	link_libraries(
+		-fsanitize=address
+	)
+endif(B9_ASAN)
+
+set(B9_UBSAN OFF CACHE BOOL "Build b9 with clang undefined behaviour sanitizer.")
+
+if(B9_UBSAN)
+	add_compile_options(
+		-fsanitize=undefined
+	)
+	link_libraries(
+		-fsanitize=undefined
+	)
+endif(B9_UBSAN)
 
 # OMR Configuration
 

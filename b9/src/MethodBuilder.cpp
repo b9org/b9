@@ -30,10 +30,7 @@ MethodBuilder::MethodBuilder(VirtualMachine &virtualMachine,
   /// first argument is always the execution context
   defineParameters(function->nargs);
 
-  if (cfg_.lazyVmState) {
-    DefineLocal("localContext", globalTypes().executionContext);
-  }
-
+  DefineLocal("frameBase", globalTypes().stackElementPtr);
   defineLocals(function->nargs);
 
   defineFunctions();
@@ -202,20 +199,20 @@ bool MethodBuilder::buildIL() {
 
   TR::IlValue *frameBase = LoadIndirect("b9::OperandStack", "top_", stack);
 
-  DefineLocal("frameBase", globalTypes().stackElementPtr);
   Store("frameBase", frameBase);
 
   /// Args are stored below the frame base.
 
   TR::IlValue *argsBase = IndexAt(globalTypes().stackElementPtr, frameBase,
-                                  ConstInt32(0 - function->nargs));
+                                  ConstInt32(-function->nargs));
 
   /// Bump the stackTop by the number of registers/locals in the function
+  if (function->nregs > 0) {
+    TR::IlValue *stackTop = IndexAt(globalTypes().stackElementPtr, frameBase,
+                                    ConstInt32(function->nregs));
 
-  TR::IlValue *stackTop = IndexAt(globalTypes().stackElementPtr, frameBase,
-                                  ConstInt32(function->nregs));
-
-  StoreIndirect("b9::OperandStack", "top_", stack, stackTop);
+    StoreIndirect("b9::OperandStack", "top_", stack, stackTop);
+  }
 
 #if 0
   if (cfg_.passParam) {
@@ -321,9 +318,9 @@ bool MethodBuilder::generateILForBytecode(
     std::cout << "generating index=" << bytecodeIndex << " bc=" << instruction
               << std::endl;
     builder->vmState()->Commit(builder);
-    builder->Call("b9PrintStack", 3, Load("executionContext"),
-                  builder->ConstInt64(bytecodeIndex),
-                  builder->ConstInt64(instruction.raw()));
+    // builder->Call("b9PrintStack", 3, Load("executionContext"),
+    //               builder->ConstInt64(bytecodeIndex),
+    //               builder->ConstInt64(instruction.raw()));
   }
 
   switch (bytecode) {
@@ -338,19 +335,19 @@ bool MethodBuilder::generateILForBytecode(
         builder->AddFallThroughBuilder(nextBytecodeBuilder);
       break;
     case ByteCode::FUNCTION_RETURN: {
-      if (jumpToBuilderForInlinedReturn) {
-        builder->Goto(jumpToBuilderForInlinedReturn);
-      } else {
-        builder->vmState()->Commit(builder);
-        auto result = pop(builder);
-        if (!cfg_.passParam) {
-          TR::IlValue *stack = builder->StructFieldInstanceAddress(
-              "b9::ExecutionContext", "stack_", Load("executionContext"));
-          builder->StoreIndirect("b9::OperandStack", "top_", stack,
-                                 Load("frameBase"));
-        }
-        builder->Return(builder->Or(result, builder->ConstInt64(Om::BoxKindTag::INTEGER)));
-      }
+      auto result = pop(builder);
+
+      TR::IlValue *stack = builder->StructFieldInstanceAddress(
+          "b9::ExecutionContext", "stack_", builder->Load("executionContext"));
+
+      builder->StoreIndirect(
+          "b9::OperandStack", "top_", stack,
+          builder->IndexAt(globalTypes().stackElementPtr,
+                           builder->Load("frameBase"),
+                           builder->ConstInt32(-function->nargs)));
+
+      builder->Return(
+          builder->Or(result, builder->ConstInt64(Om::BoxKindTag::INTEGER)));
     } break;
     case ByteCode::DROP:
       drop(builder);
@@ -491,13 +488,13 @@ bool MethodBuilder::generateILForBytecode(
           if (interp) {
             TR::IlValue *result = builder->Call(
                 nameToCall, 2 + argsCount, builder->Load("executionContext"),
-                builder->ConstInt32(callindex), p[0], p[1], p[2], p[3], p[4],
-                p[5], p[6], p[7]);
+                builder->ConstInt32(0xcafe), p[0], p[1], p[2], p[3], p[4], p[5],
+                p[6], p[7]);
             push(builder, result);
           } else {
-            TR::IlValue *result =
-                builder->Call(nameToCall, argsCount, p[0], p[1], p[2], p[3],
-                              p[4], p[5], p[6], p[7]);
+            TR::IlValue *result = builder->Call(
+                nameToCall, argsCount + 1, builder->Load("executionContext"),
+                p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7]);
             push(builder, result);
           }
         } else {

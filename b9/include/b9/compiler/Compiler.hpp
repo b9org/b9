@@ -21,7 +21,7 @@ class Stack;
 class VirtualMachine;
 class ExecutionContext;
 
-typedef Om::Value (*JitFunction)(ExecutionContext* executionContext, ...);
+extern "C" typedef Om::RawValue (*JitFunction)(void *executionContext);
 
 /// Function not found exception.
 struct CompilationException : public std::runtime_error {

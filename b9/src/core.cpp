@@ -58,37 +58,6 @@ void VirtualMachine::load(std::shared_ptr<const Module> module) {
 
 /// ByteCode Interpreter
 
-StackElement interpret_0(ExecutionContext *context,
-                         const std::size_t functionIndex) {
-  return context->interpret(functionIndex);
-}
-StackElement interpret_1(ExecutionContext *context,
-                         const std::size_t functionIndex, StackElement p1) {
-  context->push(p1);
-  return context->interpret(functionIndex);
-}
-StackElement interpret_2(ExecutionContext *context,
-                         const std::size_t functionIndex, StackElement p1,
-                         StackElement p2) {
-  context->push(p1);
-  context->push(p2);
-  return context->interpret(functionIndex);
-}
-StackElement interpret_3(ExecutionContext *context,
-                         const std::size_t functionIndex, StackElement p1,
-                         StackElement p2, StackElement p3) {
-  context->push(p1);
-  context->push(p2);
-  context->push(p3);
-  return context->interpret(functionIndex);
-}
-
-
-void primitive_call(ExecutionContext *context, Parameter value) {
-  context->doPrimitiveCall(value);
-}
-
-
 
 JitFunction VirtualMachine::getJitAddress(std::size_t functionIndex) {
   if (functionIndex >= compiledFunctions_.size()) {
@@ -153,7 +122,7 @@ StackElement VirtualMachine::run(const std::size_t functionIndex,
   auto function = getFunction(functionIndex);
   auto argsCount = function->nargs;
 
-  ExecutionContext executionContext(*this, cfg_);
+  ExecutionContext *executionContext = new ExecutionContext(*this, cfg_);
 
   if (cfg_.verbose) {
     std::cout << "+++++++++++++++++++++++" << std::endl;
@@ -173,12 +142,87 @@ StackElement VirtualMachine::run(const std::size_t functionIndex,
   for (std::size_t i = 0; i < argsCount; i++) {
     auto idx = argsCount - i - 1;
     auto arg = usrArgs[idx];
-    executionContext.push(arg);
+    executionContext->push(arg);
   }
 
-  StackElement result = executionContext.interpret(functionIndex);
+  StackElement result = executionContext->interpret(functionIndex);
 
   return result;
 }
 
 }  // namespace b9
+
+//
+// Jit to Interpreter transitions
+//
+
+extern "C" {
+
+using namespace Om;
+
+RawValue interpret_0(ExecutionContext *context,
+                     const std::size_t functionIndex) {
+  return (RawValue)context->interpret(functionIndex);
+}
+
+RawValue interpret_1(ExecutionContext *context, const std::size_t functionIndex,
+                     RawValue p1) {
+  context->push(Value{Om::FROM_RAW, p1});
+  return (RawValue)context->interpret(functionIndex);
+}
+
+RawValue interpret_2(ExecutionContext *context, const std::size_t functionIndex,
+                     RawValue p1, RawValue p2) {
+  context->push(Value{Om::FROM_RAW, p1});
+  context->push(Value{Om::FROM_RAW, p2});
+  return (RawValue)context->interpret(functionIndex);
+}
+
+RawValue interpret_3(ExecutionContext *context, const std::size_t functionIndex,
+                     RawValue p1, RawValue p2, RawValue p3) {
+  context->push(Value{Om::FROM_RAW, p1});
+  context->push(Value{Om::FROM_RAW, p2});
+  context->push(Value{Om::FROM_RAW, p3});
+  return (RawValue)context->interpret(functionIndex);
+}
+
+// For primitive calls
+void primitive_call(ExecutionContext *context, Parameter value) {
+  context->doPrimitiveCall(value);
+}
+
+}  // extern "C"
+
+#if 0
+
+StackElement interpret_0(ExecutionContext *context,
+                         const std::size_t functionIndex) {
+  return context->interpret(functionIndex);
+}
+StackElement interpret_1(ExecutionContext *context,
+                         const std::size_t functionIndex, StackElement p1) {
+  context->push(p1);
+  return context->interpret(functionIndex);
+}
+StackElement interpret_2(ExecutionContext *context,
+                         const std::size_t functionIndex, StackElement p1,
+                         StackElement p2) {
+  context->push(p1);
+  context->push(p2);
+  return context->interpret(functionIndex);
+}
+StackElement interpret_3(ExecutionContext *context,
+                         const std::size_t functionIndex, StackElement p1,
+                         StackElement p2, StackElement p3) {
+  context->push(p1);
+  context->push(p2);
+  context->push(p3);
+  return context->interpret(functionIndex);
+}
+
+
+void primitive_call(ExecutionContext *context, Parameter value) {
+  context->doPrimitiveCall(value);
+}
+
+#endif

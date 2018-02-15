@@ -126,7 +126,7 @@ TEST_F(InterpreterTest, jit_lvms) {
 }
 
 TEST(MyTest, arguments) {
-  b9::VirtualMachine vm{runtime, {}};
+  b9::VirtualMachine vm{runtime, {.jit = true}};
   auto m = std::make_shared<Module>();
   std::vector<Instruction> i = {{ByteCode::PUSH_FROM_VAR, 0},
                                 {ByteCode::PUSH_FROM_VAR, 1},
@@ -150,8 +150,6 @@ TEST(MyTest, jitSimpleProgram) {
   vm.load(m);
   vm.generateAllCode();
   auto r = vm.run("add", {});
-  std::cout << "HEEEEEEELLLLLOOOOOO" << std::endl;
-
   EXPECT_EQ(r, Value(0xdead));
 }
 

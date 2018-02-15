@@ -106,6 +106,10 @@ union ValueData {
 static_assert(sizeof(ValueData) == sizeof(RawValue),
               "RawValue is used to store doubles.");
 
+class FromRaw {};
+
+constexpr FromRaw FROM_RAW;
+
 /// A single-slot value. Pointer width.
 /// https://wingolog.org/archives/2011/05/18/value-representation-in-javascript-implementations
 /// https://dxr.mozilla.org/mozilla-central/source/js/public/Value.h
@@ -117,7 +121,7 @@ class Value {
 
   constexpr Value(const Value& other) : data_{other.raw()} {}
 
-  // explicit constexpr Value(RawValue r) : data_{r} {}
+  explicit constexpr Value(FromRaw, RawValue r) : data_{r} {}
 
   explicit constexpr Value(std::int32_t i)
       : data_{BoxKindTag::INTEGER | (RawValue(i) & VALUE_MASK)} {}
@@ -206,8 +210,10 @@ class Value {
 };
 
 static_assert(
-    sizeof(RawValue) == sizeof(Value),
+    sizeof(std::uintptr_t) == sizeof(Value),
     "A Value is a thin struct wrapper around it's base storage type.");
+
+static_assert(std::is_standard_layout<Value>::value, "A value must be simple.");
 
 inline std::ostream& operator<<(std::ostream& out, const Value& v) {
   if (v.isDouble()) {

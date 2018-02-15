@@ -64,7 +64,7 @@ struct BadFunctionCallException : public std::runtime_error {
   using std::runtime_error::runtime_error;
 };
 
-typedef Om::Value (*JitFunction)(ExecutionContext *executionContext, ...);
+extern "C" typedef Om::RawValue (*JitFunction)(void *executionContext);
 
 class VirtualMachine {
  public:
@@ -121,23 +121,28 @@ class VirtualMachine {
 typedef StackElement (*Interpret)(ExecutionContext *context,
                                   const std::size_t functionIndex);
 
+}  // namespace b9
+
 // define C callable Interpret API for each arg call
 // if args are passed to the function, they are not passed
 // on the intepreter stack
 
-StackElement interpret_0(ExecutionContext *context,
+extern "C" {
+
+using namespace b9;
+
+Om::RawValue interpret_0(ExecutionContext *context,
                          const std::size_t functionIndex);
-StackElement interpret_1(ExecutionContext *context,
-                         const std::size_t functionIndex, StackElement p1);
-StackElement interpret_2(ExecutionContext *context,
-                         const std::size_t functionIndex, StackElement p1,
-                         StackElement p2);
-StackElement interpret_3(ExecutionContext *context,
-                         const std::size_t functionIndex, StackElement p1,
-                         StackElement p2, StackElement p3);
+OMR::Om::RawValue interpret_1(ExecutionContext *context,
+                              const std::size_t functionIndex, Om::RawValue p1);
+Om::RawValue interpret_2(ExecutionContext *context,
+                         const std::size_t functionIndex, Om::RawValue p1,
+                         Om::RawValue p2);
+Om::RawValue interpret_3(ExecutionContext *context,
+                         const std::size_t functionIndex, Om::RawValue p1,
+                         Om::RawValue p2, Om::RawValue p3);
 
 void primitive_call(ExecutionContext *context, Parameter value);
-
-}  // namespace b9
+}
 
 #endif  // B9_VIRTUALMACHINE_HPP_

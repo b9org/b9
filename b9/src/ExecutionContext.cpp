@@ -39,11 +39,43 @@ void ExecutionContext::reset() {
   programCounter_ = 0;
 }
 
-Om::Value callJitFunction(ExecutionContext *ec, JitFunction fn) {
-  std::uint64_t result = fn((void *)ec);
-  Om::Value val;
-  val.raw(result);
-  return val;
+Om::Value ExecutionContext::callJitFunction(JitFunction jitFunction,
+                                            std::size_t nargs) {
+  if (cfg_->verbose) {
+    std::cout << "Int: transition to jit: " << jitFunction << std::endl;
+  }
+
+  Om::RawValue result = 0;
+
+  if (cfg_->passParam) {
+    switch (nargs) {
+      case 0: {
+        result = jitFunction(this);
+      } break;
+      case 1: {
+        StackElement p1 = pop();
+        result = jitFunction(this, p1.raw());
+      } break;
+      case 2: {
+        StackElement p2 = pop();
+        StackElement p1 = pop();
+        result = jitFunction(this, p1.raw(), p2.raw());
+      } break;
+      case 3: {
+        StackElement p3 = pop();
+        StackElement p2 = pop();
+        StackElement p1 = pop();
+        result = (*jitFunction)(this, p1.raw(), p2.raw(), p3.raw());
+      } break;
+      default:
+        throw std::runtime_error{"Need to add handlers for more parameters"};
+        break;
+    }
+  } else {
+    result = jitFunction(this);
+  }
+
+  return Om::Value(Om::FROM_RAW, result);
 }
 
 StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
@@ -51,10 +83,8 @@ StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
   auto argsCount = function->nargs;
   auto jitFunction = virtualMachine_->getJitAddress(functionIndex);
 
-  // fprintf(stderr, "****************************start\n");
-
   if (jitFunction) {
-    return callJitFunction(this, jitFunction);
+    return callJitFunction(jitFunction, argsCount);
   }
 
   // interpret the method otherwise

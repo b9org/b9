@@ -512,7 +512,8 @@ bool MethodBuilder::generateILForBytecode(
           } else {
             if (cfg_.debug)
               std::cout << "calling " << nameToCall << " directly" << std::endl;
-            result = builder->Call(nameToCall, 0);
+            result =
+                builder->Call(nameToCall, 1, builder->Load("executionContext"));
           }
           QRELOAD_DROP(builder, argsCount);
           push(builder, result);

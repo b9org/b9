@@ -45,6 +45,9 @@ class ExecutionContext {
 
   void doFunctionCall(Parameter value);
 
+  /// A helper for interpreter-to-jit transitions.
+  Om::Value callJitFunction(JitFunction jitFunction, std::size_t argCount);
+
   void doFunctionReturn(StackElement returnVal);
 
   Parameter doJmp(Parameter offset);

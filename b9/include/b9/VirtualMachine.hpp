@@ -65,7 +65,7 @@ struct BadFunctionCallException : public std::runtime_error {
   using std::runtime_error::runtime_error;
 };
 
-extern "C" typedef Om::RawValue (*JitFunction)(void *executionContext);
+extern "C" typedef Om::RawValue (*JitFunction)(void *executionContext, ...);
 
 class VirtualMachine {
  public:

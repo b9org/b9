@@ -231,7 +231,44 @@ static constexpr Instruction END_SECTION{ByteCode::END_SECTION, 0};
 
 /// Print an Instruction.
 inline std::ostream &operator<<(std::ostream &out, Instruction i) {
-  return out << "(" << i.byteCode() << " " << i.parameter() << ")";
+  out << "(" << i.byteCode();
+
+  switch (i.byteCode()) {
+    // 0 parameters
+    case ByteCode::END_SECTION:
+    case ByteCode::DUPLICATE:
+    case ByteCode::FUNCTION_RETURN:
+    case ByteCode::DROP:
+    case ByteCode::INT_ADD:
+    case ByteCode::INT_SUB:
+    case ByteCode::INT_NOT:
+    case ByteCode::NEW_OBJECT:
+    case ByteCode::CALL_INDIRECT:
+    case ByteCode::SYSTEM_COLLECT:
+      break;
+    // 1 parameter
+    case ByteCode::FUNCTION_CALL:
+    case ByteCode::PRIMITIVE_CALL:
+    case ByteCode::JMP:
+    case ByteCode::PUSH_FROM_VAR:
+    case ByteCode::POP_INTO_VAR:
+    case ByteCode::INT_PUSH_CONSTANT:
+    case ByteCode::INT_JMP_EQ:
+    case ByteCode::INT_JMP_NEQ:
+    case ByteCode::INT_JMP_GT:
+    case ByteCode::INT_JMP_GE:
+    case ByteCode::INT_JMP_LT:
+    case ByteCode::INT_JMP_LE:
+    case ByteCode::STR_PUSH_CONSTANT:
+    case ByteCode::STR_JMP_EQ:
+    case ByteCode::STR_JMP_NEQ:
+    case ByteCode::PUSH_FROM_OBJECT:
+    case ByteCode::POP_INTO_OBJECT:
+    default:
+      out << " " << i.parameter();
+      break;
+  }
+  return out << ")";
 }
 
 }  // namespace b9

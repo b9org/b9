@@ -26,7 +26,7 @@
 
 namespace b9 {
 
-PrimitiveFunction *const VirtualMachine::primitives_[2];
+PrimitiveFunction *const VirtualMachine::primitives_[3];
 
 VirtualMachine::VirtualMachine(OMR::Om::ProcessRuntime &runtime,
                                const Config &cfg)
@@ -192,37 +192,3 @@ void primitive_call(ExecutionContext *context, Parameter value) {
 }
 
 }  // extern "C"
-
-#if 0
-
-StackElement interpret_0(ExecutionContext *context,
-                         const std::size_t functionIndex) {
-  return context->interpret(functionIndex);
-}
-StackElement interpret_1(ExecutionContext *context,
-                         const std::size_t functionIndex, StackElement p1) {
-  context->push(p1);
-  return context->interpret(functionIndex);
-}
-StackElement interpret_2(ExecutionContext *context,
-                         const std::size_t functionIndex, StackElement p1,
-                         StackElement p2) {
-  context->push(p1);
-  context->push(p2);
-  return context->interpret(functionIndex);
-}
-StackElement interpret_3(ExecutionContext *context,
-                         const std::size_t functionIndex, StackElement p1,
-                         StackElement p2, StackElement p3) {
-  context->push(p1);
-  context->push(p2);
-  context->push(p3);
-  return context->interpret(functionIndex);
-}
-
-
-void primitive_call(ExecutionContext *context, Parameter value) {
-  context->doPrimitiveCall(value);
-}
-
-#endif

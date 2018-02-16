@@ -153,7 +153,18 @@ TEST(MyTest, jitSimpleProgram) {
   EXPECT_EQ(r, Value(0xdead));
 }
 
-extern "C" void b9_prim_print_string(ExecutionContext* context);
+TEST(MyTest, haveAVariable) {
+  b9::VirtualMachine vm{runtime, {.jit = true}};
+  auto m = std::make_shared<Module>();
+  std::vector<Instruction> i = {{ByteCode::INT_PUSH_CONSTANT, 0xdead},
+                                {ByteCode::FUNCTION_RETURN},
+                                END_SECTION};
+  m->functions.push_back(b9::FunctionDef{"add", 0, i, 0, 0});
+  vm.load(m);
+  vm.generateAllCode();
+  auto r = vm.run("add", {});
+  EXPECT_EQ(r, Value(0xdead));
+}
 
 TEST(ObjectTest, allocateSomething) {
   b9::VirtualMachine vm{runtime, {}};

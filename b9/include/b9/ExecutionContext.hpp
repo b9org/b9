@@ -18,6 +18,8 @@ class ExecutionContext {
 
   void push(StackElement e);
 
+  const OperandStack &stack() const { return stack_; }
+
   template <typename VisitorT>
   void visit(Om::Context &cx, VisitorT &visitor) {
     stack_.visit(cx, visitor);
@@ -34,7 +36,8 @@ class ExecutionContext {
   // Available externally for jit-to-primitive calls.
   void doPrimitiveCall(Parameter value);
 
-  friend std::ostream &operator<<(std::ostream &stream, const ExecutionContext &ec);
+  friend std::ostream &operator<<(std::ostream &stream,
+                                  const ExecutionContext &ec);
 
  private:
   friend class VirtualMachine;

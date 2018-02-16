@@ -19,17 +19,6 @@
 
 namespace b9 {
 
-// TODO delete this code and move it to a pretty printer
-// extern "C" void b9PrintStack(ExecutionContext *context, int64_t pc,
-//                              Instruction instruction) {
-//   std::cout << "vvvvvvvvvvvvvvvvv" << std::endl;
-//   std::cout << "PC = " << pc << std::endl;
-//   std::cout << "BC = " << instruction << std::endl;
-//   // TODO: fix print stack
-//   // printStack(std::cout, context->stack());
-//   std::cout << "^^^^^^^^^^^^^^^^^" << std::endl;
-// }
-
 GlobalTypes::GlobalTypes(TR::TypeDictionary &td) {
 
   // Core Integer Types

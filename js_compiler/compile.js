@@ -98,7 +98,7 @@ function CodeGen(f) {
     this.strings = {}
     this.nextStringIndex = 0;
 
-    this.primitives = [ "print_string", "print_number"];
+    this.primitives = [ "print_string", "print_number", "print_stack"];
 
     this.labels = new Object();
     this.instructionIndex = 0;

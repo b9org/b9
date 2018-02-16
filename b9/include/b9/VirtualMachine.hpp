@@ -28,6 +28,7 @@
 extern "C" {
 b9::PrimitiveFunction b9_prim_print_string;
 b9::PrimitiveFunction b9_prim_print_number;
+b9::PrimitiveFunction b9_prim_print_stack;
 }
 
 namespace b9 {
@@ -109,7 +110,7 @@ class VirtualMachine {
 
  private:
   static constexpr PrimitiveFunction *const primitives_[] = {
-      b9_prim_print_string, b9_prim_print_number};
+      b9_prim_print_string, b9_prim_print_number, b9_prim_print_stack};
 
   Config cfg_;
   OMR::Om::MemoryManager memoryManager_;

@@ -193,25 +193,24 @@ bool MethodBuilder::buildIL() {
   TR::IlValue *stack = StructFieldInstanceAddress(
       "b9::ExecutionContext", "stack_", Load("executionContext"));
 
-  /// The top of the stack at entry is the base of our function's frame.
-  /// When this function exits, we reset the stack top to the beginning of
-  /// entry.
+  TR::IlValue *stackTop = LoadIndirect("b9::OperandStack", "top_", stack);
 
-  TR::IlValue *frameBase = LoadIndirect("b9::OperandStack", "top_", stack);
+  /// When this function exits, we reset the stack top to the beginning of
+  /// entry. The calling convention is callee-cleanup, so at exit we pop all the
+  /// args off the operand stack.
+
+  TR::IlValue *frameBase = IndexAt(globalTypes().stackElementPtr, stackTop,
+                                   ConstInt32(-function->nargs));
 
   Store("frameBase", frameBase);
 
-  /// Args are stored below the frame base.
+  /// Bump the stackTop by the number of registers/locals in the function.
 
-  TR::IlValue *argsBase = IndexAt(globalTypes().stackElementPtr, frameBase,
-                                  ConstInt32(-function->nargs));
-
-  /// Bump the stackTop by the number of registers/locals in the function
   if (function->nregs > 0) {
-    TR::IlValue *stackTop = IndexAt(globalTypes().stackElementPtr, frameBase,
-                                    ConstInt32(function->nregs));
+    TR::IlValue *newStackTop = IndexAt(globalTypes().stackElementPtr, stackTop,
+                                       ConstInt32(function->nregs));
 
-    StoreIndirect("b9::OperandStack", "top_", stack, stackTop);
+    StoreIndirect("b9::OperandStack", "top_", stack, newStackTop);
   }
 
 #if 0
@@ -261,8 +260,8 @@ TR::IlValue *MethodBuilder::loadVarIndex(TR::IlBuilder *builder, int varindex) {
     TR::IlValue *args = builder->Load("frameBase");
     TR::IlValue *address = builder->IndexAt(globalTypes().stackElementPtr, args,
                                             builder->ConstInt32(varindex));
-    result = builder->LoadAt(globalTypes().stackElementPtr, address);
-    result = builder->ConvertTo(globalTypes().stackElement, result);
+    TR::IlValue *data = builder->LoadAt(globalTypes().stackElementPtr, address);
+    result = builder->And(builder->ConstInt64(Om::VALUE_MASK), data);
   }
 
   return result;
@@ -280,7 +279,10 @@ void MethodBuilder::storeVarIndex(TR::IlBuilder *builder, int varindex,
     TR::IlValue *args = builder->Load("frameBase");
     TR::IlValue *address = builder->IndexAt(globalTypes().stackElementPtr, args,
                                             builder->ConstInt32(varindex));
-    builder->StoreAt(address, value);
+    // this needs to be encoded for the GC to walk the stack.
+    builder->StoreAt(
+        address,
+        builder->Or(builder->ConstInt64(Om::BoxKindTag::INTEGER), value));
   }
 }
 
@@ -340,11 +342,8 @@ bool MethodBuilder::generateILForBytecode(
       TR::IlValue *stack = builder->StructFieldInstanceAddress(
           "b9::ExecutionContext", "stack_", builder->Load("executionContext"));
 
-      builder->StoreIndirect(
-          "b9::OperandStack", "top_", stack,
-          builder->IndexAt(globalTypes().stackElementPtr,
-                           builder->Load("frameBase"),
-                           builder->ConstInt32(-function->nargs)));
+      builder->StoreIndirect("b9::OperandStack", "top_", stack,
+                             builder->Load("frameBase"));
 
       builder->Return(
           builder->Or(result, builder->ConstInt64(Om::BoxKindTag::INTEGER)));

@@ -50,6 +50,10 @@ class OperandStack {
 
   StackElement *end() { return top_; }
 
+  const StackElement *begin() const { return stack_; }
+
+  const StackElement *end() const { return top_; }
+
   void restore(StackElement *top) { top_ = top; }
 
   template <typename VisitorT>
@@ -68,7 +72,7 @@ class OperandStack {
   StackElement stack_[SIZE];
 };
 
-inline std::ostream &printStack(std::ostream &out, OperandStack &stack) {
+inline std::ostream &printStack(std::ostream &out, const OperandStack &stack) {
   if (stack.begin() == stack.end()) {
     out << "<stack empty>" << std::endl;
     return out;

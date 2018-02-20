@@ -6,7 +6,8 @@ using namespace b9;
 
 /// ( number -- 0 )
 extern "C" void b9_prim_print_number(ExecutionContext *context) {
-  StackElement number = context->pop();
+  auto number = context->pop();
+  assert(number.isInteger());
   std::cout << number << std::endl;
   context->push(OMR::Om::Value(0));
 }

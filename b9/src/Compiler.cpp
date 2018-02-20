@@ -82,7 +82,7 @@ JitFunction Compiler::generateCode(const std::size_t functionIndex) {
 
   if (cfg_.debug)
     std::cout << "Compilation completed with return code: " << rc
-              << ", code address: " << result << std::endl;
+              << ", code address: " << static_cast<void *>(result) << std::endl;
 
   return (JitFunction)result;
 }

@@ -27,6 +27,11 @@ std::vector<std::int32_t> integers = {
 TEST(ValueTest, integerConstructorRoundTrip) {
   for (auto i : integers) {
     Value value(i);
+
+    EXPECT_TRUE(value.isBoxedValue());
+    EXPECT_TRUE(value.isInteger());
+    EXPECT_FALSE(value.isDouble());
+
     auto i2 = value.getInteger();
     EXPECT_EQ(i, i2);
   }

@@ -21,17 +21,15 @@ MethodBuilder::MethodBuilder(VirtualMachine &virtualMachine,
 
   /// TODO: The __LINE__/__FILE__ stuff is 100% bogus, this is about as bad.
   DefineLine("<unknown");
-  DefineFile("<unknown>");
+  DefineFile(function->name.c_str());
 
   DefineName(function->name.c_str());
 
   DefineReturnType(globalTypes().stackElement);
 
-  /// first argument is always the execution context
-  defineParameters(function->nargs);
+  defineParameters();
 
-  DefineLocal("frameBase", globalTypes().stackElementPtr);
-  defineLocals(function->nargs);
+  defineLocals();
 
   defineFunctions();
 
@@ -50,30 +48,41 @@ static const char *argsAndTempNames[] = {
 /// The first argument is always executionContext.
 /// The remaining function arguments are only passed as native arguments in
 /// PassParam mode.
-void MethodBuilder::defineParameters(std::size_t argCount) {
+void MethodBuilder::defineParameters() {
+
+  /// first argument is always the execution context
   DefineParameter("executionContext", globalTypes().executionContextPtr);
 
   if (cfg_.passParam) {
-    for (int i = 0; i < argCount; i++) {
+    const FunctionDef *function = virtualMachine_.getFunction(functionIndex_);
+
+    if (cfg_.debug) {
+      std::cout << "Defining " << function->nargs << " parameters\n";
+    }
+
+    for (int i = 0; i < function->nargs; i++) {  
       DefineParameter(argsAndTempNames[i], globalTypes().stackElement);
     }
   }
 }
 
-void MethodBuilder::defineLocals(std::size_t argCount) {
+void MethodBuilder::defineLocals() {
+
+  DefineLocal("frameBase", globalTypes().stackElementPtr);
+
   if (cfg_.passParam) {
+
     // for locals we pre-define all the locals we could use, for the toplevel
     // and all the inlined names which are simply referenced via a skew to reach
     // past callers functions args/temps
+
     const FunctionDef *function = virtualMachine_.getFunction(functionIndex_);
-    std::size_t topLevelLocals = function->nargs + function->nregs;
+
     if (cfg_.debug) {
-      std::cout << "CREATING " << topLevelLocals << " topLevel with "
-                << MAX_ARGS_TEMPS_AVAIL - topLevelLocals
-                << " slots for inlining" << std::endl;
+      std::cout << "Defining " << function->nregs << " locals\n";
     }
 
-    for (std::size_t i = argCount; i < MAX_ARGS_TEMPS_AVAIL; i++) {
+    for (std::size_t i = function->nargs; i < (function->nregs + function->nargs); i++) {
       DefineLocal(argsAndTempNames[i], globalTypes().stackElement);
     }
   }
@@ -405,6 +414,8 @@ bool MethodBuilder::generateILForBytecode(
         builder->AddFallThroughBuilder(nextBytecodeBuilder);
     } break;
     case ByteCode::PRIMITIVE_CALL: {
+      const std::size_t callindex = instruction.parameter();
+
       builder->vmState()->Commit(builder);
       TR::IlValue *result =
           builder->Call("primitive_call", 2, builder->Load("executionContext"),

@@ -109,7 +109,7 @@ class MethodBuilder : public TR::MethodBuilder {
   const GlobalTypes &globalTypes_;
   const Config &cfg_;
   const std::size_t functionIndex_;
-  int32_t maxInlineDepth;
+  int32_t maxInlineDepth_;
   int32_t firstArgumentIndex = 0;
 };
 

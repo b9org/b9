@@ -25,8 +25,8 @@ class MethodBuilder : public TR::MethodBuilder {
 
  private:
   void defineFunctions();
-  void defineLocals(std::size_t nargs);
-  void defineParameters(std::size_t nargs);
+  void defineLocals();
+  void defineParameters();
 
   void createBuilderForBytecode(TR::BytecodeBuilder **bytecodeBuilderTable,
                                 ByteCode bytecode, int64_t bytecodeIndex);

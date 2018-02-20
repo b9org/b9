@@ -14,8 +14,8 @@ MethodBuilder::MethodBuilder(VirtualMachine &virtualMachine,
     : TR::MethodBuilder(&virtualMachine.compiler()->typeDictionary()),
       virtualMachine_(virtualMachine),
       cfg_(virtualMachine.config()),
+      maxInlineDepth_(cfg_.maxInlineDepth),
       globalTypes_(virtualMachine.compiler()->globalTypes()),
-      // typeDictionary_(virtualMachine->compiler()->typeDictionary()),
       functionIndex_(functionIndex) {
   const FunctionDef *function = virtualMachine_.getFunction(functionIndex);
 
@@ -140,7 +140,7 @@ bool MethodBuilder::inlineProgramIntoBuilder(
     TR::BytecodeBuilder *currentBuilder,
     TR::BytecodeBuilder *jumpToBuilderForInlinedReturn) {
   bool success = true;
-  maxInlineDepth--;
+  maxInlineDepth_--;
   const FunctionDef *function = virtualMachine_.getFunction(functionIndex);
   const Instruction *program = function->instructions.data();
 
@@ -182,7 +182,7 @@ bool MethodBuilder::inlineProgramIntoBuilder(
     }
   }
 
-  maxInlineDepth++;
+  maxInlineDepth_++;
   return success;
 }
 
@@ -440,7 +440,7 @@ bool MethodBuilder::generateILForBytecode(
           }
 
           // Attempt to inline the function we're calling
-          if (maxInlineDepth >= 0 && !interp) {
+          if (maxInlineDepth_ >= 0 && !interp) {
             int32_t save = firstArgumentIndex;
             int32_t skipLocals = function->nargs + function->nregs;
             int32_t spaceNeeded = argsCount + regsCount;

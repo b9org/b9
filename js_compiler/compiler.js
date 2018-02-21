@@ -82,7 +82,7 @@ var Instruction = function (operator, operand) {
 	this.output = function (out) {
 		var encoded = (operatorCode(this.operator) << 24);
 
-		if(this.operand) {
+		if (this.operand) {
 			encoded |= this.operand & 0x00FFFFFF;
 		}
 
@@ -131,10 +131,6 @@ var SymbolTable = function () {
 		}
 	}
 }
-
-var st = new SymbolTable();
-console.log(st.get("hello"));
-console.log(st.get("hello"));
 
 var LabelTable = function () {
 

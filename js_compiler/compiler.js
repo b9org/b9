@@ -645,7 +645,15 @@ function FirstPassCodeGen() {
 	}
 
 	this.emitPrimitiveCall = function (func, expression) {
+		/// The first argument is a "phantom" argument that tells us the primitive code.
+		/// It's not compiled as an expression.
 		var code = primitiveCode(expression.arguments[0].value);
+
+		var args = expression.arguments.slice(1);
+		args.forEach(function (element) {
+			element.isParameter = true;
+		});
+		this.handleBody(func, args);
 		func.instructions.push(new Instruction("PRIMITIVE_CALL", code));
 		return true;
 	};

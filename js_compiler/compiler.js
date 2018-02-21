@@ -137,7 +137,7 @@ var LabelTable = function () {
 	this.table = [];
 
 	this.create = function () {
-		return table.push(undefined);
+		return this.table.push(undefined);
 	}
 
 	this.place = function (label, offset) {
@@ -170,23 +170,32 @@ function FunctionDefinition(outer) {
 	this.labels = new LabelTable();
 	this.instructions = [];
 
-	this.resolve = function (module) {
-		for (instruction in this.instructions) {
-			// TODO: Resolve any undefined function-id's or labels in the body.
-			// 	switch(instruction.operator) {
-			// 	case 
-			// 	}
+	/// Resolve the label to a relative offset.
+	this.resolveLabel = function (label, fromIndex) {
+		var target = this.labels.instructionIndex(label);
+		if (target == undefined) {
+			throw "Encountered label " + label;
+		}
 
-			// this.deltaForLabel = function (labelName) {
-			// 	var gen = this;
-			// 	return function (fromInstruction) {
-			// 		// delay computing offset until forward labels are found
-			// 		// output is done at the end, all labels will be defined
-			// 		var fromIndex = fromInstruction.instructionIndex;
-			// 		var toIndex = gen.labels[labelName];
-			// 		return toIndex - fromIndex - 1;
-			// 	}
-			// };
+		console.log(">>>>>> resolve label " + label + "@" + fromIndex + "=" + target);
+		return target - fromIndex - 1;
+	};
+
+	this.resolve = function (module) {
+		for (var index = 0; index < this.instructions.length; index++) {
+			var instruction = this.instructions[index];
+			switch (instruction.operator) {
+				case "JMP":
+				case "INT_JMP_EQ":
+				case "INT_JMP_NEQ":
+				case "INT_JMP_GT":
+				case "INT_JMP_GE":
+				case "INT_JMP_LT":
+				case "INT_JMP_LE":
+					// the label id is stuffed in the operand.
+					// translate the label to a relative offset.
+					instruction.operand = this.resolveLabel(instruction.operand, index);
+			}
 		}
 	}
 
@@ -203,6 +212,10 @@ function FunctionDefinition(outer) {
 		this.instructions.push(instruction);
 	};
 
+	this.lastInstruction = function() {
+		return this.instructions[this.instructions.length - 1];
+	}
+
 	this.localIndex = function (name) {
 		var index = this.regs.lookup(name);
 		if (index) {
@@ -212,8 +225,13 @@ function FunctionDefinition(outer) {
 	}
 
 	this.placeLabel = function (label) {
-		this.labels.place(label, instructions.length);
+		this.labels.place(label, this.instructions.length);
 	}
+
+	this.createLabel = function () {
+		return this.labels.create();
+	}
+
 };
 
 /// The function table tracks function names and indexes. When a new name is encountered, the table automatically
@@ -438,26 +456,27 @@ function FirstPassCodeGen() {
 				func.instructions.push(new Instruction("DUPLICATE"));
 			}
 
-			this.emitPopVar(expression.left.name);
+			this.emitPopIntoVar(func, expression.left.name);
 
 			if (expression.isParameter == true) {
-				this.emitPushVar(expression.left.name);
+				this.emitPushFromVar(func, expression.left.name);
 			}
 			return;
 		}
-		this.handle(expression.right);
+		this.handle(func, expression.right);
 	};
 
 	this.handleVariableDeclaration = function (func, declaration) {
 		/// composed of potentially multiple variables.
-		this.handleAll(func, declaration.declarations);
+		this.handleBody(func, declaration.declarations);
 	}
 
 	this.handleVariableDeclarator = function (func, declarator) {
+		console.log(declarator);
 		var id = func.regs.get(declarator.id.name);
-		if (decl.init) {
-			this.handle(decl.init);
-			this.popvar(decl.id.name);
+		if (declarator.init) {
+			this.handle(func, declarator.init);
+			this.emitPopIntoVar(func, declarator.id.name);
 		}
 	};
 
@@ -521,8 +540,9 @@ function FirstPassCodeGen() {
 	};
 
 	this.handleBinaryExpression = function (func, decl) {
-		this.handle(decl.left);
-		this.handle(decl.right);
+		console.log(decl);
+		this.handle(func, decl.left);
+		this.handle(func, decl.right);
 		if (decl.operator == "-") {
 			func.instructions.push(new Instruction("INT_SUB"));
 		}
@@ -536,13 +556,11 @@ function FirstPassCodeGen() {
 			func.instructions.push(new Instruction("INT_DIV"));
 		}
 		else {
-			var code = this.compareOpToInstruction(decl.operator);
-			if (!code) {
-				throw "This operator is not being handled" + decl.operator;
-			}
-			return code;
+			// TODO: Support comparison operators.
+			// Note: Comparison operations are only handled in if-statements
+			// if-statements will use the operator to emit a specialized jmp-compare instruction
+			throw "This operator is not being handled" + decl.operator;
 		}
-		return null;
 	};
 
 	this.handleBlockStatement = function (func, decl) {
@@ -555,7 +573,7 @@ function FirstPassCodeGen() {
 		}
 
 		this.emitPushFromVar(func, decl.argument.name);
-		func.instruction.push(new Instruction("INT_PUSH_CONSTANT", 1));
+		func.instructions.push(new Instruction("INT_PUSH_CONSTANT", 1));
 
 		if (decl.operator == "++") {
 			func.instructions.push(new Instruction("INT_ADD"));
@@ -564,7 +582,7 @@ function FirstPassCodeGen() {
 			func.instructions.push(new Instruction("INT_SUB"));
 		}
 
-		this.emitPopIntoVar(decl.argument.name);
+		this.emitPopIntoVar(func, decl.argument.name);
 	};
 
 	this.handleForStatement = function (func, decl) {
@@ -628,10 +646,15 @@ function FirstPassCodeGen() {
 
 
 	this.handleReturnStatement = function (func, decl) {
-		if (decl.argument != null) {
+		console.log(decl);
+		if (decl.argument) {
 			this.handle(func, decl.argument);
 		}
-		this.genReturn(false);
+		else {
+			func.instructions.push(new Instruction("INT_PUSH_CONSTANT", 0));
+		}
+
+		func.instructions.push(new Instruction("FUNCTION_RETURN"));
 	};
 
 	this.emitFunctionCall = function (func, expression) {
@@ -658,37 +681,7 @@ function FirstPassCodeGen() {
 		return true;
 	};
 
-	this.genJmpForCompare = function (code) {
-		if (code == "==") instruction = "INT_JMP_NEQ";
-		else if (code == "!=") instruction = "INT_JMP_EQ";
-		else if (code == "<=") instruction = "INT_JMP_GT";
-		else if (code == "<") instruction = "INT_JMP_GE";
-		else if (code == ">") instruction = "INT_JMP_LE";
-		else if (code == ">=") instruction = "INT_JMP_LT";
-		else throw "Unhandled code";
-		return instruction;
-	};
-
-	this.genReturn = function (func, forced) {
-		if (func.instructions[func.instructions.length - 1].operand == "FUNCTION_RETURN") {
-			console.error("Warning: generating duplicate returns");
-			return;
-		}
-
-		if (this.currentFunction.pushcount == 0) {
-			this.outputInstruction("INT_PUSH_CONSTANT", 0, " Generate Free Return");
-		}
-
-		this.outputInstruction("FUNCTION_RETURN", 0, " forced = " + forced);
-	}
-
-	this.declareFunction = function (id, decl) {
-		var newFunction = { index: this.nextFunctionIndex++, name: id, nargs: -1, nregs: -1 };
-		this.functions[id] = newFunction;
-	};
-
 	/* HANDLE JUMPS AND LABELS */
-
 
 	this.flowControlBreakContinue = function (breakLabel, continueLabel, location, body) {
 		var saveBreak = this.currentBreak;
@@ -731,95 +724,89 @@ function FirstPassCodeGen() {
 		this.emitPushFromVar(func, identifier.name);
 	};
 
-	this.handleIfStatement = function (func, decl) {
+	this.handleIfStatement = function (func, statement) {
 
-		var falseLabel = func.labels.create();
 		var endLabel = func.labels.create();
 
-		var comparator = this.handle(func, decl.test);
+		console.log(statement);
 
-		var jumpOperator = null;
+		var jumpOperator = undefined;
 
-		if (decl.test.type == "BinaryExpression") {
+		///
+		if (statement.test.type == "BinaryExpression") {
 			// Binary expressions compile to specialized JMP operations
-			jumpOperator = this.compareOpToInstruction(comparator, "IF");
+			this.handle(func, statement.test.left);
+			this.handle(func, statement.test.right);
+			jumpOperator = this.compareOpToInstruction(statement.test.operator);
 		} else {
 			// Unary expressions always compile to a comparison with false.
+			this.handle(func, statement.test.body);
 			func.instructions.push(new Instruction("INT_PUSH_CONSTANT", 0));
 			jumpOperator = "INT_JMP_EQ";
 		}
 
-		if (decl.alternate != null) {
-			this.outputInstruction(instruction, this.deltaForLabel(labelF),
-				"genJmpForCompare has false block, IF " + code);
-		} else {
-			this.outputInstruction(instruction, this.deltaForLabel(labelEnd),
-				"genJmpForCompare has no false block, IF " + code);
+		var consequentEnd = func.createLabel();
+		var alternateEnd = undefined;
+
+		func.instructions.push(new Instruction(jumpOperator, consequentEnd));
+		this.handle(func, statement.consequent);
+
+		if (statement.alternate) {
+			alternateEnd = func.createLabel();
+			if (func.lastInstruction().operator != "FUNCTION_RETURN") {
+				func.instructions.push(new Instruction("JMP", alternateEnd));
+			}
 		}
 
-		// this.savehack(function () { // true part  is fall through from genJmpForCompare
-		if (decl.alternate != null) {
-			// you only have a false if there is code
-			// so you only jump if there is code to jump around
-			if (this.prevInstruction.bc != "FUNCTION_RETURN") {
-				this.outputInstruction("JMP", this.deltaForLabel(labelEnd), "SKIP AROUND THE FALSE CODE BLOCK");
-			}
-			this.placeLabel(labelF);
-			this.handle(decl.alternate);
+		func.placeLabel(consequentEnd);
+
+		if (statement.alternate) {
+			this.handle(func, statement.alternate);
+			func.placeLabel(alternateEnd);
 		}
-		this.placeLabel(labelEnd);
 	};
 
-	this.handleEmptyStatement = function (decl) { };
+	this.handleEmptyStatement = function (func, statement) { };
 
 	this.handleWhileStatement = function (func, statement) {
-		var loopTest = func.labels.create();
-		var loopEnd = func.labels.create();
-		var loopContinue = func.labels.create();
+		console.log(statement);
 
-		var test = func.labels.create();
-		func.placeLabel(test);
-		var comparator = this.handle(func, statement.test);
-		var jumpOperator = this.compareOpToInstruction(code);
+		var loopTest = func.createLabel();
+		var loopEnd = func.createLabel();
 
-		func.body.push_back(new Instruction(jumpOperator, end));
+		func.placeLabel(loopTest);
 
-		func.labels.place(loopEnd);
+		var jumpOperator = undefined;
 
-		this.savehack(function () {
-			this.placeLabel(loopTest);
-			var code = this.handle(decl.test);
+		if (statement.test.type == "BinaryExpression") {
+			// Binary expressions compile to specialized JMP operations
+			this.handle(func, statement.test.left);
+			this.handle(func, statement.test.right);
+			jumpOperator = this.compareOpToInstruction(statement.test.operator);
+		} else {
+			// Unary expressions always compile to a comparison with false.
+			this.handle(func, statement.test.body);
+			func.instructions.push(new Instruction("INT_PUSH_CONSTANT", 0));
+			jumpOperator = "INT_JMP_EQ";
+		}
 
-			this.outputInstruction(instruction,
-				this.deltaForLabel(loopEnd), "genJmpForCompare WHILE " + code);
-		});
+		func.instructions.push(new Instruction(jumpOperator, loopEnd));
 
-		this.flowControlBreakContinue(loopEnd, loopContinue, "WHILE", function () {
-			this.savehack(function () {
-				this.handle(decl.body);
-				decl.needResult = false;
-				this.placeLabel(loopContinue);
-				this.outputInstruction("JMP", this.deltaForLabel(loopTest), "WHILE ");
-				this.placeLabel(loopEnd);
-			});
-		});
+		this.handle(func, statement.body);
+		func.instructions.push(new Instruction(jumpOperator, loopTest));
+		func.placeLabel(loopEnd);
 	};
 };
-
-/// Compile without resolving symbols.
-function compile0(syntax) {
-	var compiler = new FirstPassCodeGen();
-	return compiler.compile(syntax);
-}
 
 /// Compile and output a complete module.
 /// Compilation happens in 3 phases:
 ///  1. Parse -- translate a JS program to a syntax tree.
-///  2. Compile0 -- first pass compilation of the program to a module.
+///  2. Compile -- first pass compilation of the program to a module.
 ///  3. resolve -- final stage of linking up unresolved reference in the input program.
 function compile(code, output) {
 	var syntax = esprima.parse(code);
-	var module = compile0(syntax);
+	var compiler = new FirstPassCodeGen();
+	var module = compiler.compile(syntax);
 	module.resolve();
 	module.output(output);
 	return true;

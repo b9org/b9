@@ -53,13 +53,12 @@ void MethodBuilder::defineParameters() {
   /// first argument is always the execution context
   DefineParameter("executionContext", globalTypes().executionContextPtr);
 
+  const FunctionDef *function = virtualMachine_.getFunction(functionIndex_);
+  if (cfg_.debug) {
+    std::cout << "Defining " << function->nargs << " parameters\n";
+  }
+
   if (cfg_.passParam) {
-    const FunctionDef *function = virtualMachine_.getFunction(functionIndex_);
-
-    if (cfg_.debug) {
-      std::cout << "Defining " << function->nargs << " parameters\n";
-    }
-
     for (int i = 0; i < function->nargs; i++) {  
       DefineParameter(argsAndTempNames[i], globalTypes().stackElement);
     }
@@ -70,17 +69,16 @@ void MethodBuilder::defineLocals() {
 
   DefineLocal("frameBase", globalTypes().stackElementPtr);
 
+  const FunctionDef *function = virtualMachine_.getFunction(functionIndex_);
+  if (cfg_.debug) {
+    std::cout << "Defining " << function->nregs << " locals\n";
+  }
+
   if (cfg_.passParam) {
 
     // for locals we pre-define all the locals we could use, for the toplevel
     // and all the inlined names which are simply referenced via a skew to reach
     // past callers functions args/temps
-
-    const FunctionDef *function = virtualMachine_.getFunction(functionIndex_);
-
-    if (cfg_.debug) {
-      std::cout << "Defining " << function->nregs << " locals\n";
-    }
 
     for (std::size_t i = function->nargs; i < (function->nregs + function->nargs); i++) {
       DefineLocal(argsAndTempNames[i], globalTypes().stackElement);

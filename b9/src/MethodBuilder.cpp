@@ -49,7 +49,6 @@ static const char *argsAndTempNames[] = {
 /// The remaining function arguments are only passed as native arguments in
 /// PassParam mode.
 void MethodBuilder::defineParameters() {
-
   /// first argument is always the execution context
   DefineParameter("executionContext", globalTypes().executionContextPtr);
 
@@ -59,14 +58,13 @@ void MethodBuilder::defineParameters() {
   }
 
   if (cfg_.passParam) {
-    for (int i = 0; i < function->nargs; i++) {  
+    for (int i = 0; i < function->nargs; i++) {
       DefineParameter(argsAndTempNames[i], globalTypes().stackElement);
     }
   }
 }
 
 void MethodBuilder::defineLocals() {
-
   DefineLocal("frameBase", globalTypes().stackElementPtr);
 
   const FunctionDef *function = virtualMachine_.getFunction(functionIndex_);
@@ -78,7 +76,8 @@ void MethodBuilder::defineLocals() {
     // for locals we pre-define all the locals we could use, for the toplevel
     // and all the inlined names which are simply referenced via a skew to reach
     // past callers functions args/temps
-    for (std::size_t i = function->nargs; i < (function->nregs + function->nargs); i++) {
+    for (std::size_t i = function->nargs;
+         i < (function->nregs + function->nargs); i++) {
       DefineLocal(argsAndTempNames[i], globalTypes().stackElement);
     }
   }
@@ -193,6 +192,7 @@ bool MethodBuilder::inlineProgramIntoBuilder(
 
 bool MethodBuilder::buildIL() {
   const FunctionDef *function = virtualMachine_.getFunction(functionIndex_);
+
   setVMState(new OMR::VirtualMachineState());
 
   TR::IlValue *stack = StructFieldInstanceAddress(
@@ -201,22 +201,29 @@ bool MethodBuilder::buildIL() {
   TR::IlValue *stackTop = LoadIndirect("b9::OperandStack", "top_", stack);
 
   /// When this function exits, we reset the stack top to the beginning of
-  /// entry. The calling convention is callee-cleanup, so at exit we pop all the
-  /// args off the operand stack.
-  TR::IlValue *frameBase = IndexAt(globalTypes().stackElementPtr, stackTop,
-                                   ConstInt32(-function->nargs));
-  Store("frameBase", frameBase);
-
-
+  /// entry. The calling convention is callee-cleanup, so at exit we pop all
+  /// the args off the operand stack.
+  ///
+  /// In the case of pass parameter, the arguments are not passed on the VM
+  /// stack. The arguments are passed on the C stack as a part of a cdecl call.
   if (!cfg_.passParam) {
-    // Locals are stored on the stack.
-    // Bump the stackTop by the number of registers/locals in the function.
-    if (function->nregs > 0) {
-      TR::IlValue *newStackTop = IndexAt(globalTypes().stackElementPtr, stackTop,
-                                        ConstInt32(function->nregs));
+    TR::IlValue *frameBase = IndexAt(globalTypes().stackElementPtr, stackTop,
+                                     ConstInt32(-function->nargs));
+    Store("frameBase", frameBase);
+  } else {
+    Store("frameBase", stackTop);
+  }
 
-      StoreIndirect("b9::OperandStack", "top_", stack, newStackTop);
-    }
+  // Locals are stored on the stack. Bump the stackTop by the number of
+  // registers/locals in the function.
+  //
+  // In the case of passParam, locals are not stored on the VM stack.  Local
+  // variables are stored as compiler immidiets.
+  if (!cfg_.passParam && function->nregs > 0) {
+    TR::IlValue *newStackTop = IndexAt(globalTypes().stackElementPtr, stackTop,
+                                       ConstInt32(function->nregs));
+
+    StoreIndirect("b9::OperandStack", "top_", stack, newStackTop);
   }
 
   // initialize all locals to 0
@@ -226,20 +233,18 @@ bool MethodBuilder::buildIL() {
     storeVarIndex(this, i, this->ConstInt64(0));
   }
 
-#if 0
-  if (cfg_.lazyVmState) {
-    auto executionContext = Load("executionContext");
-    this->Store this->Store("localContext", this->ConstAddress(context_));
-    auto stackTop = new OMR::VirtualMachineRegisterInStruct(
-        this, "globalTypes().executionContext", "localContext", "stackPointer",
-        "SP");
-    auto stack = new OMR::VirtualMachineOperandStack(
-        this, 32, stackElementPointerType, stackTop, true, 0);
-    auto vms = new VirtualMachineState(stack, stackTop);
-    setVMState(vms);
-  } else {
-  }
-#endif
+  // if (cfg_.lazyVmState) {
+  //   auto executionContext = Load("executionContext");
+  //   this->Store this->Store("localContext", this->ConstAddress(context_));
+  //   auto stackTop = new OMR::VirtualMachineRegisterInStruct(
+  //       this, "globalTypes().executionContext", "localContext",
+  //       "stackPointer", "SP");
+  //   auto stack = new OMR::VirtualMachineOperandStack(
+  //       this, 32, stackElementPointerType, stackTop, true, 0);
+  //   auto vms = new VirtualMachineState(stack, stackTop);
+  //   setVMState(vms);
+  // } else {
+  // }
 
   return inlineProgramIntoBuilder(functionIndex_, true);
 }

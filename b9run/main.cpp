@@ -108,6 +108,20 @@ static bool parseArguments(RunConfig& cfg, const int argc, char* argv[]) {
     cfg.usrArgs.push_back(OMR::Om::Value(std::atoi(argv[i])));
   }
 
+  // check that dependent options are enabled
+  if (cfg.b9.directCall && !cfg.b9.jit) {
+    std::cerr << "-directcall requires -jit" << std::endl;
+    return false;
+  }
+  if (cfg.b9.passParam && !cfg.b9.directCall) {
+    std::cerr << "-passparam requires -directcall" << std::endl;
+    return false;
+  }
+  if (cfg.b9.lazyVmState && !cfg.b9.passParam) {
+    std::cerr << "-lazyvmstate requires -passparam" << std::endl;
+    return false;
+  }
+
   return true;
 }
 

@@ -112,7 +112,7 @@ var SymbolTable = function () {
 		var id = this.lookup(symbol);
 
 		if (id == undefined) {
-			
+
 			console.log(this.map);
 			id = this.next;
 			this.next += 1;
@@ -269,12 +269,12 @@ function Module() {
 	this.resolve = function () {
 		console.log(this.functions);
 		var me = this;
-		this.functions.forEach(function(name, index, body) {
+		this.functions.forEach(function (name, index, body) {
 
 			if (!body) {
 				throw "Undefined function reference: " + name;
 			}
-	
+
 			console.log(index + ":" + name + " " + body);
 			body.resolve(me);
 		});
@@ -681,10 +681,6 @@ function FirstPassCodeGen() {
 
 		this.outputInstruction("FUNCTION_RETURN", 0, " forced = " + forced);
 	}
-
-	this.genEndOfByteCodes = function () {
-		this.outputInstruction("END_SECTION", 0, "");
-	};
 
 	this.declareFunction = function (id, decl) {
 		var newFunction = { index: this.nextFunctionIndex++, name: id, nargs: -1, nregs: -1 };

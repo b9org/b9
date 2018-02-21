@@ -731,6 +731,10 @@ function FirstPassCodeGen() {
 		this.emitPushConstant(func, literal.value);
 	}
 
+	this.handleIdentifier = function (func, identifier) {
+		this.emitPushFromVar(func, identifier.name);
+	};
+
 	this.handleIfStatement = function (func, decl) {
 
 		var falseLabel = func.labels.create();

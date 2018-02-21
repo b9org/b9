@@ -26,7 +26,7 @@
 
 namespace b9 {
 
-PrimitiveFunction *const VirtualMachine::primitives_[3];
+constexpr PrimitiveFunction *const VirtualMachine::primitives_[3];
 
 VirtualMachine::VirtualMachine(OMR::Om::ProcessRuntime &runtime,
                                const Config &cfg)

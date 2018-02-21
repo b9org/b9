@@ -75,11 +75,9 @@ void MethodBuilder::defineLocals() {
   }
 
   if (cfg_.passParam) {
-
     // for locals we pre-define all the locals we could use, for the toplevel
     // and all the inlined names which are simply referenced via a skew to reach
     // past callers functions args/temps
-
     for (std::size_t i = function->nargs; i < (function->nregs + function->nargs); i++) {
       DefineLocal(argsAndTempNames[i], globalTypes().stackElement);
     }
@@ -205,38 +203,30 @@ bool MethodBuilder::buildIL() {
   /// When this function exits, we reset the stack top to the beginning of
   /// entry. The calling convention is callee-cleanup, so at exit we pop all the
   /// args off the operand stack.
-
   TR::IlValue *frameBase = IndexAt(globalTypes().stackElementPtr, stackTop,
                                    ConstInt32(-function->nargs));
-
   Store("frameBase", frameBase);
 
-  /// Bump the stackTop by the number of registers/locals in the function.
 
-  if (function->nregs > 0) {
-    TR::IlValue *newStackTop = IndexAt(globalTypes().stackElementPtr, stackTop,
-                                       ConstInt32(function->nregs));
+  if (!cfg_.passParam) {
+    // Locals are stored on the stack.
+    // Bump the stackTop by the number of registers/locals in the function.
+    if (function->nregs > 0) {
+      TR::IlValue *newStackTop = IndexAt(globalTypes().stackElementPtr, stackTop,
+                                        ConstInt32(function->nregs));
 
-    StoreIndirect("b9::OperandStack", "top_", stack, newStackTop);
+      StoreIndirect("b9::OperandStack", "top_", stack, newStackTop);
+    }
+  }
+
+  // initialize all locals to 0
+  auto argsCount = function->nargs;
+  auto regsCount = function->nregs;
+  for (int i = argsCount; i < argsCount + regsCount; i++) {
+    storeVarIndex(this, i, this->ConstInt64(0));
   }
 
 #if 0
-  if (cfg_.passParam) {
-    int argsCount = function->nargs;
-    int regsCount = function->nregs;
-    for (int i = argsCount; i < argsCount + regsCount; i++) {
-      storeVarIndex(this, i, this->ConstInt64(0));  // init all temps to zero
-    }
-  } else {
-    TR::IlValue *args = this->IndexAt(stackElementPointerType, sp,
-                                      this->ConstInt32(0 - function->nargs));
-    this->Store("returnSP", args);
-    TR::IlValue *newSP = this->IndexAt(stackElementPointerType, sp,
-                                       this->ConstInt32(function->nregs));
-    this->StoreIndirect("globalTypes().executionContext", "stackPointer",
-                        this->ConstAddress(context_), newSP);
-  }
-
   if (cfg_.lazyVmState) {
     auto executionContext = Load("executionContext");
     this->Store this->Store("localContext", this->ConstAddress(context_));

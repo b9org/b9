@@ -21,6 +21,6 @@ target_link_libraries(b9test
 
 add_test(
 	NAME run_b9test
-	COMMAND env B9_TEST_MODULE=$<TARGET_FILE:interpreter_test> $<TARGET_FILE:b9test>
+	COMMAND env B9_TEST_MODULE=interpreter_test.b9mod $<TARGET_FILE:b9test>
 )
 

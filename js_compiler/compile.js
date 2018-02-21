@@ -1,757 +1,773 @@
-// convert subset of JavaScript to B9
-// fruitbat: includes the file system module (to work with FS on computer) 
-var fs = require('fs');
+/*************************************
+CONVERT B9 PORCELAIN TO BINARY MODULE 
+**************************************/
+
+// syntax is <in> <out>
+
 var esprima = require('esprima');
-// fruitbat: splice() adds/removes items to/from array and returns the removed item(s)
-// args is set to the 2nd offset, or 3rd argument   
-var args = process.argv.splice(2);
-var files = [];
+var fs = require('fs');
 
+function outputUInt32(out, value) {
 
-// fruitbat: for each function argument (argument is a file), we push the file to the files array
-args.forEach(function(arg) {
-    files.push(arg);
-});
-
-// fruitbat: for each file, load the primitive wrappers
-files.forEach(function(filename) {
-    // Load the standard library
-    var content = fs.readFileSync(__dirname + "/b9stdlib.src", 'utf-8');
-    content += fs.readFileSync(filename, 'utf-8');
-    // fruitbat: parse to syntax tree
-    var parsed = esprima.parse(content);
-    var codegen = new CodeGen(filename);
-    codegen.handleHeaders();
-    codegen.handleAll(parsed.body);
-    codegen.processDeferred();
-    codegen.handleFooters();
-
-    codegen.outputProgram();
-});
-
-function FunctionContext(codegen, outer) {
-    this.outer = outer;
-    this.codegen = codegen;
-    this.usesScope = 0;
-    this.pushcount = 0;
-    this.maxstack = 0;
-
-    this.args = Object.create(null);
-    this.argcount = 0;
-    this.temps = Object.create(null);
-    this.tempcount = 0;
-    this.isTopLevel = false;
-
-    this.getsavedcontext = function() {
-        return this.outer;
-    };
-
-    // fruitbat: changed to incrementStackCount
-    this.pushN = function(count) {
-        this.pushcount += count;
-        if (this.pushcount > this.maxstack) {
-            this.maxstack = this.pushcount;
-        }
-
-    }
-
-    // fruitbat: changed to dropTOS
-    this.removeUnusedTOS = function(expected) {
-        if (this.pushcount > expected) {
-            this.codegen.outputInstruction("ByteCode::DROP", 0, "// unused TOS, drop return result to get to expected ");
-            this.pushN(-1);
-        }
-    };
-
-    // fruitbat: changed to declareGlobalVar
-    this.declareGlobal = function(vname) {
-        this.codegen.globals[vname] = vname;
-    }
-    this.declareVariable = function(name) {
-        if (this.variableExists(name)) 
-          return;
-        // fruitbat: set temp array at offset name to num arguments + num temporaries (increment temporaries)  
-        this.temps[name] = this.argcount + this.tempcount++;
-    };
-    this.variableExists = function(name) {
-        return this.temps[name] != undefined;
-    };
-    this.variableOffset = function(name) {
-        var frame = this;
-        var result = new Object();
-        result.name = name;
-        result.index = 0;
-        result.offset = frame.args[name];
-        if (result.offset != undefined) {
-            return result; // this is an arg
-        }
-        result.offset = frame.temps[name];
-        if (result.offset != undefined) {
-            return result; // this is a temp
-        }
-        return result;
-    };
+	var buf = Buffer.allocUnsafe(4);
+	buf.writeUInt32LE(value, 0);
+	fs.writeSync(out, buf);
 }
 
-// fruitbat: takes one file at a time
-function CodeGen(f) {
-
-    this.filename = f;
-
-    // number labels globally ???
-    this.label = 0;
-
-    // functions get compiled all at the end, so all global definitions can be known
-    // fruitbat: is this a global definitions array or a functions array???
-    this.deferred = [];
-
-    // all the function specifications
-    this.functions = {}
-    this.nextFunctionIndex = 0;
-
-    this.strings = {}
-    this.nextStringIndex = 0;
-
-    this.primitives = [ "print_string", "print_number"];
-
-    this.labels = {};
-    this.instructionIndex = 0;
-    this.outputLines = [];
-
-    this.globals = Object.create(null);
-
-    // fruitbat: declaring the main function???
-    this.currentFunction = new FunctionContext(this, this.currentFunction); // top level function
-    this.currentFunction.isTopLevel = true;
-
-    // fruitbat: anonymous function 
-    this.outputProgram = function() {
-        // fruitbat: where does outputLines get initialized??? - above shows initialization of empty array
-        for (var i = 0; i < this.outputLines.length; i++) {
-            if (this.outputLines[i].computeText) {
-                console.log(this.outputLines[i].computeText());
-            } else {
-                console.log(this.outputLines[i].text);
-            }
-        }
-    }
-
-    this.currentBreak = function() {
-        throw "No Break Destination Set, Invalid Break Statement";
-    }
-    this.currentContinue = function() {
-        throw "No Continue Destination Set, Invalid Break Statement";
-    }
-
-    this.genPrimitive = function(name, args, comment) {
-        var index = this.primitives.indexOf(name.value);
-        this.outputInstruction("ByteCode::PRIMITIVE_CALL", index, 'Calling native: ' + name.value);
-        return true;
-    }
-
-    this.genCall = function(name, args, comment) {
-        this.outputInstruction("ByteCode::FUNCTION_CALL", this.getFunctionIndex(name), "Calling: " + name);
-    }
-
-    this.genCallOrPrimitive = function(name, args, comment) {
-        if (name == "") {
-            throw "Invalid Call with no name to call ";
-        }
-
-        if (name == "b9_primitive") {
-            this.genPrimitive(args[0], args.slice(1));
-        }
-        else {
-            this.genCall(name, args.length, comment);
-        }
-    }
-
-    this.outputRawString = function(s) {
-        this.outputLines.push({ "text": s });
-    }
-    this.outputComment = function(comment) {
-        this.outputRawString("// " + comment);
-    }
-    this.placeLabel = function(labelName) {
-        this.labels[labelName] = this.instructionIndex;
-    }
-    this.deltaForLabel = function(labelName) {
-        var gen = this;
-        return function(fromInstruction) {
-            // delay computing offset until forward labels are found
-            // output is done at the end, all labels will be defined
-            var fromIndex = fromInstruction.instructionIndex;
-            var toIndex = gen.labels[labelName];
-            return toIndex - fromIndex - 1;
-        }
-    }
-
-    this.outputInstruction = function(bc, param, comment) {
-        var instruction = new Object();
-        instruction.bc = bc; // used to check prev-bytecodename
-        instruction.instructionIndex = this.instructionIndex++; // used to compute branch distance 
-        instruction.stack = this.currentFunction.pushcount; // keep track of stack depth in function line by line
-        var gen = this;
-        instruction.computeText = function() {
-            var computedParm = param;
-            if (typeof(param) == "function") computedParm = param(instruction);
-            var out = " I:" + instruction.instructionIndex + " S:" + instruction.stack + " " + comment;
-            return gen.outputInstructionText(
-                "{" + bc + ", " + computedParm + "},",
-                out,
-                true);
-        };
-        this.prevInstruction = instruction;
-        this.outputLines.push(instruction);
-    }
-
-    this.outputInstructionText = function(out, comment, tab) {
-        while (out.length < 40) out += " ";
-        var line = "    " + out;
-        if (comment) {
-            line = line + "  // " + comment;
-        }
-        return line;
-    };
-
-    this.handleHeaders = function() {
-        // fruitbat: this is where we output the headers and namespace (not required) 
-        this.outputRawString('#include <b9/interpreter.hpp>');
-        this.outputRawString('#include <b9/loader.hpp>');
-        this.outputRawString('');
-        this.outputRawString('using namespace b9;');
-        this.outputRawString('');
-    }
-
-    this.handleFooters = function() {
-        const functions = this.functions;
-        this.outputLines.push({"computeText": function () {
-            var function_table = 'static const DlFunctionEntry b9_functions[] = {\n'
-            for (name in functions) {
-                var f = functions[name];
-                function_table += '    { "' + name + '", ' + name + ', ' + f.nargs + ', ' + f.nregs + '},  // ' + f + "\n";
-            }
-            function_table += '};\n'
-            return function_table;
-        }});
-
-        this.outputRawString('DlFunctionTable b9_function_table = {');
-        this.outputRawString('    ' + Object.keys(functions).length + ', b9_functions');
-        this.outputRawString('};');
-        this.outputRawString('');
-
-        var out = this.strings;
-        this.outputRawString('static const char *b9_strings[] = {');
-        for (key in out) {
-            this.outputRawString('    "' + key + '",');
-        }
-        this.outputRawString('};');
-        this.outputRawString('');
-
-        this.outputRawString('DlStringTable b9_string_table = {');
-        this.outputRawString('    ' + Object.keys(out).length + ', b9_strings');
-        this.outputRawString('};');
-        this.outputRawString('');
-
-    };
-
-    this.handle = function(element) {
-        if (element == null) {
-            throw "// Invalid element for code generation";
-        }
-        var fname = "handle" + element.type;
-        var f = this[fname];
-        if (f) {
-            return f.call(this, element);
-        }
-        // If you use some JS feature with no code generator, error with no handler
-        throw "halt", "Error - No Handler For Type: " + element.type;
-    };
-
-    this.flowControlBreakContinue = function(breakLabel, continueLabel, location, body) {
-        var saveBreak = this.currentBreak;
-        this.currentBreak = function() {
-            this.outputInstruction("ByteCode::JMP", this.deltaForLabel(breakLabel), "break in " + location);
-        }
-        var saveContinue = this.currentContinue;
-        this.currentContinue = function() {
-            this.outputInstruction("ByteCode::JMP", this.deltaForLabel(continueLabel), "continue in " + location);
-        }
-
-        body.call(this);
-        this.currentBreak = saveBreak;
-        this.currentContinue = saveContinue;
-    }
-
-    // fruitbat: this shit ain't gettin' called tho
-    this.handleSequenceExpression = function(decl) {
-        //console.log("//handleSequenceExpression " + JSON.stringify(decl)); 
-        var expressions = decl.expressions;
-        var droplast = !decl.isParameter;
-        for (var i = 0; i < expressions.length; i++) {
-            var element = expressions[i];
-            this.handle(element);
-            if (i != (expressions.length - 1) || droplast)
-                this.outputInstruction("ByteCode::DROP", 0, "// This is for -Constant");
-        };
-
-    }
-
-    /* fruitbat: why are only 3 of these emitting bytecodes, and why is the first on a push constant?  */
-    this.handleUnaryExpression = function(decl) {
-        // console.log ("handleUnaryExpression " + JSON.stringify (decl));  
-        if (decl.operator == '-' && decl.argument.type == 'Literal') {
-            this.outputInstruction("ByteCode::INT_PUSH_CONSTANT", 0 - decl.argument.value, "// This is for -Constant");
-            this.currentFunction.pushN(1);
-            return;
-        }
-        if (decl.operator == "+") {
-            this.handle(decl.argument);
-            return;
-        }
-        if (decl.operator == "-") {
-            this.pushconstant(0);
-            this.handle(decl.argument);
-            this.outputInstruction("ByteCode::INT_SUB", 0, "// This is for -Constant");
-            ""
-            return;
-        }
-        if (decl.operator == "!") {
-            this.handle(decl.argument);
-            this.outputInstruction("ByteCode::INT_NOT", 0, "// This is for !");
-            return;
-        }
-        throw "halt", "Error - No Handler For Type: " + decl;
-    }
-
-    this.handleWhileStatement = function(decl) {
-        //       console.log ("handleWhileStatement " + JSON.stringify (decl));  
-        var loopTest = "@loopTest" + this.label;
-        var loopEnd = "@loopEnd" + this.label;
-        var loopContinue = "@loopContinue" + this.label;
-        this.label++;
-
-        this.savehack(function() {
-            this.placeLabel(loopTest);
-            var code = this.handle(decl.test);
-            var instruction = this.genJmpForCompare(code, "WHILE");
-            this.outputInstruction(instruction,
-                this.deltaForLabel(loopEnd), "genJmpForCompare WHILE " + code);
-        });
-
-        this.flowControlBreakContinue(loopEnd, loopContinue, "WHILE", function() {
-            this.savehack(function() {
-                this.handle(decl.body);
-                decl.needResult = false;
-                this.placeLabel(loopContinue);
-                this.outputInstruction("ByteCode::JMP", this.deltaForLabel(loopTest), "WHILE ");
-                this.placeLabel(loopEnd);
-            });
-        });
-    };
-
-    this.isNumber = function isNumber(num) {
-        return typeof num == "number";
-    };
-
-    this.isString = function isString(num) {
-        return typeof num == 'string';
-    };
-
-    this.pushconstant = function(constant) {
-        if (this.isNumber(constant)) {
-            this.outputInstruction("ByteCode::INT_PUSH_CONSTANT", constant, " number constant " + (constant - 0));
-            this.currentFunction.pushN(1);
-            return;
-        }
-        if (this.isString(constant)) {
-            this.outputInstruction("ByteCode::STR_PUSH_CONSTANT", this.getStringIndex(constant), " string constant <" + constant + ">");
-            this.currentFunction.pushN(1);
-            return;
-        }
-        this.currentFunction.pushN(1);
-        throw "ONLY HANDLE NUMBERS in B9"
-    }
-
-    this.pushvar = function(varname) {
-        var offset = this.currentFunction.variableOffset(varname);
-        if (offset.offset == undefined) {
-            throw "Invalid Variable Name " + varname;
-        } else {
-            this.outputInstruction("ByteCode::PUSH_FROM_VAR", offset.offset, "variable " + varname);
-        }
-        this.currentFunction.pushN(1);
-    }
-
-    this.popvar = function(varname) {
-        var offset = this.currentFunction.variableOffset(varname);
-        if (offset.index == 0) {
-            this.outputInstruction("ByteCode::POP_INTO_VAR", offset.offset, "variable " + varname);
-        } else {
-            throw "Invalid Variable Name";
-        }
-        this.currentFunction.pushN(-1);
-    }
-
-
-    this.getStringIndex = function(id) {
-        if (this.strings[id] != undefined) {
-            return this.strings[id];
-        } else {
-            this.strings[id] = this.nextStringIndex++;
-            return this.strings[id];
-        }
-    }
-
-    this.declareFunction = function(id, decl) {
-        var newFunction = {index: this.nextFunctionIndex++, name: id, nargs: -1, nregs: -1};
-        this.functions[id] = newFunction;
-    };
-
-    this.getFunctionDeclaration = function (id) {
-        if (this.functions[id] == undefined) {
-            this.declareFunction(id);
-        }
-        return this.functions[id];
-    };
-
-    // Returns the function index for CALL If the function has not been
-    // declared yet, it creates a stub declaration for the function.
-    this.getFunctionIndex = function(id) {
-        return this.getFunctionDeclaration(id).index;
-    }
-
-    this.genFunctionDefinition = function(id, decl) {
-
-        // Save the context of the function
-        var save;
-        if (decl.functionScope) {
-            save = this.currentFunction;
-            this.currentFunction = decl.functionScope;
-        } else {
-            save = this.currentFunction;
-            this.currentFunction = new FunctionContext(this, undefined); // this.currentFunction); 
-        }
-        currentFunction = this.currentFunction;
-
-        this.instructionIndex = 0;
-
-        functionDecl = this.getFunctionDeclaration(id);
-        functionDecl.nargs = decl.params.length;
-
-        // calculate the number of parameters
-        var index = 0;
-        decl.params.forEach(function(element) {
-            currentFunction.args[element.name] = index;
-            index++;
-        });
-        currentFunction.argcount = index;
-
-        this.outputRawString("Instruction " + id + "[] = {", "", false);
-
-        var declArgsAndTemps = new Object();
-        var fThis = this;
-        var func = fThis.currentFunction;
-
-        this.handle(decl.body);
-
-        this.genReturn(true);
-
-        this.genEndOfByteCodes();
-
-        this.outputRawString("");
-
-        functionDecl.nregs = this.currentFunction.tempcount;
-
-        this.currentFunction = save;
-    };
-
-    this.genReturn = function(forced) {
-        if (this.prevInstruction.bc == "ByteCode::FUNCTION_RETURN") {
-            return;
-        }
-        if (this.currentFunction.pushcount == 0) {
-            this.outputInstruction("ByteCode::INT_PUSH_CONSTANT", 0, " Generate Free Return");
-        }
-        this.outputInstruction("ByteCode::FUNCTION_RETURN", 0, " forced = " + forced);
-    };
-
-    this.genEndOfByteCodes = function() {
-        this.outputRawString("    END_SECTION", " end of function");
-        this.outputRawString("};")
-    };
-
-    this.processDeferred = function() {
-        // fruitbat: remove/return first item in deferred fnc defs 
-        while (this.deferred.length > 0) {
-            var todo = this.deferred.shift();
-            this.genFunctionDefinition(todo.id.name, todo)
-        }
-    };
-
-    this.handleFunctionDeclaration = function(decl) {
-        // TODO handle non top-level functions
-        // Note that forward declaration of functions does not specify the
-        // number of formal arguemnts the function takes.
-        if (this.currentFunction.isTopLevel) {
-            decl.isTopLevel = true;
-            this.currentFunction.declareGlobal(decl.id.name);
-        } else {
-            throw "Only supports top level functions for now";
-        }
-
-        this.deferred.push(decl);
-    };
-
-    this.handleExpressionStatement = function(decl) {
-        //  this.gen ("// expression statementl" + JSON.stringify (decl));
-        var expected = this.currentFunction.pushcount;
-        this.handle(decl.expression);
-        this.currentFunction.removeUnusedTOS(expected);
-    };
-
-    this.handleCallExpression = function(decl) {
-        var gen = this;
-        decl.arguments.forEach(function(element) {
-            element.isParameter = true;
-        });
- 
-        this.handleAll(decl.arguments);
-
-        if (decl.callee.type == "Identifier") {
-            var offset = this.currentFunction.variableOffset(decl.callee.name);
-            if (offset.offset == undefined || offset.global == 1) {
-                this.genCallOrPrimitive(decl.callee.name, decl.arguments);
-                this.currentFunction.pushN(1 - decl.arguments.length);
-                return;
-            } else {
-                throw "Only handle named functions";
-                return;
-            }
-        }
-        this.outputRawString("// unhandled call expressions" + JSON.stringify(decl));
-        throw "UNHANDLED CALL EXPRESSION " + decl.callee.type;
-    };
-
-
-    this.handleAll = function(elements) {
-        var gen = this;
-        elements.forEach(function(element) {
-            gen.handle(element);
-        });
-    };
-
-    this.handleIdentifier = function(decl) {
-        this.pushvar(decl.name);
-    };
-
-    this.updateOpToInstruction = {
-        "+=": "ADD",
-        "-=": "SUB",
-        "/=": "DIV",
-        "*=": "MUL"
-    };
-
-    this.handleAssignmentExpression = function(decl) {
-
-        if (decl.left.type == "Identifier") {
-            var op = this.updateOpToInstruction[decl.operator];
-            if (op) {
-                this.handle(decl.left); // extra left 
-                this.handle(decl.right);
-                this.outputInstruction(op, 0, "// +=, -= etc");
-                this.currentFunction.pushN(-1);
-            } else {
-                decl.right.needResult = true;
-                this.handle(decl.right);
-            }
-            if (decl.needResult === true) {
-                this.outputInstruction("ByteCode::DUPLICATE", 0, "// to be implemented as example in class");
-            }
-            this.popvar(decl.left.name);
-            if (decl.isParameter == true) {
-                this.pushvar(decl.left.name);
-            }
-            return;
-        }
-        this.handle(decl.right);
-    };
-
-    this.handleVariableDeclaration = function(decl) {
-        this.handleAll(decl.declarations);
-    };
-
-    this.handleVariableDeclarator = function(decl) {
-        if (this.currentFunction.isTopLevel) {
-            this.currentFunction.declareGlobal(decl.id.name);
-        } else {
-            this.currentFunction.declareVariable(decl.id.name);
-        }
-
-        if (decl.init) {
-            this.handle(decl.init);
-            this.popvar(decl.id.name);
-        }
-    };
-
-    this.handleBlockStatement = function(decl) {
-        this.handleAll(decl.body);
-    };
-
-    this.savehack = function(f) {
-        var savehack = this.currentFunction.pushcount;
-        f.call(this);
-        this.currentFunction.pushcount = savehack;
-    }
-
-
-    this.handleEmptyStatement = function(decl) {}
-
-    this.handleForStatement = function(decl) {
-        var loopTest = "@loopTest" + this.label;
-        //   var loopBody = "@loopBody" + this.label;
-        var loopEnd = "@loopEnd" + this.label;
-        var loopContinue = "@loopContinue" + this.label;
-        this.label++;
-
-        this.savehack(function() {
-            console.log("// -- init ---");
-            if (decl.init) this.handle(decl.init);
-
-            console.log("// -- test ---");
-
-            this.placeLabel(loopTest);
-            if (decl.test == undefined) {
-                code = "nojump";
-            } else {
-                var code = this.handle(decl.test);
-            }
-            var instruction = this.genJmpForCompare(code, "FOR");
-            this.outputInstruction(instruction, this.deltaForLabel(loopEnd), "genJmpForCompare FOR " + code);
-        });
-
-        this.flowControlBreakContinue(loopEnd, loopContinue, "FOR",
-            function() {
-                this.savehack(function() {
-                    //  this.outputRawString(loopBody + ":");
-                    this.handle(decl.body);
-                    this.placeLabel(loopContinue);
-                    decl.needResult = false;
-                    if (decl.update) decl.update.needResult = false;
-                    var expected = this.currentFunction.pushcount;
-                    this.handle(decl.update);
-                    this.currentFunction.removeUnusedTOS(expected);
-                    this.outputInstruction("ByteCode::JMP", this.deltaForLabel(loopTest), "FOR LOOP");
-                    this.placeLabel(loopEnd);
-                });
-            });
-    };
-
-    this.handleUpdateExpression = function(decl) {
-        // console.log (JSON.stringify (decl));  
-        if (decl.argument.type == "Identifier") {
-            this.pushvar(decl.argument.name);
-            this.pushconstant(1);
-            if (decl.operator == "++") {
-                this.outputInstruction("ByteCode::INT_ADD", 0, "// generating var++");
-                this.currentFunction.pushN(-1); // pop 2, push 1
-            }
-            if (decl.operator == "--") {
-                this.outputInstruction("ByteCode::INT_SUB", 0, "// generating var--");
-                this.currentFunction.pushN(-1); // pop 2, push 1
-            }
-            this.popvar(decl.argument.name);
-            return;
-        }
-        throw "Invalid Update Statement support variables only";
-    };
-
-    this.genJmpForCompare = function(code) {
-        if (code == "==") instruction = "ByteCode::INT_JMP_NEQ";
-        else if (code == "!=") instruction = "ByteCode::INT_JMP_EQ";
-        else if (code == "<=") instruction = "ByteCode::INT_JMP_GT";
-        else if (code == "<") instruction = "ByteCode::INT_JMP_GE";
-        else if (code == ">") instruction = "ByteCode::INT_JMP_LE";
-        else if (code == ">=") instruction = "ByteCode::INT_JMP_LT";
-        else throw "Unhandled code";
-        return instruction;
-    };
-
-    this.handleIfStatement = function(decl) {
-        var labelF = "@labelF" + this.label;
-        var labelEnd = "@labelEnd" + this.label;
-        this.label++;
-
-        this.savehack(function() {
-
-            var instruction = null;
-            var code = this.handle(decl.test);
-
-            if(decl.test.type == "BinaryExpression") {
-                 // Binary expressions compile to specialized JMP operations
-                instruction = this.genJmpForCompare(code, "IF");
-            } else {
-                // Unary expressions always compile to a comparison with false.
-                this.outputInstruction("ByteCode::INT_PUSH_CONSTANT", 0);
-                instruction = "ByteCode::INT_JMP_EQ";
-            }
-
-            if (decl.alternate != null) {
-                this.outputInstruction(instruction, this.deltaForLabel(labelF),
-                    "genJmpForCompare has false block, IF " + code);
-            } else {
-                this.outputInstruction(instruction, this.deltaForLabel(labelEnd),
-                    "genJmpForCompare has no false block, IF " + code);
-            }
-        });
-        this.savehack(function() { // true part  is fall through from genJmpForCompare 
-            this.handle(decl.consequent);
-        });
-        this.savehack(function() {
-            if (decl.alternate != null) {
-                // you only have a false if there is code
-                // so you only jump if there is code to jump around 
-                if (this.prevInstruction.bc != "ByteCode::FUNCTION_RETURN") {
-                    this.outputInstruction("ByteCode::JMP", this.deltaForLabel(labelEnd), "SKIP AROUND THE FALSE CODE BLOCK");
-                }
-                this.placeLabel(labelF);
-                this.handle(decl.alternate);
-            }
-            this.placeLabel(labelEnd);
-        });
-    };
-
-    this.handleReturnStatement = function(decl) {
-        if (decl.argument != null) {
-            this.handle(decl.argument);
-        }
-        this.genReturn(false);
-    };
-
-    this.handleLiteral = function(decl) {
-        this.pushconstant(decl.value);
-    };
-    this.handleBinaryExpression = function(decl) {
-        this.handle(decl.left);
-        this.handle(decl.right);
-        if (decl.operator == "-") {
-            this.outputInstruction("ByteCode::INT_SUB", 0, "");
-            this.currentFunction.pushN(-1); // pop 2, push 1
-            return decl.operator;
-        }
-        if (decl.operator == "+") {
-            this.outputInstruction("ByteCode::INT_ADD", 0, "");
-            this.currentFunction.pushN(-1); // pop 2, push 1
-            return decl.operator;
-        }
-        
-        // CASCON2017 - Add INT_MUL and INT_DIV here
-        
-        var code = this.genJmpForCompare(decl.operator)
-        if (code) {
-            // this will be handled by the jmp which includes the compare operation (i.e jmple, jmpgt)
-            return decl.operator;
-        }
-        throw "This operator is not being handled" + decl.operator;
-    };
+function outputString(out, string) {
+	outputUInt32(out, string.length);
+	fs.writeSync(out, string);
 }
+
+var PrimitiveCode = Object.freeze({
+	"print_string": 0,
+	"print_number": 1
+});
+
+var OperatorCode = Object.freeze({
+	"END_SECTION": 0,
+	"FUNCTION_CALL": 1,
+	"FUNCTION_RETURN": 2,
+	"PRIMITIVE_CALL": 3,
+	"JMP": 4,
+	"DUPLICATE": 5,
+	"DROP": 6,
+	"PUSH_FROM_VAR": 7,
+	"POP_INTO_VAR": 8,
+	"INT_ADD": 9,
+	"INT_SUB": 10,
+	"INT_PUSH_CONSTANT": 13,
+	"INT_NOT": 14,
+	"INT_JMP_EQ": 15,
+	"INT_JMP_NEQ": 16,
+	"INT_JMP_GT": 17,
+	"INT_JMP_GE": 18,
+	"INT_JMP_LT": 19,
+	"INT_JMP_LE": 20,
+	"STR_PUSH_CONSTANT": 21,
+	"STR_JMP_EQ": 22,
+	"STR_JMP_NEQ": 23
+});
+
+/// A B9 Instruction -- operator and operand pair.
+var Instruction = function (operator, operand) {
+
+	this.operator = operator;
+	this.operand = operand;
+
+	/// Output this instruction as an encoded uint32_t (little endian).
+	this.output = function (out) {
+		var encoded = (OperatorCode[this.operator] << 24);
+		if (this.operand) {
+			encoded |= this.operand & 0x00FFFFFF;
+		}
+		encoded &= 0xFFFFFFFF;
+		outputUInt32(out, encoded);
+	}
+};
+
+var SymbolTable = function () {
+
+	this.next = 0;
+	this.map = {};
+
+	/// Look up a symbol without interning.
+	this.lookup = function (symbol) {
+		return this.map[symbol];
+	}
+
+	/// Look up a symbol, and intern if not found.
+	this.get = function (symbol) {
+		var id = this.lookup(symbol);
+		if (id == undefined) {
+			id = this.next;
+			this.next += 1;
+			this.map[symbol] = id;
+		}
+		return id;
+	}
+
+	/// callback(name, id)
+	this.forEach = function (callback) {
+		var me = this;
+		for (symbol in this.map) {
+			callback(symbol, me.map[symbol]);
+		}
+	}
+}
+
+var LabelTable = function () {
+
+	this.table = [];
+
+	this.create = function () {
+		return this.table.push(undefined);
+	}
+
+	this.place = function (label, offset) {
+		this.table[label] = offset;
+	}
+
+	this.createAndPlace = function (offset) {
+		id = this.make();
+		this.place(id, offset);
+		return id;
+	}
+
+	this.instructionIndex = function (label) {
+		return this.table[label];
+	}
+
+};
+
+var LexicalContext = function (outer) {
+	new SymbolTable();
+	this.outer = outer;
+};
+
+/// A section of code. CodeBody has information about args and registers, but no information about indexes or it's name.
+/// The name-to-index mapping is managed externally, by the module's FunctionTable. Eventually, the args and registers
+/// might move to a lexical environment, and this will become a simple bytecode array.
+function FunctionDefinition(outer) {
+	this.args = new SymbolTable();
+	this.regs = new SymbolTable();
+	this.labels = new LabelTable();
+	this.instructions = [];
+
+	/// Resolve the label to a relative offset.
+	this.resolveLabel = function (label, fromIndex) {
+		var target = this.labels.instructionIndex(label);
+		if (target == undefined) {
+			throw "Encountered label " + label;
+		}
+		return target - fromIndex - 1;
+	};
+
+	this.resolve = function (module) {
+		for (var index = 0; index < this.instructions.length; index++) {
+			var instruction = this.instructions[index];
+			switch (instruction.operator) {
+				case "JMP":
+				case "INT_JMP_EQ":
+				case "INT_JMP_NEQ":
+				case "INT_JMP_GT":
+				case "INT_JMP_GE":
+				case "INT_JMP_LT":
+				case "INT_JMP_LE":
+					// the label id is stuffed in the operand.
+					// translate the label to a relative offset.
+					instruction.operand = this.resolveLabel(instruction.operand, index);
+			}
+		}
+	}
+
+	this.output = function (out) {
+		// note that name and index are output by the module.
+		outputUInt32(out, this.args.next);
+		outputUInt32(out, this.regs.next);
+		this.instructions.forEach(function (instruction) {
+			instruction.output(out);
+		})
+	};
+
+	this.pushInstruction = function (instruction) {
+		this.instructions.push(instruction);
+	};
+
+	this.lastInstruction = function () {
+		return this.instructions[this.instructions.length - 1];
+	}
+
+	this.localIndex = function (name) {
+		var index = this.regs.lookup(name);
+		if (index) {
+			return index + this.args.next;
+		}
+		return this.args.lookup(name);
+	}
+
+	this.placeLabel = function (label) {
+		this.labels.place(label, this.instructions.length);
+	}
+
+	this.createLabel = function () {
+		return this.labels.create();
+	}
+
+};
+
+/// The function table tracks function names and indexes. When a new name is encountered, the table automatically
+/// creates a new stub function definition. Eventually, it's expected that the definition will be filled in, later in
+/// the parsed script. Leaving any function undefined is an error.
+function FunctionTable() {
+
+	this.names = new SymbolTable();
+	this.bodies = [];
+
+	/// Look up the index of a 
+	this.indexof = function (name) {
+		return names.table.get(name);
+	};
+
+	/// Lookup a function's ID by name. If the function name hasn't been encountered before, reserve an ID for the name.
+	this.get = function (name) {
+		var id = this.names.get(name);
+		if (!this.bodies[id]) {
+			this.bodies[id] = null;
+		}
+		return id;
+	};
+
+	this.newFunctionDefinition = function (name, context) {
+		var id = this.names.get(name);
+		if (this.bodies[id]) {
+			throw "Error: function defined twice";
+		}
+		var func = new FunctionDefinition(context);
+		this.bodies[id] = func;
+		return func;
+	}
+
+	/// callback(name, index, body)
+	this.forEach = function (callback) {
+		var me = this;
+		this.names.forEach(function (name, index) {
+			callback(name, index, me.bodies[index]);
+		});
+	};
+};
+
+function Module() {
+
+	this.resolved = false;
+	this.functions = new FunctionTable();
+	this.strings = new SymbolTable();
+
+	/// After the module has been entirely built up, resolve any undefined references.
+	this.resolve = function () {
+		var me = this;
+		this.functions.forEach(function (name, index, body) {
+			if (!body) {
+				throw "Undefined function reference: " + name;
+			}
+			body.resolve(me);
+		});
+		this.resolved = true;
+	}
+
+	/// Output this module, in binary format. The Module must have been resolved.
+	this.output = function (out) {
+		if (!this.resolved) {
+			throw "Module must be resolved before output."
+		}
+		this.outputHeader(out);
+		this.outputFunctionSection(out);
+		this.outputStringSection(out);
+	}
+
+	//
+	// INTERNAL
+	//
+
+	this.outputHeader = function (out) {
+		/// Raw magic bytes
+		fs.writeSync(out, 'b9module');
+	};
+
+	/// internal
+	this.outputFunctionSection = function (out) {
+		var me = this;
+		outputUInt32(out, 1); // the section code.
+		outputUInt32(out, this.functions.bodies.length);
+		this.functions.forEach(function (name, index, body) {
+			me.outputFunction(out, name, index, body);
+		});
+	}
+
+	this.outputFunction = function (out, name, index, body) {
+		outputString(out, name);
+		outputUInt32(out, index);
+		body.output(out);
+	}
+
+	this.outputStringSection = function (out) {
+		outputUInt32(out, 2); // the section code.
+		outputUInt32(out, this.strings.next);
+		this.strings.forEach(function (string, id) {
+			outputString(out, string);
+		});
+	}
+};
+
+function FirstPassCodeGen() {
+
+	this.module = undefined;
+	this.func = undefined;
+
+	this.compile = function (syntax) {
+		this.module = new Module();
+		var func = new FunctionDefinition(null); // top level
+		this.handleBody(func, syntax.body);
+		return this.module;
+	};
+
+	this.handleBody = function (func, body) {
+		var me = this;
+		body.forEach(function (element) {
+			me.handle(func, element);
+		});
+	}
+
+	this.handle = function (func, element) {
+		if (!func || !element) {
+			throw new Error("Invalid func/element passed to syntax handler");
+		}
+		this.getHandler(element.type).call(this, func, element);
+	};
+
+	this.getHandler = function (elementType) {
+		var name = "handle" + elementType;
+		var handler = this[name];
+		if (!handler) {
+			throw "No handler for type " + elementType;
+		}
+		return handler;
+	}
+
+	/* STACK OPERATIONS */
+
+	this.emitPushConstant = function (func, constant) {
+		if (this.isNumber(constant)) {
+			func.instructions.push(new Instruction("INT_PUSH_CONSTANT", constant));
+		}
+		else if (this.isString(constant)) {
+			var id = this.module.strings.get(constant);
+			func.instructions.push(new Instruction("STR_PUSH_CONSTANT", id));
+		}
+		// func.updateStackCount(1);
+		else {
+			throw "Unsupported constant/literal encountered: " + constant;
+		}
+	}
+
+	this.emitPushFromVar = function (func, name) {
+		var index = func.localIndex(name);
+		func.instructions.push(new Instruction("PUSH_FROM_VAR", index));
+		// this.currentFunction.updateStackCount(1);
+	}
+
+	this.emitPopIntoVar = function (func, name) {
+		var index = func.localIndex(name);
+		func.instructions.push(new Instruction("POP_INTO_VAR", index));
+		// this.currentFunction.updateStackCount(-1);
+	}
+
+	this.handleFunctionDeclaration = function (func, declaration) {
+		var inner = this.module.functions.newFunctionDefinition(declaration.id.name, func);
+		declaration.params.forEach(function (param) {
+			inner.args.get(param);
+		});
+		inner.nargs = declaration.params.length;
+		this.handle(inner, declaration.body);
+
+		/// this discards the result of the last expression
+		if (inner.instructions[inner.instructions.length - 1].operator != "FUNCTION_RETURN") {
+			inner.instructions.push(new Instruction("INT_PUSH_CONSTANT", 0));
+			inner.instructions.push(new Instruction("FUNCTION_RETURN", 0));
+		}
+
+		inner.instructions.push(new Instruction("END_SECTION", 0));
+	};
+
+	this.handleAssignmentExpression = function (func, expression) {
+		var AssignmentOperatorCode = Object.freeze({
+			"+=": "ADD",
+			"-=": "SUB",
+			"/=": "DIV",
+			"*=": "MUL"
+		});
+
+		if (expression.left.type == "Identifier") {
+			var operator = AssignmentOperatorCode[expression.operator];
+			if (operator) {
+				this.handle(expression.left); // extra left
+				this.handle(expression.right);
+				func.instructions.push(new Instruction(operator, 0));
+				// this.currentFunction.updateStackCount(-1);
+			} else {
+				expression.right.needResult = true;
+				this.handle(func, expression.right);
+			}
+
+			if (expression.needResult === true) {
+				func.instructions.push(new Instruction("DUPLICATE"));
+			}
+
+			this.emitPopIntoVar(func, expression.left.name);
+
+			if (expression.isParameter == true) {
+				this.emitPushFromVar(func, expression.left.name);
+			}
+			return;
+		}
+		this.handle(func, expression.right);
+	};
+
+	this.handleVariableDeclaration = function (func, declaration) {
+		/// composed of potentially multiple variables.
+		this.handleBody(func, declaration.declarations);
+	}
+
+	this.handleVariableDeclarator = function (func, declarator) {
+		var id = func.regs.get(declarator.id.name);
+		if (declarator.init) {
+			this.handle(func, declarator.init);
+			this.emitPopIntoVar(func, declarator.id.name);
+		}
+	};
+
+	this.handleExpressionStatement = function (func, statement) {
+		this.handle(func, statement.expression);
+		func.instructions.push(new Instruction("DROP"));
+	};
+
+	// Iterate expressions array
+	this.handleSequenceExpression = function (func, sequence) {
+		var expressions = sequence.expressions;
+		var droplast = !decl.isParameter;
+
+		for (expression in sequence.expressions.slice(0, -1)) {
+			this.handle(func, expression);
+			func.instructions.push(new Instruction("DROP"));
+		}
+
+		var last = sequence.expressions.slice(-1)[0];
+		this.handle(last);
+
+		if (!sequence.isParameter) {
+			func.instructions.push(new Instruction("DROP"));
+		}
+	};
+
+	this.handleUnaryExpression = function (func, decl) {
+		if (decl.operator == "-" && decl.argument.type == "Literal") {
+			func.instructions.push(new Instruction("INT_PUSH_CONSTANT", - decl.argument.value));
+			// this.currentFunction.updateStackCount(1);
+			return;
+		}
+		if (decl.operator == "+") {
+			this.handle(func, decl.argument);
+			return;
+		}
+		if (decl.operator == "-") {
+			this.pushconstant(0);
+			func.instructions.push(new Instruction("INT_PUSH_CONSTANT", 0));
+			this.handle(func, decl.argument);
+			func.instructions.push(new Instruction("INT_SUB"));
+			return;
+		}
+		if (decl.operator == "!") {
+			this.handle(func, decl.argument);
+			func.instructions.push(new Instruction("INT_NOT"));
+			return;
+		}
+		throw "halt", "Error - No Handler for Type: " + decl;
+	};
+
+	this.compareOpToInstruction = function (code) {
+		if (code == "==") instruction = "INT_JMP_NEQ";
+		else if (code == "!=") instruction = "INT_JMP_EQ";
+		else if (code == "<=") instruction = "INT_JMP_GT";
+		else if (code == "<") instruction = "INT_JMP_GE";
+		else if (code == ">") instruction = "INT_JMP_LE";
+		else if (code == ">=") instruction = "INT_JMP_LT";
+		else throw "Unhandled code";
+		return instruction;
+	};
+
+	this.handleBinaryExpression = function (func, decl) {
+		this.handle(func, decl.left);
+		this.handle(func, decl.right);
+		if (decl.operator == "-") {
+			func.instructions.push(new Instruction("INT_SUB"));
+		}
+		else if (decl.operator == "+") {
+			func.instructions.push(new Instruction("INT_ADD"));
+		}
+		else if (decl.operator == "*") {
+			func.instructions.push(new Instruction("INT_MUL"));
+		}
+		else if (decl.operator == "/") {
+			func.instructions.push(new Instruction("INT_DIV"));
+		}
+		else {
+			// TODO: Support comparison operators.
+			// Note: Comparison operations are only handled in if-statements
+			// if-statements will use the operator to emit a specialized jmp-compare instruction
+			throw "This operator is not being handled" + decl.operator;
+		}
+	};
+
+	this.handleBlockStatement = function (func, decl) {
+		this.handleBody(func, decl.body);
+	}
+
+	this.handleUpdateExpression = function (func, decl) {
+		if (decl.argument.type != "Identifier") {
+			throw "Invalid Update Statement support variables only";
+		}
+
+		this.emitPushFromVar(func, decl.argument.name);
+		func.instructions.push(new Instruction("INT_PUSH_CONSTANT", 1));
+
+		if (decl.operator == "++") {
+			func.instructions.push(new Instruction("INT_ADD"));
+		}
+		else if (decl.operator == "--") {
+			func.instructions.push(new Instruction("INT_SUB"));
+		}
+
+		this.emitPopIntoVar(func, decl.argument.name);
+	};
+
+	this.handleForStatement = function (func, decl) {
+		var loopTest = "@loopTest" + this.label;
+		var loopEnd = "@loopEnd" + this.label;
+		var loopContinue = "@loopContinue" + this.label;
+		this.label++;
+
+		this.savehack(function () {
+			console.log("// -- init ---");
+
+			if (decl.init) this.handle(decl.init);
+
+			console.log("// -- test ---");
+
+			this.placeLabel(loopTest);
+			if (decl.test == undefined) {
+				code = "nojump";
+			} else {
+				var code = this.handle(decl.test);
+			}
+			var instruction = this.genJmpForCompare(code, "FOR");
+			this.outputInstruction(instruction, this.deltaForLabel(loopEnd), "genJmpForCompare FOR " + code);
+		});
+
+		this.flowControlBreakContinue(loopEnd, loopContinue, "FOR",
+			function () {
+				this.savehack(function () {
+					this.handle(decl.body);
+					this.placeLabel(loopContinue);
+					decl.needResult = false;
+					if (decl.update) decl.update.needResult = false;
+					var expected = this.currentFunction.pushcount;
+					this.handle(decl.update);
+					this.currentFunction.dropTOS(expected);
+					this.outputInstruction("JMP", this.deltaForLabel(loopTest), "FOR LOOP");
+					this.placeLabel(loopEnd);
+				});
+			});
+	};
+
+	this.handleCallExpression = function (func, expression) {
+		// Set up arguments for call
+
+		if (expression.callee.type != "Identifier") {
+			throw "Only handles named functions";
+		}
+
+		if (!expression.callee.name) {
+			throw "Trying to compile call to function with no name";
+		}
+
+		/// TODO: Only supports calling functions by name
+		if (expression.callee.name == "b9_primitive") {
+			this.emitPrimitiveCall(func, expression)
+		}
+		else {
+			this.emitFunctionCall(func, expression);
+		}
+	}
+
+
+	this.handleReturnStatement = function (func, decl) {
+		if (decl.argument) {
+			this.handle(func, decl.argument);
+		}
+		else {
+			func.instructions.push(new Instruction("INT_PUSH_CONSTANT", 0));
+		}
+
+		func.instructions.push(new Instruction("FUNCTION_RETURN"));
+	};
+
+	this.emitFunctionCall = function (func, expression) {
+		// TODO: what is this doing?
+		expression.arguments.forEach(function (element) {
+			element.isParameter = true;
+		});
+		this.handleBody(func, expression.arguments);
+		var target = this.module.functions.get(expression.callee.name);
+		func.instructions.push(new Instruction("FUNCTION_CALL", target));
+	}
+
+	this.emitPrimitiveCall = function (func, expression) {
+		/// The first argument is a "phantom" argument that tells us the primitive code.
+		/// It's not compiled as an expression.
+		var code = PrimitiveCode[expression.arguments[0].value];
+
+		var args = expression.arguments.slice(1);
+		args.forEach(function (element) {
+			element.isParameter = true;
+		});
+		this.handleBody(func, args);
+		func.instructions.push(new Instruction("PRIMITIVE_CALL", code));
+		return true;
+	};
+
+	/* HANDLE JUMPS AND LABELS */
+
+	this.flowControlBreakContinue = function (breakLabel, continueLabel, location, body) {
+		var saveBreak = this.currentBreak;
+		this.currentBreak = function () {
+			this.outputInstruction("JMP", this.deltaForLabel(breakLabel), "break in " + location);
+		}
+		var saveContinue = this.currentContinue;
+		this.currentContinue = function () {
+			this.outputInstruction("JMP", this.deltaForLabel(continueLabel), "continue in " + location);
+		}
+
+		body.call(this);
+		this.currentBreak = saveBreak;
+		this.currentContinue = saveContinue;
+	};
+
+	this.isNumber = function isNumber(num) {
+		return typeof num == "number";
+	};
+
+	this.isString = function isString(num) {
+		return typeof num == 'string';
+	};
+
+	this.getStringIndex = function (id) {
+		return this.strings.lookup(string);
+		if (this.strings[id] != undefined) {
+			return this.strings[id];
+		} else {
+			this.strings[id] = this.nextStringIndex++;
+			return this.strings[id];
+		}
+	};
+
+	this.handleLiteral = function (func, literal) {
+		this.emitPushConstant(func, literal.value);
+	}
+
+	this.handleIdentifier = function (func, identifier) {
+		this.emitPushFromVar(func, identifier.name);
+	};
+
+	this.handleIfStatement = function (func, statement) {
+
+		var endLabel = func.labels.create();
+
+		var jumpOperator = undefined;
+
+		///
+		if (statement.test.type == "BinaryExpression") {
+			// Binary expressions compile to specialized JMP operations
+			this.handle(func, statement.test.left);
+			this.handle(func, statement.test.right);
+			jumpOperator = this.compareOpToInstruction(statement.test.operator);
+		} else {
+			// Unary expressions always compile to a comparison with false.
+			this.handle(func, statement.test.body);
+			func.instructions.push(new Instruction("INT_PUSH_CONSTANT", 0));
+			jumpOperator = "INT_JMP_EQ";
+		}
+
+		var consequentEnd = func.createLabel();
+		var alternateEnd = undefined;
+
+		func.instructions.push(new Instruction(jumpOperator, consequentEnd));
+		this.handle(func, statement.consequent);
+
+		if (statement.alternate) {
+			alternateEnd = func.createLabel();
+			if (func.lastInstruction().operator != "FUNCTION_RETURN") {
+				func.instructions.push(new Instruction("JMP", alternateEnd));
+			}
+		}
+
+		func.placeLabel(consequentEnd);
+
+		if (statement.alternate) {
+			this.handle(func, statement.alternate);
+			func.placeLabel(alternateEnd);
+		}
+	};
+
+	this.handleEmptyStatement = function (func, statement) { };
+
+	this.handleWhileStatement = function (func, statement) {
+
+		var loopTest = func.createLabel();
+		var loopEnd = func.createLabel();
+
+		func.placeLabel(loopTest);
+
+		var jumpOperator = undefined;
+
+		if (statement.test.type == "BinaryExpression") {
+			// Binary expressions compile to specialized JMP operations
+			this.handle(func, statement.test.left);
+			this.handle(func, statement.test.right);
+			jumpOperator = this.compareOpToInstruction(statement.test.operator);
+		} else {
+			// Unary expressions always compile to a comparison with false.
+			this.handle(func, statement.test.body);
+			func.instructions.push(new Instruction("INT_PUSH_CONSTANT", 0));
+			jumpOperator = "INT_JMP_EQ";
+		}
+
+		func.instructions.push(new Instruction(jumpOperator, loopEnd));
+
+		this.handle(func, statement.body);
+		func.instructions.push(new Instruction(jumpOperator, loopTest));
+		func.placeLabel(loopEnd);
+	};
+};
+
+/// Compile and output a complete module.
+/// Compilation happens in 3 phases:
+///  1. Parse -- translate a JS program to a syntax tree.
+///  2. Compile -- first pass compilation of the program to a module.
+///  3. resolve -- final stage of linking up unresolved reference in the input program.
+function compile(code, output, verbose) {
+	var syntax = esprima.parse(code);
+	var compiler = new FirstPassCodeGen();
+	var module = compiler.compile(syntax);
+	module.resolve();
+	module.output(output);
+	return true;
+};
+
+function main() {
+	if (process.argv.length != 4) {
+		console.error("Usage: node.js compile.js <infile> <outfile>");
+		process.exit(1);
+	}
+
+	inputPath = process.argv[2];
+	outputPath = process.argv[3];
+
+	var code = fs.readFileSync(__dirname + "/b9stdlib.src", 'utf-8');
+	code += fs.readFileSync(inputPath, 'utf-8');
+
+
+	output = fs.openSync(outputPath, "w");
+	compile(code, output);
+};
+
+main();

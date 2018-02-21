@@ -24,7 +24,7 @@ before_script:
 script:
   - mkdir build && cd build
   - cmake -DB9_GCOV=ON ..
-  - make -j8 || echo "*BUILD_FAILURE*" && make -j1 VERBOSE=1
+  - make -j4 || echo "*BUILD_FAILURE*" && make -j1 VERBOSE=1
   - ctest --output-on-failure
   - cd "${TRAVIS_BUILD_DIR}"
 after_script:

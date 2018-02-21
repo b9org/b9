@@ -192,8 +192,8 @@ function FunctionDefinition(outer) {
 
 	this.output = function (out) {
 		// note that name and index are output by the module.
-		outputUInt32(out, this.args.length);
-		outputUInt32(out, this.regs.length);
+		outputUInt32(out, this.args.next);
+		outputUInt32(out, this.regs.next);
 		this.instructions.forEach(function (instruction) {
 			instruction.output(out);
 		})

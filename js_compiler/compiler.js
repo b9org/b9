@@ -54,20 +54,22 @@ function operatorCode(operator) {
 			return 14;
 		case "INT_JMP_EQ":
 			return 15;
-		case "INT_JMP_GT":
+		case "INT_JMP_NEQ":
 			return 16;
-		case "INT_JMP_GE":
+		case "INT_JMP_GT":
 			return 17;
-		case "INT_JMP_LT":
+		case "INT_JMP_GE":
 			return 18;
-		case "INT_JMP_LE":
+		case "INT_JMP_LT":
 			return 19;
-		case "STR_PUSH_CONSTANT":
+		case "INT_JMP_LE":
 			return 20;
-		case "STR_JMP_EQ":
+		case "STR_PUSH_CONSTANT":
 			return 21;
-		case "STR_JMP_NEQ":
+		case "STR_JMP_EQ":
 			return 22;
+		case "STR_JMP_NEQ":
+			return 23;
 		default:
 			return -1;
 	}

@@ -126,7 +126,9 @@ TEST_F(InterpreterTest, jit_lvms) {
 }
 
 TEST(MyTest, arguments) {
-  b9::VirtualMachine vm{runtime, {.jit = true}};
+  Config cfg;
+  cfg.jit = true;
+  b9::VirtualMachine vm{runtime, cfg};
   auto m = std::make_shared<Module>();
   std::vector<Instruction> i = {{ByteCode::PUSH_FROM_VAR, 0},
                                 {ByteCode::PUSH_FROM_VAR, 1},
@@ -141,7 +143,9 @@ TEST(MyTest, arguments) {
 }
 
 TEST(MyTest, jitSimpleProgram) {
-  b9::VirtualMachine vm{runtime, {.jit = true}};
+  Config cfg;
+  cfg.jit = true;
+  b9::VirtualMachine vm{runtime, cfg};
   auto m = std::make_shared<Module>();
   std::vector<Instruction> i = {{ByteCode::INT_PUSH_CONSTANT, 0xdead},
                                 {ByteCode::FUNCTION_RETURN},
@@ -154,7 +158,9 @@ TEST(MyTest, jitSimpleProgram) {
 }
 
 TEST(MyTest, haveAVariable) {
-  b9::VirtualMachine vm{runtime, {.jit = true}};
+  Config cfg;
+  cfg.jit = true;
+  b9::VirtualMachine vm{runtime, cfg};
   auto m = std::make_shared<Module>();
   std::vector<Instruction> i = {{ByteCode::INT_PUSH_CONSTANT, 0xdead},
                                 {ByteCode::FUNCTION_RETURN},

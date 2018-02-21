@@ -49,13 +49,13 @@ static const char *argsAndTempNames[] = {
 /// The remaining function arguments are only passed as native arguments in
 /// PassParam mode.
 void MethodBuilder::defineParameters() {
-  /// first argument is always the execution context
-  DefineParameter("executionContext", globalTypes().executionContextPtr);
-
   const FunctionDef *function = virtualMachine_.getFunction(functionIndex_);
   if (cfg_.debug) {
     std::cout << "Defining " << function->nargs << " parameters\n";
   }
+
+  /// first argument is always the execution context
+  DefineParameter("executionContext", globalTypes().executionContextPtr);
 
   if (cfg_.passParam) {
     for (int i = 0; i < function->nargs; i++) {
@@ -65,12 +65,12 @@ void MethodBuilder::defineParameters() {
 }
 
 void MethodBuilder::defineLocals() {
-  DefineLocal("frameBase", globalTypes().stackElementPtr);
-
   const FunctionDef *function = virtualMachine_.getFunction(functionIndex_);
   if (cfg_.debug) {
     std::cout << "Defining " << function->nregs << " locals\n";
   }
+
+  DefineLocal("frameBase", globalTypes().stackElementPtr);
 
   if (cfg_.passParam) {
     // for locals we pre-define all the locals we could use, for the toplevel

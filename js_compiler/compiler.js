@@ -404,6 +404,14 @@ function FirstPassCodeGen() {
 		});
 		inner.nargs = declaration.params.length;
 		this.handle(inner, declaration.body);
+
+		/// this discards the result of the last expression
+		if (inner.instructions[inner.instructions.length - 1].operator != "FUNCTION_RETURN") {
+			inner.instructions.push(new Instruction("INT_PUSH_CONSTANT", 0));
+			inner.instructions.push(new Instruction("FUNCTION_RETURN", 0));
+		}
+
+		inner.instructions.push(new Instruction("END_SECTION", 0));
 	};
 
 	this.handleAssignmentExpression = function (func, expression) {

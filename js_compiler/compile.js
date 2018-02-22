@@ -388,7 +388,7 @@ function FirstPassCodeGen() {
 		});
 
 		if (expression.left.type == "Identifier") {
-			var operator = assignmentOpToInstruction[expression.operator];
+			var operator = AssignmentOperatorCode[expression.operator];
 			if (operator) {
 				this.handle(expression.left); // extra left
 				this.handle(expression.right);

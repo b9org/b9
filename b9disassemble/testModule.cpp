@@ -1,6 +1,5 @@
 #include <b9/deserialize.hpp>
 #include <b9/interpreter.hpp>
-#include <b9/loader.hpp>
 #include <b9/module.hpp>
 #include <b9/serialize.hpp>
 

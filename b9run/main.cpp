@@ -1,10 +1,11 @@
 #include <strings.h>
+#include <b9/deserialize.hpp>
 #include <b9/interpreter.hpp>
 #include <b9/jit.hpp>
-#include <b9/loader.hpp>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <fstream>
 #include <iostream>
 
 /// B9run's usage string. Printed when run with -help.
@@ -107,9 +108,10 @@ static bool parseArguments(RunConfig& cfg, const int argc, char* argv[]) {
 
 static void run(const RunConfig& cfg) {
   b9::VirtualMachine vm{cfg.b9};
-  b9::DlLoader loader{true};
 
-  auto module = loader.loadModule(cfg.moduleName);
+  std::ifstream file(cfg.moduleName, std::ios_base::in | std::ios_base::binary);
+
+  auto module = b9::deserialize(file);
   vm.load(module);
 
   if (cfg.b9.jit) {
@@ -137,8 +139,8 @@ int main(int argc, char* argv[]) {
 
   try {
     run(cfg);
-  } catch (const b9::DlException& e) {
-    std::cerr << "Failed to load module: " << e.what() << std::endl;
+  } catch (const b9::DeserializeException& e) {
+    std::cerr << "Failed to read binary module" << std::endl;
     exit(EXIT_FAILURE);
   } catch (const b9::FunctionNotFoundException& e) {
     std::cerr << "Failed to find function: " << e.what() << std::endl;

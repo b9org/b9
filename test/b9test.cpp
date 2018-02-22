@@ -1,6 +1,8 @@
 #include <b9/interpreter.hpp>
-#include <b9/loader.hpp>
+#include <b9/deserialize.hpp>
 
+#include <fstream>
+#include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/time.h>
@@ -46,7 +48,10 @@ class InterpreterTest : public ::testing::Test {
   virtual void SetUp() {
     auto moduleName = getenv("B9_TEST_MODULE");
     ASSERT_NE(moduleName, nullptr);
-    module_ = DlLoader{}.loadModule(moduleName);
+    
+    std::ifstream file(moduleName, std::ios_base::in | std::ios_base::binary);
+
+    module_ = b9::deserialize(file);
   }
 };
 

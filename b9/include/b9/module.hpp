@@ -47,8 +47,10 @@ struct FunctionDef {
 
 inline void operator<<(std::ostream& out, const FunctionDef& f) {
   out << "(function \"" << f.name << "\" " << f.nargs << " " <<  f.nregs;
+  std::size_t i = 0;
   for (auto instruction : f.instructions) {
-    out << std::endl << "  " << instruction;
+    out << std::endl << "  " << i << "  " << instruction;
+    i++;
   }
   out << ")" << std::endl << std::endl;
 }

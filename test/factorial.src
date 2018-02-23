@@ -1,17 +1,7 @@
-function factorial(a) {
-  if (a == 0)
-    return 1;
-  // CASCON2017: Make factorial use multiplication
-  return a + factorial(a - 1);
-}
-
 function b9main() {
-    b9PrintString("");
-    b9PrintString("Factorial");
-    var a = 1;
-    while (a <= 20) {
-        b9PrintNumber(factorial(a));
-        a++;
-    }
+  var a = 1;
+  while (a < 4) {
+      a = a + 1;
+  }
+  return a;
 }
-

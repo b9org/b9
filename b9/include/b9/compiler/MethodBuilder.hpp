@@ -28,13 +28,11 @@ class MethodBuilder : public TR::MethodBuilder {
   void defineLocals();
   void defineParameters();
 
-  void createBuilderForBytecode(TR::BytecodeBuilder **bytecodeBuilderTable,
-                                ByteCode bytecode, int64_t bytecodeIndex);
   /// For a single bytecode, generate the
   bool generateILForBytecode(
-      const std::size_t functionIndex,
+      const FunctionDef *function,
       std::vector<TR::BytecodeBuilder *> bytecodeBuilderTable,
-      const Instruction *program, ByteCode bytecode, long bytecodeIndex,
+      std::size_t instructionIndex,
       TR::BytecodeBuilder *jumpToBuilderForInlinedReturn);
 
   bool inlineProgramIntoBuilder(
@@ -74,34 +72,41 @@ class MethodBuilder : public TR::MethodBuilder {
                      TR::BytecodeBuilder *nextBuilder);
   void handle_bc_call(TR::BytecodeBuilder *builder,
                       TR::BytecodeBuilder *nextBuilder);
-  void handle_bc_jmp(TR::BytecodeBuilder *builder,
-                     std::vector<TR::BytecodeBuilder *> bytecodeBuilderTable,
-                     const Instruction *program, long bytecodeIndex);
-  void handle_bc_jmp_eq(TR::BytecodeBuilder *builder,
-                        std::vector<TR::BytecodeBuilder *> bytecodeBuilderTable,
-                        const Instruction *program, long bytecodeIndex,
-                        TR::BytecodeBuilder *nextBuilder);
+  void handle_bc_jmp(
+      TR::BytecodeBuilder *builder,
+      const std::vector<TR::BytecodeBuilder *> &bytecodeBuilderTable,
+      const std::vector<Instruction> &program, long bytecodeIndex,
+      TR::BytecodeBuilder *nextBuilder);
+  void handle_bc_jmp_eq(
+      TR::BytecodeBuilder *builder,
+      const std::vector<TR::BytecodeBuilder *> &bytecodeBuilderTable,
+      const std::vector<Instruction> &program, long bytecodeIndex,
+      TR::BytecodeBuilder *nextBuilder);
   void handle_bc_jmp_neq(
       TR::BytecodeBuilder *builder,
-      std::vector<TR::BytecodeBuilder *> bytecodeBuilderTable,
-      const Instruction *program, long bytecodeIndex,
+      const std::vector<TR::BytecodeBuilder *> &bytecodeBuilderTable,
+      const std::vector<Instruction> &program, long bytecodeIndex,
       TR::BytecodeBuilder *nextBuilder);
-  void handle_bc_jmp_lt(TR::BytecodeBuilder *builder,
-                        std::vector<TR::BytecodeBuilder *> bytecodeBuilderTable,
-                        const Instruction *program, long bytecodeIndex,
-                        TR::BytecodeBuilder *nextBuilder);
-  void handle_bc_jmp_le(TR::BytecodeBuilder *builder,
-                        std::vector<TR::BytecodeBuilder *> bytecodeBuilderTable,
-                        const Instruction *program, long bytecodeIndex,
-                        TR::BytecodeBuilder *nextBuilder);
-  void handle_bc_jmp_gt(TR::BytecodeBuilder *builder,
-                        std::vector<TR::BytecodeBuilder *> bytecodeBuilderTable,
-                        const Instruction *program, long bytecodeIndex,
-                        TR::BytecodeBuilder *nextBuilder);
-  void handle_bc_jmp_ge(TR::BytecodeBuilder *builder,
-                        std::vector<TR::BytecodeBuilder *> bytecodeBuilderTable,
-                        const Instruction *program, long bytecodeIndex,
-                        TR::BytecodeBuilder *nextBuilder);
+  void handle_bc_jmp_lt(
+      TR::BytecodeBuilder *builder,
+      const std::vector<TR::BytecodeBuilder *> &bytecodeBuilderTable,
+      const std::vector<Instruction> &program, long bytecodeIndex,
+      TR::BytecodeBuilder *nextBuilder);
+  void handle_bc_jmp_le(
+      TR::BytecodeBuilder *builder,
+      const std::vector<TR::BytecodeBuilder *> &bytecodeBuilderTable,
+      const std::vector<Instruction> &program, long bytecodeIndex,
+      TR::BytecodeBuilder *nextBuilder);
+  void handle_bc_jmp_gt(
+      TR::BytecodeBuilder *builder,
+      const std::vector<TR::BytecodeBuilder *> &bytecodeBuilderTable,
+      const std::vector<Instruction> &program, long bytecodeIndex,
+      TR::BytecodeBuilder *nextBuilder);
+  void handle_bc_jmp_ge(
+      TR::BytecodeBuilder *builder,
+      const std::vector<TR::BytecodeBuilder *> &bytecodeBuilderTable,
+      const std::vector<Instruction> &program, long bytecodeIndex,
+      TR::BytecodeBuilder *nextBuilder);
 
   const GlobalTypes &globalTypes() { return globalTypes_; }
 

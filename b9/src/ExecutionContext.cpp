@@ -110,7 +110,7 @@ StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
         instructionPointer += instructionPointer->parameter();
         break;
       case ByteCode::DUPLICATE:
-        // TODO
+        doDuplicate();
         break;
       case ByteCode::DROP:
         doDrop();
@@ -208,7 +208,9 @@ void ExecutionContext::doPrimitiveCall(Parameter value) {
 Parameter ExecutionContext::doJmp(Parameter offset) { return offset; }
 
 void ExecutionContext::doDuplicate() {
-  // TODO
+  auto x = pop();
+  push(x);
+  push(x);
 }
 
 void ExecutionContext::doDrop() { stack_.pop(); }

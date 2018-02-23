@@ -1,55 +1,36 @@
-#ifndef B9_JIT_INCL
-#define B9_JIT_INCL
+#if !defined(B9_METHODBBUILDER_HPP_)
+#define B9_METHODBBUILDER_HPP_
 
-#include <b9/interpreter.hpp>
+#include "b9/VirtualMachine.hpp"
+#include "b9/compiler/Compiler.hpp"
+#include "b9/compiler/GlobalTypes.hpp"
+#include "b9/compiler/VirtualMachineState.hpp"
+#include "b9/instructions.hpp"
 
-#include "ilgen/MethodBuilder.hpp"
-#include "ilgen/TypeDictionary.hpp"
-
-#include <vector>
+#include <Jit.hpp>
+#include <ilgen/BytecodeBuilder.hpp>
+#include <ilgen/MethodBuilder.hpp>
+#include <ilgen/TypeDictionary.hpp>
 
 namespace b9 {
 
-class FunctionDef;
-class Stack;
-
-/// Function not found exception.
-struct CompilationException : public std::runtime_error {
-  using std::runtime_error::runtime_error;
-};
+class VirtualMachine;
 
 class MethodBuilder : public TR::MethodBuilder {
  public:
-  MethodBuilder(VirtualMachine *virtualMachine, TR::TypeDictionary *types,
-                const Config &config, const std::size_t functionIndex);
+  MethodBuilder(VirtualMachine &virtualMachine,
+                const std::size_t functionIndex);
 
   virtual bool buildIL();
 
  private:
-  VirtualMachine *virtualMachine_;
-  TR::TypeDictionary *types_;
-  const Config &cfg_;
-  const std::size_t functionIndex_;
-  ExecutionContext *context_;
-  int32_t maxInlineDepth;
-  int32_t firstArgumentIndex;
-
-  TR::IlType *executionContextType;
-  TR::IlType *stackPointerType;
-  TR::IlType *stackElementType;
-  TR::IlType *stackElementPointerType;
-
-  TR::IlType *addressPointerType;
-  TR::IlType *int64PointerType;
-  TR::IlType *int32PointerType;
-  TR::IlType *int16PointerType;
-
   void defineFunctions();
-  void defineLocals(std::size_t nargs);
-  void defineParameters(std::size_t nargs);
+  void defineLocals();
+  void defineParameters();
 
   void createBuilderForBytecode(TR::BytecodeBuilder **bytecodeBuilderTable,
                                 ByteCode bytecode, int64_t bytecodeIndex);
+  /// For a single bytecode, generate the
   bool generateILForBytecode(
       const std::size_t functionIndex,
       std::vector<TR::BytecodeBuilder *> bytecodeBuilderTable,
@@ -61,12 +42,19 @@ class MethodBuilder : public TR::MethodBuilder {
       TR::BytecodeBuilder *currentBuilder = 0,
       TR::BytecodeBuilder *jumpToBuilderForInlinedReturn = 0);
 
+  // Helpers
+
   TR::IlValue *pop(TR::BytecodeBuilder *builder);
+
   void push(TR::BytecodeBuilder *builder, TR::IlValue *value);
+
   void drop(TR::BytecodeBuilder *builder);
 
   TR::IlValue *loadVarIndex(TR::IlBuilder *builder, int varindex);
+
   void storeVarIndex(TR::IlBuilder *builder, int varindex, TR::IlValue *value);
+
+  // Bytecode Handlers
 
   void handle_bc_push_constant(TR::BytecodeBuilder *builder,
                                TR::BytecodeBuilder *nextBuilder);
@@ -82,7 +70,6 @@ class MethodBuilder : public TR::MethodBuilder {
                      TR::BytecodeBuilder *nextBuilder);
   void handle_bc_add(TR::BytecodeBuilder *builder,
                      TR::BytecodeBuilder *nextBuilder);
-  // CASCON2017 - add handle_bc_mul and handle_bc_div here
   void handle_bc_not(TR::BytecodeBuilder *builder,
                      TR::BytecodeBuilder *nextBuilder);
   void handle_bc_call(TR::BytecodeBuilder *builder,
@@ -115,19 +102,17 @@ class MethodBuilder : public TR::MethodBuilder {
                         std::vector<TR::BytecodeBuilder *> bytecodeBuilderTable,
                         const Instruction *program, long bytecodeIndex,
                         TR::BytecodeBuilder *nextBuilder);
-};
 
-class Compiler {
- public:
-  Compiler(VirtualMachine *virtualMachine, const Config &cfg);
-  JitFunction generateCode(const std::size_t functionIndex);
+  const GlobalTypes &globalTypes() { return globalTypes_; }
 
- private:
-  TR::TypeDictionary types_;
-  VirtualMachine *virtualMachine_;
+  VirtualMachine &virtualMachine_;
+  const GlobalTypes &globalTypes_;
   const Config &cfg_;
+  const std::size_t functionIndex_;
+  int32_t maxInlineDepth_;
+  int32_t firstArgumentIndex = 0;
 };
 
 }  // namespace b9
 
-#endif
+#endif  // B9_METHODBBUILDER_HPP_

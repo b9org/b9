@@ -23,4 +23,3 @@ add_test(
 	NAME run_b9test
 	COMMAND env B9_TEST_MODULE=interpreter_test.b9mod $<TARGET_FILE:b9test>
 )
-

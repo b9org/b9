@@ -1,7 +1,7 @@
 ###  B9 ###
 
 node_modules
-build
+build*
 
 # clang
 compile_commands.json
@@ -9,6 +9,9 @@ compile_commands.json
 ### C++ ###
 # Prerequisites
 *.d
+
+###
+.vscode
 
 # Compiled Object files
 *.slo

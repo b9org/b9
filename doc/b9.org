@@ -1,0 +1,68 @@
+#+TITLE: Road Map
+
+* OMR Cleanup
+
+* Minor Tasks
+** TODO Force set the glue component names
+** TODO Port visitor scheme to OMR Marking
+** TODO Remove OMR's object iterator code
+** TODO Single transitionSet opimization
+- More than just an opti
+- Delay allocating the transition table potentially means less rooting during object map allocation
+
+* Version 1: Basic object features
+** DONE Transition Tables
+** TODO Fixed / Dynamic Slots
+** TODO Split high-level public api from low-level
+** TODO Write barriers
+** TODO Finalization
+- List of objects and finalizers
+- Finalization calls are dispatched to threads
+
+*** TODO Expose OMR thread dispatch library to language
+- Possibly expose OMR work-sharing API so languages can work out their own multithreadedness in Finalization
+- Reuse the GC's work dispatcher for finalization
+
+* Version 2: Java-style classes
+** TODO Typed, variable width slots
+** TODO Fat Object Maps
+- Merge SlotMap, ObjectMap, EmptyObjectMap to one type.
+
+* Version 3: Jit
+** TODO Jit Integration
+
+* Version 4: Arrays
+** TODO Array Objects
+
+* Version 5: Threading and atomics
+** Atomic sets/gets
+** Object Locks
+** Shared heap lock
+
+* Version 6
+** TODO Constructors and construction sites
+*** TODO Slack Tracking
+*** TODO Root Constructors
+
+* Version 7: Dictionary Objects
+** TODO Dictionary Objects
+
+* Problems
+** Rooting
+*** Rooting through Value-slots
+*** Rooting a prexisting pointer sloti
+
+```
+
+for (const Map& map : object->mapHierachy()) {
+	for (const SlotLookup& slot : map->slotRange()) {
+		switch(slot.desc.type().coreType()) {
+		case CoreType::REF:
+			edge.mark()	
+		case CoreType::VALUE:
+			return handleValue();	
+		}
+		object->access(slot);
+
+	}
+}

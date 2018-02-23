@@ -26,11 +26,50 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS true)
 
 enable_testing()
 
+# Optional debug and testing features
+
+set(B9_GCOV OFF CACHE BOOL "Run tests with gcov to gather code coverage data.")
+
+if(B9_GCOV)
+	add_compile_options(
+		-fprofile-arcs
+		-ftest-coverage
+		-O0
+		-g
+	)
+	link_libraries(
+		-fprofile-arcs
+		-ftest-coverage
+	)
+endif(B9_GCOV)
+
+set(B9_ASAN OFF CACHE BOOL "Build b9 with clang address sanitizer enabled.")
+
+if(B9_ASAN)
+	add_compile_options(
+		-fsanitize=address -fno-omit-frame-pointer
+	)
+	link_libraries(
+		-fsanitize=address
+	)
+endif(B9_ASAN)
+
+set(B9_UBSAN OFF CACHE BOOL "Build b9 with clang undefined behaviour sanitizer.")
+
+if(B9_UBSAN)
+	add_compile_options(
+		-fsanitize=undefined
+	)
+	link_libraries(
+		-fsanitize=undefined
+	)
+endif(B9_UBSAN)
+
 # OMR Configuration
 
 set(OMR_COMPILER   ON  CACHE INTERNAL "Enable the Compiler.")
 set(OMR_JITBUILDER ON  CACHE INTERNAL "We use OMR's jitbuilder tool for the b9 JIT")
-set(OMR_GC         ON CACHE INTERNAL "We don't use the GC in b9 (yet)")
+set(OMR_GC         ON  CACHE INTERNAL "Enable the GC")
 set(OMR_FVTEST     OFF CACHE INTERNAL "Disable OMR's internal test suite, it's incompatible with b9")
 set(OMR_WARNINGS_AS_ERRORS OFF CACHE INTERNAL "OMR doesn't compile cleanly on my laptop :p")
 
@@ -83,6 +122,8 @@ add_subdirectory(b9run)
 add_subdirectory(b9disassemble)
 
 add_subdirectory(b9assemble)
+
+add_subdirectory(om)
 
 add_subdirectory(test)
 

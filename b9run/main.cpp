@@ -1,7 +1,13 @@
-#include <strings.h>
+#include <b9/ExecutionContext.hpp>
+#include <b9/compiler/Compiler.hpp>
 #include <b9/deserialize.hpp>
-#include <b9/interpreter.hpp>
-#include <b9/jit.hpp>
+
+#include <OMR/Om/Context.inl.hpp>
+#include <OMR/Om/MemoryManager.inl.hpp>
+#include <OMR/Om/RootRef.inl.hpp>
+#include <OMR/Om/Runtime.hpp>
+
+#include <strings.h>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -100,17 +106,30 @@ static bool parseArguments(RunConfig& cfg, const int argc, char* argv[]) {
 
   // check for user defined arguments
   for (; i < argc; i++) {
-    cfg.usrArgs.push_back(std::atoi(argv[i]));
+    cfg.usrArgs.push_back(OMR::Om::Value(std::atoi(argv[i])));
+  }
+
+  // check that dependent options are enabled
+  if (cfg.b9.directCall && !cfg.b9.jit) {
+    std::cerr << "-directcall requires -jit" << std::endl;
+    return false;
+  }
+  if (cfg.b9.passParam && !cfg.b9.directCall) {
+    std::cerr << "-passparam requires -directcall" << std::endl;
+    return false;
+  }
+  if (cfg.b9.lazyVmState && !cfg.b9.passParam) {
+    std::cerr << "-lazyvmstate requires -passparam" << std::endl;
+    return false;
   }
 
   return true;
 }
 
-static void run(const RunConfig& cfg) {
-  b9::VirtualMachine vm{cfg.b9};
+static void run(OMR::Om::ProcessRuntime& runtime, const RunConfig& cfg) {
+  b9::VirtualMachine vm{runtime, cfg.b9};
 
   std::ifstream file(cfg.moduleName, std::ios_base::in | std::ios_base::binary);
-
   auto module = b9::deserialize(file);
   vm.load(module);
 
@@ -126,6 +145,7 @@ static void run(const RunConfig& cfg) {
 }
 
 int main(int argc, char* argv[]) {
+  OMR::Om::ProcessRuntime runtime;
   RunConfig cfg;
 
   if (!parseArguments(cfg, argc, argv)) {
@@ -138,9 +158,9 @@ int main(int argc, char* argv[]) {
   }
 
   try {
-    run(cfg);
+    run(runtime, cfg);
   } catch (const b9::DeserializeException& e) {
-    std::cerr << "Failed to read binary module" << std::endl;
+    std::cerr << "Failed to load module: " << e.what() << std::endl;
     exit(EXIT_FAILURE);
   } catch (const b9::FunctionNotFoundException& e) {
     std::cerr << "Failed to find function: " << e.what() << std::endl;

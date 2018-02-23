@@ -21,7 +21,8 @@ function outputString(out, string) {
 
 var PrimitiveCode = Object.freeze({
 	"print_string": 0,
-	"print_number": 1
+	"print_number": 1,
+	"print_stack": 2
 });
 
 var OperatorCode = Object.freeze({

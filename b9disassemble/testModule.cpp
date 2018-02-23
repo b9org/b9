@@ -1,5 +1,6 @@
+#include <b9/ExecutionContext.hpp>
+#include <b9/VirtualMachine.hpp>
 #include <b9/deserialize.hpp>
-#include <b9/interpreter.hpp>
 #include <b9/module.hpp>
 #include <b9/serialize.hpp>
 
@@ -284,9 +285,10 @@ TEST(ReadBinaryTest, runValidModule) {
   serialize(buffer, *m1);
 
   auto m2 = deserialize(buffer);
-  VirtualMachine vm{{}};
+  OMR::Om::ProcessRuntime runtime;
+  VirtualMachine vm(runtime, {});
   vm.load(m2);
-  vm.run(0, {1, 2});
+  vm.run(0, {OMR::Om::Value(1), OMR::Om::Value(2)});
 }
 
 }  // namespace test

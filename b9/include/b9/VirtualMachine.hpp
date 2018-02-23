@@ -1,8 +1,22 @@
 #ifndef B9_VIRTUALMACHINE_HPP_
 #define B9_VIRTUALMACHINE_HPP_
 
+#include <b9/OperandStack.hpp>
+#include <b9/compiler/Compiler.hpp>
 #include <b9/instructions.hpp>
 #include <b9/module.hpp>
+
+#include <OMR/Om/Allocator.inl.hpp>
+#include <OMR/Om/Context.inl.hpp>
+#include <OMR/Om/Map.inl.hpp>
+#include <OMR/Om/MemoryManager.inl.hpp>
+#include <OMR/Om/Object.inl.hpp>
+#include <OMR/Om/ObjectMap.inl.hpp>
+#include <OMR/Om/RootRef.inl.hpp>
+#include <OMR/Om/Runtime.hpp>
+#include <OMR/Om/TransitionSet.inl.hpp>
+#include <OMR/Om/Traverse.hpp>
+#include <OMR/Om/Value.hpp>
 
 #include <cstring>
 #include <map>
@@ -14,9 +28,12 @@
 extern "C" {
 b9::PrimitiveFunction b9_prim_print_string;
 b9::PrimitiveFunction b9_prim_print_number;
+b9::PrimitiveFunction b9_prim_print_stack;
 }
 
 namespace b9 {
+
+namespace Om = ::OMR::Om;
 
 class Compiler;
 class ExecutionContext;
@@ -48,102 +65,55 @@ struct BadFunctionCallException : public std::runtime_error {
   using std::runtime_error::runtime_error;
 };
 
-using StackElement = std::int64_t;
-
-struct Stack {
-  StackElement *stackBase;
-  StackElement *stackPointer;
-};
-
-typedef StackElement (*JitFunction)(...);
-
-class ExecutionContext {
- public:
-  ExecutionContext(VirtualMachine *virtualMachine, const Config &cfg)
-      : stackBase_(this->stack_),
-        stackPointer_(this->stack_),
-        virtualMachine_(virtualMachine),
-        cfg_(cfg) {
-    std::memset(stack_, 0, sizeof(StackElement) * 1000);
-  }
-
-  StackElement interpret(std::size_t functionIndex);
-
-  void push(StackElement value);
-  StackElement pop();
-
-  void functionCall(Parameter value);
-  void functionReturn(StackElement returnVal);
-  void primitiveCall(Parameter value);
-  Parameter jmp(Parameter offset);
-  void duplicate();
-  void drop();
-  void pushFromVar(StackElement *args, Parameter offset);
-  void pushIntoVar(StackElement *args, Parameter offset);
-  void intAdd();
-  void intSub();
-  // CASCON2017 - Add intMul() and intDiv() here
-  void intPushConstant(Parameter value);
-  void intNot();
-  Parameter intJmpEq(Parameter delta);
-  Parameter intJmpNeq(Parameter delta);
-  Parameter intJmpGt(Parameter delta);
-  Parameter intJmpGe(Parameter delta);
-  Parameter intJmpLt(Parameter delta);
-  Parameter intJmpLe(Parameter delta);
-  void strPushConstant(Parameter value);
-  // TODO: void strJmpEq(Parameter delta);
-  // TODO: void strJmpNeq(Parameter delta);
-
-  // Reset the stack and other internal data
-  void reset();
-
-  StackElement *stackBase_;
-  StackElement *stackPointer_;
-
- private:
-  StackElement stack_[1000];
-  Instruction *programCounter_ = 0;
-  StackElement *stackEnd_ = &stack_[1000];
-  VirtualMachine *virtualMachine_;
-  const Config &cfg_;
-};
+extern "C" typedef Om::RawValue (*JitFunction)(void *executionContext, ...);
 
 class VirtualMachine {
  public:
-  VirtualMachine(const Config &cfg);
+  VirtualMachine(OMR::Om::ProcessRuntime &runtime, const Config &cfg);
 
   ~VirtualMachine() noexcept;
 
   /// Load a module into the VM.
   void load(std::shared_ptr<const Module> module);
+
   StackElement run(const std::size_t index,
                    const std::vector<StackElement> &usrArgs);
+
   StackElement run(const std::string &name,
                    const std::vector<StackElement> &usrArgs);
 
   const FunctionDef *getFunction(std::size_t index);
+
   PrimitiveFunction *getPrimitive(std::size_t index);
 
   JitFunction getJitAddress(std::size_t functionIndex);
+
   void setJitAddress(std::size_t functionIndex, JitFunction value);
 
   std::size_t getFunctionCount();
+
   JitFunction generateCode(const std::size_t functionIndex);
+
   void generateAllCode();
 
-  std::string getString(int index);
-
-  ExecutionContext *executionContext() { return &executionContext_; }
+  const std::string& getString(int index);
 
   const std::shared_ptr<const Module> &module() { return module_; }
 
+  OMR::Om::MemoryManager &memoryManager() { return memoryManager_; }
+
+  const OMR::Om::MemoryManager &memoryManager() const { return memoryManager_; }
+
+  std::shared_ptr<Compiler> compiler() { return compiler_; }
+
+  const Config &config() { return cfg_; }
+
  private:
   static constexpr PrimitiveFunction *const primitives_[] = {
-      b9_prim_print_string, b9_prim_print_number};
+      b9_prim_print_string, b9_prim_print_number, b9_prim_print_stack};
 
   Config cfg_;
-  ExecutionContext executionContext_;
+  OMR::Om::MemoryManager memoryManager_;
   std::shared_ptr<Compiler> compiler_;
   std::shared_ptr<const Module> module_;
   std::vector<JitFunction> compiledFunctions_;
@@ -152,23 +122,28 @@ class VirtualMachine {
 typedef StackElement (*Interpret)(ExecutionContext *context,
                                   const std::size_t functionIndex);
 
+}  // namespace b9
+
 // define C callable Interpret API for each arg call
 // if args are passed to the function, they are not passed
 // on the intepreter stack
 
-StackElement interpret_0(ExecutionContext *context,
+extern "C" {
+
+using namespace b9;
+
+Om::RawValue interpret_0(ExecutionContext *context,
                          const std::size_t functionIndex);
-StackElement interpret_1(ExecutionContext *context,
-                         const std::size_t functionIndex, StackElement p1);
-StackElement interpret_2(ExecutionContext *context,
-                         const std::size_t functionIndex, StackElement p1,
-                         StackElement p2);
-StackElement interpret_3(ExecutionContext *context,
-                         const std::size_t functionIndex, StackElement p1,
-                         StackElement p2, StackElement p3);
+OMR::Om::RawValue interpret_1(ExecutionContext *context,
+                              const std::size_t functionIndex, Om::RawValue p1);
+Om::RawValue interpret_2(ExecutionContext *context,
+                         const std::size_t functionIndex, Om::RawValue p1,
+                         Om::RawValue p2);
+Om::RawValue interpret_3(ExecutionContext *context,
+                         const std::size_t functionIndex, Om::RawValue p1,
+                         Om::RawValue p2, Om::RawValue p3);
 
 void primitive_call(ExecutionContext *context, Parameter value);
-
-}  // namespace b9
+}
 
 #endif  // B9_VIRTUALMACHINE_HPP_

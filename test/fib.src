@@ -1,5 +1,17 @@
+function fib(a) {
+    if (a < 3) {
+        return 1;
+    } else {
+        return fib(a - 1) + fib(a - 2);
+    }
+}
+
 function b9main() {
+    b9PrintString("");
+    b9PrintString("Fibonacci");
     var a = 1;
-    a++;
-    return a;
+    while (a <= 20) {
+        b9PrintNumber(fib(a));
+        a++;
+    }
 }

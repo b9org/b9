@@ -378,16 +378,13 @@ function FirstPassCodeGen() {
 	}
 
 	this.emitPushFromVar = function (func, name) {
-		console.log(func);
 		var index = func.localIndex(name);
 		func.instructions.push(new Instruction("PUSH_FROM_VAR", index));
-		// this.currentFunction.updateStackCount(1);
 	}
 
 	this.emitPopIntoVar = function (func, name) {
 		var index = func.localIndex(name);
 		func.instructions.push(new Instruction("POP_INTO_VAR", index));
-		// this.currentFunction.updateStackCount(-1);
 	}
 
 	this.handleFunctionDeclaration = function (func, declaration) {

@@ -56,14 +56,14 @@ static constexpr RawValue MASK =
 /// the mantissa. The top bit is the NAN_QUIET_TAG, and is always 0 for boxed
 /// values. The
 namespace KindTag {
-static constexpr std::size_t SHIFT = 42;
+static constexpr std::size_t SHIFT = 48;
 static constexpr RawValue MASK = RawValue(0x7) << SHIFT;  // 3 low bits
 static constexpr RawValue INTEGER = RawValue(0x1) << SHIFT;
 static constexpr RawValue POINTER = RawValue(0x2) << SHIFT;
 }  // namespace KindTag
 
 static_assert((BoxTag::MASK & KindTag::MASK) == 0,
-              "Two masks must not overlap");
+              "BoxTag::MASK and KindTag::MASK masks must not overlap");
 
 /// Tags that indicate the RawValue is boxed AND a particular value.
 namespace BoxKindTag {

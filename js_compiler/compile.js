@@ -378,6 +378,7 @@ function FirstPassCodeGen() {
 	}
 
 	this.emitPushFromVar = function (func, name) {
+		console.log(func);
 		var index = func.localIndex(name);
 		func.instructions.push(new Instruction("PUSH_FROM_VAR", index));
 		// this.currentFunction.updateStackCount(1);
@@ -668,7 +669,7 @@ function FirstPassCodeGen() {
 
 	/// Emit a test statement.
 	/// The test statement returns the comparator 
-	this.emitTest= function (func, test) {
+	this.emitTest = function (func, test) {
 		var op = undefined;
 		if (test.type == "BinaryExpression") {
 			// Binary expressions compile to specialized JMP operations
@@ -696,10 +697,10 @@ function FirstPassCodeGen() {
 		this.handle(func, statement.consequent);
 		if (statement.alternate) {
 			if (func.lastInstruction().operator != "RETURN") {
-				func.instructions.push(new Instruction("JMP", end));
+				func.instructions.push(new Instruction("JMP", endLabel));
 			}
 			func.placeLabel(alternateLabel);
-			this.handle(this, statement.alternate);
+			this.handle(func, statement.alternate);
 		}
 		func.placeLabel(endLabel);
 	};

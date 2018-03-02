@@ -8,7 +8,7 @@ Welcome to our tutorial! If you're interested in building your own language runt
 
 ## A Brief Overview of Base 9
 
-If you want to fiddle around with Base9, check out our [documentation page](https://github.com/arianneb/Base9/blob/documentation/doc/README.md) for set-up instructions. Otherwise, here's the short-winded description: Base9 is an educational **language runtime**. It's front-end language, b9porcelain, is a small subset of JavaScript. It compiles into a simple set of **bytecodes** which run on a primitive **interpreter**. We've also plugged in [OMR](https://www.eclipse.org/omr/) and [JitBuilder](https://developer.ibm.com/open/2016/07/19/jitbuilder-library-and-eclipse-omr-just-in-time-compilers-made-easy/) to provide our runtime with a **JIT compiler**! 
+If you want to fiddle around with Base9, check out our [set-up page](https://github.com/arianneb/Base9/blob/documentation/doc/README.md) for set-up instructions. Otherwise, here's the short-winded description: Base9 is an educational **language runtime**. It's front-end language, b9porcelain, is a small subset of JavaScript. It compiles into a simple set of **bytecodes** which run on a primitive **interpreter**. We've also plugged in [OMR](https://www.eclipse.org/omr/) and [JitBuilder](https://developer.ibm.com/open/2016/07/19/jitbuilder-library-and-eclipse-omr-just-in-time-compilers-made-easy/) to provide our runtime with a **JIT compiler**! 
 
 
 ## Creating Base9
@@ -19,7 +19,7 @@ Base9 has several major components that we'll discuss and demonstrate how we des
 
 ![](https://github.com/arianneb/Base9/blob/developerQuest/images/b9overview.png)
 
-The Base9 Overview Diagram depicts the Ahead-of-Time compilation unit and the Virtual Machine unit. The Ahead-of-Time unit runs the b9porcelain source code through our frontend compiler. The frontend compiler outputs a binary module. The binary module is passed to the deserializer, which converts it to the in memory Module.
+The Base9 Overview Diagram depicts the Ahead-of-Time compilation unit and the Virtual Machine unit. The Ahead-of-Time unit runs the b9porcelain source code through our frontend compiler. The frontend compiler outputs a binary module. The binary module is passed to the deserializer, which converts it to an in memory Module.
 
 The Virtual Machine unit is comprised of the Interpreter and the JIT (not depicted here). The in memory Module is passed to the VM, which runs the bytecodes of the program. 
 
@@ -57,7 +57,7 @@ b9porcelain source code is passed as input into our [frontend compiler](https://
 
 ### Building the Module
 
-The Base9 [deserializer](https://github.com/arianneb/Base9/blob/developerQuest/doc/Deserializer.md) is responsible for taking the binary module (as output by the frontend compiler), and converting it into the Module data structure (containing the Base9 bytecodes) which can be run by the VM. The Module is represented in Base9 as follows:
+The Base9 [deserializer](https://github.com/arianneb/Base9/blob/developerQuest/doc/Deserializer.md) is responsible for taking the binary module (which is output by the frontend compiler), and converting it into the Module data structure (containing the Base9 bytecodes) which can be run by the VM. The Module is represented in Base9 as follows:
 
 ```
 struct Module {
@@ -75,7 +75,7 @@ struct Module {
 };
 ```
 
-It contains only 2 fields; a `functions` vector, and a `strings` vector. `functions` contains a set of function definitions, or `FunctionDef`'s:
+The Module contains only 2 fields; a `functions` vector, and a `strings` vector. `functions` contains a set of function definitions, or `FunctionDef`'s:
 
 ```
 struct FunctionDef {
@@ -110,6 +110,10 @@ struct FunctionDef {
 
 The fields of the `FunctionDef` are the name of the function, the index of the function in the function vector, the number of arguments, the number of registers, and the `Instructions` vector (which contains the bytecodes). 
 
+The strings vector in the Module contain the contents of the string table, which holds any strings used by the b9porcelain program. 
+
+Lastly in the Module, we see a function called `getFunctionIndex`, which traverses the functions vector using a function name, and returns that functions position in the vector. 
+
 
 ### Execution Model
 
@@ -126,11 +130,11 @@ The above diagram depicts the high-level translation from b9porcelain to Base9 b
 
 ![](https://github.com/arianneb/Base9/blob/developerQuest/images/vmDesign.png)
 
-The above diagram depicts our Virtual Machine Design. The VM takes the bytecodes as structured by the Module, and runs them through either the Interpreter or the JIT compiler. The Interpreter will process the bytecodes directly, and the JIT compiler converts them to native machine code. 
+The above diagram shows our Virtual Machine Design. The VM takes the bytecodes from the Module, and runs them through either the Interpreter or the JIT compiler. The Interpreter will process the bytecodes directly, and the JIT compiler converts them to native machine code. 
 
 ### The Virtual Machine
 
-The Base9 VM has been subject to many design decisions. Please note, as with many of our components, there are multiple ways to implement a language runtime. As discussed above, the Base9 virtual machine takes a Module structure as input. Let's take a look at our [main function](https://github.com/b9org/b9/blob/master/b9run/main.cpp) to gain a better understanding of how this works. Our main function calls `run(runtime, cfg);` which looks like this:
+The Base9 VM has been subject to many design decisions. Please note, as with many of our components, there are multiple ways to implement a language runtime. As discussed above, the Base9 virtual machine takes a Module structure as input. Let's take a look at our [main function](https://github.com/b9org/b9/blob/master/b9run/main.cpp) to gain a better understanding of how this works. Our main function calls `run(runtime, cfg);`:
 
 ```
 static void run(OMR::Om::ProcessRuntime& runtime, const RunConfig& cfg) {
@@ -152,7 +156,7 @@ static void run(OMR::Om::ProcessRuntime& runtime, const RunConfig& cfg) {
 }
 ```
 
-One of your first considerations will be how the user interacts with your runtime. In Base9, we compile b9porcelain inro a binary module using the following command:
+One of your first considerations will be how the user interacts with your runtime. In Base9, we compile b9porcelain into a binary module using the following command:
 
 `node ./compile.js <in> <out>`
 

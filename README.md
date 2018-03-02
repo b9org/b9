@@ -12,7 +12,7 @@ To get started with Base9, you'll need:
 
 `git, build-essential, nodejs, npm, esprima, cmake, ninja` 
 
-For detailed instructions on setting up Base9, check out our [set-up page](https://github.com/arianneb/Base9/blob/developerQuest/doc/README.md).
+For detailed instructions on setting up Base9, check out our [set-up page](https://github.com/arianneb/Base9/blob/developerQuest/doc/SetupBase9.md).
 
 
 ## Clone the repository and get the submodules

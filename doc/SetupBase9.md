@@ -20,7 +20,7 @@ The AOT compilation unit is where the Base9 source code is tranformed into bytec
 #### 2. Virtual Machine / Runtime Unit
 At runtime, the byte codes are given to the VM as input, where they will either be interpreted by Base9 or JIT compiled using OMR.
 
-![](https://github.com/arianneb/Base9/blob/documentation/images/b9_architecture.png)
+![](https://github.com/arianneb/Base9/blob/developerQuest/images/b9_architecture.png)
 
 
 ## Getting Set-up 
@@ -40,7 +40,6 @@ cd Base9
 git submodule update --init
 ```
 
-
 ## Directory Structure of Base9
 
 Learn more about our [Directory Structure](https://github.com/arianneb/Base9/blob/documentation/doc/directoryStructure.md)
@@ -57,32 +56,23 @@ ninja
 ## Run Base9
 
 #### Run Hello World!
-On Ubuntu:
 
-```./b9run/b9run ./test/libhellod.so```
+```./b9run/b9run ./test/hello.b9mod```
 
-On OSX:
-
-```./b9run/b9run ./test/libhellod.dylib"```
-
-#### Run a Base9 Benchmark
+#### Run a Base9 Benchmark (outdated)
 
 Command structure:
 
 ```b9run [-function <function>] <module> [<arg>...]```
 
-b9run is the main executable that runs the Base9 modules. In the following example, we are running the factorial function with an input of 20 by passing the libfactoriald.so shared object file to the virtual machine: 
+b9run is the main executable that runs the Base9 modules. In the following example, we are running the factorial function with an input of 20 by passing the factorial.b9mod shared object file to the virtual machine: 
 
 ```./b9run/b9run -function factorial test/libfactoriald.so 20```
  
 
-
 ## Test Base9 
 
-You can run the full Base9 test suit by running either:
+You can run the full Base9 test suit by running the following command from the build directory:
 
 ```ninja test```
 
-or
-
-```ctest -V -R run_interpreter_test```

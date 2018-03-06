@@ -40,7 +40,7 @@ GlobalTypes::GlobalTypes(TR::TypeDictionary &td) {
 
   auto os = "b9::OperandStack";
   operandStack = td.DefineStruct(os);
-  td.DefineField(os, "top_", stackElementPtr, OperandStackOffset::TOP);
+  td.DefineField(os, "top_", td.PointerTo(stackElementPtr), OperandStackOffset::TOP);
   td.DefineField(os, "stack_", stackElementPtr, OperandStackOffset::STACK);
   td.CloseStruct(os);
 

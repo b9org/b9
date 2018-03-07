@@ -1,7 +1,7 @@
 # The Base9 Frontend Compiler and Binary Format
 
 
-### Frontend Compiler
+## Frontend Compiler
 
 The frontend compiler takes b9porcelain source code and using the [Esprima](http://esprima.org) framework, parses it into an Abstract Syntax Tree (AST). Although Esprima handles a significant chunk of the work, we must still go through and parse the AST to create our bytecodes. The parsing requires an understanding of AST's and the various node types as output by Esprima. The tree is processed recursively, and each node type is handled by a corresponding function. The frontend compiler eventually outputs a binary file which can later be deserialized and loaded into the VM. 
 
@@ -13,7 +13,7 @@ Where `<in>` is the name/path of our JavaScript program, and `<out>` is the name
 
 Lets have a look at our binary format.
 
-### Binary Format
+## Binary Format
 
 Please note that our decision to convert our b9porcelain program into a binary module was an independent design decision. It allows for cross platform compatibility, and gives us the option of packaging modules in their binary format, which is both fast to deserialize, and convenient.
 
@@ -34,13 +34,20 @@ StringTable:= String
 String:= sizeofString(uint32) String(char*)
 ```
 
-Here's our grammar in diagram form:
+### Binary Module Sections:
 
-#### Binary Module Breakdown
+![](https://github.com/arianneb/Base9/blob/developerQuest/images/BinModSections.png)
 
-![](https://github.com/arianneb/Base9/blob/developerQuest/images/binaryModBreakdown.png)
+### Function Section:
 
-Below is a sample of our binary format:
+![](https://github.com/arianneb/Base9/blob/developerQuest/images/BinModFunctions.png)
+
+### String Section:
+
+![](https://github.com/arianneb/Base9/blob/developerQuest/images/BinModStrings.png)
+
+
+### Binary Module Example:
 
 ```
 62 39 6d 6f 64 75 6c 65  01 00 00 00 01 00 00 00  04 00 00 00 66 75 6e 63

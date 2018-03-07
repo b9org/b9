@@ -589,7 +589,6 @@ void MethodBuilder::handle_bc_jmp(
   int next_bc_index = bytecodeIndex + delta;
   TR::BytecodeBuilder *destBuilder = bytecodeBuilderTable[next_bc_index];
   builder->Goto(destBuilder);
-  builder->AppendBuilder(nextBuilder);
 }
 
 void MethodBuilder::handle_bc_jmp_eq(

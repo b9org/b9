@@ -61,6 +61,7 @@ JumpOperator = Object.freeze({
 });
 
 /// Map binary comparison operators to jump instructions that invert the condition.
+/// as an example, the if statement handler will use this table to invert a comparison, and jump over the if-true block.
 var NegJumpOperator = Object.freeze({
 	"==": "INT_JMP_NEQ",
 	"!=": "INT_JMP_EQ",

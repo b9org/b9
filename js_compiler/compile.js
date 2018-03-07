@@ -543,43 +543,18 @@ function FirstPassCodeGen() {
 		this.emitPopIntoVar(func, expression.argument.name);
 	};
 
-	this.handleForStatement = function (func, decl) {
-		var loopTest = "@loopTest" + this.label;
-		var loopEnd = "@loopEnd" + this.label;
-		var loopContinue = "@loopContinue" + this.label;
-		this.label++;
-
-		this.savehack(function () {
-			console.log("// -- init ---");
-
-			if (decl.init) this.handle(decl.init);
-
-			console.log("// -- test ---");
-
-			this.placeLabel(loopTest);
-			if (decl.test == undefined) {
-				code = "nojump";
-			} else {
-				var code = this.handle(decl.test);
-			}
-			var instruction = this.genJmpForCompare(code, "FOR");
-			this.outputInstruction(instruction, this.deltaForLabel(loopEnd), "genJmpForCompare FOR " + code);
-		});
-
-		this.flowControlBreakContinue(loopEnd, loopContinue, "FOR",
-			function () {
-				this.savehack(function () {
-					this.handle(decl.body);
-					this.placeLabel(loopContinue);
-					decl.needResult = false;
-					if (decl.update) decl.update.needResult = false;
-					var expected = this.currentFunction.pushcount;
-					this.handle(decl.update);
-					this.currentFunction.dropTOS(expected);
-					this.outputInstruction("JMP", this.deltaForLabel(loopTest), "FOR LOOP");
-					this.placeLabel(loopEnd);
-				});
-			});
+	this.handleForStatement = function (func, statement) {
+		this.handle(func, statement.init);
+		var testLabel = func.labels.create();
+		var exitLabel = func.labels.create();
+		func.placeLabel(testLabel);
+		var comparator = this.emitTest(func, statement.test);
+		func.instructions.push(new Instruction(NegJumpOperator[comparator], exitLabel));
+		this.handle(func, statement.body);
+		this.handle(func, statement.update);
+		func.instructions.push(new Instruction("DROP"));
+		func.instructions.push(new Instruction("JMP", testLabel));
+		func.placeLabel(exitLabel);
 	};
 
 	this.handleCallExpression = function (func, expression) {

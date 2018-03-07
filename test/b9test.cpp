@@ -38,7 +38,9 @@ const std::vector<const char*> TEST_NAMES = {
   "test_string_declare_string_var",
   "helper_test_string_return_string",
   "test_string_return_string",
-  "test_while"
+  "test_while",
+  "test_for_never_run_body",
+  "test_for_sum"
 };
 // clang-format on
 

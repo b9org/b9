@@ -228,9 +228,25 @@ function test_while() {
     return 1;
 }
 
+function test_for_never_run_body() {
+    for (var x = 0; x != 0; x++) {
+        return 0;
+    }
+    return 1;
+}
+
+function test_for_sum() {
+    var sum = 0;
+    for (var x = 0; x < 4; x++) {
+        sum += x;
+    }
+
+    if (sum != 6) {
+        return 0;
+    }
+    return 1;
+}
+
 function b9main() {
     b9PrintString("This is the interpreter test suite - to run, run ./test/b9test");
 }
-
-
-

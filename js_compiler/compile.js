@@ -407,17 +407,17 @@ function FirstPassCodeGen() {
 
 	this.handleAssignmentExpression = function (func, expression) {
 		var AssignmentOperatorCode = Object.freeze({
-			"+=": "ADD",
-			"-=": "SUB",
-			"/=": "DIV",
-			"*=": "MUL"
+			"+=": "INT_ADD",
+			"-=": "INT_SUB",
+			"/=": "INT_DIV",
+			"*=": "INT_MUL"
 		});
 
 		if (expression.left.type == "Identifier") {
 			var operator = AssignmentOperatorCode[expression.operator];
 			if (operator) {
-				this.handle(expression.left); // extra left
-				this.handle(expression.right);
+				this.handle(func, expression.left); // extra left
+				this.handle(func, expression.right);
 				func.instructions.push(new Instruction(operator, 0));
 			} else {
 				expression.right.needResult = true;

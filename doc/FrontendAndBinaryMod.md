@@ -3,7 +3,9 @@
 
 ## Frontend Compiler
 
-The frontend compiler takes b9porcelain source code and using the [Esprima](http://esprima.org) framework, parses it into an Abstract Syntax Tree (AST). Although Esprima handles a significant chunk of the work, we must still go through and parse the AST to create our bytecodes. The parsing requires an understanding of AST's and the various node types as output by Esprima. The tree is processed recursively, and each node type is handled by a corresponding function. The frontend compiler eventually outputs a binary file which can later be deserialized and loaded into the VM. 
+The frontend compiler takes b9porcelain source code and using the [Esprima] framework, parses it into an Abstract Syntax Tree (AST). Although Esprima handles a significant chunk of the work, we must still go through and parse the AST to create our bytecodes. The parsing requires an understanding of AST's and the various node types as output by Esprima. The tree is processed recursively, and each node type is handled by a corresponding function. The frontend compiler eventually outputs a binary file which can later be deserialized and loaded into the VM. 
+
+[Esprima]: http://esprima.org
 
 To run the front-end compiler on a JavaScript program and output a binary module, we use:
 
@@ -36,15 +38,15 @@ String:= sizeofString(uint32) String(char*)
 
 ### Binary Module Sections:
 
-![](https://github.com/arianneb/Base9/blob/developerQuest/images/BinModSections.png)
+![Binary Module Sections Diagram](./images/BinModSections.png)
 
 ### Function Section:
 
-![](https://github.com/arianneb/Base9/blob/developerQuest/images/BinModFunctions.png)
+![Binary Module Function Section Diagram](./images/BinModFunctions.png)
 
 ### String Section:
 
-![](https://github.com/arianneb/Base9/blob/developerQuest/images/BinModStrings.png)
+![Binary Module String Section Diagram](./images/BinModStrings.png)
 
 
 ### Binary Module Example:
@@ -56,7 +58,9 @@ String:= sizeofString(uint32) String(char*)
 ```
 Lets walk through and understand what is being stored here. The first 8 bytes are the module header, and are made up of the ascii values for the letters in "b9module". The following 4 bytes, `01 00 00 00` are the 32-bit functionSectionCode, which indicates to the deserializer that the function section is to follow. The next 32-bit value, `01 00 00 00` is the functionCount, which tells the deserializer how many functions to read. Now come the functions. The next 32-bit value is `04 00 00 00`, and it indicates the size of the string to follow. As the strings in our binary module are not null terminated, we must first know their size in bytes in order to read them correctly. As per our grammar, this string is the name of the first (and in this case only) function. The ascii values of the following 4 bytes (`66 75 6e 63`) make up the word "func", which is the name of our function. After the name is the function index, which in this case is `00 00 00 00`. The next two 32-bit values are the argument and register counts. Both are `00 00 00 00`. 
 
-Now come the bytecodes. All of the bytecodes are 32-bits, but are made up of two sections, the parameter, and the bytecode. Our first bytecode is `01 00 00 0d`. The first 3 bytes is the parameter, `01 00 00`, and the last byte is the bytecode, `0d`, which corresponds with INT_PUSH_CONSTANT. For a complete listing of our bytecodes and their corresponding hexidecimal values, please see [instructions.hpp](https://github.com/b9org/b9/blob/master/b9/include/b9/instructions.hpp) in the codebase. There are 4 more bytecodes in the module, all 32 bits long: `02 00 00 0d` (INT_PUSH_CONSTANT 2), `00 00 00 09` (INT_ADD, which doesn't take a parameter, but pops and adds the last 2 values pushed onto the stack and pushes the result), and `00 00 00 02` (FUNCTION_RETURN, which also doesn't take a parameter). 
+Now come the bytecodes. All of the bytecodes are 32-bits, but are made up of two sections, the parameter, and the bytecode. Our first bytecode is `01 00 00 0d`. The first 3 bytes is the parameter, `01 00 00`, and the last byte is the bytecode, `0d`, which corresponds with INT_PUSH_CONSTANT. For a complete listing of our bytecodes and their corresponding hexidecimal values, please see [instructions.hpp] in the codebase. There are 4 more bytecodes in the module, all 32 bits long: `02 00 00 0d` (INT_PUSH_CONSTANT 2), `00 00 00 09` (INT_ADD, which doesn't take a parameter, but pops and adds the last 2 values pushed onto the stack and pushes the result), and `00 00 00 02` (FUNCTION_RETURN, which also doesn't take a parameter). 
+
+[instructions.hpp]: https://github.com/b9org/b9/blob/master/b9/include/b9/instructions.hpp
 
 Lastly is the END_SECTION marker, `00 00 00 00`. This marker indicates to the deserializer that it is finished reading the bytecodes of the current function. If there were more functions, it would begin again by reading the next function, starting with the function name. 
 

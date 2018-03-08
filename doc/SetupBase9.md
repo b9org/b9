@@ -2,11 +2,15 @@
 
 ## Introduction to Base9
 
-Base9 is a tiny virtual machine and programming language! We’re using it to show people how to use [Eclipse OMR](https://github.com/eclipse/omr) to build their own programming language. 
+Base9 is a tiny virtual machine and programming language! We’re using it to show people how to use [Eclipse OMR] to build their own programming language. 
+
+[Eclipse OMR]: https://github.com/eclipse/omr
 
 The Base9 language is a subset of JavaScript and is very limited in functionality. It currently only contains support for integers. 
 
-For a full overview of Base9 and it's components, plus a tutorial on adding new bytecodes, see our [Supercharge a Language Runtime](https://github.com/arianneb/Base9/blob/documentation/doc/CASCON2017_SuperchargeALanguageRuntime.pdf) presentation and tutorial. 
+For a full overview of Base9 and it's components, plus a tutorial on adding new bytecodes, see our [Supercharge a Language Runtime] presentation and tutorial. 
+
+[Supercharge a Language Runtime]: https://github.com/arianneb/Base9/blob/documentation/doc/CASCON2017_SuperchargeALanguageRuntime.pdf
 
 
 ## Base9 Architecture 
@@ -20,18 +24,18 @@ The AOT compilation unit is where the Base9 source code is tranformed into bytec
 #### 2. Virtual Machine / Runtime Unit
 At runtime, the byte codes are given to the VM as input, where they will either be interpreted by Base9 or JIT compiled using OMR.
 
-![](https://github.com/arianneb/Base9/blob/developerQuest/images/b9_architecture.png)
+![Base9 Architecture Diagram](./images/b9_architecture.png)
 
 
 ## Getting Set-up 
 
 #### Set-up on Ubuntu:
 
-[Ubuntu Set-up Instructions](https://github.com/arianneb/Base9/blob/documentation/doc/setupUbuntu.md)
+[Ubuntu Set-up Instructions](./setupUbuntu.md)
 
 #### Set-up on OSX:
 
-[OSX Set-up Instructions](https://github.com/arianneb/Base9/blob/documentation/doc/setupOSX.md)
+[OSX Set-up Instructions](./setupOSX.md)
 
 #### Clone the repository and get submodules
 ```
@@ -42,7 +46,7 @@ git submodule update --init
 
 ## Directory Structure of Base9
 
-Learn more about our [Directory Structure](https://github.com/arianneb/Base9/blob/documentation/doc/directoryStructure.md)
+Learn more about our [Directory Structure](./directoryStructure.md)
 
 
 ## Build Base9

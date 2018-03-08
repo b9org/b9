@@ -1,6 +1,6 @@
 ## The Base9 Deserializer
 
-The deserializer takes a binary module as input, and outputs the Module Data structure. If we were to give it the binary module from our [binary module](https://github.ibm.com/Arianne-Butler/IBMDocumentation/blob/master/B9DeveloperQuest/frontendCompiler.md) example: 
+The deserializer takes a binary module as input, and outputs the Module Data structure. If we were to give it the binary module from our [binary module](https://github.com/b9org/b9/blob/master/doc/FrontendAndBinaryMod.md) example: 
 
 ```
 62 39 6d 6f 64 75 6c 65  01 00 00 00 01 00 00 00  04 00 00 00 66 75 6e 63

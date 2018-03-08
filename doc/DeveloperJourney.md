@@ -33,7 +33,7 @@ Welcome to our tutorial! If you're interested in building your own language runt
 
 ### 1.1 A Brief Overview of Base 9
 
-If you want to fiddle around with Base9, check out our [set-up page](https://github.com/arianneb/Base9/blob/documentation/doc/README.md) for set-up instructions.
+If you want to fiddle around with Base9, check out our [set-up page](https://github.com/b9org/b9/blob/master/doc/SetupBase9.md) for set-up instructions.
 
 Base9 is an educational **language runtime**. It's front-end language, b9porcelain, is a small subset of JavaScript. It compiles into a simple set of **bytecodes** which run on a primitive **interpreter**. We've also plugged in [OMR](https://www.eclipse.org/omr/) and [JitBuilder](https://developer.ibm.com/open/2016/07/19/jitbuilder-library-and-eclipse-omr-just-in-time-compilers-made-easy/) to provide our runtime with a **JIT compiler**! 
 
@@ -41,7 +41,7 @@ Base9 has several major components that we'll discuss throughout the course of t
 
 ### Base9 Overview:
 
-![](https://github.com/arianneb/Base9/blob/developerQuest/images/b9overview.png)
+![](https://github.com/b9org/b9/blob/master/images/b9overview.png)
 
 The Base9 Overview Diagram depicts the Ahead-of-Time compilation unit and the Virtual Machine unit. The Ahead-of-Time unit runs the b9porcelain source code through our frontend compiler. The frontend compiler outputs a binary module. The binary module is passed to the deserializer, which converts it to a C++ data structure that we've named "Module", and which will henceforth be refered to as our "in memory Module".
 
@@ -80,14 +80,14 @@ b9porcelain source code is passed as input into our [frontend compiler](https://
 
 For a detailed overview of how we've designed/built our front-end compiler and binary format, visit the link below:
 
-[Frontend Compiler and Binary Format](https://github.com/arianneb/Base9/blob/developerQuest/doc/FrontendAndBinaryMod.md).
+[Frontend Compiler and Binary Format](https://github.com/b9org/b9/blob/master/doc/FrontendAndBinaryMod.md).
 
 
 ### 1.3 Building the Module
 
 The Base9 [deserializer](https://github.com/b9org/b9/blob/master/b9/src/deserialize.cpp) is responsible for taking the binary module (which is output by the frontend compiler), and converting it into the in memory Module (which contains the Base9 bytecodes) to be run by the VM. 
 
-Follow the link to learn more about our [Base9 deserializer and disassembler](https://github.com/arianneb/Base9/blob/developerQuest/doc/Deserializer.md)
+Follow the link to learn more about our [Base9 deserializer and disassembler](https://github.com/b9org/b9/blob/master/doc/Deserializer.md)
 
 The in memory Module is represented in Base9 as follows:
 
@@ -147,17 +147,17 @@ The fields of the `FunctionDef` are the name of the function, the index of the f
 
 ### 1.4 Execution Model
 
-The Base9 Virtual Machine is a relatively simple C++ class. It loads an in memory module Module which has been compiled from b9porcelain source code, and runs the program. The Module is created by converting b9porcelain into an executable sequence of bytecodes represented in our [binary format](https://github.com/arianneb/Base9/blob/developerQuest/doc/FrontendAndBinaryMod.md). The binary format is then deserialized to create the in memory Module, which is passed to the VM. The VM then has two ways of handling the Module. It can either execute the Module's bytecodes line by line in the interpreter, or it can choose to JIT compile the bytecodes and run that version instead. 
+The Base9 Virtual Machine is a relatively simple C++ class. It loads an in memory module Module which has been compiled from b9porcelain source code, and runs the program. The Module is created by converting b9porcelain into an executable sequence of bytecodes represented in our [binary format](https://github.com/b9org/b9/blob/master/doc/FrontendAndBinaryMod.md). The binary format is then deserialized to create the in memory Module, which is passed to the VM. The VM then has two ways of handling the Module. It can either execute the Module's bytecodes line by line in the interpreter, or it can choose to JIT compile the bytecodes and run that version instead. 
 
 ### b9porcelain to Bytecode:
 
-![](https://github.com/arianneb/Base9/blob/developerQuest/images/b9porcelainToBC.png)
+![](https://github.com/b9org/b9/blob/master/images/b9porcelainToBC.png)
 
 The above diagram shows a direct translation between b9porcelain source code and it's corresponding bytecodes. 
 
 ### Virtual Machine Design:
 
-![](https://github.com/arianneb/Base9/blob/developerQuest/images/vmDesign.png)
+![](https://github.com/b9org/b9/blob/master/images/vmDesign.png)
 
 The above diagram shows our Virtual Machine Design. The VM takes the bytecodes from the Module, and runs them through either the Interpreter or the JIT compiler. The Interpreter will process the bytecodes directly, and the JIT compiler converts them to native machine code. The process of deciding when to JIT compile something rather than interpreting it can happen in a number of ways. Sometimes a method will be JIT compiled based on profiling statistics (i.e. the method has run a certain number of times and we can make the assumption that this is a frequently called method). We can also employ user flags to tell the VM to JIT compile an entire program and to interpret nothing. The command to run a fully JIT compiled program is:
 

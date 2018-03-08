@@ -36,15 +36,15 @@ String:= sizeofString(uint32) String(char*)
 
 ### Binary Module Sections:
 
-![](https://github.com/arianneb/Base9/blob/developerQuest/images/BinModSections.png)
+![](https://github.com/b9org/b9/blob/master/images/BinModSections.png)
 
 ### Function Section:
 
-![](https://github.com/arianneb/Base9/blob/developerQuest/images/BinModFunctions.png)
+![](https://github.com/b9org/b9/blob/master/images/BinModFunctions.png)
 
 ### String Section:
 
-![](https://github.com/arianneb/Base9/blob/developerQuest/images/BinModStrings.png)
+![](https://github.com/b9org/b9/blob/master/images/BinModStrings.png)
 
 
 ### Binary Module Example:

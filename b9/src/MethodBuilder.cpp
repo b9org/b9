@@ -70,7 +70,15 @@ void MethodBuilder::defineLocals() {
     std::cout << "Defining " << function->nregs << " locals\n";
   }
 
-  DefineLocal("frameBase", globalTypes().stackElementPtr);
+  // Pointer to the base of the frame.  Used for rolling back the stack pointer
+  // on a return.
+  DefineLocal("stackBase", globalTypes().stackElementPtr);
+
+  // Pointer to the operand stack
+  DefineLocal("stack", globalTypes().operandStackPtr);
+
+  // Address of the current stack top
+  DefineLocal("stackTop", globalTypes().stackElementPtr);
 
   if (cfg_.passParam) {
     // for locals we pre-define all the locals we could use, for the toplevel
@@ -196,12 +204,28 @@ bool MethodBuilder::inlineProgramIntoBuilder(
 bool MethodBuilder::buildIL() {
   const FunctionDef *function = virtualMachine_.getFunction(functionIndex_);
 
-  setVMState(new OMR::VirtualMachineState());
-
   TR::IlValue *stack = StructFieldInstanceAddress(
       "b9::ExecutionContext", "stack_", Load("executionContext"));
+  Store("stack", stack);
 
   TR::IlValue *stackTop = LoadIndirect("b9::OperandStack", "top_", stack);
+  Store("stackTop", stackTop);
+
+  if (cfg_.lazyVmState) {
+    auto simulatedStackTop = new OMR::VirtualMachineRegisterInStruct(
+        this, "b9::OperandStack", "stack", "top_", "stackTop");
+
+    auto simulateOperandStack = new OMR::VirtualMachineOperandStack(
+        this, 64 /* starting size */, globalTypes().stackElement,
+        simulatedStackTop, true /* grows up */, 0 /* commit address offset */);
+
+    auto vms = new VirtualMachineState(simulateOperandStack, simulatedStackTop);
+
+    setVMState(vms);
+
+  } else {
+    setVMState(new OMR::VirtualMachineState());
+  }
 
   /// When this function exits, we reset the stack top to the beginning of
   /// entry. The calling convention is callee-cleanup, so at exit we pop all
@@ -210,11 +234,11 @@ bool MethodBuilder::buildIL() {
   /// In the case of pass parameter, the arguments are not passed on the VM
   /// stack. The arguments are passed on the C stack as a part of a cdecl call.
   if (!cfg_.passParam) {
-    TR::IlValue *frameBase = IndexAt(globalTypes().stackElementPtr, stackTop,
+    TR::IlValue *stackBase = IndexAt(globalTypes().stackElementPtr, stackTop,
                                      ConstInt32(-function->nargs));
-    Store("frameBase", frameBase);
+    Store("stackBase", stackBase);
   } else {
-    Store("frameBase", stackTop);
+    Store("stackBase", stackTop);
   }
 
   // Locals are stored on the stack. Bump the stackTop by the number of
@@ -236,19 +260,6 @@ bool MethodBuilder::buildIL() {
     storeVarIndex(this, i, this->ConstInt64(0));
   }
 
-  // if (cfg_.lazyVmState) {
-  //   auto executionContext = Load("executionContext");
-  //   this->Store this->Store("localContext", this->ConstAddress(context_));
-  //   auto stackTop = new OMR::VirtualMachineRegisterInStruct(
-  //       this, "globalTypes().executionContext", "localContext",
-  //       "stackPointer", "SP");
-  //   auto stack = new OMR::VirtualMachineOperandStack(
-  //       this, 32, stackElementPointerType, stackTop, true, 0);
-  //   auto vms = new VirtualMachineState(stack, stackTop);
-  //   setVMState(vms);
-  // } else {
-  // }
-
   return inlineProgramIntoBuilder(functionIndex_, true);
 }
 
@@ -262,7 +273,7 @@ TR::IlValue *MethodBuilder::loadVarIndex(TR::IlBuilder *builder, int varindex) {
   if (cfg_.passParam) {
     result = builder->Load(argsAndTempNames[varindex]);
   } else {
-    TR::IlValue *args = builder->Load("frameBase");
+    TR::IlValue *args = builder->Load("stackBase");
     TR::IlValue *address = builder->IndexAt(globalTypes().stackElementPtr, args,
                                             builder->ConstInt32(varindex));
     TR::IlValue *data = builder->LoadAt(globalTypes().stackElementPtr, address);
@@ -281,7 +292,7 @@ void MethodBuilder::storeVarIndex(TR::IlBuilder *builder, int varindex,
   if (cfg_.passParam) {
     builder->Store(argsAndTempNames[varindex], value);
   } else {
-    TR::IlValue *args = builder->Load("frameBase");
+    TR::IlValue *args = builder->Load("stackBase");
     TR::IlValue *address = builder->IndexAt(globalTypes().stackElementPtr, args,
                                             builder->ConstInt32(varindex));
     // this needs to be encoded for the GC to walk the stack.
@@ -350,7 +361,7 @@ bool MethodBuilder::generateILForBytecode(
           "b9::ExecutionContext", "stack_", builder->Load("executionContext"));
 
       builder->StoreIndirect("b9::OperandStack", "top_", stack,
-                             builder->Load("frameBase"));
+                             builder->Load("stackBase"));
 
       builder->Return(
           builder->Or(result, builder->ConstInt64(Om::BoxKindTag::INTEGER)));
@@ -505,8 +516,8 @@ bool MethodBuilder::generateILForBytecode(
           if (interp) {
             TR::IlValue *result = builder->Call(
                 nameToCall, 2 + argsCount, builder->Load("executionContext"),
-                builder->ConstInt32(callindex), p[0], p[1], p[2], p[3], p[4], p[5],
-                p[6], p[7]);
+                builder->ConstInt32(callindex), p[0], p[1], p[2], p[3], p[4],
+                p[5], p[6], p[7]);
             push(builder, result);
           } else {
             TR::IlValue *result = builder->Call(
@@ -718,32 +729,12 @@ void MethodBuilder::drop(TR::BytecodeBuilder *builder) { pop(builder); }
 /// output is an unboxed value.
 TR::IlValue *MethodBuilder::pop(TR::BytecodeBuilder *builder) {
   if (cfg_.lazyVmState) {
-    return dynamic_cast<VirtualMachineState *>(builder->vmState())
-        ->_stack->Pop(builder);
-  }
+    VirtualMachineState *vmState =
+        dynamic_cast<VirtualMachineState *>(builder->vmState());
 
-  TR::IlValue *stack = builder->StructFieldInstanceAddress(
-      "b9::ExecutionContext", "stack_", builder->Load("executionContext"));
+    TR::IlValue *boxedInt = vmState->_stack->Pop(builder);
 
-  TR::IlValue *stackTop =
-      builder->LoadIndirect("b9::OperandStack", "top_", stack);
-
-  TR::IlValue *newStackTop = builder->IndexAt(
-      globalTypes().stackElementPtr, stackTop, builder->ConstInt32(-1));
-
-  builder->StoreIndirect("b9::OperandStack", "top_", stack, newStackTop);
-
-  TR::IlValue *boxedInt =
-      builder->LoadAt(globalTypes().stackElementPtr, newStackTop);
-
-  return builder->And(boxedInt, builder->ConstInt64(Om::VALUE_MASK));
-}
-
-/// input is an unboxed value.
-void MethodBuilder::push(TR::BytecodeBuilder *builder, TR::IlValue *value) {
-  if (cfg_.lazyVmState) {
-    dynamic_cast<VirtualMachineState *>(builder->vmState())
-        ->_stack->Push(builder, value);
+    return builder->And(boxedInt, builder->ConstInt64(Om::VALUE_MASK));
   } else {
     TR::IlValue *stack = builder->StructFieldInstanceAddress(
         "b9::ExecutionContext", "stack_", builder->Load("executionContext"));
@@ -751,7 +742,34 @@ void MethodBuilder::push(TR::BytecodeBuilder *builder, TR::IlValue *value) {
     TR::IlValue *stackTop =
         builder->LoadIndirect("b9::OperandStack", "top_", stack);
 
-    /// TODO: box number here.
+    TR::IlValue *newStackTop = builder->IndexAt(
+        globalTypes().stackElementPtr, stackTop, builder->ConstInt32(-1));
+
+    builder->StoreIndirect("b9::OperandStack", "top_", stack, newStackTop);
+
+    TR::IlValue *boxedInt =
+        builder->LoadAt(globalTypes().stackElementPtr, newStackTop);
+
+    return builder->And(boxedInt, builder->ConstInt64(Om::VALUE_MASK));
+  }
+}
+
+/// input is an unboxed value.
+void MethodBuilder::push(TR::BytecodeBuilder *builder, TR::IlValue *value) {
+  if (cfg_.lazyVmState) {
+    VirtualMachineState *vmState =
+        dynamic_cast<VirtualMachineState *>(builder->vmState());
+
+    auto boxedInt =
+        builder->Or(value, builder->ConstInt64(Om::BoxKindTag::INTEGER));
+
+    vmState->_stack->Push(builder, boxedInt);
+  } else {
+    TR::IlValue *stack = builder->StructFieldInstanceAddress(
+        "b9::ExecutionContext", "stack_", builder->Load("executionContext"));
+
+    TR::IlValue *stackTop =
+        builder->LoadIndirect("b9::OperandStack", "top_", stack);
 
     auto boxedInt =
         builder->Or(value, builder->ConstInt64(Om::BoxKindTag::INTEGER));

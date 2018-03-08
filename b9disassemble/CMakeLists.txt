@@ -24,14 +24,14 @@ add_test(
 )
 
 function(b9disassemble_test module)
-  get_target_property(cmd b9disassemble OUTPUT_NAME)
   add_test(
     NAME disassemble_${module}
-    COMMAND sh -c "$<TARGET_FILE:b9disassemble> < ${CMAKE_CURRENT_SOURCE_DIR}/${module}"
+    COMMAND b9disassemble ${CMAKE_CURRENT_SOURCE_DIR}/${module}
   ) 
 endfunction()
 
-b9disassemble_test(empty.mod)
-b9disassemble_test(simple.mod)
-b9disassemble_test(corrupt.mod)
-b9disassemble_test(complex.mod)
+# This test material is missing from the repository
+#b9disassemble_test(empty.mod)
+#b9disassemble_test(simple.mod)
+#b9disassemble_test(corrupt.mod)
+#b9disassemble_test(complex.mod)

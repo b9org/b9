@@ -12,3 +12,5 @@ Welcome to our Tutorial Dictionary! This is where you can find definitions for a
 
 #### Primitive Function:
 
+#### Submodule:
+

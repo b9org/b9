@@ -217,23 +217,31 @@ To conclude this section, let's briefly walk over the components we've covered t
 [interpreter]: https://github.com/b9org/b9/blob/master/b9/src/ExecutionContext.cpp
 
 
+
 ## 2.0 Plugging in the JIT Compiler 
 
-As we mentioned earlier, our JIT compiler is made possible by [OMR] and [JitBuilder]. OMR is a submodule in our Base9 repository. We keep it in our [third_party] directory. JitBuilder is part of OMR. With OMR as a submodule, and with the correct `#include`'s in our Base9 headers, using OMR and JitBuilder functionality is easy!  
+As we mentioned earlier, our JIT compiler is made possible by [OMR] and [JitBuilder]. We keep OMR in our [third_party] directory as a **submodule**. JitBuilder exists as part of OMR.
 
 [OMR]: https://www.eclipse.org/omr/
 [JitBuilder]: https://developer.ibm.com/open/2016/07/19/jitbuilder-library-and-eclipse-omr-just-in-time-compilers-made-easy/
 [third_party]: https://github.com/b9org/b9/tree/master/third_party
 
-Let's start by taking a look at [Compiler.hpp]. This is where we define our `Compiler` class. The constructor takes a `VirtualMachine` class (which we've already seen), and a `Config` struct. 
+With our OMR submodule, and with the correct `#include`'s in our Base9 headers, using OMR and JitBuilder functionality is easy!  
 
-[Compiler.hpp]: https://github.com/b9org/b9/blob/master/b9/include/b9/compiler/Compiler.hpp
+
+### 2.1 The Base9 Compiler
+
+Let's start by taking a look at [b9/src/Compiler.hpp]. This is where we define our `Compiler` class. 
+
+[b9/src/Compiler.hpp]: https://github.com/b9org/b9/blob/master/b9/include/b9/compiler/Compiler.hpp
+
+The `Compiler` class constructor takes a `VirtualMachine` class (which we've already seen), and a `Config` struct. 
 
 `Compiler(VirtualMachine &virtualMachine, const Config &cfg);`
 
-The `Config` struct is in [VirtualMachine.hpp] and is defined as follows:
+The `Config` struct is in [b9/include/b9/VirtualMachine.hpp] and is defined as follows:
 
-[VirtualMachine.hpp]: https://github.com/b9org/b9/blob/master/b9/include/b9/VirtualMachine.hpp
+[b9/include/b9/VirtualMachine.hpp]: https://github.com/b9org/b9/blob/master/b9/include/b9/VirtualMachine.hpp
 
 ```
 struct Config {
@@ -247,7 +255,7 @@ struct Config {
 };
 ```
 
-We use this class to configure the JIT with a number of settings. Note that `directCall`, `passParam`, and `lazyVmState` are all JIT optimizations that we'll discuss later. The rest of the values are explained in the comments. 
+We use the `Config` class to configure the JIT with a number of settings. Note that `directCall`, `passParam`, and `lazyVmState` are all JIT optimizations. We'll discuss them later. The rest of the values are explained in the comments. 
 
 Let's have a closer look at the `Compiler` class:
 
@@ -271,9 +279,9 @@ class Compiler {
 };
 ```
 
-`TR::TypeDictionary` allows us to define which types are supported by our b9porcelain language. It's used by the `MethodBuilder` class in OMR JitBuilder. We define our supported types in [GlobalTypes.hpp].
+`TR::TypeDictionary` allows us to define which types are supported by our b9porcelain language. It's used by the `MethodBuilder` class in OMR JitBuilder. We define our supported types in [b9/include/b9/compiler/GlobalTypes.hpp].
 
-[GlobalTypes.hpp]: https://github.com/b9org/b9/blob/master/b9/include/b9/compiler/GlobalTypes.hpp
+[b9/include/b9/compiler/GlobalTypes.hpp]: https://github.com/b9org/b9/blob/master/b9/include/b9/compiler/GlobalTypes.hpp
 
 ```c++
 /// A collection of basic, built in types.
@@ -330,7 +338,7 @@ JitFunction Compiler::generateCode(const std::size_t functionIndex) {
 }
 ```
 
-The `generateCode` function takes a `functionIndex` as it's only parameter. First we need to access the current function using `virtualMachine_.getFunction(functionIndex)`. `getFunction()` is in the `VirtualMachine` class, and it uses the function index to access a given `FunctionDef`. We store it's return value in the function pointer `*function`. 
+The `generateCode` function takes a `functionIndex` as it's only parameter. First we need to access the current function using `virtualMachine_.getFunction(functionIndex)`. `getFunction()` is in the `VirtualMachine` class, and it uses the function index to access a given `FunctionDef` in the Module's function vector. We store it's return value in the function pointer `*function`. 
 
 The checks `if(cfg_.debug)` are found throughout our codebase, and we use them to check if we're running the VM in debug mode. If we are, we provide additional output. It's a useful debugging strategy that you may or may not choose to employ. 
 
@@ -339,3 +347,23 @@ The `rc` value is set to 0 and should remain as 0 through the `compileMethodBuil
 Our return value is simply a pointer to a uint8_t, which serves as the entry point into our Jitted function. 
 
 `generateCode` is called by the VM function `generateAllCode`. 
+
+Currently, we've only implemented the ability to JIT compile either everything or nothing. We run our program using the JIT with the following command: 
+
+`./b9run/b9run -jit ./test/<program>.b9mod`
+
+
+### 2.2 JIT Features
+
+Currently, we've implemented 3 JIT optimizations. Direct call, Pass Param, and Lazy VM State. 
+
+Direct call allows us to check whether or not the function we are calling has been JIT compiled, and then jump directly to the JITed function, bypassing the interpreter.
+
+Pass Param allows JIT compiled methods calling other JIT compiled methods to pass their parameters using C native calling conventions. 
+Lazy VM State simulates the interpreter stack while running in a compiled method and restores the interpreter stack when returning into the interpreter. 
+
+Because of our current all-or-nothing state, if one method is JIT compiled, they all are, and using the above optimizations will improve performance significantly. To run the JIT with the above optimizations, do:
+
+`./b9run/b9run -jit -directcall -passparam -lazyvmstate ./test/<program>.b9mod`
+
+

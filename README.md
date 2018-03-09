@@ -14,7 +14,7 @@ To get started with Base9, you'll need:
 
 `git, build-essential, nodejs, npm, esprima, cmake, ninja` 
 
-For detailed instructions on setting up Base9, check out our [set-up page](./doc/SetupBase9.md).
+For detailed instructions on setting up Base9, check out our [set-up page](./docs/SetupBase9.md).
 
 
 ## Clone the repository and get the submodules
@@ -49,4 +49,4 @@ You can run the full Base9 test suite with:
 
 If you'd like to build your own language runtime, you can follow our [Developer Journey] to see the steps we took in building Base9.
 
-[Developer Journey]: ./doc/DeveloperJourney.md
+[Developer Journey]: ./docs/DeveloperJourney.md

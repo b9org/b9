@@ -10,7 +10,7 @@ The Base9 language is a subset of JavaScript and is very limited in functionalit
 
 For a full overview of Base9 and it's components, plus a tutorial on adding new bytecodes, see our [Supercharge a Language Runtime] presentation and tutorial. 
 
-[Supercharge a Language Runtime]: https://github.com/arianneb/Base9/blob/documentation/doc/CASCON2017_SuperchargeALanguageRuntime.pdf
+[Supercharge a Language Runtime]: ./CASCON2017_SuperchargeALanguageRuntime.pdf
 
 
 ## Base9 Architecture 

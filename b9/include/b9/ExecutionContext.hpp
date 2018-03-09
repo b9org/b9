@@ -64,6 +64,10 @@ class ExecutionContext {
 
   void doIntSub();
 
+  void doIntMul();
+
+  void doIntDiv();
+
   void doIntPushConstant(Parameter value);
 
   void doIntNot();

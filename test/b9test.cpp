@@ -20,7 +20,8 @@ const std::vector<const char*> TEST_NAMES = {
   "test_return_false",
   "test_add",
   "test_sub",
-  // CASCON2017 add test_div and test_mul here
+  "test_mul",
+  "test_div",
   "test_equal",
   "test_equal_1",
   "test_greaterThan",

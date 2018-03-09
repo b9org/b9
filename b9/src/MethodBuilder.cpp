@@ -138,15 +138,6 @@ void MethodBuilder::defineFunctions() {
 #define QRELOAD_DROP(b, toDrop) \
   if (cfg_.lazyVmState) QSTACK(b)->Drop(b, toDrop);
 
-uint64_t computeNumberOfBytecodes(const Instruction *program) {
-  uint64_t result = 0;
-  while (*program != END_SECTION) {
-    program++;
-    result++;
-  }
-  return result;
-}
-
 bool MethodBuilder::inlineProgramIntoBuilder(
     const std::size_t functionIndex, bool isTopLevel,
     TR::BytecodeBuilder *currentBuilder,
@@ -157,7 +148,7 @@ bool MethodBuilder::inlineProgramIntoBuilder(
   const Instruction *program = function->instructions.data();
 
   // Create a BytecodeBuilder for each Bytecode
-  auto numberOfBytecodes = computeNumberOfBytecodes(program);
+  auto numberOfBytecodes = function->instructions.size();
 
   if (numberOfBytecodes == 0) {
     if (cfg_.debug) {

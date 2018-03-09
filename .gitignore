@@ -49,3 +49,8 @@ e
 
 # Node
 node_modules/
+
+
+# Docs and site generation
+docs/_site
+docs/.sass-cache

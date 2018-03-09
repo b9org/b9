@@ -128,6 +128,12 @@ StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
       case ByteCode::INT_SUB:
         doIntSub();
         break;
+      case ByteCode::INT_MUL:
+        doIntMul();
+        break;
+      case ByteCode::INT_DIV:
+        doIntDiv();
+        break;
       case ByteCode::INT_PUSH_CONSTANT:
         doIntPushConstant(instructionPointer->parameter());
         break;
@@ -236,6 +242,22 @@ void ExecutionContext::doIntSub() {
   std::int32_t left = stack_.pop().getInteger();
   StackElement result;
   result.setInteger(left - right);
+  push(result);
+}
+
+void ExecutionContext::doIntMul() {
+  std::int32_t right = stack_.pop().getInteger();
+  std::int32_t left = stack_.pop().getInteger();
+  StackElement result;
+  result.setInteger(left * right);
+  push(result);
+}
+
+void ExecutionContext::doIntDiv() {
+  std::int32_t right = stack_.pop().getInteger();
+  std::int32_t left = stack_.pop().getInteger();
+  StackElement result;
+  result.setInteger(left / right);
   push(result);
 }
 

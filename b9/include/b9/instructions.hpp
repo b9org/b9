@@ -39,8 +39,10 @@ enum class ByteCode : RawByteCode {
   INT_ADD = 0x9,
   // Subtract two integers
   INT_SUB = 0xa,
-
-  // CASCON2017 - Add INT_MUL and INT_DIV here
+  // Multiply two integers
+  INT_MUL = 0xb,
+  // Divide two integers
+  INT_DIV = 0xc,
 
   // Push a constant
   INT_PUSH_CONSTANT = 0xd,
@@ -105,9 +107,10 @@ inline const char *toString(ByteCode bc) {
       return "int_add";
     case ByteCode::INT_SUB:
       return "int_sub";
-
-      // CASCON2017 - Add INT_MUL and INT_DIV here
-
+    case ByteCode::INT_MUL:
+      return "int_mul";
+    case ByteCode::INT_DIV:
+      return "int_div";
     case ByteCode::INT_PUSH_CONSTANT:
       return "int_push_constant";
     case ByteCode::INT_NOT:
@@ -241,6 +244,8 @@ inline std::ostream &operator<<(std::ostream &out, Instruction i) {
     case ByteCode::DROP:
     case ByteCode::INT_ADD:
     case ByteCode::INT_SUB:
+    case ByteCode::INT_MUL:
+    case ByteCode::INT_DIV:
     case ByteCode::INT_NOT:
     case ByteCode::NEW_OBJECT:
     case ByteCode::CALL_INDIRECT:

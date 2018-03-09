@@ -1,8 +1,7 @@
 function factorial(a) {
   if (a == 0)
     return 1;
-  // CASCON2017: Make factorial use multiplication
-  return a + factorial(a - 1);
+  return a * factorial(a - 1);
 }
 
 function b9main() {

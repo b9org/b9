@@ -1,31 +1,13 @@
 # Build Your Own Language Runtime
 
-
-
 ## Table of Contents
-```
-0.0 Introduction
 
-1.0 Base9
-    1.1 A Brief Overview of Base 9
-    1.2 B9porcelain, our Frontend Language
-    1.3 Building the Module
-    1.4 Execution Model
-    1.5 The Virtual Machine
-    1.6 The Interpreter
-    1.7 Base9 Summary
-
-2.0 Plugging in the JIT Compiler
-    2.1 OMR
-    2.2 JitBuilder
-```
-
-
+* Table of Contents
+{:toc}
 
 ## 0.0 Introduction
 
 Welcome to our tutorial! If you're interested in building your own language runtime, you've come to the right place. Base9 is a miniature language runtime, and thanks to OMR and JitBuilder, it even has a **Just In Time (JIT) Compiler**! The goal of this tutorial is not to teach you how to build Base9, but rather to pack your arsenal full of tools to build your own language runtime. We don't want to bog you down with a bunch of unnecessary information, so we'll keep things very straightfoward, providing useful links/definitions along the way for you to peruse optionally and at your own convenience. Lets get started!
-
 
 
 ## 1.0 Base 9
@@ -57,7 +39,7 @@ We'll discuss each of the above components in detail in the upcoming sections.
 
 b9porcelain is our front-end language. As mentioned, it's a subset of JavaScript. Let's have a look at some code: 
  
- ```
+ ```js
  function fib(a) {
     if (a < 3) {
         return 1;
@@ -102,7 +84,7 @@ Click the link below to learn more about our Base9 deserializer and disassembler
 
 The in memory Module is represented in Base9 as follows:
 
-```
+```c++
 struct Module {
   std::vector<FunctionDef> functions;
   std::vector<std::string> strings;
@@ -122,7 +104,7 @@ The Module contains only 2 fields; a `functions` vector, and a `strings` vector.
 
 Now let's take a look at our `FunctionDef` struct: 
 
-```
+```c++
 struct FunctionDef {
   // Copy Constructor
   FunctionDef(const std::string& name, std::uint32_t index,
@@ -293,7 +275,7 @@ class Compiler {
 
 [GlobalTypes.hpp]: https://github.com/b9org/b9/blob/master/b9/include/b9/compiler/GlobalTypes.hpp
 
-```
+```c++
 /// A collection of basic, built in types.
 class GlobalTypes {
  public:
@@ -322,7 +304,7 @@ Now let's have a look in [Base9/b9/src/Compiler.cpp] at the `Compiler::generateC
 
 [b9/src/Compiler.cpp]: https://github.com/b9org/b9/blob/master/b9/src/Compiler.cpp
 
-```
+```c++
 JitFunction Compiler::generateCode(const std::size_t functionIndex) {
   const FunctionDef *function = virtualMachine_.getFunction(functionIndex);
   MethodBuilder methodBuilder(virtualMachine_, functionIndex);

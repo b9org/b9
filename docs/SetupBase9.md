@@ -1,16 +1,4 @@
-# Base9 Documentation 
 
-## Introduction to Base9
-
-Base9 is a tiny virtual machine and programming language! We’re using it to show people how to use [Eclipse OMR] to build their own programming language. 
-
-[Eclipse OMR]: https://github.com/eclipse/omr
-
-The Base9 language is a subset of JavaScript and is very limited in functionality. It currently only contains support for integers. 
-
-For a full overview of Base9 and it's components, plus a tutorial on adding new bytecodes, see our [Supercharge a Language Runtime] presentation and tutorial. 
-
-[Supercharge a Language Runtime]: ./CASCON2017_SuperchargeALanguageRuntime.pdf
 
 
 ## Base9 Architecture 
@@ -61,22 +49,29 @@ ninja
 
 #### Run Hello World!
 
-```./b9run/b9run ./test/hello.b9mod```
+```sh
+./b9run/b9run ./test/hello.b9mod
+```
 
 #### Run a Base9 Benchmark (outdated)
 
 Command structure:
 
-```b9run [-function <function>] <module> [<arg>...]```
+```sh
+b9run [-function <function>] <module> [<arg>...]
+```
 
 b9run is the main executable that runs the Base9 modules. In the following example, we are running the factorial function with an input of 20 by passing the factorial.b9mod shared object file to the virtual machine: 
 
-```./b9run/b9run -function factorial test/libfactoriald.so 20```
- 
+```sh
+./b9run/b9run -function factorial test/libfactoriald.so 20
+```
+
 
 ## Test Base9 
 
 You can run the full Base9 test suit by running the following command from the build directory:
 
-```ninja test```
-
+```sh
+ninja test
+```

@@ -214,9 +214,7 @@ void ExecutionContext::doPrimitiveCall(Parameter value) {
 Parameter ExecutionContext::doJmp(Parameter offset) { return offset; }
 
 void ExecutionContext::doDuplicate() {
-  auto x = pop();
-  push(x);
-  push(x);
+  push(stack_.peek());
 }
 
 void ExecutionContext::doDrop() { stack_.pop(); }

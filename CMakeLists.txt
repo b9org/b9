@@ -3,6 +3,9 @@ cmake_minimum_required(VERSION 3.2)
 find_program(NODE_EXECUTABLE
 	NAMES node nodejs
 )
+if(NOT NODE_EXECUTABLE)
+	message(SEND_ERROR "Could not find Node executable")
+endif()
 
 list(APPEND CMAKE_MODULE_PATH
 	cmake/Modules

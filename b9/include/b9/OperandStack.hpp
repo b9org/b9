@@ -26,6 +26,7 @@ class OperandStack {
   }
 
   StackElement *pushn(std::size_t n) {
+    memset(top_, 0, sizeof(*top_)* n);
     top_ += n;
     return top_;
   }

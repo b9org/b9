@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="{{ page.lang | default: site.lang | default: "en" }}">
+  {%- include head.liquid -%}
+  <body>
+    <main class="page-content" aria-label="Content">
+      {%- include header.liquid -%}
+      <div class="wrapper">
+        {{ content }}
+      </div>
+    </main>
+  </body>
+</html>

@@ -1,13 +1,16 @@
-# Base9 Documentation 
-
-## Introduction to Base9
+---
+layout: index
+---
 
 Base9 is a tiny virtual machine and programming language! We’re using it to show people how to use [Eclipse OMR] to build their own programming language. 
 
-[Eclipse OMR]: https://github.com/eclipse/omr
+[Eclipse OMR]: https://www.eclipse.org/omr/
 
-The Base9 language is a subset of JavaScript and is very limited in functionality. It currently only contains support for integers. 
+The Base9 language is a subset of JavaScript with very limited in functionality. 
 
-For a full overview of Base9 and it's components, plus a tutorial on adding new bytecodes, see our [Supercharge a Language Runtime] presentation and tutorial. 
+For Base9 set-up instructions and a brief overview, please visit our [set-up page] or visit our [GitHub].
 
-[Supercharge a Language Runtime]: ./presentations/CASCON2017_SuperchargeALanguageRuntime.pdf
+Have fun!
+
+[set-up page]: ./SetupBase9.md
+[GitHub]: https://github.com/b9org/b9

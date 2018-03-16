@@ -1,3 +1,8 @@
+---
+layout: index
+title: Deserializer
+---
+
 ## The Base9 Deserializer
 
 The deserializer takes a binary module as input, and outputs the Module Data structure. If we were to give it the binary module from our [binary module] example: 

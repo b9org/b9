@@ -1,3 +1,8 @@
+---
+layout: index
+title: OSX Setup
+---
+
 ## Setting up Base9 on OSX
 
 Get homebrew: https://brew.sh/

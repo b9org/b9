@@ -1,12 +1,15 @@
 <!doctype html>
 <html lang="{{ page.lang | default: site.lang | default: "en" }}">
-  {%- include head.liquid -%}
+	{%- include devHead.liquid -%}
   <body>
-    <main class="page-content" aria-label="Content">
-      {%- include header.liquid -%}
+  <title>Developer Journey</title>
+  <main class="page-content" aria-label="Content">
+      {%- include navbar.liquid -%}
+      {%- include logo.liquid -%}
       <div class="wrapper">
         {{ content }}
       </div>
+      {%- include footer.liquid -%}
     </main>
   </body>
 </html>

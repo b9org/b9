@@ -1,5 +1,6 @@
-
-
+---
+layout: devJourney
+---
 
 ## Base9 Architecture 
 

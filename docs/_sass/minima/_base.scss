@@ -1,14 +1,18 @@
+/* Website Colours */
 $content-width: 800px;
 $main: #000000;
-$nav-bar-color: #cccccc;
+$omr-red: #af000c;
+$b9-yellow: #feda05;
+$caption: #666666;
+$link-colour: $main;
+$link-hover: $omr-red;
+$link-clicked: #8c8c8c;
+$light: #e7edf4;
+$header:  #ffffff;
+
+/* Website Fonts */
 $font-style: 'Open Sans', sans-serif;
-$omr-red-color: #af000c;
-$link-color: $main;
-$link-hover-color: $omr-red-color;
 $heading-font: 'Muli', sans-serif;
-$heading-font-color: #425469;
-$light: #E7EDF4;
-$header:  #FFFFFF;
 
 *,
 *::before,

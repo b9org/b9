@@ -1,18 +1,16 @@
 ---
 layout: devJourney
+title: Build your own Language Runtime
 ---
-
-# Build Your Own Language Runtime
-
-## Table of Contents
 
 * Table of Contents
 {:toc}
 
 ## 0.0 Introduction
 
-Welcome to our tutorial! If you're interested in building your own language runtime, you've come to the right place. Base9 is a miniature language runtime, and thanks to OMR and JitBuilder, it even has a **Just In Time (JIT) Compiler**! The goal of this tutorial is not to teach you how to build Base9, but rather to pack your arsenal full of tools to build your own language runtime. We don't want to bog you down with a bunch of unnecessary information, so we'll keep things very straightfoward, providing useful links/definitions along the way for you to peruse optionally and at your own convenience. Lets get started!
+Welcome to our tutorial! If you're interested in building your own language runtime, you've come to the right place. Base9 is a miniature language runtime, and thanks to OMR and JitBuilder, it even has a **Just In Time (JIT) Compiler**! The goal of this tutorial is not to teach you how to build Base9, but rather to pack your arsenal full of tools to build your own language runtime. We don't want to bog you down with a bunch of unnecessary information, so we'll keep things very straightfoward, providing useful links/definitions along the way for you to peruse optionally and at your own convenience. If you'd like to get familiar with some of the vocabulary we'll be using, feel free to visit our [dictionary]. Lets get started!
 
+[dictionary]: ./Dictionary.md
 
 ## 1.0 Base 9
 
@@ -28,9 +26,7 @@ Base9 is an educational **language runtime**. It's front-end language, b9porcela
 
 Base9 has several major components that we'll discuss throughout the course of this tutorial. We'll try to provide insight about why we made the design decisions that we did, and how we built up the pieces. We encourage you to remember that much of our implementation is made up of design decisions suited to our project. Along the way, you may wish to deviate from these decisions in order to best suit your own project.
 
-### Base9 Overview:
-
-![Base9 Overview Diagram](./images/b9overview.png)
+{% include image.liquid url="./images/b9overview.png" description="Base9 Overview" %}
 
 The Base9 Overview Diagram depicts the Ahead-of-Time compilation unit and the Virtual Machine unit. The Ahead-of-Time unit runs the b9porcelain source code through our frontend compiler. The frontend compiler outputs a binary module. The binary module is passed to the deserializer, which converts it to a C++ data structure that we've named "Module", and which will henceforth be refered to as our "in memory Module".
 
@@ -148,15 +144,11 @@ The Base9 Virtual Machine is a relatively simple C++ class. It loads an in memor
 
 [binary format]: ./FrontendAndBinaryMod.md
 
-### b9porcelain to Bytecode:
-
-![b9porcelain to Bytecode Diagram](./images/b9porcelainToBC.png)
+{% include image.liquid url="./images/b9porcelainToBC.png" description="b9porcelain to Bytecodes" %}
 
 The above diagram shows a direct translation between b9porcelain source code and it's corresponding bytecodes.
 
-### Virtual Machine Design:
-
-![Virtual Machine Design Diagram](./images/vmDesign.png)
+{% include image.liquid url="./images/vmDesign.png" description="Virtual Machine Design" %}
 
 The above diagram shows our Virtual Machine Design. The VM takes the bytecodes from the Module, and runs them through either the Interpreter or the JIT compiler. The Interpreter will process the bytecodes directly, and the JIT compiler converts them to native machine code. We employ user flags to tell the VM to JIT compile an entire program and to interpret nothing. To run a fully JIT compiled program, navigate to the `build/` directory and run:
 

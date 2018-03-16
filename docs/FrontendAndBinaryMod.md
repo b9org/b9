@@ -1,5 +1,7 @@
-# The Base9 Frontend Compiler and Binary Format
-
+---
+layout: index
+title: Frontend Compiler and Binary Format
+---
 
 ## Frontend Compiler
 
@@ -36,17 +38,11 @@ StringTable:= String
 String:= sizeofString(uint32) String(char*)
 ```
 
-### Binary Module Sections:
+{% include image.liquid url="./images/BinModSections.png" description="Binary Module Sections" %}
 
-![Binary Module Sections Diagram](./images/BinModSections.png)
+{% include image.liquid url="./images/BinModFunctions.png" description="Function Section" %}
 
-### Function Section:
-
-![Binary Module Function Section Diagram](./images/BinModFunctions.png)
-
-### String Section:
-
-![Binary Module String Section Diagram](./images/BinModStrings.png)
+{% include image.liquid url="./images/BinModStrings.png" description="String Section" %}
 
 
 ### Binary Module Example:

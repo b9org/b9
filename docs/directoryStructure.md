@@ -1,3 +1,8 @@
+---
+layout: index
+title: Directory Structure
+---
+
 ## Base9 Directory Structure 
 
 `b9/` – the base9 core library

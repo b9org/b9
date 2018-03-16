@@ -1,3 +1,8 @@
+---
+layout: index
+title: Ubuntu Setup
+---
+
 ## Setting up Base9 on Ubuntu
 
 `sudo apt-get install <item>`

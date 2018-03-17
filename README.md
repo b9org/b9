@@ -29,7 +29,7 @@ git submodule update --init
 
 ```
 mkdir build && cd build
-cmake –GNinja –DCMAKE_BUILD_TYPE=Debug ..
+cmake -GNinja -DCMAKE_BUILD_TYPE=Debug ..
 ninja
 ```
 

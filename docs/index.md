@@ -1,5 +1,6 @@
 ---
-layout: default
+layout: index
+title: Home
 ---
 
 Base9 is a tiny virtual machine and programming language! We’re using it to show people how to use [Eclipse OMR] to build their own programming language. 

@@ -1,5 +1,5 @@
 ---
-layout: index
+layout: default
 title: Frontend Compiler and Binary Format
 ---
 
@@ -38,11 +38,20 @@ StringTable:= String
 String:= sizeofString(uint32) String(char*)
 ```
 
-{% include image.liquid url="./images/BinModSections.png" description="Binary Module Sections" %}
+<figure class="image">
+  <figcaption>Binary Module Sections</figcaption>
+  <img src="./images/BinModSections.png" width="100%"/>
+</figure>
 
-{% include image.liquid url="./images/BinModFunctions.png" description="Function Section" %}
+<figure class="image">
+  <figcaption>Function Section</figcaption>
+  <img src="./images/BinModFunctions.png" width="100%"/>
+</figure>
 
-{% include image.liquid url="./images/BinModStrings.png" description="String Section" %}
+<figure class="image">
+  <figcaption>String Section</figcaption>
+  <img src="./images/BinModStrings.png" width="100%"/>
+</figure>
 
 
 ### Binary Module Example:

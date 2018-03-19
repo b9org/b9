@@ -1,15 +1,5 @@
-<!doctype html>
-<html lang="{{ page.lang | default: site.lang | default: "en" }}">
-  {%- include head.liquid -%}
-  <body>
+---
+layout: default
+---
   <title>Blog</title>
-  <main class="page-content" aria-label="Content">
-    {%- include navbar.liquid -%}
-    {%- include logo.liquid -%}
-      <div class="wrapper">
-        <center> {{ content }} </center>
-      </div>
-      {%- include footer.liquid -%}
-    </main>
-  </body>
-</html>
+  <center> {{ content }} </center>

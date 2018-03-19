@@ -1,17 +1,6 @@
-<!doctype html>
-<html lang="{{ page.lang | default: site.lang | default: "en" }}">
-	{%- include head.liquid -%}
-  <body>
-  <title>Developer Journey</title>
-  <main class="page-content" aria-label="Content">
-      {%- include navbar.liquid -%}
-      {%- include logo.liquid -%}
-      <div class="wrapper">
-        <h1>{{page.title}}</h2>
-        <h2>Table of Contents</h2>
-        {{ content }}
-      </div>
-      {%- include footer.liquid -%}
-    </main>
-  </body>
-</html>
+---
+layout: default
+---
+  <h1>{{page.title}}</h2>
+  <h2>Table of Contents</h2>
+    {{ content }}

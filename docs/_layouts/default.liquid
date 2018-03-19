@@ -2,14 +2,12 @@
 <html lang="{{ page.lang | default: site.lang | default: "en" }}">
   {%- include head.liquid -%}
   <body>
-  {%- include navbar.liquid -%}
-  <title>{{page.title}}</title>
-  <main class="page-content" aria-label="Content">
-      <center> {%- include logo.liquid -%} </center>
+    {%- include navbar.liquid -%}
+    <main class="page-content" aria-label="Content">
       <div class="wrapper">
         {{ content }}
       </div>
-      {%- include footer.liquid -%}
     </main>
+    {%- include footer.liquid -%}
   </body>
 </html>

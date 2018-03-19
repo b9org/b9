@@ -1,5 +1,5 @@
 ---
-layout: index
+layout: default
 title: Setup Base9
 ---
 
@@ -14,7 +14,9 @@ The AOT compilation unit is where the Base9 source code is tranformed into bytec
 #### 2. Virtual Machine / Runtime Unit
 At runtime, the byte codes are given to the VM as input, where they will either be interpreted by Base9 or JIT compiled using OMR.
 
-{% include image.liquid url="./images/b9_architecture.png" description="" %}
+<figure class="image">
+  <img src="./images/b9Architecture.png" width="100%"/>
+</figure>
 
 ## Getting Set-up 
 

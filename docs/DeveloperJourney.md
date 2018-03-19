@@ -26,7 +26,10 @@ Base9 is an educational **language runtime**. It's front-end language, b9porcela
 
 Base9 has several major components that we'll discuss throughout the course of this tutorial. We'll try to provide insight about why we made the design decisions that we did, and how we built up the pieces. We encourage you to remember that much of our implementation is made up of design decisions suited to our project. Along the way, you may wish to deviate from these decisions in order to best suit your own project.
 
-{% include image.liquid url="./images/b9overview.png" description="Base9 Overview" %}
+<figure class="image">
+  <figcaption>Base9 Overview</figcaption>
+  <img src="./images/b9overview.png" width="100%"/>
+</figure>
 
 The Base9 Overview Diagram depicts the Ahead-of-Time compilation unit and the Virtual Machine unit. The Ahead-of-Time unit runs the b9porcelain source code through our frontend compiler. The frontend compiler outputs a binary module. The binary module is passed to the deserializer, which converts it to a C++ data structure that we've named "Module", and which will henceforth be refered to as our "in memory Module".
 
@@ -144,11 +147,17 @@ The Base9 Virtual Machine is a relatively simple C++ class. It loads an in memor
 
 [binary format]: ./FrontendAndBinaryMod.md
 
-{% include image.liquid url="./images/b9porcelainToBC.png" description="b9porcelain to Bytecodes" %}
+<figure class="image">
+  <figcaption>b9porcelain to Bytecodes</figcaption>
+  <img src="./images/b9porcelainToBC.png" width="100%"/>
+</figure>
 
 The above diagram shows a direct translation between b9porcelain source code and it's corresponding bytecodes.
 
-{% include image.liquid url="./images/vmDesign.png" description="Virtual Machine Design" %}
+<figure class="image">
+  <figcaption>Virtual Machine Design</figcaption>
+  <img src="./images/vmDesign.png" width="100%"/>
+</figure>
 
 The above diagram shows our Virtual Machine Design. The VM takes the bytecodes from the Module, and runs them through either the Interpreter or the JIT compiler. The Interpreter will process the bytecodes directly, and the JIT compiler converts them to native machine code. We employ user flags to tell the VM to JIT compile an entire program and to interpret nothing. To run a fully JIT compiled program, navigate to the `build/` directory and run:
 

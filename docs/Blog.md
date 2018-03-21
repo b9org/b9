@@ -1,5 +1,5 @@
 ---
 layout: blog
-title: Blog
+title: Base9 Blog
 ---
 # Coming soon!

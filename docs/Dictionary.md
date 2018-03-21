@@ -1,6 +1,6 @@
 ---
 layout: default
-title: Dictionary
+title: Base9 Dictionary
 ---
 
 # Tutorial Dictionary

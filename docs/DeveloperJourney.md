@@ -83,7 +83,7 @@ The Base9 [deserializer] is responsible for taking the binary module (which is o
 
 Click the link below to learn more about our Base9 deserializer and disassembler:
 
-[Base9 deserializer and disassembler](./Deserializer.md)
+[Base9 deserializer and disassembler](./Disassembler.md)
 
 The in memory Module is represented in Base9 as follows:
 

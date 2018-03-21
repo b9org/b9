@@ -8,7 +8,7 @@ target_link_libraries(b9disassemble
 )
 
 add_executable(b9serializeTest
-  testModule.cpp
+  testDisassemble.cpp
 )
 
 target_link_libraries(b9serializeTest

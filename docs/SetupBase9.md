@@ -1,6 +1,6 @@
 ---
 layout: default
-title: Setup Base9
+title: Base9 Setup
 ---
 
 ## Base9 Architecture 
@@ -37,7 +37,7 @@ git submodule update --init
 
 ## Directory Structure of Base9
 
-Learn more about our [Directory Structure](./directoryStructure.md)
+Learn more about our [Directory Structure](./DirectoryStructure.md)
 
 
 ## Build Base9

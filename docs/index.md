@@ -7,7 +7,7 @@ Base9 is a tiny virtual machine and programming language! We’re using it to sh
 
 [Eclipse OMR]: https://www.eclipse.org/omr/
 
-The Base9 language is a subset of JavaScript with very limited in functionality. 
+The Base9 language is a subset of JavaScript with very limited functionality. 
 
 For Base9 set-up instructions and a brief overview, please visit our [set-up page] or visit our [GitHub].
 

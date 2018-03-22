@@ -107,9 +107,9 @@ The `b9run/` directory contains our `main` program. This is where we do our comm
 
 ### The build/ directory
 
-The `build/` directory is where we store our executables and build artifacts. It is not a part of our repository, but rather it is manually generated when we [setup Base9] in the Build Base9 section. 
+The `build/` directory is where we store our executables and build artifacts. It is not a part of our repository, but rather it is manually generated when we [setup Base9] in the **Build Base9** section. 
 
-[setup Base9]: ./SetupBase9.md#Build-Base9
+[setup Base9]: ./SetupBase9.md#build-base9
 
 
 ### The docs/ directory

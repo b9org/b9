@@ -3,21 +3,6 @@ layout: default
 title: Base9 Setup
 ---
 
-## Base9 Architecture 
-
-Base9 is comprised of two major components:
-
-#### 1. Ahead of Time (AOT) Compilation Unit
-
-The AOT compilation unit is where the Base9 source code is tranformed into bytecodes, which will be used as input to the VM at runtime. Here, the source code undergoes a 2-step compilation process which makes it consumable by the VM. 
-
-#### 2. Virtual Machine / Runtime Unit
-At runtime, the byte codes are given to the VM as input, where they will either be interpreted by Base9 or JIT compiled using OMR.
-
-<figure class="image">
-  <img src="./images/b9Architecture.png" width="100%"/>
-</figure>
-
 ## Getting Set-up 
 
 #### Set-up on Ubuntu:
@@ -30,7 +15,7 @@ At runtime, the byte codes are given to the VM as input, where they will either 
 
 #### Clone the repository and get submodules
 ```
-git clone --recursive https://github.com/youngar/Base9.git
+git clone --recursive https://github.com/b9org/b9.git
 cd Base9
 git submodule update --init
 ```
@@ -67,7 +52,7 @@ b9run [-function <function>] <module> [<arg>...]
 b9run is the main executable that runs the Base9 modules. In the following example, we are running the factorial function with an input of 20 by passing the factorial.b9mod shared object file to the virtual machine: 
 
 ```sh
-./b9run/b9run -function factorial test/libfactoriald.so 20
+./b9run/b9run -function factorial test/factorial.b9mod 20
 ```
 
 

@@ -91,7 +91,7 @@ You can read about the b9 disassembler at the [Base9 Disassembler page].
 |---b9disassemble/
 |   |---testModules/
 |   |---b9disassemble.cpp
-|   |---testDisasDisaDisassemblee.cpp
+|   |---testDisassemble.cpp
 ```
 
 
@@ -107,9 +107,9 @@ The `b9run/` directory contains our `main` program. This is where we do our comm
 
 ### The build/ directory
 
-The `build/` directory is where we store our executables and build artifacts. It is not a part of our repository, but rather it is manually generated when we [setup Base9] in the **Build Base9** section. 
+The `build/` directory is where we store our executables and build artifacts. It is not a part of our repository, but rather it is manually generated when we [build base9]. 
 
-[setup Base9]: ./SetupBase9.md#build-base9
+[build base9]: ./SetupBase9.md#build-base9
 
 
 ### The docs/ directory
@@ -155,32 +155,22 @@ The `js_compiler` directory is where we keep our [front-end compiler] and our [b
 |   |---compile.js
 ```
 
+
 ### The om/ directory
 
 The `om/` directory contains our Object Model Project, which is currently under development. 
 
 ```
 |---om/
-|   |---glue
-|   |---include
-|   |---src
-|   |---test
+|   |---glue/
+|   |---include/
+|   |---src/
+|   |---test/
 ```
 
 ### The /test directory
 
 The `test/` contains example b9porcelain programs that we use for testing our front-end compiler.
-
-```
-|---test/
-|   |---b9test.cpp
-|   |---factorial.src
-|   |---fib.src
-|   |---hello.src
-|   |---interpreter_test.src
-|   |---simple_add.src
-|   |---test.src
-```
 
 
 ### The /third_party directory

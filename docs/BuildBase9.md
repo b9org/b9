@@ -8,8 +8,10 @@ title: Build your own Language Runtime
 
 ## 0.0 Introduction
 
-Welcome to our tutorial! If you're interested in building your own language runtime, you've come to the right place. Base9 is a miniature language runtime, and thanks to OMR and JitBuilder, it even has a **Just In Time (JIT) Compiler**! The goal of this tutorial is not to teach you how to build Base9, but rather to pack your arsenal full of tools to build your own language runtime. We don't want to bog you down with a bunch of unnecessary information, so we'll keep things very straightfoward, providing useful links/definitions along the way for you to peruse optionally and at your own convenience. If you'd like to get familiar with some of the vocabulary we'll be using, feel free to visit our [dictionary]. Lets get started!
+Welcome to our tutorial! If you're interested in building your own [language runtime], you've come to the right place. Base9 is a miniature language runtime, and thanks to OMR and JitBuilder, it even has a [Just In Time (JIT) Compiler]! The goal of this tutorial is not to teach you how to build base9, but rather to pack your arsenal full of tools to build your own language runtime. We don't want to bog you down with a bunch of unnecessary information, so we'll keep things very straightfoward, providing useful links/definitions along the way for you to peruse optionally and at your own convenience. If you'd like to get familiar with some of the vocabulary we'll be using, feel free to visit our [dictionary]. Lets get started!
 
+[language runtime]: ./Dictionary.md#language-runtime
+[Just In Time (JIT) Compiler]: ./Dictionary.md#jit-compiler
 [dictionary]: ./Dictionary.md
 
 ## 1.0 Base 9
@@ -17,12 +19,7 @@ Welcome to our tutorial! If you're interested in building your own language runt
 
 ### 1.1 A Brief Overview of Base 9
 
-If you want to fiddle around with Base9, check out our [set-up page](./SetupBase9.md) for set-up instructions.
-
-Base9 is an educational **language runtime**. It's front-end language, b9porcelain, is a small subset of JavaScript. It compiles into a simple set of **bytecodes** which run on a primitive **interpreter**. We've also plugged in [OMR] and [JitBuilder] to provide our runtime with a **JIT compiler**! 
-
-[OMR]: https://www.eclipse.org/omr/
-[JitBuilder]: https://developer.ibm.com/open/2016/07/19/jitbuilder-library-and-eclipse-omr-just-in-time-compilers-made-easy/
+If you want to fiddle around with base9, check out our [set-up page](./SetupBase9.md) for set-up instructions.
 
 Base9 has several major components that we'll discuss throughout the course of this tutorial. We'll try to provide insight about why we made the design decisions that we did, and how we built up the pieces. We encourage you to remember that much of our implementation is made up of design decisions suited to our project. Along the way, you may wish to deviate from these decisions in order to best suit your own project.
 
@@ -31,9 +28,14 @@ Base9 has several major components that we'll discuss throughout the course of t
   <img src="./images/b9overview.png" width="100%"/>
 </figure>
 
-The Base9 Overview Diagram depicts the Ahead-of-Time compilation unit and the Virtual Machine unit. The Ahead-of-Time unit runs the b9porcelain source code through our frontend compiler. The frontend compiler outputs a binary module. The binary module is passed to the deserializer, which converts it to a C++ data structure that we've named "Module", and which will henceforth be refered to as our "in memory Module".
+The Base9 Overview Diagram depicts the Ahead-of-Time compilation unit and the [Virtual Machine] unit. The Ahead-of-Time unit runs the b9porcelain source code through our frontend compiler. The frontend compiler outputs a binary module. The binary module is passed to the deserializer, which converts it to a C++ data structure that we've named "Module", and which will henceforth be refered to as our "in memory Module".
 
-The Virtual Machine unit is comprised of the Interpreter and the JIT (not depicted here). The in memory Module is passed to the VM, which runs the bytecodes of the program. 
+[Virtual Machine]: ./Dictionary.md#virtual-machine
+
+The Virtual Machine unit is comprised of the [Interpreter] and the JIT (not depicted here). The in memory Module is passed to the VM, which runs the [bytecodes] of the program.
+
+[Interpreter]: ./Dictionary.md#interpreter
+[bytecodes]: ./Dictionary.md#bytecode
 
 We'll discuss each of the above components in detail in the upcoming sections. 
 
@@ -62,7 +64,9 @@ function b9main() {
 }
 ```
 
-Above is a classic program that we all know and love, Fibonacci. `b9main()` is using two of the Base9 **primitive functions** (from our primitive function table), `b9PrintString` and `b9PrintNumber`, to print to console. Currently, b9porcelain is only capable of operating on integers. It can output strings, but it can't (yet) perform operations on them.
+Above is a classic program that we all know and love, Fibonacci. `b9main()` is using two of the base9 [primitive functions] (from our primitive function table), `b9PrintString` and `b9PrintNumber`, to print to console. Currently, b9porcelain is only capable of operating on integers. It can output strings, but it can't (yet) perform operations on them.
+
+[primitive functions]: ./Dictionary.md#primitive-function
 
 b9porcelain source code is passed as input into our [frontend compiler], which uses [Esprima] to convert the program into an [Abstract Syntax Tree] (or AST). Our frontend compiler walks the AST and converts it into our portable binary format. The portable binary format is represented as our Binary Module.  
 
@@ -77,15 +81,15 @@ For a detailed overview of how we've designed/built our front-end compiler and b
 
 ### 1.3 Building the Module
 
-The Base9 [deserializer] is responsible for taking the binary module (which is output by the frontend compiler), and converting it into the in memory Module (which contains the Base9 bytecodes) to be run by the VM. 
+The base9 [deserializer] is responsible for taking the binary module (which is output by the frontend compiler), and converting it into the in memory Module (which contains the base9 bytecodes) to be run by the VM. 
 
 [deserializer]: (https://github.com/b9org/b9/blob/master/b9/src/deserialize.cpp)
 
-Click the link below to learn more about our Base9 deserializer and disassembler:
+Click the link below to learn more about our base9 deserializer and disassembler:
 
-[Base9 deserializer and disassembler](./Disassembler.md)
+[base9 deserializer and disassembler](./Disassembler.md)
 
-The in memory Module is represented in Base9 as follows:
+The in memory Module is represented in base9 as follows:
 
 ```c++
 struct Module {
@@ -143,7 +147,7 @@ The fields of the `FunctionDef` are the name of the function, the index of the f
 
 ### 1.4 Execution Model
 
-The Base9 Virtual Machine is a relatively simple C++ class. It loads an in memory module Module which has been compiled from b9porcelain source code, and runs the program. The Module is created by converting b9porcelain into an executable sequence of bytecodes represented in our [binary format]. The binary format is then deserialized to create the in memory Module, which is passed to the VM. The VM then has two ways of handling the Module. It can either execute the Module's bytecodes line by line in the interpreter, or it can choose to JIT compile the bytecodes and run that version instead. 
+The base9 Virtual Machine is a relatively simple C++ class. It loads an in memory module Module which has been compiled from b9porcelain source code, and runs the program. The Module is created by converting b9porcelain into an executable sequence of bytecodes represented in our [binary format]. The binary format is then deserialized to create the in memory Module, which is passed to the VM. The VM then has two ways of handling the Module. It can either execute the Module's bytecodes line by line in the interpreter, or it can choose to JIT compile the bytecodes and run that version instead. 
 
 [binary format]: ./FrontendAndBinaryMod.md
 
@@ -166,7 +170,7 @@ The above diagram shows our Virtual Machine Design. The VM takes the bytecodes f
 
 ### 1.5 The Virtual Machine
 
-The Base9 VM has been subject to many design decisions. Please note, as with many of our components, there are multiple ways to implement a language runtime. As discussed above, the Base9 virtual machine takes a Module structure as input. Let's take a look at our [main function] to gain a better understanding of how this works. Our main function calls `run(runtime, cfg);`:
+The base9 VM has been subject to many design decisions. Please note, as with many of our components, there are multiple ways to implement a language runtime. As discussed above, the base9 virtual machine takes a Module structure as input. Let's take a look at our [main function] to gain a better understanding of how this works. Our main function calls `run(runtime, cfg);`:
 
 [main function]: https://github.com/b9org/b9/blob/master/b9run/main.cpp
 
@@ -190,7 +194,7 @@ static void run(OMR::Om::ProcessRuntime& runtime, const RunConfig& cfg) {
 }
 ```
 
-One of your first considerations will be how the user interacts with your runtime. In Base9, we compile b9porcelain into a binary module using the following command:
+One of your first considerations will be how the user interacts with your runtime. In base9, we compile b9porcelain into a binary module using the following command:
 
 `node ./compile.js <in> <out>`
 
@@ -225,13 +229,15 @@ To conclude this section, let's briefly walk over the components we've covered t
 
 ## 2.0 Plugging in the JIT Compiler 
 
-As we mentioned earlier, our JIT compiler is made possible by [OMR] and [JitBuilder]. We keep OMR in our [third_party] directory as a **submodule**. JitBuilder exists as part of OMR.
+As we mentioned earlier, our JIT compiler is made possible by [OMR] and [JitBuilder]. We keep OMR in our [third_party] directory as a [submodule]. JitBuilder exists as part of OMR.
+
+[submodule]: ./Dictionary.md#submodule
 
 [OMR]: https://www.eclipse.org/omr/
 [JitBuilder]: https://developer.ibm.com/open/2016/07/19/jitbuilder-library-and-eclipse-omr-just-in-time-compilers-made-easy/
 [third_party]: https://github.com/b9org/b9/tree/master/third_party
 
-With our OMR submodule, and with the correct `#include`'s in our Base9 headers, using OMR and JitBuilder functionality is easy!  
+With our OMR submodule, and with the correct `#include`'s in our base9 headers, using OMR and JitBuilder functionality is easy!  
 
 
 ### 2.1 The Base9 Compiler

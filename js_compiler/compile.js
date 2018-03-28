@@ -11,7 +11,7 @@ function outputUInt32(out, value) {
 
 	var buf = Buffer.allocUnsafe(4);
 	buf.writeUInt32LE(value, 0);
-	fs.writeSync(out, buf);
+	fs.writeSync(out, buf, 0, 4);
 }
 
 function outputString(out, string) {

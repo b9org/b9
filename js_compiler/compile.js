@@ -393,7 +393,7 @@ function FirstPassCodeGen() {
 	this.handleFunctionDeclaration = function (func, declaration) {
 		var inner = this.module.functions.newFunctionDefinition(declaration.id.name, func);
 		declaration.params.forEach(function (param) {
-			inner.args.get(param);
+			inner.args.get(param.name);
 		});
 		inner.nargs = declaration.params.length;
 		this.handle(inner, declaration.body);

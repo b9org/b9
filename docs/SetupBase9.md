@@ -7,11 +7,11 @@ title: Base9 Setup
 
 #### Set-up on Ubuntu:
 
-[Ubuntu Set-up Instructions](./setupUbuntu.md)
+[Ubuntu Set-up Instructions](./SetupUbuntu.md)
 
 #### Set-up on OSX:
 
-[OSX Set-up Instructions](./setupOSX.md)
+[OSX Set-up Instructions](./SetupOSX.md)
 
 #### Clone the repository and get submodules
 ```

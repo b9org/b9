@@ -19,7 +19,10 @@ Welcome to our tutorial! If you're interested in building your own [language run
 
 ### 1.1 A Brief Overview of Base 9
 
-If you want to fiddle around with base9, check out our [set-up page](./SetupBase9.md) for set-up instructions.
+If you want to fiddle around with base9, check out our [set-up page] for set-up instructions. Be sure to read [about base9] before getting started with this tutorial. 
+
+[set-up page]: ./SetupBase9.md
+[about base9]: ./AboutBase9.md
 
 Base9 has several major components that we'll discuss throughout the course of this tutorial. We'll try to provide insight about why we made the design decisions that we did, and how we built up the pieces. We encourage you to remember that much of our implementation is made up of design decisions suited to our project. Along the way, you may wish to deviate from these decisions in order to best suit your own project.
 
@@ -28,7 +31,7 @@ Base9 has several major components that we'll discuss throughout the course of t
   <img src="./images/b9overview.png" width="100%"/>
 </figure>
 
-The Base9 Overview Diagram depicts the Ahead-of-Time compilation unit and the [Virtual Machine] unit. The Ahead-of-Time unit runs the b9porcelain source code through our frontend compiler. The frontend compiler outputs a binary module. The binary module is passed to the deserializer, which converts it to a C++ data structure that we've named "Module", and which will henceforth be refered to as our "in memory Module".
+The Base9 Overview Diagram depicts the Ahead-of-Time compilation unit and the [Virtual Machine] unit. The Ahead-of-Time unit runs the b9porcelain source code through our frontend compiler. The frontend compiler outputs a binary module. The binary module is passed to the deserializer, which converts it to a c++ data structure that we've named "Module", and which will henceforth be refered to as the "in memory Module".
 
 [Virtual Machine]: ./Dictionary.md#virtual-machine
 
@@ -42,7 +45,7 @@ We'll discuss each of the above components in detail in the upcoming sections.
 
 ### 1.2 B9porcelain, our Frontend Language
 
-b9porcelain is our front-end language. As mentioned, it's a subset of JavaScript. Let's have a look at some code: 
+b9porcelain is our front-end language. As mentioned, it's a subset of JavaScript. Let's have a look at some b9porcelain code:
  
  ```js
  function fib(a) {
@@ -68,11 +71,12 @@ Above is a classic program that we all know and love, Fibonacci. `b9main()` is u
 
 [primitive functions]: ./Dictionary.md#primitive-function
 
-b9porcelain source code is passed as input into our [frontend compiler], which uses [Esprima] to convert the program into an [Abstract Syntax Tree] (or AST). Our frontend compiler walks the AST and converts it into our portable binary format. The portable binary format is represented as our Binary Module.  
+b9porcelain source code is passed as input into our [frontend compiler], which uses [Esprima] to convert the program into an [Abstract Syntax Tree] (or AST). Our frontend compiler walks the AST and converts it into our portable binary format. The portable binary format is represented as our [Binary Module].
 
 [frontend compiler]: https://github.com/b9org/b9/blob/master/js_compiler/compile.js
 [Esprima]: http://esprima.org
 [Abstract Syntax Tree]: https://en.wikipedia.org/wiki/Abstract_syntax_tree
+[Binary Module]: ./Dictionary.md#binary-module
 
 For a detailed overview of how we've designed/built our front-end compiler and binary format, visit the link below:
 
@@ -81,15 +85,18 @@ For a detailed overview of how we've designed/built our front-end compiler and b
 
 ### 1.3 Building the Module
 
-The base9 [deserializer] is responsible for taking the binary module (which is output by the frontend compiler), and converting it into the in memory Module (which contains the base9 bytecodes) to be run by the VM. 
+The base9 [deserializer] at [b9/src/deserialize.cpp] is responsible for taking the binary module (which is output by the frontend compiler), and converting it into the in memory Module (which contains the base9 bytecodes) to be run by the interpreter or the JIT. 
 
-[deserializer]: (https://github.com/b9org/b9/blob/master/b9/src/deserialize.cpp)
+[deserializer]: ./Dictionary.md#deserializer
+[b9/src/deserialize.cpp]: https://github.com/b9org/b9/blob/master/b9/src/deserialize.cpp
 
-Click the link below to learn more about our base9 deserializer and disassembler:
+The deserializer is used in base9 in two different ways. Firstly, it is used by the VM as described above. Secondly, it is used by the disassembler at [b9/b9disassemble/b9disassemble.cpp]. The disassembler employs the base9 deserializer and is primarily used as a debugging tool. Click the link below to learn more about our base9 disassembler:
 
-[base9 deserializer and disassembler](./Disassembler.md)
+[b9/b9disassemble/b9disassemble.cpp]: https://github.com/b9org/b9/blob/master/b9disassemble/b9disassemble.cpp
 
-The in memory Module is represented in base9 as follows:
+[Base9 Disassembler](./Disassembler.md)
+
+We now know how the in memory Module is created from our b9porcelain source code. Lets take a look at how we represent the Module in base9:
 
 ```c++
 struct Module {
@@ -144,12 +151,24 @@ struct FunctionDef {
 
 The fields of the `FunctionDef` are the name of the function, the index of the function in the function vector, the number of arguments, the number of registers, and the `Instructions` vector (which contains the bytecodes). 
 
+The bytecodes are made up of 32-bit instructions which encode both the instruction bytecode and the immediate parameter. The instruction layout is as follows:
+
+```
+|0000-0000 0000-0000 0000-0000 0000-0000
+|---------| bytecode (8 bits)
+          |-----------------------------| parameter (24 bits)
+```
+
+Note that for many ByteCodes, the parameter is unused and left as zero.
+
 
 ### 1.4 Execution Model
 
-The base9 Virtual Machine is a relatively simple C++ class. It loads an in memory module Module which has been compiled from b9porcelain source code, and runs the program. The Module is created by converting b9porcelain into an executable sequence of bytecodes represented in our [binary format]. The binary format is then deserialized to create the in memory Module, which is passed to the VM. The VM then has two ways of handling the Module. It can either execute the Module's bytecodes line by line in the interpreter, or it can choose to JIT compile the bytecodes and run that version instead. 
+The base9 Virtual Machine is a relatively simple c++ class which can be found in [b9/include/b9/VirtualMachine.hpp]. It is instantiated in [b9run/main.cpp] in the `run` function, where it deserializes a binary module which has been compiled from b9porcelain source code, loads the resulting in memory Module, and runs the program. The Module is created by converting a sequence of bits which are represented as per our [binary format]. The binary format is then deserialized to create the in memory Module containing the bytecodes to be run. The VM then has two ways of handling the Module. It can either execute the Module's bytecodes line by line in the interpreter, or it can choose to JIT compile the bytecodes and run that version instead. 
 
-[binary format]: ./FrontendAndBinaryMod.md
+[b9/include/b9/VirtualMachine.hpp]: https://github.com/b9org/b9/blob/master/b9/include/b9/VirtualMachine.hpp
+[b9run/main.cpp]: https://github.com/b9org/b9/blob/master/b9run/main.cpp
+[binary format]: ./FrontendAndBinaryMod.md#binary-format
 
 <figure class="image">
   <figcaption>b9porcelain to Bytecodes</figcaption>
@@ -163,14 +182,15 @@ The above diagram shows a direct translation between b9porcelain source code and
   <img src="./images/vmDesign.png" width="100%"/>
 </figure>
 
-The above diagram shows our Virtual Machine Design. The VM takes the bytecodes from the Module, and runs them through either the Interpreter or the JIT compiler. The Interpreter will process the bytecodes directly, and the JIT compiler converts them to native machine code. We employ user flags to tell the VM to JIT compile an entire program and to interpret nothing. To run a fully JIT compiled program, navigate to the `build/` directory and run:
+The above diagram shows our Virtual Machine Design. The VM takes the binary module and converts it to bytecodes using the deserializer. The bytecodes are stored in the in memory Module. Then, the VM will employ either the Interpreter or the JIT to run the program. The Interpreter processes the bytecodes directly and one at a time. The JIT compiler converts the bytecodes to native machine code and returns a pointer to the start of the code. Once a program is JIT compiled, the bytecodes are no longer interpreted one at a time, but rather they are run in their JIT compiled version. Currently, we employ user flags to tell the VM to JIT compile an entire program and to interpret nothing. To run a fully JIT compiled program, navigate to the `build/` directory and run:
 
 `./b9run/b9run -jit ./test/<binary module>.b9mod`
 
+Eventually, we will add profiling to base9, which will allow the VM to record statistics about the program and to make decisions about which individual functions to JIT compile.
 
 ### 1.5 The Virtual Machine
 
-The base9 VM has been subject to many design decisions. Please note, as with many of our components, there are multiple ways to implement a language runtime. As discussed above, the base9 virtual machine takes a Module structure as input. Let's take a look at our [main function] to gain a better understanding of how this works. Our main function calls `run(runtime, cfg);`:
+The base9 VM has been subject to many design decisions. Please note, as with many of our components, there are multiple ways to implement a language runtime. As discussed above, the base9 virtual machine takes a Module structure as input. Let's take a look at our [main function] to gain a better understanding of how this works. Our main function calls `run(runtime, cfg);` which is as follows:
 
 [main function]: https://github.com/b9org/b9/blob/master/b9run/main.cpp
 
@@ -194,19 +214,45 @@ static void run(OMR::Om::ProcessRuntime& runtime, const RunConfig& cfg) {
 }
 ```
 
-One of your first considerations will be how the user interacts with your runtime. In base9, we compile b9porcelain into a binary module using the following command:
+Walking through the code, we can see the VM being instantiated using a ProcessRuntime from OMR which we will use if JIT compiling our program, and a RunConfig containing some basic information about the Module which we obtained from parsing the command line arguments when we launched the VM. Next we obtain our binary module and deserialize the data. The information from the binary module is stored in the in memory Module. The VM then loads the in memory Module. Next, it checks if the user has specified to JIT compile the program. If yes, the bytecodes are JIT compiled using the `generateCode` function. If no, the VM obtains the main function of the program and begins interpreting. 
+
+As you may have noticed, much of the information used in the `run` function was obtained via command line arguments provided by the user. It is therefore reasonable that one of your first major considerations will be how the user interacts with your runtime. In base9, we compile b9porcelain into a binary module using the following command:
 
 `node ./compile.js <in> <out>`
 
-To run our VM using the binary module, we do the following:
+Where `<in>` is the b9porcelain source program, and `<out>` is the name to give to our binary module. Once a binary module is generated, we can run the VM.
+
+To run the VM, we do the following:
 
 `b9run [<option>...] [--] <module> [<arg>...]`
 
-The `<module>` argument is the binary module, which we created using `compile.js`. If you take a look in [main.cpp], you'll notice our argument parsing function, which collects the `<module>` argument from the command line. If you choose to run your VM from the command line, you will need to do something similar. 
+The `[<option>...]` parameters can be found in [b9run/main.cpp] and are as follows:
 
-[main.cpp]: https://github.com/b9org/b9/blob/master/b9run/main.cpp
+```    
+Help Option:
+   -help          Prints usage and options
 
-Again, how we structure and handle our binary format was a personal design decision that may or may not work for you. We chose to read our binary file into our in memory Module, and to load it into the VM to run. Lets take a closer look at how the VM runs our Module. 
+Jit Options:
+   -jit:          Enable the jit
+   -directcall:   make direct jit to jit calls
+   -passparam:    Pass arguments in CPU registers
+   -lazyvmstate:  Only update the VM state as needed
+
+Run Options:
+   -function <f>: Run the function <f> (default: b9main)
+   -loop <n>:     Run the program <n> times (default: 1)
+   -inline <n>:   Set the jit's max inline depth (default: 0)
+   -debug:        Enable debug code
+   -verbose:      Run with verbose printing
+   -help:         Print this help message
+```
+
+
+Moving past the options, the `<module>` argument is the binary module to be deserialized, which we created using `compile.js`. It will have whichever name you provided as the `<out> argument. If you take a look in [main.cpp], you'll notice our argument parsing function, which collects the `<module>` argument from the command line. If you choose to run your VM from the command line, you will need to do something similar. 
+
+[b9run/main.cpp]: https://github.com/b9org/b9/blob/master/b9run/main.cpp
+
+Again, how we structure and handle our binary format was a personal design decision that may or may not work for your runtime. We chose to convert our binary file into the in memory Module, and to load it into the VM to run. Lets take a closer look at how the VM runs our Module. 
 
 ### 1.6 The Interpreter
 
@@ -218,12 +264,12 @@ Once the VM is instantiated and has loaded the Module, it calls the `VirtualMach
 
 ### 1.7 Base9 Summary
 
-To conclude this section, let's briefly walk over the components we've covered thus far. `b9porcelain` is our front-end language. It is compiled by our [compiler] using Esprima, and eventually converted into our binary module. The binary module is fed to our [deserializer], which converts it into the Module structure to be consumed by the VM. The VM is itself a C++ class, and can be found in [VirtualMachine.hpp]. Once instantiated, the VM loads and runs the Module through the [interpreter]. 
+To conclude this section, let's briefly walk over the components we've covered thus far. `b9porcelain` is our front-end language. It is compiled by our [frontend compiler] using Esprima, and converted into our binary module. The binary module is fed to our deserializer in [b9/src/deserialize.cpp], which converts it into the in memory Module to be consumed by the VM. The VM is itself a c++ class, and can be found in [b9/include/b9/VirtualMachine.hpp]. Once instantiated, the VM loads and runs the Module through the interpreter in [b9/src/ExecutionContext.cpp]. 
 
-[compiler]: https://github.com/b9org/b9/blob/master/js_compiler/compile.js
-[deserializer]: https://github.com/b9org/b9/blob/master/b9/src/deserialize.cpp
-[VirtualMachine.hpp]: https://github.com/b9org/b9/blob/master/b9/include/b9/VirtualMachine.hpp
-[interpreter]: https://github.com/b9org/b9/blob/master/b9/src/ExecutionContext.cpp
+[frontend compiler]: https://github.com/b9org/b9/blob/master/js_compiler/compile.js
+[b9/src/deserialize.cpp]: https://github.com/b9org/b9/blob/master/b9/src/deserialize.cpp
+[b9/include/b9/VirtualMachine.hpp]: https://github.com/b9org/b9/blob/master/b9/include/b9/VirtualMachine.hpp
+[b9/src/ExecutionContext.cpp]: https://github.com/b9org/b9/blob/master/b9/src/ExecutionContext.cpp
 
 
 
@@ -231,22 +277,21 @@ To conclude this section, let's briefly walk over the components we've covered t
 
 As we mentioned earlier, our JIT compiler is made possible by [OMR] and [JitBuilder]. We keep OMR in our [third_party] directory as a [submodule]. JitBuilder exists as part of OMR.
 
-[submodule]: ./Dictionary.md#submodule
-
-[OMR]: https://www.eclipse.org/omr/
+[OMR]: https://eclipse.org/omr/
 [JitBuilder]: https://developer.ibm.com/open/2016/07/19/jitbuilder-library-and-eclipse-omr-just-in-time-compilers-made-easy/
 [third_party]: https://github.com/b9org/b9/tree/master/third_party
+[submodule]: ./Dictionary.md#submodule
 
 With our OMR submodule, and with the correct `#include`'s in our base9 headers, using OMR and JitBuilder functionality is easy!  
 
 
 ### 2.1 The Base9 Compiler
 
-Let's start by taking a look at [b9/src/Compiler.hpp]. This is where we define our `Compiler` class. 
+Let's start by taking a look at [b9/src/Compiler.hpp], where we define our `Compiler` class. 
 
 [b9/src/Compiler.hpp]: https://github.com/b9org/b9/blob/master/b9/include/b9/compiler/Compiler.hpp
 
-The `Compiler` class constructor takes a `VirtualMachine` class (which we've already seen), and a `Config` struct. 
+The `Compiler` class constructor takes a `VirtualMachine` class (above in section 1.5), and a `Config` struct. It is called as follows: 
 
 `Compiler(VirtualMachine &virtualMachine, const Config &cfg);`
 
@@ -266,9 +311,9 @@ struct Config {
 };
 ```
 
-We use the `Config` class to configure the JIT with a number of settings. Note that `directCall`, `passParam`, and `lazyVmState` are all JIT optimizations. We'll discuss them later. The rest of the values are explained in the comments. 
+We use the `Config` class to configure the JIT with a number of settings. Note that `directCall`, `passParam`, and `lazyVmState` are all JIT optimizations that we'll discuss later. The rest of the values are explained in the comments. 
 
-Let's have a closer look at the `Compiler` class:
+Let's have a look at the `Compiler` class:
 
 ```
 class Compiler {
@@ -319,7 +364,7 @@ class GlobalTypes {
 
 We use the `TR::TypeDictionary` to define our `GlobalTypes`, as shown above. 
 
-Now let's have a look in [Base9/b9/src/Compiler.cpp] at the `Compiler::generateCode` function:
+Now let's have a look in [b9/src/Compiler.cpp] at the `Compiler::generateCode` function:
 
 [b9/src/Compiler.cpp]: https://github.com/b9org/b9/blob/master/b9/src/Compiler.cpp
 
@@ -357,9 +402,7 @@ The `rc` value is set to 0 and should remain as 0 through the `compileMethodBuil
 
 Our return value is simply a pointer to a uint8_t, which serves as the entry point into our Jitted function. 
 
-`generateCode` is called by the VM function `generateAllCode`. 
-
-Currently, we've only implemented the ability to JIT compile either everything or nothing. We run our program using the JIT with the following command: 
+`generateCode` is currently only called by the VM function `generateAllCode`,  because thus far we've only implemented the ability to JIT compile either everything or nothing. We run our program using the JIT with the following command: 
 
 `./b9run/b9run -jit ./test/<program>.b9mod`
 

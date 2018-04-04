@@ -30,26 +30,22 @@ apt-get update && apt-get install git build-essential nodejs npm cmake
 git clone --recursive https://github.com/b9org/b9.git
 ```
 
-### 3. Create link for nodejs v4.5+
 
-Building b9 requires nodejs version 4.5+. The default nodejs versions
-in Ubuntu 16.04 and older do not meet this requirement, so you may have to upgrade your nodejs. There are several ways to do it, and [this
-is one way](https://nodejs.org/en/download/package-manager/#debian-and-ubuntu-based-linux-distributions) we can recommend.
+### 3. Upgrading node.js
 
-Assuming you now have nodejs v4.5+, create a link using the command below:
-```sh
-ln -s $NODEJS_BIN /usr/bin/node
-```
-Variable `NODEJS_BIN` must be the location of where your nodejs version 4.5+ executable is located. Here is an example of how this may look like:
+If you are running Ubuntu 16.04 and older, your nodejs may be older than version 4.5, in
+which case you will need to upgrade it. You can install newer nodejs binaries from 
+[NodeSource](https://nodesource.com/)'s PPA using:
 
 ```sh
-ln -s /usr/local/bin/nodejs /usr/bin/node
+curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash - \
+&& sudo apt-get install -y nodejs
 ```
 
-You may verify that /usr/bin/node is indeed a link to version 4.5+ by running:
-```sh
-/usr/bin/node -v
-```
+Check out [this](https://nodejs.org/en/download/package-manager) guide for more information 
+on obtaining node.js packages.
+
+You may run `nodejs -v` to verify that your nodejs version is 4.5.0 or above.
 
 ### 4. Install Esprima
 ```sh

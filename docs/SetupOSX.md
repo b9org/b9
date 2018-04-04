@@ -29,8 +29,7 @@ brew install git node npm cmake ninja
 ### 2. Clone the repository and get the submodules
 
 ```sh
-cd ~ \
-&& git clone --recursive https://github.com/b9org/b9.git
+git clone --recursive https://github.com/b9org/b9.git
 ```
 
 ### 3. Install Esprima

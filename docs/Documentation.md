@@ -32,12 +32,12 @@ Welcome to our the base9 documentation page. Here you will find an organized lis
 
 ### Dictionary
 
-[Dictionary.md](Dictionary.md)
+[Dictionary.md](./Dictionary.md)
 
 
 ### Tutorials
 
-[Tutorials.md](../Tutorials/Tutorials.md)
+[Tutorials.md](./Tutorials.md)
 
 
 ### Other

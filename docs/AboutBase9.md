@@ -14,7 +14,7 @@ Base9 is an educational **language runtime**. It's front-end language, b9porcela
 ## Base9 Architecture
 
 <figure class="image">
-  <img src="./images/b9Architecture.png" width="100%"/>
+  <img src="./assets/images/b9Architecture.png" width="100%"/>
 </figure>
 
 Base9 is comprised of two major components:

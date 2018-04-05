@@ -67,15 +67,17 @@ The `b9run/` directory contains our `main` program. This is where we do our comm
 
 ### The build/ directory
 
-The `build/` directory is where we store our executables and build artifacts. It is not a part of our repository, but rather it is manually generated when we [build base9]. 
+The `build/` directory is where we store our executables and build artifacts. It is not a part of our repository, but rather it is manually generated when we [build base9].
 
 [build base9]: ./SetupBase9.md#build-base9
 
 
 ### The docs/ directory
 
-The `docs/` directory is where we store our documentation, images, old presentations, and the files for our website. The markdown files can be viewed from our GitHub page, but have also been integrated into the [Base9 website].
+The `docs/` directory is where we store our [documentation], [tutorials], images, old presentations, and the files for our website. The markdown files that comprise our documentation can be viewed from our GitHub page, but have also been integrated into the [Base9 website].
 
+[documentation]: ./Documentation.md 
+[tutorials]: ./Tutorials.md
 [Base9 website]: https://b9org.github.io/b9/
 
 

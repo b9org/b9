@@ -28,7 +28,7 @@ Base9 has several major components that we'll discuss throughout the course of t
 
 <figure class="image">
   <figcaption>Base9 Overview</figcaption>
-  <img src="./images/b9overview.png" width="100%"/>
+  <img src="./assets/images/b9overview.png" width="100%"/>
 </figure>
 
 The Base9 Overview Diagram depicts the Ahead-of-Time compilation unit and the [Virtual Machine] unit. The Ahead-of-Time unit runs the b9porcelain source code through our frontend compiler. The frontend compiler outputs a binary module. The binary module is passed to the deserializer, which converts it to a c++ data structure that we've named "Module", and which will henceforth be refered to as the "in memory Module".
@@ -172,14 +172,14 @@ The base9 Virtual Machine is a relatively simple c++ class which can be found in
 
 <figure class="image">
   <figcaption>b9porcelain to Bytecodes</figcaption>
-  <img src="./images/b9porcelainToBC.png" width="100%"/>
+  <img src="./assets/images/b9porcelainToBC.png" width="100%"/>
 </figure>
 
 The above diagram shows a direct translation between b9porcelain source code and it's corresponding bytecodes.
 
 <figure class="image">
   <figcaption>Virtual Machine Design</figcaption>
-  <img src="./images/vmDesign.png" width="100%"/>
+  <img src="./assets/images/vmDesign.png" width="100%"/>
 </figure>
 
 The above diagram shows our Virtual Machine Design. The VM takes the binary module and converts it to bytecodes using the deserializer. The bytecodes are stored in the in memory Module. Then, the VM will employ either the Interpreter or the JIT to run the program. The Interpreter processes the bytecodes directly and one at a time. The JIT compiler converts the bytecodes to native machine code and returns a pointer to the start of the code. Once a program is JIT compiled, the bytecodes are no longer interpreted one at a time, but rather they are run in their JIT compiled version. Currently, we employ user flags to tell the VM to JIT compile an entire program and to interpret nothing. To run a fully JIT compiled program, navigate to the `build/` directory and run:

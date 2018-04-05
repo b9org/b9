@@ -40,17 +40,17 @@ String:= sizeofString(uint32) String(char*)
 
 <figure class="image">
   <figcaption>Binary Module Sections</figcaption>
-  <img src="./images/BinModSections.png" width="100%"/>
+  <img src="./assets/images/BinModSections.png" width="100%"/>
 </figure>
 
 <figure class="image">
   <figcaption>Function Section</figcaption>
-  <img src="./images/BinModFunctions.png" width="100%"/>
+  <img src="./assets/images/BinModFunctions.png" width="100%"/>
 </figure>
 
 <figure class="image">
   <figcaption>String Section</figcaption>
-  <img src="./images/BinModStrings.png" width="100%"/>
+  <img src="./assets/images/BinModStrings.png" width="100%"/>
 </figure>
 
 

@@ -80,6 +80,16 @@ The `docs/` directory is where we store our [documentation], [tutorials], images
 [tutorials]: ./Tutorials.md
 [Base9 website]: https://b9org.github.io/b9/
 
+```
+|---docs/
+|   |---_includes/
+|   |---_layouts/
+|   |---_sass/
+|   |---assets/
+
+```
+
+The above directories inside of the `docs/` folder are strictly related to our website and can be ignored.
 
 ### The js_compiler/ directory
 

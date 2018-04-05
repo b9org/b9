@@ -6,23 +6,25 @@ title: Build your own Language Runtime
 * Table of Contents
 {:toc}
 
-## 0.0 Introduction
 
-Welcome to our tutorial! If you're interested in building your own [language runtime], you've come to the right place. Base9 is a miniature language runtime, and thanks to OMR and JitBuilder, it even has a [Just In Time (JIT) Compiler]! The goal of this tutorial is not to teach you how to build base9, but rather to pack your arsenal full of tools to build your own language runtime. We don't want to bog you down with a bunch of unnecessary information, so we'll keep things very straightfoward, providing useful links/definitions along the way for you to peruse optionally and at your own convenience. If you'd like to get familiar with some of the vocabulary we'll be using, feel free to visit our [dictionary]. Lets get started!
+## Introduction
+
+Welcome to the tutorial! If you're interested in building your own [language runtime], you've come to the right place. Base9 is a miniature language runtime, and thanks to OMR and JitBuilder, it even has a [Just In Time (JIT) Compiler]! The goal of this tutorial is not to teach you how to build base9, but rather to pack your arsenal full of tools to build your own language runtime. We don't want to bog you down with a bunch of unnecessary information, so we'll keep things very straightfoward, providing useful links/definitions along the way for you to peruse optionally and at your own convenience. If you'd like to get familiar with some of the vocabulary you'll encounter, feel free to visit the [tutorial dictionary].
 
 [language runtime]: ./Dictionary.md#language-runtime
 [Just In Time (JIT) Compiler]: ./Dictionary.md#jit-compiler
-[dictionary]: ./Dictionary.md
-
-## 1.0 Base 9
+[tutorial dictionary]: ./Dictionary.md
 
 
-### 1.1 A Brief Overview of Base 9
+### Get Setup
 
-If you want to fiddle around with base9, check out our [set-up page] for set-up instructions. Be sure to read [about base9] before getting started with this tutorial. 
-
+Before getting started, you should get yourself setup with Base9. You'll be using it throughout the tutorial to get familiar with language runtime concepts. Check out our [set-up page] for set-up instructions. 
 [set-up page]: ./SetupBase9.md
-[about base9]: ./AboutBase9.md
+
+At this point it is assumed that you have base9 installed. Let's get started!
+
+
+### A Brief Overview of Base 9
 
 Base9 has several major components that we'll discuss throughout the course of this tutorial. We'll try to provide insight about why we made the design decisions that we did, and how we built up the pieces. We encourage you to remember that much of our implementation is made up of design decisions suited to our project. Along the way, you may wish to deviate from these decisions in order to best suit your own project.
 
@@ -35,17 +37,18 @@ The Base9 Overview Diagram depicts the Ahead-of-Time compilation unit and the [V
 
 [Virtual Machine]: ./Dictionary.md#virtual-machine
 
-The Virtual Machine unit is comprised of the [Interpreter] and the JIT (not depicted here). The in memory Module is passed to the VM, which runs the [bytecodes] of the program.
+The Virtual Machine unit is comprised of the [Interpreter] and the [JIT] (not depicted here). The in memory Module is passed to the VM, which runs the [bytecodes] of the program.
 
 [Interpreter]: ./Dictionary.md#interpreter
+[JIT]: ./Dictionary.md#jit-compiler
 [bytecodes]: ./Dictionary.md#bytecode
 
 We'll discuss each of the above components in detail in the upcoming sections. 
 
 
-### 1.2 B9porcelain, our Frontend Language
+### Our Frontend Language
 
-b9porcelain is our front-end language. As mentioned, it's a subset of JavaScript. Let's have a look at some b9porcelain code:
+Our front-end language is a subset of JavaScript. Let's have a look at some code:
  
  ```js
  function fib(a) {
@@ -67,11 +70,11 @@ function b9main() {
 }
 ```
 
-Above is a classic program that we all know and love, Fibonacci. `b9main()` is using two of the base9 [primitive functions] (from our primitive function table), `b9PrintString` and `b9PrintNumber`, to print to console. Currently, b9porcelain is only capable of operating on integers. It can output strings, but it can't (yet) perform operations on them.
+Above is a classic program that we all know and love, Fibonacci. `b9main()` is using two of the base9 [primitive functions] (from our primitive function table), `b9PrintString` and `b9PrintNumber`, to print to console. Currently, base9 is only capable of operating on integers. It can output strings, but it can't (yet) perform operations on them.
 
 [primitive functions]: ./Dictionary.md#primitive-function
 
-b9porcelain source code is passed as input into our [frontend compiler], which uses [Esprima] to convert the program into an [Abstract Syntax Tree] (or AST). Our frontend compiler walks the AST and converts it into our portable binary format. The portable binary format is represented as our [Binary Module].
+The frontend source code is passed as input into the [frontend compiler], which uses [Esprima] to convert the program into an [Abstract Syntax Tree] (or AST). The frontend compiler walks the AST and converts it into a portable binary format. The portable binary format is represented as a [Binary Module].
 
 [frontend compiler]: https://github.com/b9org/b9/blob/master/js_compiler/compile.js
 [Esprima]: http://esprima.org
@@ -83,18 +86,89 @@ For a detailed overview of how we've designed/built our front-end compiler and b
 [Frontend Compiler and Binary Format](./FrontendAndBinaryMod.md)
 
 
-### 1.3 Building the Module
 
-The base9 [deserializer] at [b9/src/deserialize.cpp] is responsible for taking the binary module (which is output by the frontend compiler), and converting it into the in memory Module (which contains the base9 bytecodes) to be run by the interpreter or the JIT. 
+## From Source to Bytecodes
+
+
+### The Base9 Deserializer
+
+The base9 [deserializer] at [b9/src/deserialize.cpp] is responsible for taking the binary module (as output by the frontend compiler), and converting it into the in memory Module (which contains the base9 bytecodes) to be run by the VM. 
 
 [deserializer]: ./Dictionary.md#deserializer
 [b9/src/deserialize.cpp]: https://github.com/b9org/b9/blob/master/b9/src/deserialize.cpp
 
-The deserializer is used in base9 in two different ways. Firstly, it is used by the VM as described above. Secondly, it is used by the disassembler at [b9/b9disassemble/b9disassemble.cpp]. The disassembler employs the base9 deserializer and is primarily used as a debugging tool. Click the link below to learn more about our base9 disassembler:
+The deserializer is used in base9 in two different ways. Firstly, it is used by the VM to convert a binary module to an in memory Module, as described above. Secondly, it is used by the disassembler at [b9/b9disassemble/b9disassemble.cpp]. The disassembler employs the base9 deserializer to convert a binary module into a human readable interpretation. It is primarily used as a debugging tool. Click the link below to learn more about our base9 disassembler:
 
 [b9/b9disassemble/b9disassemble.cpp]: https://github.com/b9org/b9/blob/master/b9disassemble/b9disassemble.cpp
-
 [Base9 Disassembler](./Disassembler.md)
+
+Let's run it! But before we can run do that, we need a binary module to give to it. Let's convert a simple Hello, World! program to its binary format. The JavaScript source code for Hello, World! can be found in [test/hello.src], and appears as follows:
+
+[test/hello.src]: https://github.com/b9org/b9/blob/master/test/hello.src
+
+```
+function b9main() {
+    b9PrintString("Hello World!");
+}
+```
+
+To run Hello, World! through the frontend compiler, use the following command from the base9 root directory: 
+
+`node js_compiler/compile.js test/hello.src hello.b9mod`
+
+This will run the JavaScript compiler on `test/hello.src` and output a binary module with the name `hello.b9mod`. If you run the above command, you should see `hello.b9mod` in the base9 root directory. Now let's navigate to the `build/` directory and run the disassembler with the following command:
+
+`b9disassemble/b9disassemble ../hello.b9mod`
+
+You should now be looking at a human readable version of the Hello, World! program as represented by its bytecodes:
+
+```
+(function "b9PrintString" 1 0
+  0  (push_from_var 0)
+  1  (primitive_call 0)
+  2  (drop)
+  3  (int_push_constant 0)
+  4  (function_return)
+  5  (end_section))
+
+(function "b9PrintNumber" 1 0
+  0  (push_from_var 0)
+  1  (primitive_call 1)
+  2  (drop)
+  3  (int_push_constant 0)
+  4  (function_return)
+  5  (end_section))
+
+(function "b9PrintStack" 1 0
+  0  (push_from_var 0)
+  1  (primitive_call 2)
+  2  (drop)
+  3  (int_push_constant 0)
+  4  (function_return)
+  5  (end_section))
+
+(function "b9main" 0 0
+  0  (str_push_constant 0)
+  1  (function_call 0)
+  2  (drop)
+  3  (int_push_constant 0)
+  4  (function_return)
+  5  (end_section))
+
+(string "Hello World!")
+```
+
+The first three functions are the base9 primitives. We can ignore those for now. The main thing to note is the conversion between the JavaScript and the bytecodes:
+
+<figure class="image">
+  <img src="./assets/images/b9porcelainToBC.png" width="100%"/>
+</figure>
+
+
+
+======================================================
+
+
 
 We now know how the in memory Module is created from our b9porcelain source code. Lets take a look at how we represent the Module in base9:
 

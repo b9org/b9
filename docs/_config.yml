@@ -1,10 +1,9 @@
 # Site Settings
 title: Base9
-email: arianne.leah@gmail.com
 description: >
   An educational virtual machine
 baseurl: /b9
-github_username:  arianneb
+github_username: b9org
 theme: minima
 # Build Settings
 sass:

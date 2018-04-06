@@ -166,6 +166,86 @@ The first three functions are the base9 primitives. We can ignore those for now.
 
 
 
+### The Base9 Bytecode Design
+
+Having seen how the JavaScript is converted to bytecodes, let's explore the base9 bytecode design. The base9 instruction set is stack oriented, which allows for straight-forward compilation and simple VM implementation. Let's discuss some advantages of a stack-based instruction set over a register-based model. Firstly, a stack-based instruction set allows for smaller individual instructions. Secondly, it does not require a register immediate. One disadvantage is that the total number of instructions is larger. Since all instructions oeprate on the stack, the stack can be thought of as the VM's memory. 
+
+All of the base9 bytecodes are fixed-width. This puts constraints on what we can encode in the instructions, but it simplifies instruction decoding and jumps. 
+
+One final thing to mention is that the base9 instruction set is untyped. This means that the bytecodes can operate on values of varying types. The way this works is by popping the operands off the stack, checking their types, and doing the operation once the type is known.  
+
+The base9 bytecodes are defined in [b9/include/b9/instructions.hpp].
+
+[b9/include/b9/instructions.hpp]: https://github.com/b9org/b9/blob/master/b9/include/b9/instructions.hpp
+
+Let's take at what happens with the stack during a simple addition function:
+
+```js
+function simple_add() {
+  return 5 + 6;
+} 
+```
+
+The diagrams below display the bytecodes generated from the above "simple_add()" function. `IP` represents the Instruction Pointer, and `SP` represents the Stack Pointer.
+
+
+<figure class="image">
+  <figcaption>Push 5 onto the stack</figcaption>
+  <img src="./assets/images/bcStack1.png" width="100%"/>
+</figure>
+
+<figure class="image">
+  <figcaption>Push 6 onto the stack</figcaption>
+  <img src="./assets/images/bcStack2.png" width="100%"/>
+</figure>
+
+<figure class="image">
+  <figcaption>Pop last two values from the stack, add, push result</figcaption>
+  <img src="./assets/images/bcStack3.png" width="100%"/>
+</figure>
+
+<figure class="image">
+  <figcaption>Pop and return the result</figcaption>
+  <img src="./assets/images/bcStack4.png" width="100%"/>
+</figure>
+
+
+
+## The Virtual Machine
+
+### Run the VM
+
+Now that we've seen how the bytecodes are interpreted, let's run the VM with our binary module with the Hello, World! binary module that we generated earlier. From the `build/` directory, run the following command: 
+
+`b9run/b9run ../hello.b9mod`
+
+You should see the following output:
+
+```
+Hello World!
+
+=> (integer 0)
+```
+
+The "`=> (integer 0)`" is the return code of the program.
+
+
+### VM Design
+
+<figure class="image">
+  <img src="./assets/images/vmDesign.png" width="100%"/>
+</figure>
+
+The above diagram shows our Virtual Machine Design in greater detail. The VM takes the binary module (as produced by the frontend compiler) and converts it to a C++ data structure (that we're calling the in memory Module) containing the bytecodes. This conversion is done by the deserializer. After the conversion, the VM will employ either the Interpreter or the JIT to run the program. The Interpreter processes the bytecodes directly and one at a time. The JIT compiler converts the bytecodes to native machine code and returns a pointer to the start of the code. Once a program is JIT compiled, the bytecodes are no longer interpreted one at a time, but rather they are run in their JIT compiled version. Currently, we employ user flags to tell the VM to JIT compile an entire program and to interpret nothing. We'll leave the JIT for now and focus on the interpreter. 
+
+
+## The Base9 Interpreter
+
+
+
+
+
+
 ======================================================
 
 

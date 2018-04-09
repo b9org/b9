@@ -16,7 +16,7 @@ Welcome to the tutorial! If you're interested in building your own [language run
 [tutorial dictionary]: ./Dictionary.md
 
 
-### Get Setup
+### Base9 Setup
 
 Before getting started, you should get yourself setup with Base9. You'll be using it throughout the tutorial to get familiar with language runtime concepts. Check out our [set-up page] for set-up instructions. 
 [set-up page]: ./SetupBase9.md
@@ -24,7 +24,7 @@ Before getting started, you should get yourself setup with Base9. You'll be usin
 At this point it is assumed that you have base9 installed. Let's get started!
 
 
-### A Brief Overview of Base 9
+### Base9 Overview
 
 Base9 has several major components that we'll discuss throughout the course of this tutorial. We'll try to provide insight about why we made the design decisions that we did, and how we built up the pieces. We encourage you to remember that much of our implementation is made up of design decisions suited to our project. Along the way, you may wish to deviate from these decisions in order to best suit your own project.
 
@@ -33,11 +33,11 @@ Base9 has several major components that we'll discuss throughout the course of t
   <img src="./assets/images/b9overview.png" width="100%"/>
 </figure>
 
-The Base9 Overview Diagram depicts the Ahead-of-Time compilation unit and the [Virtual Machine] unit. The Ahead-of-Time unit runs the b9porcelain source code through our frontend compiler. The frontend compiler outputs a binary module. The binary module is passed to the deserializer, which converts it to a c++ data structure that we've named "Module", and which will henceforth be refered to as the "in memory Module".
+The Base9 Overview Diagram depicts the Ahead-of-Time compilation unit and the [Virtual Machine] unit. Base9 uses a primitive subset of JavaScript as its frontend language. The Ahead-of-Time unit runs the JavaScript source code through our frontend compiler. The frontend compiler outputs a binary module. The binary module is passed to the deserializer, which converts it to a C++ data structure that we've named "Module", and which will henceforth be refered to as the "in memory Module".
 
 [Virtual Machine]: ./Dictionary.md#virtual-machine
 
-The Virtual Machine unit is comprised of the [Interpreter] and the [JIT] (not depicted here). The in memory Module is passed to the VM, which runs the [bytecodes] of the program.
+The Virtual Machine unit is comprised of the [Interpreter] and the [JIT]. The in memory Module is passed to the VM, which runs the [bytecodes] of the program.
 
 [Interpreter]: ./Dictionary.md#interpreter
 [JIT]: ./Dictionary.md#jit-compiler
@@ -46,33 +46,27 @@ The Virtual Machine unit is comprised of the [Interpreter] and the [JIT] (not de
 We'll discuss each of the above components in detail in the upcoming sections. 
 
 
-### Our Frontend Language
+
+## The Base9 Frontend
+
+### Frontend Language
 
 Our front-end language is a subset of JavaScript. Let's have a look at some code:
  
  ```js
- function fib(a) {
-    if (a < 3) {
-        return 1;
-    } else {
-        return fib(a - 1) + fib(a - 2);
-    }
-}
-
 function b9main() {
-    b9PrintString("");
-    b9PrintString("Fibonacci");
-    var a = 1;
-    while (a <= 20) {
-        b9PrintNumber(fib(a));
-        a++;
-    }
+  b9PrintString("Hello World!");
 }
 ```
 
-Above is a classic program that we all know and love, Fibonacci. `b9main()` is using two of the base9 [primitive functions] (from our primitive function table), `b9PrintString` and `b9PrintNumber`, to print to console. Currently, base9 is only capable of operating on integers. It can output strings, but it can't (yet) perform operations on them.
+Above is a classic program that we all know and love, Hello, World!. It can be found in [test/hello.src]. `b9main()` is using one of the three base9 [primitive functions] (from our primitive function library in [b9/js_compiler/b9stdlib.src]). Hello, World! is using `b9PrintString` to print to console. Currently, base9 is only capable of operating on integers. It can output strings, but it can't (yet) perform operations on them.
 
+[test/hello.src]: https://github.com/b9org/b9/blob/master/test/hello.src
 [primitive functions]: ./Dictionary.md#primitive-function
+[b9/js_compiler/b9stdlib.src]: https://github.com/b9org/b9/blob/master/js_compiler/b9stdlib.src
+
+
+### Frontend Compiler
 
 The frontend source code is passed as input into the [frontend compiler], which uses [Esprima] to convert the program into an [Abstract Syntax Tree] (or AST). The frontend compiler walks the AST and converts it into a portable binary format. The portable binary format is represented as a [Binary Module].
 
@@ -85,38 +79,27 @@ For a detailed overview of how we've designed/built our front-end compiler and b
 
 [Frontend Compiler and Binary Format](./FrontendAndBinaryMod.md)
 
+Let’s convert the Hello, World! program to its binary format by running it through the frontend compiler. Making sure you're in the root directory, run:
 
+`node js_compiler/compile.js test/hello.src hello.b9mod`
 
-## From Source to Bytecodes
+The above command will run the JavaScript compiler on `test/hello.src` and output a binary module with the name `hello.b9mod`. If you run the above command, you should see `hello.b9mod` in the base9 root directory.
 
+## The Base9 Backend
 
-### The Base9 Deserializer
+### The Deserializer
 
 The base9 [deserializer] at [b9/src/deserialize.cpp] is responsible for taking the binary module (as output by the frontend compiler), and converting it into the in memory Module (which contains the base9 bytecodes) to be run by the VM. 
 
 [deserializer]: ./Dictionary.md#deserializer
 [b9/src/deserialize.cpp]: https://github.com/b9org/b9/blob/master/b9/src/deserialize.cpp
 
-The deserializer is used in base9 in two different ways. Firstly, it is used by the VM to convert a binary module to an in memory Module, as described above. Secondly, it is used by the disassembler at [b9/b9disassemble/b9disassemble.cpp]. The disassembler employs the base9 deserializer to convert a binary module into a human readable interpretation. It is primarily used as a debugging tool. Click the link below to learn more about our base9 disassembler:
+The deserializer is used in base9 in two different ways. Firstly, it is used by the VM to convert a binary module to an in memory Module, as described above. Secondly, it is used by the disassembler at [b9/b9disassemble/b9disassemble.cpp]. The disassembler employs the base9 deserializer to convert a binary module into a human readable interpretation. It is primarily used as a debugging tool. Click the link below to learn more:
 
 [b9/b9disassemble/b9disassemble.cpp]: https://github.com/b9org/b9/blob/master/b9disassemble/b9disassemble.cpp
 [Base9 Disassembler](./Disassembler.md)
 
-Let's run it! But before we can run do that, we need a binary module to give to it. Let's convert a simple Hello, World! program to its binary format. The JavaScript source code for Hello, World! can be found in [test/hello.src], and appears as follows:
-
-[test/hello.src]: https://github.com/b9org/b9/blob/master/test/hello.src
-
-```
-function b9main() {
-    b9PrintString("Hello World!");
-}
-```
-
-To run Hello, World! through the frontend compiler, use the following command from the base9 root directory: 
-
-`node js_compiler/compile.js test/hello.src hello.b9mod`
-
-This will run the JavaScript compiler on `test/hello.src` and output a binary module with the name `hello.b9mod`. If you run the above command, you should see `hello.b9mod` in the base9 root directory. Now let's navigate to the `build/` directory and run the disassembler with the following command:
+Let's run the disassembler using the binary module we just generated! Navigate to the build directory and run the following command:
 
 `b9disassemble/b9disassemble ../hello.b9mod`
 
@@ -158,27 +141,41 @@ You should now be looking at a human readable version of the Hello, World! progr
 (string "Hello World!")
 ```
 
-The first three functions are the base9 primitives. We can ignore those for now. The main thing to note is the conversion between the JavaScript and the bytecodes:
+The first three functions are the base9 primitives that we mentioned earlier. Let's take a look at the direct conversion between the JavaScript and the bytecodes:
 
 <figure class="image">
-  <img src="./assets/images/b9porcelainToBC.png" width="100%"/>
+  <img src="./assets/images/jsToBC.png" width="100%"/>
 </figure>
 
+Stepping through the bytecodes, we start with a `str_push_constant`, which pushes the string "Hello, World!" onto the stack. Next is `function_call`, which does the call to `b9PrintString`. The `drop` bytecode drops the top value from the stack, and is being used to remove the unused return value of the `b9PrintString` function. `int_push_constant` is pushing 0 onto the stack as the return value of `b9main`. `function_return` is doing the actual return, and `end_section` is the end-of-bytecodes marker, which is essentially just a safety feature should the interpreter continue running after the return.
 
 
-### The Base9 Bytecode Design
+### The Base9 Bytecodes
 
-Having seen how the JavaScript is converted to bytecodes, let's explore the base9 bytecode design. The base9 instruction set is stack oriented, which allows for straight-forward compilation and simple VM implementation. Let's discuss some advantages of a stack-based instruction set over a register-based model. Firstly, a stack-based instruction set allows for smaller individual instructions. Secondly, it does not require a register immediate. One disadvantage is that the total number of instructions is larger. Since all instructions oeprate on the stack, the stack can be thought of as the VM's memory. 
+Now that we've seen how the JavaScript is converted to bytecodes, let's explore the base9 bytecode design. 
 
-All of the base9 bytecodes are fixed-width. This puts constraints on what we can encode in the instructions, but it simplifies instruction decoding and jumps. 
+The base9 instruction set is stack oriented, which allows for straight-forward compilation and simple VM implementation.  Stack-based instruction sets have a couple of advantages  over the register-based model. Firstly, stack-based instructions are smaller. They also don't require a register immediate. One disadvantage is that the total number of instructions is larger. Since all instructions oeprate on the stack, the stack can be thought of as the VM's memory. 
 
-One final thing to mention is that the base9 instruction set is untyped. This means that the bytecodes can operate on values of varying types. The way this works is by popping the operands off the stack, checking their types, and doing the operation once the type is known.  
+All of the base9 bytecodes are fixed-width. This puts constraints on what we can encode in the instructions, but it simplifies instruction decoding and jumps. Below is the layout of a single base9 instruction:
 
-The base9 bytecodes are defined in [b9/include/b9/instructions.hpp].
+```
+|0000-0000 0000-0000 0000-0000 0000-0000
+|---------| bytecode (8 bits)
+          |-----------------------------| parameter (24 bits)
+```
+
+Note that for many base9 bytecodes, the parameter is unused and left as zero.
+
+One final thing to mention is that the base9 instruction set is untyped. This means that the bytecodes can operate on values of varying types. The way this works is by popping the operands off the stack, checking their types, and doing the correct operation once the type is known.  
+
+All base9 bytecodes are defined in [b9/include/b9/instructions.hpp].
 
 [b9/include/b9/instructions.hpp]: https://github.com/b9org/b9/blob/master/b9/include/b9/instructions.hpp
 
-Let's take at what happens with the stack during a simple addition function:
+
+### The Stack
+
+As recently mentioned, the base9 bytecodes are stack oriented. Let's take at what happens with the stack during a simple addition function:
 
 ```js
 function simple_add() {
@@ -186,36 +183,37 @@ function simple_add() {
 } 
 ```
 
-The diagrams below display the bytecodes generated from the above "simple_add()" function. `IP` represents the Instruction Pointer, and `SP` represents the Stack Pointer.
+The following diagrams display the bytecodes generated from the above "simple_add()" function. 
 
+**IP** = Instruction Pointer
+
+**SP** = Stack Pointer
 
 <figure class="image">
-  <figcaption>Push 5 onto the stack</figcaption>
+  <figcaption>PUSH 5 ONTO THE STACK</figcaption>
   <img src="./assets/images/bcStack1.png" width="100%"/>
 </figure>
 
 <figure class="image">
-  <figcaption>Push 6 onto the stack</figcaption>
+  <figcaption>PUSH 6 ONTO THE STACK</figcaption>
   <img src="./assets/images/bcStack2.png" width="100%"/>
 </figure>
 
 <figure class="image">
-  <figcaption>Pop last two values from the stack, add, push result</figcaption>
+  <figcaption>POP TOP TWO VALUES, ADD, PUSH RESULT</figcaption>
   <img src="./assets/images/bcStack3.png" width="100%"/>
 </figure>
 
 <figure class="image">
-  <figcaption>Pop and return the result</figcaption>
+  <figcaption>POP AND RETURN RESULT</figcaption>
   <img src="./assets/images/bcStack4.png" width="100%"/>
 </figure>
 
 
 
-## The Virtual Machine
-
 ### Run the VM
 
-Now that we've seen how the bytecodes are interpreted, let's run the VM with our binary module with the Hello, World! binary module that we generated earlier. From the `build/` directory, run the following command: 
+Now that we've learned a bit about the bytecodes, let's run the VM with the Hello, World! binary module that we generated earlier. From the `build/` directory, run the following command: 
 
 `b9run/b9run ../hello.b9mod`
 
@@ -227,7 +225,7 @@ Hello World!
 => (integer 0)
 ```
 
-The "`=> (integer 0)`" is the return code of the program.
+The "`=> (integer 0)`" is the return code of the program. It will be 0 unless something has gone wrong during execution.
 
 
 ### VM Design
@@ -236,10 +234,94 @@ The "`=> (integer 0)`" is the return code of the program.
   <img src="./assets/images/vmDesign.png" width="100%"/>
 </figure>
 
-The above diagram shows our Virtual Machine Design in greater detail. The VM takes the binary module (as produced by the frontend compiler) and converts it to a C++ data structure (that we're calling the in memory Module) containing the bytecodes. This conversion is done by the deserializer. After the conversion, the VM will employ either the Interpreter or the JIT to run the program. The Interpreter processes the bytecodes directly and one at a time. The JIT compiler converts the bytecodes to native machine code and returns a pointer to the start of the code. Once a program is JIT compiled, the bytecodes are no longer interpreted one at a time, but rather they are run in their JIT compiled version. Currently, we employ user flags to tell the VM to JIT compile an entire program and to interpret nothing. We'll leave the JIT for now and focus on the interpreter. 
+The above diagram shows the components of the Virtual Machine Design in greater detail. The VM takes the binary module (as produced by the frontend compiler) and converts it to a C++ data structure (that we're calling the in memory Module) containing the bytecodes. This conversion is done by the deserializer. After the conversion, the VM will employ either the Interpreter or the JIT to run the program. The Interpreter processes the bytecodes directly and one at a time. The JIT compiler converts the bytecodes to native machine code and returns a pointer to the start of the code. Once a program is JIT compiled, the bytecodes are no longer interpreted one at a time, but rather they are run in their JIT compiled version. Currently, we employ user flags to tell the VM to JIT compile an entire program and to interpret nothing. We'll leave the JIT for now and focus on the interpreter. 
 
 
-## The Base9 Interpreter
+### The Interpreter
+
+The interpreter's job is to take a sequence of bytecodes and match each of them with a corresponding C++ function. The relationship between bytecodes and corresponding C++ functions is one-to-one. Earlier, when we ran our Hello, World! program, it ran by default on the interpreter. The VM will always run the interpreter by default. The base9 interpreter is very simple, consisting of a while-loop and switch statement to iterate a sequence of bytecodes. 
+
+The interpreter is implemented in [b9/src/ExecutionContext.cpp]. Let's take a look at the code:
+
+[b9/src/ExecutionContext.cpp]: https://github.com/b9org/b9/blob/master/b9/src/ExecutionContext.cpp
+
+```c++
+StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
+  auto function = virtualMachine_->getFunction(functionIndex);
+  auto argsCount = function->nargs;
+  auto jitFunction = virtualMachine_->getJitAddress(functionIndex);
+
+  if (jitFunction) {
+    return callJitFunction(jitFunction, argsCount);
+  }
+
+  // interpret the method otherwise
+  const Instruction *instructionPointer = function->instructions.data();
+
+  StackElement *args = stack_.top() - function->nargs;
+  stack_.pushn(function->nregs);
+
+  ...
+
+```
+
+This first bit of the `interpret` function deals with some initial setup. The single parameter is `functionIndex`, which we use to get the individual function we wish to interpret. The interpreter then checks if the particular function has previously been JIT compiled. If it has, we use that function instead, and return from the interpreter. If it hasn't, the `instructionPointer is initialized to the start of the instruction sequence, the arguments are collected from the top of the stack, and storage for local variables is allocated on the stack. 
+
+Now let's take a look at the while-loop and switch-statement.
+
+```c++
+  while (*instructionPointer != END_SECTION) {
+    switch (instructionPointer->byteCode()) {
+      
+      ...
+
+      case ByteCode::FUNCTION_RETURN: {
+        auto result = stack_.pop();
+        stack_.restore(args);
+        return result;
+        break;
+      }
+      
+      ...
+      
+      case ByteCode::INT_ADD:
+        doIntAdd();
+        break;
+     
+     ...
+
+```
+
+We've excluded much of the interpreter loop for simplicity, but we'll discuss a couple of the cases to give you an idea of how it works. Above we have the `FUNCTION_RETURN` bytecode case and the `INT_ADD` bytecode case. In the `FUNCTION_RETURN` case, the top of the stack (which is storing the return value of the function) is popped and stored in the `result` variable. The stack is then restored and the return value is returned. This is the only bytecode in the interpreter loop that returns a value, which makes sense, because this bytecode is only reached at the end of a function when there are no more bytecodes to process. The `INT_ADD` bytecode case calls `doIntAdd()`, which is a simple C++ function:
+
+```c++
+void ExecutionContext::doIntAdd() {
+  std::int32_t right = stack_.pop().getInteger();
+  std::int32_t left = stack_.pop().getInteger();
+  StackElement result;
+  result.setInteger(left + right);
+  push(result);
+}
+```
+
+In summary, the interpreter is simply a mechanism for translating the bytecodes into C++ functionality. It’s one-at-a-time bytecode processing makes it inherantly slow, which makes the JIT compiler an important piece of the puzzle when aiming to reduce execution time.
+
+
+
+
+
+
+
+```
+
+
+
+
+
+
+
+
+
 
 
 
@@ -247,7 +329,7 @@ The above diagram shows our Virtual Machine Design in greater detail. The VM tak
 
 
 ======================================================
-
+```
 
 
 We now know how the in memory Module is created from our b9porcelain source code. Lets take a look at how we represent the Module in base9:
@@ -305,20 +387,11 @@ struct FunctionDef {
 
 The fields of the `FunctionDef` are the name of the function, the index of the function in the function vector, the number of arguments, the number of registers, and the `Instructions` vector (which contains the bytecodes). 
 
-The bytecodes are made up of 32-bit instructions which encode both the instruction bytecode and the immediate parameter. The instruction layout is as follows:
-
-```
-|0000-0000 0000-0000 0000-0000 0000-0000
-|---------| bytecode (8 bits)
-          |-----------------------------| parameter (24 bits)
-```
-
-Note that for many ByteCodes, the parameter is unused and left as zero.
 
 
 ### 1.4 Execution Model
 
-The base9 Virtual Machine is a relatively simple c++ class which can be found in [b9/include/b9/VirtualMachine.hpp]. It is instantiated in [b9run/main.cpp] in the `run` function, where it deserializes a binary module which has been compiled from b9porcelain source code, loads the resulting in memory Module, and runs the program. The Module is created by converting a sequence of bits which are represented as per our [binary format]. The binary format is then deserialized to create the in memory Module containing the bytecodes to be run. The VM then has two ways of handling the Module. It can either execute the Module's bytecodes line by line in the interpreter, or it can choose to JIT compile the bytecodes and run that version instead. 
+The base9 Virtual Machine is a relatively simple C++ class which can be found in [b9/include/b9/VirtualMachine.hpp]. It is instantiated in [b9run/main.cpp] in the `run` function, where it deserializes a binary module which has been compiled from b9porcelain source code, loads the resulting in memory Module, and runs the program. The Module is created by converting a sequence of bits which are represented as per our [binary format]. The binary format is then deserialized to create the in memory Module containing the bytecodes to be run. The VM then has two ways of handling the Module. It can either execute the Module's bytecodes line by line in the interpreter, or it can choose to JIT compile the bytecodes and run that version instead. 
 
 [b9/include/b9/VirtualMachine.hpp]: https://github.com/b9org/b9/blob/master/b9/include/b9/VirtualMachine.hpp
 [b9run/main.cpp]: https://github.com/b9org/b9/blob/master/b9run/main.cpp
@@ -418,7 +491,7 @@ Once the VM is instantiated and has loaded the Module, it calls the `VirtualMach
 
 ### 1.7 Base9 Summary
 
-To conclude this section, let's briefly walk over the components we've covered thus far. `b9porcelain` is our front-end language. It is compiled by our [frontend compiler] using Esprima, and converted into our binary module. The binary module is fed to our deserializer in [b9/src/deserialize.cpp], which converts it into the in memory Module to be consumed by the VM. The VM is itself a c++ class, and can be found in [b9/include/b9/VirtualMachine.hpp]. Once instantiated, the VM loads and runs the Module through the interpreter in [b9/src/ExecutionContext.cpp]. 
+To conclude this section, let's briefly walk over the components we've covered thus far. `b9porcelain` is our front-end language. It is compiled by our [frontend compiler] using Esprima, and converted into our binary module. The binary module is fed to our deserializer in [b9/src/deserialize.cpp], which converts it into the in memory Module to be consumed by the VM. The VM is itself a C++ class, and can be found in [b9/include/b9/VirtualMachine.hpp]. Once instantiated, the VM loads and runs the Module through the interpreter in [b9/src/ExecutionContext.cpp]. 
 
 [frontend compiler]: https://github.com/b9org/b9/blob/master/js_compiler/compile.js
 [b9/src/deserialize.cpp]: https://github.com/b9org/b9/blob/master/b9/src/deserialize.cpp

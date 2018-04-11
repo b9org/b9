@@ -51,12 +51,12 @@ We'll discuss each of the above components in detail in the upcoming sections.
 ```
 
 ```
+
 <center> *** </center>
-```
 
 ```
 
-
+```
 
 ## The Base9 Frontend
 
@@ -99,13 +99,12 @@ The above command will run the JavaScript compiler on `test/hello.src` and outpu
 ```
 
 ```
+
 <center> *** </center>
 
 ```
 
 ```
-
-
 
 ## The Base9 Backend
 
@@ -334,12 +333,12 @@ In summary, the interpreter is simply a mechanism for translating the bytecodes 
 ```
 
 ```
+
 <center> *** </center>
-```
 
 ```
 
-
+```
 
 ## Base9 Implementation
 
@@ -511,12 +510,12 @@ To conclude this section, let's briefly walk over the components we've covered t
 ```
 
 ```
+
 <center> *** </center>
-```
 
 ```
 
-
+```
 
 ## OMR
 

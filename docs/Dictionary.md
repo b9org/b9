@@ -18,6 +18,9 @@ A bytecode is a type of instruction that can be consumed by a virual machine. By
 ### Deserializer
 The base9 deserializer is a program which takes a sequence of bytes and converts it to an in memory module which can be read and run by the VM. 
 
+### Intermediate Language
+An intermediate language is a compiler's intermediate representation between a high-level language and the native machine code. In the case of OMR, it occurs between the bytecodes and the native machine code, and it is tree based. Intermediate Languages are designed to be conducive for compiler optimizations.
+
 ### Interpreter 
 An interpreter translates bytecodes into executable native machine code. The [base9 interpreter] is essentially a while loop surrounding a giant switch statement. Each `case` in the switch statement corresponds to a specific bytecode, and executes a corresponding C++ function to implement the functionality of that particular bytecode.
 

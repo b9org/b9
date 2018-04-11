@@ -5,21 +5,20 @@ title: Frontend Compiler and Binary Format
 
 ## Frontend Compiler
 
-The frontend compiler takes b9porcelain source code and using the [Esprima] framework, parses it into an Abstract Syntax Tree (AST). Although Esprima handles a significant chunk of the work, we must still go through and parse the AST to create our bytecodes. The parsing requires an understanding of AST's and the various node types as output by Esprima. The tree is processed recursively, and each node type is handled by a corresponding function. The frontend compiler eventually outputs a binary file which can later be deserialized and loaded into the VM. 
+The frontend compiler takes the JavaScript source code and, using the [Esprima] framework, parses it into an Abstract Syntax Tree (AST). Although Esprima handles a significant chunk of the work, we still need to parse the AST in order to create the bytecodes. AST parsing requires an understanding of AST's, as well as of the various node types output by Esprima. This understanding is not required for the tutorial, but for informational purposes only, the AST is recursively processed, and each node type is handled by a corresponding function. The frontend compiler eventually outputs a binary module, which can later be deserialized and run by the VM.
 
 [Esprima]: http://esprima.org
 
-To run the front-end compiler on a JavaScript program and output a binary module, we use:
+To run the front-end compiler on a JavaScript program:
 
 `node ./compile.js <in> <out>`
 
-Where `<in>` is the name/path of our JavaScript program, and `<out>` is the name we choose for our binary module. 
+Where `<in>` is the name/path of the JavaScript program, and `<out>` is the name we'll choose for the binary module.
 
-Lets have a look at our binary format.
 
 ## Binary Format
 
-Please note that our decision to convert our b9porcelain program into a binary module was an independent design decision. It allows for cross platform compatibility, and gives us the option of packaging modules in their binary format, which is both fast to deserialize, and convenient.
+Please note that the decision to convert the JavaScript into a binary module was a design decision. It allows for cross platform compatibility, and gives users the option of packaging binary modules instead of JavaScript source programs (which must first be run through the front-end compiler). The binary modules can be quickly deserialized and run by the VM.
 
 The formal grammar for our binary format is as follows:
 
@@ -30,23 +29,31 @@ Section := SectionCode SectionBody
 SectionCode := FuncionSectionCode(uint32) | StringSectionCode(uint32)
 SectionBody := FunctionSectionBody | StringSectionBody
 FunctionSectionBody := FunctionCount(uint32) Function
-Function := sizeofName (uint32) name(char*) functionIndex(uint32) nargs(uint32) nregs(uint32) *Instruction EndSection
+Function := sizeofName (uint32) name(char*) functionIndex(uint32) nargs(uint32) nregs(uint32) *Instruction
 Instruction := ByteCode(uint8) Immediate(uint24)
 SectionCode:= StringSectionCode(uint32)
 StringSectionBody := StringCount(uint32) StringTable
-StringTable:= String
+StringTable:= *String
 String:= sizeofString(uint32) String(char*)
 ```
+
+Let's view the above information visually using the diagrams below.
+
+The first diagram depicts the two sections of the binary module: the function section and the string section.
 
 <figure class="image">
   <figcaption>Binary Module Sections</figcaption>
   <img src="./assets/images/BinModSections.png" width="100%"/>
 </figure>
 
+The second diagram depicts the function section of the binary module and the layout of the instructions.
+
 <figure class="image">
   <figcaption>Function Section</figcaption>
   <img src="./assets/images/BinModFunctions.png" width="100%"/>
 </figure>
+
+The last diagram depicts the string section of the binary module, and the layout of the strings within. Because the strings are not null-terminated, the size of each string is stored for the purpose of iteration.
 
 <figure class="image">
   <figcaption>String Section</figcaption>
@@ -54,19 +61,38 @@ String:= sizeofString(uint32) String(char*)
 </figure>
 
 
-### Binary Module Example:
+### Binary Module Example
 
 ```
 62 39 6d 6f 64 75 6c 65  01 00 00 00 01 00 00 00  04 00 00 00 66 75 6e 63
 00 00 00 00 00 00 00 00  00 00 00 00 01 00 00 0d  02 00 00 0d 00 00 00 09
 00 00 00 02 00 00 00 00  02 00 00 00 01 00 00 00  04 00 00 00 63 6f 64 65
 ```
-Lets walk through and understand what is being stored here. The first 8 bytes are the module header, and are made up of the ascii values for the letters in "b9module". The following 4 bytes, `01 00 00 00` are the 32-bit functionSectionCode, which indicates to the deserializer that the function section is to follow. The next 32-bit value, `01 00 00 00` is the functionCount, which tells the deserializer how many functions to read. Now come the functions. The next 32-bit value is `04 00 00 00`, and it indicates the size of the string to follow. As the strings in our binary module are not null terminated, we must first know their size in bytes in order to read them correctly. As per our grammar, this string is the name of the first (and in this case only) function. The ascii values of the following 4 bytes (`66 75 6e 63`) make up the word "func", which is the name of our function. After the name is the function index, which in this case is `00 00 00 00`. The next two 32-bit values are the argument and register counts. Both are `00 00 00 00`. 
 
-Now come the bytecodes. All of the bytecodes are 32-bits, but are made up of two sections, the parameter, and the bytecode. Our first bytecode is `01 00 00 0d`. The first 3 bytes is the parameter, `01 00 00`, and the last byte is the bytecode, `0d`, which corresponds with INT_PUSH_CONSTANT. For a complete listing of our bytecodes and their corresponding hexidecimal values, please see [instructions.hpp] in the codebase. There are 4 more bytecodes in the module, all 32 bits long: `02 00 00 0d` (INT_PUSH_CONSTANT 2), `00 00 00 09` (INT_ADD, which doesn't take a parameter, but pops and adds the last 2 values pushed onto the stack and pushes the result), and `00 00 00 02` (FUNCTION_RETURN, which also doesn't take a parameter). 
+The above binary module is not translated from any particular JavaScript program, but is meant to serve as the simplest possible example.
 
-[instructions.hpp]: https://github.com/b9org/b9/blob/master/b9/include/b9/instructions.hpp
+It is storing:
+- Header "b9module" `62 39 6d 6f 64 75 6c 65` - at the start of every binary module
+- Function section code `01 00 00 00` - denotes that the function section is to follow
+- Function count `01 00 00 00` - denotes the number of functions in the function section
+- Size of function name `04 00 00 00`
+- Function name "func" `66 75 6e 63`
+- Function index `00 00 00 00`
+- Number of arguments `00 00 00 00`
+- Number of registers `00 00 00 00`
+- Bytecodes:
+  - int_push_constant 1 `01 00 00 0d`
+  - int_push_constant 2 `02 00 00 0d`
+  - int_add `00 00 00 09`
+  - function_return `00 00 00 02`
+  - end_section `00 00 00 00`
+- String section code `02 00 00 00` - denotes that the string section is to follow
+- String count `01 00 00 00` - denotes the number of strings in the string section
+- Size of string `04 00 00 00`
+- String "code" `63 6f 64 65`
 
-Lastly is the END_SECTION marker, `00 00 00 00`. This marker indicates to the deserializer that it is finished reading the bytecodes of the current function. If there were more functions, it would begin again by reading the next function, starting with the function name. 
+Some important things to note:
 
-The final section in our binary module is the string section. It is indicated to the deserializer by the string section code `02 00 00 00`. The next 32-bits indicate the string count, which is `01 00 00 00`. After the deserializer reads the string count, it begins looping over the strings, which are stored (as with the function names) by a 32-bit size value, followed by the string. In our example, we can see that the first and only string in our string section will be 4 bytes long (`04 00 00 00`). The string itself is `63 6f 64 65` and represents the ascii encoding of the word "code". 
+All strings (or characters) are stored by their hexadecimal [ascii value]. The function section code is always `1` and the string section code is always `2`. The bytecodes are 32-bits wide, with the first three high-order bytes storing the immediate value (if applicable) and the low-order byte storing the bytcode.
+
+[ascii value]: https://www.asciitable.com

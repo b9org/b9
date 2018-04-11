@@ -5,10 +5,10 @@ title: Base9 Dictionary
 
 # Tutorial Dictionary
 
-Welcome to our Tutorial Dictionary! This is where you can find definitions for all sorts of terms and phrases that we use throughout the tutorial.
+Welcome to our Tutorial Dictionary! This is where you can find definitions for terms and phrases used throughout the tutorial.
 
 ### Binary Module
-A binary module is a representation of some data in binary form. In our case, it is a representation of the in memory module, which is a c++ data structure. It encodes meta data about the module and the bytecodes of each function. Visit our [Binary Module] page to learn more.  
+A binary module is a representation of some data in binary format. In our case, it is a representation of the in memory module, which is a C++ data structure. It encodes meta data about the module and the bytecodes of each function. Visit our [Binary Module] page to learn more.  
 
 [Binary Module]: ./FrontendAndBinaryMod.md#binary-format
 
@@ -19,7 +19,7 @@ A bytecode is a type of instruction that can be consumed by a virual machine. By
 The base9 deserializer is a program which takes a sequence of bytes and converts it to an in memory module which can be read and run by the VM. 
 
 ### Interpreter 
-An interpreter translates bytecodes into executable native machine code. The [base9 interpreter] is essentially a while loop surrounding a giant switch statement. Each `case` in the switch statement corresponds to a specific bytecode, and executes a corresponding c++ function to implement the functionality of that particular bytecode.
+An interpreter translates bytecodes into executable native machine code. The [base9 interpreter] is essentially a while loop surrounding a giant switch statement. Each `case` in the switch statement corresponds to a specific bytecode, and executes a corresponding C++ function to implement the functionality of that particular bytecode.
 
 [base9 interpreter]: https://github.com/b9org/b9/blob/master/b9/src/ExecutionContext.cpp
 

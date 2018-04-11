@@ -1,12 +1,17 @@
+<figure class="image">
+  <img src="./docs/assets/images/logo_sized.png" width="100%"/>
+</figure>
+
 # Welcome to base9!
 
 [![Build Status](https://api.travis-ci.org/b9org/b9.svg?branch=master)](https://travis-ci.org/b9org/b9)
 [![Coverage Status](https://coveralls.io/repos/github/b9org/b9/badge.svg?branch=master)](https://coveralls.io/github/b9org/b9?branch=master)
 
-Base9 is an educational language runtime and programming language! We’re using it to show people how to use [Eclipse OMR] to build their own language runtime with a Just in Time (JIT) Compiler! The base9 front-end language is a simple subset of JavaScript. Visit the [base9 website] for more!
+Base9 is an educational language runtime and programming language! We’re using it to show people how to use [Eclipse OMR] to build their own language runtime with a Just in Time (JIT) Compiler! The base9 front-end language is a simple subset of JavaScript. For more information, visit the [base9 website], or see a complete listing of the [base9 documentation].
 
 [Eclipse OMR]: https://github.com/eclipse/omr
 [base9 website]: https://b9org.github.io/b9/
+[base9 documentation]: https://b9org.github.io/b9/Documentation.html
 
 # Getting started
 

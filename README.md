@@ -1,11 +1,12 @@
-# Welcome to b9!
+# Welcome to base9!
 
 [![Build Status](https://api.travis-ci.org/b9org/b9.svg?branch=master)](https://travis-ci.org/b9org/b9)
 [![Coverage Status](https://coveralls.io/repos/github/b9org/b9/badge.svg?branch=master)](https://coveralls.io/github/b9org/b9?branch=master)
 
-b9 is an educational language runtime and programming language! We’re using it to show people how to use [Eclipse OMR] to build their own language runtime with a Just in Time (JIT) Compiler! The b9 language, b9porcelain, is a simple subset of JavaScript.
+Base9 is an educational language runtime and programming language! We’re using it to show people how to use [Eclipse OMR] to build their own language runtime with a Just in Time (JIT) Compiler! The base9 front-end language is a simple subset of JavaScript. Visit the [base9 website] for more!
 
 [Eclipse OMR]: https://github.com/eclipse/omr
+[base9 website]: https://b9org.github.io/b9/
 
 # Getting started
 
@@ -15,7 +16,7 @@ This page contains some basic instructions to get you started. For more detailed
 
 ### 1. Requirements
 
-To get started with b9 using the Ninja build system, you'll need the following:
+To get started with base9 using the Ninja build system, you'll need the following:
 
 * `git` 
 * `build-essential`
@@ -39,7 +40,7 @@ cd b9 \
 && cd ..
 ```
 
-### 4. Build b9
+### 4. Build base9
 
 ```sh
 mkdir build \
@@ -56,9 +57,9 @@ In the `build` directory, run:
 ./b9run/b9run ./test/hello.b9mod
 ```
 
-### 6. Test b9
+### 6. Test base9
 
-You can run the full b9 test suite with:
+You can run the full base9 test suite with:
 
 ```sh
 ninja test
@@ -66,6 +67,6 @@ ninja test
 
 ## Build your own Language Runtime
 
-If you'd like to build your own language runtime, you can follow our [Developer Journey] to see the steps we took in building b9.
+If you'd like to build your own language runtime, visit the [Build A Runtime Tutorial] on the [base9 website]!
 
-[Developer Journey]: ./docs/DeveloperJourney.md
+[Build A Runtime Tutorial]: https://b9org.github.io/b9/BuildARuntime.html

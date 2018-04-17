@@ -7,16 +7,37 @@ title: Base9 Dictionary
 
 Welcome to the Base9 Dictionary! This is where you can find definitions for terms and phrases used throughout the documentation.
 
+### Ahead-of-time Compilation
+Ahead-of-time compilation refers to translating one language representation to another before runtime.
+
+
+### Base9 Assembly
+The [base9 assembly] language is the human readable representation of both the binary and in-memory module. The [base9 disassembler] deserializes the binary module and outputs base9 assembly.
+
+[base9 disassembler]: ./Disassembler.md
+[base9 assembly]: ./B9Assembly.md
+
 ### Binary Module
 A binary module is a representation of some data in binary format. In our case, it is a representation of the in memory module, which is a C++ data structure. It encodes meta data about the module and the bytecodes of each function. Visit our [Binary Module] page to learn more.  
 
 [Binary Module]: ./FrontendAndBinaryMod.md#binary-format
 
 ### Bytecode 
-A bytecode is a type of instruction that can be consumed by a virual machine. Bytecodes are independent of a specific processor's instruction set, allowing for cross-platform portability. Bytecodes are designed to be efficiently decoded and interpreted by a computer program, and are not necessarily human readable. 
+A bytecode is a type of instruction that can be consumed by a virtual machine. Bytecodes are independent of a specific processor's instruction set, allowing for cross-platform portability. Bytecodes are designed to be efficiently decoded and interpreted by a computer program, and are not necessarily human readable. 
+
+### Code Generator
+A piece of the compiler responsible for taking some form of intermediate language representation, and converting it into native machine code to be run by the machine's hardware. 
 
 ### Deserializer
 The base9 deserializer is a program which takes a sequence of bytes and converts it to an in memory module which can be read and run by the VM. 
+
+### Git Submodule 
+A git submodule is a git repository within another git repository. It allows a developer to use project B (the submodule) from within project A. Project B is a subdirectory within project A, but is treated as a separate and independent git repository. To learn more about submodules, read the [submodules documentation] from git.
+
+[submodules documentation]: https://git-scm.com/book/en/v2/Git-Tools-Submodules
+
+### IL Generator
+A piece of the compiler that is responsible for transforming a languages bytecodes into an intermediate representation, before it is optimized and sent to the code generator.
 
 ### Intermediate Language
 An intermediate language is a compiler's intermediate representation between a high-level language and the native machine code. In the case of OMR, it occurs between the bytecodes and the native machine code, and it is tree based. Intermediate Languages are designed to be conducive for compiler optimizations.
@@ -32,16 +53,17 @@ A Just-In-Time (JIT) compiler is a runtime compilation system that compiles byte
 ### Language Runtime 
 A language runtime is a piece of software that implements a programming language. It usually contains various runtime units, such as profiling, JIT compilation, code optimization, garbage collection, and more. A popular example of a language runtime is the Java Virtual Machine (JVM). 
 
+### Native Machine Code
+Code that has been translated from a higher-level representation into machine instructions that can be run on a particular processor.
+
+### Optimizer
+A piece of the compiler responsible for taking some intermediate representation of the source code and reducing its consumption of machine's resources. 
+
 ### Primitive Function 
-A function written in C++, but callable from b9porcelain source code. When calling a primitive function, it is indistinguishable from a b9porcelain function. Our base9 primitives are stored in our [b9_primitives table], and their definitions can be found in [b9/src/primitives.cpp]. 
+A function written in C++, but callable from the JavaScript source code. When calling a primitive function, it is indistinguishable from calling a frontend JavaScript function. The base9 primitives are stored in our [b9_primitives table], and their definitions can be found in [b9/src/primitives.cpp]. 
 
 [b9_primitives table]: https://github.com/b9org/b9/blob/master/js_compiler/b9stdlib.src
 [b9/src/primitives.cpp]: https://github.com/b9org/b9/blob/master/b9/src/primitives.cpp
 
-### Git Submodule 
-A git submodule is a git repository within another git repository. It allows a developer to use project B (the submodule) from within project A. Project B is a subdirectory within project A, but is treated as a separate and independent git repository. To learn more about submodules, read the [submodules documentation] from git.
-
-[submodules documentation]: https://git-scm.com/book/en/v2/Git-Tools-Submodules
-
-### Virtual machine 
+### Virtual Machine 
 A program that takes a sequence of instructions as input and executes them. Programs given to a virtual machine are ahead-of-time compiled into bytecodes, and then interpreted. 

@@ -30,7 +30,7 @@ The disassembler employs the base9 deserializer. It takes a binary module as inp
 
 The disassembler is a useful debugging tool. It can be run with the following command:
 
-`./b9disassemble/b9disassemble <binary_module>`
+`./b9disasm/b9disasm <binary_module>`
 
 
 You can view the deserializer code in [b9/src/deserialize.cpp] and [b9/include/b9/deserialize.hpp]. 

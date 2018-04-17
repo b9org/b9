@@ -122,9 +122,9 @@ add_subdirectory(b9)
 
 add_subdirectory(b9run)
 
-add_subdirectory(b9disassemble)
+add_subdirectory(b9disasm)
 
-add_subdirectory(b9assemble)
+add_subdirectory(b9asm)
 
 add_subdirectory(om)
 

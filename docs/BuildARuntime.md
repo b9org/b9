@@ -118,14 +118,14 @@ The base9 [deserializer] at [b9/src/deserialize.cpp] is responsible for taking t
 [deserializer]: ./Dictionary.md#deserializer
 [b9/src/deserialize.cpp]: https://github.com/b9org/b9/blob/master/b9/src/deserialize.cpp
 
-The deserializer is used in base9 in two different ways. Firstly, it is used by the VM to convert a binary module to an in memory Module. Secondly, it is used by the disassembler at [b9/b9disassemble/b9disassemble.cpp]. The disassembler employs the base9 deserializer to convert a binary module into a human readable interpretation. It is primarily used as a debugging tool. Click the link below to learn more:
+The deserializer is used in base9 in two different ways. Firstly, it is used by the VM to convert a binary module to an in memory Module. Secondly, it is used by the disassembler at [b9/b9disasm/b9disasm.cpp]. The disassembler employs the base9 deserializer to convert a binary module into a human readable interpretation. It is primarily used as a debugging tool. Click the link below to learn more:
 
-[b9/b9disassemble/b9disassemble.cpp]: https://github.com/b9org/b9/blob/master/b9disassemble/b9disassemble.cpp
+[b9/b9disasm/b9disasm.cpp]: https://github.com/b9org/b9/blob/master/b9disasm/b9disasm.cpp
 [Base9 Disassembler](./Disassembler.md)
 
 Let's run the disassembler using the binary module we just generated! Navigate to the build directory and run the following command:
 
-`b9disassemble/b9disassemble ../hello.b9mod`
+`b9disasm/b9disasm ../hello.b9mod`
 
 You should now be looking at a human readable version of the Hello, World! program as represented by its bytecodes:
 

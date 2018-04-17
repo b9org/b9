@@ -13,8 +13,8 @@ Lets take a moment to get familiar with the directory structure of Base9. We'll 
 ```
 b9/
 |---b9/
-|---b9disassemble/
-|---b9assemble/
+|---b9disasm/
+|---b9asm/
 |---b9docker/
 |---b9run/
 |---cmake/
@@ -46,14 +46,14 @@ Note:
   - The VM => VirtualMachine.hpp
 
 
-### The b9assemble/ directory
+### The b9asm/ directory
 
 The b9 assembler is a work in progress. When finished, it will take our [Base9 Assembly] and convert it to a binary module. 
 
 [Base9 Assembly]: ./B9Assembly.md
 
 
-### The b9disassemble/ directory
+### The b9disasm/ directory
 
 You can read about the b9 disassembler at the [Base9 Disassembler page].
 

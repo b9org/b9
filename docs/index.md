@@ -12,7 +12,7 @@ The base9 language is a subset of JavaScript with limited functionality. Visit t
 
 [About base9]: ./AboutBase9.md
 
-For base9 set-up instructions, please visit the [set-up page]. Or, if you'd like to peruse the repository, visit our [GitHub].
+For base9 set-up instructions, please visit the [set-up page]. Or, if you'd like to peruse the source code, visit our [GitHub].
 
 [set-up page]: ./SetupBase9.md
 [GitHub]: https://github.com/b9org/b9

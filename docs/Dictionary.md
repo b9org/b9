@@ -3,9 +3,9 @@ layout: default
 title: Base9 Dictionary
 ---
 
-# Tutorial Dictionary
+# Base9 Dictionary
 
-Welcome to our Tutorial Dictionary! This is where you can find definitions for terms and phrases used throughout the tutorial.
+Welcome to the Base9 Dictionary! This is where you can find definitions for terms and phrases used throughout the documentation.
 
 ### Binary Module
 A binary module is a representation of some data in binary format. In our case, it is a representation of the in memory module, which is a C++ data structure. It encodes meta data about the module and the bytecodes of each function. Visit our [Binary Module] page to learn more.  
@@ -38,8 +38,8 @@ A function written in C++, but callable from b9porcelain source code. When calli
 [b9_primitives table]: https://github.com/b9org/b9/blob/master/js_compiler/b9stdlib.src
 [b9/src/primitives.cpp]: https://github.com/b9org/b9/blob/master/b9/src/primitives.cpp
 
-### Submodule 
-A submodule is a git repository within another git repository. It allows a developer to use project B (the submodule) from within project A. Project B is a subdirectory within project A, but is treated as a separate and independent git repository. To learn more about submodules, read the [submodules documentation] from git.
+### Git Submodule 
+A git submodule is a git repository within another git repository. It allows a developer to use project B (the submodule) from within project A. Project B is a subdirectory within project A, but is treated as a separate and independent git repository. To learn more about submodules, read the [submodules documentation] from git.
 
 [submodules documentation]: https://git-scm.com/book/en/v2/Git-Tools-Submodules
 

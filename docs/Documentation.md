@@ -9,41 +9,38 @@ Welcome to our the base9 documentation page. Here you will find an organized lis
 
 ### Setup Documentation
 
-[SetupBase9.md](./SetupBase9.md)
+[Setup Base9](./SetupBase9.md)
 
-[SetupOSX.md](./SetupOSX.md)
+[Setup on OSX](./SetupOSX.md)
 
-[SetupUbuntu.md](./SetupUbuntu.md)
+[Setup on Ubuntu](./SetupUbuntu.md)
 
 
 ### Base9 Introduction
 
-[AboutBase9.md](./AboutBase9.md)
+[About Base9](./AboutBase9.md)
 
-[DirectoryStructure.md](./DirectoryStructure.md)
+[Base9 Dictionary](./Dictionary.md)
+
+[Directory Structure](./DirectoryStructure.md)
 
 
 ### Base9 Components
 
-[FrontendAndBinaryMod.md](./FrontendAndBinaryMod.md)
+[Frontend and Binary Module Design](./FrontendAndBinaryMod.md)
 
-[Disassembler.md](./Disassembler.md)
-
-
-### Dictionary
-
-[Dictionary.md](./Dictionary.md)
+[Disassembler](./Disassembler.md)
 
 
 ### Tutorials
 
-[Tutorials.md](./Tutorials.md)
+[Available Tutorials](./Tutorials.md)
 
 
 ### Other
 
-[AssemblerSyntax.md](./AssemblerSyntax.md)
+[Assembler Syntax](./AssemblerSyntax.md)
 
-[B9Assembly.md](./B9Assembly.md)
+[B9 Assembly Language](./B9Assembly.md)
 
-[Blog.md](./Blog.md)
+[Blog](./Blog.md)

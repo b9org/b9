@@ -574,7 +574,7 @@ A reminder that the above command should be run from the `/build` directory.
 [OMR]: https://eclipse.org/omr/
 [JitBuilder]: https://developer.ibm.com/open/2016/07/19/jitbuilder-library-and-eclipse-omr-just-in-time-compilers-made-easy/
 [third_party]: https://github.com/b9org/b9/tree/master/third_party
-[git submodule]: ./Dictionary.md#submodule
+[git submodule]: ./Dictionary.md#git-submodule
 
 Let's run our Hello, World! program using the JIT:
 

@@ -9,5 +9,5 @@ theme: minima
 sass:
   sass_dir: _sass
 include: ['_pages']
-kramdown:
-  input: GFM
+markdown: kramdown
+highlighter: rouge

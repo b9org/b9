@@ -13,7 +13,13 @@ Base9 is an educational language runtime and programming language! We’re using
 [base9 website]: https://b9org.github.io/b9/
 [base9 documentation]: https://b9org.github.io/b9/Documentation.html
 
-# Getting started
+## Build your own Language Runtime
+
+If you'd like to build your own language runtime, visit the [Build A Runtime Tutorial] on the [base9 website]!
+
+[Build A Runtime Tutorial]: https://b9org.github.io/b9/BuildARuntime.html
+
+## Getting started
 
 This page contains some basic instructions to get you started. For more detailed instructions, go to:
 * [Ubuntu set-up page](./docs/SetupUbuntu.md).
@@ -69,9 +75,3 @@ You can run the full base9 test suite with:
 ```sh
 ninja test
 ```
-
-## Build your own Language Runtime
-
-If you'd like to build your own language runtime, visit the [Build A Runtime Tutorial] on the [base9 website]!
-
-[Build A Runtime Tutorial]: https://b9org.github.io/b9/BuildARuntime.html

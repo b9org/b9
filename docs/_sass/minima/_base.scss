@@ -16,6 +16,10 @@ $heading-font: 'Muli', sans-serif;
 /* Other */
 $content-width: 800px;
 
+%vertical-rhythm {
+	margin-bottom: $spacing-unit / 2;
+}
+
 *,
 *::before,
 *::after {

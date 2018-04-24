@@ -1,35 +1,20 @@
 /* top navigation bar*/
 .navbar-nav{
-	top: 0;
-	left: 0;
-	width: 100%;
-	height: 70px;
-	position: fixed; //stay fixed to top
-	overflow-x: hidden;
-	padding-top: 10px;
-	padding-bottom: 10px;
-	z-index:1; //appear on top of everything else
+	z-index: 1; //appear on top of everything else
 }
 
 .navbar{
-	top: 0;
-	left: 0;
-	height: 70px;
-	width: 100%;
-	position: fixed;
-	overflow-x: hidden;
-	padding-top: 10px;
-	padding-bottom: 10px;
-	z-index:1;
+	z-index: 1;
 }
 
 
 /* Navigation Bar list item */
 .navbar-nav > li{
-  padding-left:30px;
-  padding-right:30px;
-  margin-left:-10px;
+  	padding-left:30px;
+  	padding-right:30px;
+  	margin-left:-10px;
 	margin-right:-10px;
+	z-index: 1;
 }
 
 /* Sidenav menu for dev journey */
@@ -55,12 +40,13 @@
 	margin: 0 auto;
 }
 main {
-	padding: 0 15px;
+	padding: 0 auto;
 	max-width: $content-width;
 	margin: 0 auto;
 }
 body {
-	margin: 70px;
+	margin: 0;
+	padding-left: auto;
 	color: $main;
 	font-family: $font-style;
 	font-size: 1.1em;

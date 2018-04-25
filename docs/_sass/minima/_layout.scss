@@ -1,6 +1,7 @@
 /* top navigation bar*/
 .navbar-nav{
 	z-index: 1; //appear on top of everything else
+  background-color: $top-nav;
 }
 
 .navbar{
@@ -24,7 +25,7 @@
 	position: fixed; //stay fixed to left side
 	top: 0;
 	left: 0;
-	background-color: $b9-yellow;
+	background-color: $side-nav;
 	overflow-x: hidden; /* disable horizontal scroll */
 	padding-top: 70px; /* place sidenav contents 60px from the top */
 }

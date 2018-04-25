@@ -1,5 +1,5 @@
 <figure class="image">
-  <img src="./docs/assets/images/logo_sized.png" width="100%"/>
+  <img src="./docs/assets/images/logoREADME.png" width="100%"/>
 </figure>
 
 # Welcome to base9!

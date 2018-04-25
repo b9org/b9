@@ -1,11 +1,7 @@
 ---
-layout: default
+layout: blog
 title: Base9 Documentation
 ---
-
-# Base9 Documentation
-
-Welcome to our the base9 documentation page. Here you will find an organized listing of our documentation.
 
 ### Setup Documentation
 

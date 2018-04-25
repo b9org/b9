@@ -1,9 +1,7 @@
 ---
-layout: default
+layout: about
 title: About Base9
 ---
-
-## Base9 Overview
 
 Base9 is an educational [language runtime] and JavaScript [interpreter]. It's front-end language is a subset of JavaScript with limited functionality. It compiles into a simple set of [bytecodes] which run on a primitive interpreter. We've also plugged in [OMR], a language-agnostic runtime toolkit, which provides our runtime with a [JIT compiler]! Plugging in OMR is made easy with the use of [JitBuilder], a easy-to-use tool that allows you to programmatically describe the semantics of your language's bytecodes.
 

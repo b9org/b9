@@ -16,6 +16,13 @@ Welcome to the tutorial! If you're interested in building your own [language run
 [Just In Time (JIT) Compiler]: ./Dictionary.md#jit-compiler
 [tutorial dictionary]: ./Dictionary.md
 
+Before moving forward please familiarize yourself with the legend for our diagrams:
+
+<figure class="image">
+  <figcaption>Legend</figcaption>
+  <img src="./assets/images/legend.png" width="100%"/>
+</figure>
+
 
 ### Base9 Setup
 
@@ -30,7 +37,7 @@ Before getting started, you should [get yourself setup with base9]. We're going 
 Base9 has several major components that we'll discuss throughout the course of this tutorial. We'll provide insight about design decisions and implementation. Many of the design and implementation decisions were made based on the specific needs of the project. You may wish to deviate from these decisions along the way in order to best suit your own project.
 
 <figure class="image">
-  <img src="./assets/images/b9architecture.png" width="100%"/>
+  <img src="./assets/images/b9overview.png" width="100%"/>
 </figure>
 
 The above diagram details the two high-level components of the base9 architecture: the [ahead-of-time compilation] (AOT) and the [virtual machine] (VM) units. The AOT unit runs the frontend language through the frontend compiler (the base9 frontend language is a primitive subset of JavaScript). The frontend compiler outputs the [bytecodes] to be consumed by the VM. The VM (or runtime unit) will either execute tbe bytecodes one by one using the [interpreter], or it can employ the [JIT compiler] to produce optimized native machine code.
@@ -109,7 +116,7 @@ The above command will run the frontend compiler on `test/hello.src` and output 
 Let's explore the VM design in greater detail.
 
 <figure class="image">
-  <img src="./assets/images/VMDesign.png" width="100%"/>
+  <img src="./assets/images/vmDesign.png" width="100%"/>
 </figure>
 
 The above diagram shows the components of the VM in detail. The VM takes the binary module and uses the deserializer to convert it into an in-memory Module containing the bytecodes. After the conversion, the VM will employ either the interpreter or the JIT to run the program. The interpreter processes the bytecodes directly and one at a time. The JIT converts the bytecodes to native machine code and returns a function pointer. Once a program is JIT compiled, the bytecodes are no longer interpreted. Instead, the JIT compiled version is always executed. Currently, when we run the JIT, we employ user flags to tell the VM to JIT compile an entire program and to interpret nothing.
@@ -167,7 +174,9 @@ Stepping through the bytecodes as represented by the base9 assembly:
 
 Now that we've output some bytecodes, let's talk about their design.
 
-The base9 instruction set is stack oriented, which allows for straight-forward compilation and simple VM implementation. All instructions operate on the operand stack, which can be thought of as the VM's memory. One advantage of a stack-based instruction set over a register-based model is that stack-based instructions are smaller, with no need for a register immediate. One disadvantage is that the total number of instructions is larger.
+The base9 instruction set is stack oriented, which allows for straight-forward compilation and simple VM implementation. All instructions operate on the operand stack, which can be thought of as the VM's memory. One advantage of a stack-based instruction set over a [register-based model] is that stack-based instructions are smaller, with no need for a register immediate. One disadvantage is that the total number of instructions is larger. For more information on the difference between stack and register based virtual machines, you can [read this article on the internet].
+
+[read this article on the internet]: https://markfaction.wordpress.com/2012/07/15/stack-based-vs-register-based-virtual-machine-architecture-and-the-dalvik-vm/
 
 All of the base9 bytecodes are fixed-width. This puts constraints on what we can encode in the instructions, but it simplifies instruction decoding and jumps.
 
@@ -452,10 +461,18 @@ if (is_signed)
 
 ### The `OperandStack`
 
-The `OperandStack` class is what we have previously referred to as [the operand stack]. It's definition can be found in [b9/include/b9/OperandStack.hpp]. The `OperandStack` class contains functions for using/manipulating the operand stack, and it's fields are as follows: 
+The `OperandStack` class is what we have previously referred to as [the operand stack]. It's definition can be found in [b9/include/b9/OperandStack.hpp]. The `OperandStack` class contains functions for using/manipulating the operand stack.
 
 [the operand stack]: #the-operand-stack
 [b9/include/b9/OperandStack.hpp]: https://github.com/b9org/b9/blob/master/b9/include/b9/OperandStack.hpp
+
+Values pushed and popped from the stack must be of type `StackElement`: 
+
+```cpp
+using StackElement = Om::Value;
+```
+
+The StackElement type comes from Om, an OMR toolkit for dealing with garbage collected objects. A `StackElement` is a 64-bit value that encodes a type and a payload. The value can hold a double, a GC reference, a valid memory pointer, or a 32-bit integer.
 
 ```cpp
 StackElement *top_;
@@ -465,12 +482,6 @@ StackElement stack_[SIZE];
 The operand stack acts as the VM's memory bank, storing all of the values needed by the instructions. To see how the operand stack operates during a simple add function, see [the operand stack] section above. As you've likely noticed, base9 is using a `StackElement` type, which is defined in [b9/include/b9/OperandStack.hpp] as follows:
 
 [b9/include/b9/OperandStack.hpp]: https://github.com/b9org/b9/blob/master/b9/include/b9/OperandStack.hpp
-
-```cpp
-using StackElement = Om::Value;
-```
-
-The StackElement type comes from Om, an OMR toolkit for dealing with garbage collected objects. A `StackElement` is a 64-bit value that encodes a type and a payload. The value can hold a double, a GC reference, a valid memory pointer, or a 32-bit integer.
 
 
 ### The Interpreter Loop
@@ -645,7 +656,7 @@ Run fibonacci with the JIT:
 `time ./b9run/b9run -loop 1000 -jit -function fib test/fib.b9mod 20 > log`
 
 <figure class="image">
-  <img src="./assets/images/interpreterVsJit.png" width="100%"/>
+  <img src="./assets/images/perfConsole.png" width="100%"/>
 </figure>
 
 That's a 9x speedup, and that isn't including any of the [JIT Optimizations].
@@ -658,7 +669,7 @@ In general, compilers are vast and complex, with many layers and hidden depths. 
 
 <figure class="image">
   <figcaption>Phases of the JIT</figcaption>
-  <img src="./assets/images/bcToNativeCode.png" width="100%"/>
+  <img src="./assets/images/jitOverview.png" width="100%"/>
 </figure>
 
 The above diagram shows the transition between the language bytecodes and the native machine code. The code must undergo several phases of transformation. The bytecodes are given to the [intermediate language (IL) generator] to be transformed into the IL. The IL is then further optimized via the [optimizer]. Optimized IL is then passed to the [code generator] for it's final converstion into [native machine code]. 
@@ -918,7 +929,7 @@ JitFunction Compiler::generateCode(const std::size_t functionIndex) {
 
 The `generateCode` function takes a `functionIndex` as it's only parameter. It start's by accessing the current function using `virtualMachine_.getFunction(functionIndex)`. Recall that `getFunction()` is part of the `VirtualMachine` class, and it uses the function index to access a `FunctionDef` in the Module's function vector. We store it's return value in the function pointer `*function`. 
 
-The `rc` value is set to 0 and should remain as 0 through the `compileMethodBuilder` call. If it does not remain 0, something has gone wrong. 
+The `rc` value is the return code of the program, and will return 0 on success.
 
 The return value is simply a pointer to a uint8_t, which serves as the entry point into our Jitted function. 
 

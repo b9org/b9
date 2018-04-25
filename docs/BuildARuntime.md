@@ -3,6 +3,9 @@ layout: devJourney
 title: Build your own Language Runtime
 ---
 
+* Table of Contents
+{:toc}
+
 ## Intro
 
 Welcome to the tutorial! If you're interested in building your own [language runtime], you've come to the right place. Base9 is a miniature language runtime, and thanks to [OMR] and [JitBuilder], it even has a [Just In Time (JIT) Compiler]! The goal of this tutorial is not to teach you how to build base9, but rather to pack your arsenal full of tools to build your own language runtime. We don't want to bog down the tutorial with information you don't need, so we'll keep things straightfoward, providing useful links/definitions along the way for you to peruse at your own convenience. If you'd like to get familiar with some of the vocabulary you'll encounter, feel free to visit the [tutorial dictionary].
@@ -27,32 +30,28 @@ Before getting started, you should [get yourself setup with base9]. We're going 
 Base9 has several major components that we'll discuss throughout the course of this tutorial. We'll provide insight about design decisions and implementation. Many of the design and implementation decisions were made based on the specific needs of the project. You may wish to deviate from these decisions along the way in order to best suit your own project.
 
 <figure class="image">
-  <figcaption>Base9 Overview</figcaption>
-  <img src="./assets/images/b9overview.png" width="100%"/>
+  <img src="./assets/images/b9architecture.png" width="100%"/>
 </figure>
 
-The above diagram details the two high-level components of the base9 architecture: the [ahead-of-time compilation] (AOT) and the [virtual machine] (VM) units. The AOT unit runs the frontend language through the frontend compiler (the base9 frontend language is a primitive subset of JavaScript). The frontend compiler outputs a binary module which is then passed to the deserializer. Here, the deserialized data is used to make a C++ data structure. That data structure will henceforth be referred to as the in-memory Module. It is named `Module` in the source code.
+The above diagram details the two high-level components of the base9 architecture: the [ahead-of-time compilation] (AOT) and the [virtual machine] (VM) units. The AOT unit runs the frontend language through the frontend compiler (the base9 frontend language is a primitive subset of JavaScript). The frontend compiler outputs the [bytecodes] to be consumed by the VM. The VM (or runtime unit) will either execute tbe bytecodes one by one using the [interpreter], or it can employ the [JIT compiler] to produce optimized native machine code.
 
 [ahead-of-time compilation]: ./Dictionary.md#ahead-of-time-compilation
 [virtual machine]: ./Dictionary.md#virtual-machine
-
-To summarize, the AOT unit is comprised of the frontend compiler, while the VM unit can be further broken down into the [interpreter] and the [JIT]. The in-memory Module is passed to the VM, which runs the [bytecodes] of the program.
-
-[interpreter]: ./Dictionary.md#interpreter
-[JIT]: ./Dictionary.md#jit-compiler
 [bytecodes]: ./Dictionary.md#bytecode
+[interpreter]: ./Dictionary.md#interpreter
+[JIT compiler]: ./Dictionary.md#jit-compiler
 
 ```
 
-```
 
-<center> *** </center>
-
-```
 
 ```
 
 ## Base9 Frontend
+
+<figure class="image">
+  <img src="./assets/images/b9frontend.png" width="100%"/>
+</figure>
 
 ### Frontend Language
 
@@ -97,18 +96,19 @@ The above command will run the frontend compiler on `test/hello.src` and output 
 
 ```
 
-```
 
-<center> *** </center>
-
-```
 
 ```
 
 ## Base9 Backend
 
 <figure class="image">
-  <figcaption>VM Design</figcaption>
+  <img src="./assets/images/b9backend.png" width="100%"/>
+</figure>
+
+Let's explore the VM design in greater detail.
+
+<figure class="image">
   <img src="./assets/images/VMDesign.png" width="100%"/>
 </figure>
 
@@ -264,11 +264,7 @@ Hopefully the pseudocode has convinced you that the interpreter is actually supe
 
 ```
 
-```
 
-<center> *** </center>
-
-```
 
 ```
 
@@ -563,11 +559,7 @@ To conclude this section, let's briefly walk over the components we've covered t
 
 ```
 
-```
 
-<center> *** </center>
-
-```
 
 ```
 
@@ -598,11 +590,7 @@ The above diagram depicts the base9 components in yellow. These are the componen
 
 ```
 
-```
 
-<center> *** </center>
-
-```
 
 ```
 

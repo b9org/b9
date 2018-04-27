@@ -122,59 +122,9 @@ Let's explore the VM design in greater detail.
 The above diagram shows the components of the VM in detail. The VM takes the binary module and uses the deserializer to convert it into an in-memory Module containing the bytecodes. After the conversion, the VM will employ either the interpreter or the JIT to run the program. The interpreter processes the bytecodes directly and one at a time. The JIT converts the bytecodes to native machine code and returns a function pointer. Once a program is JIT compiled, the bytecodes are no longer interpreted. Instead, the JIT compiled version is always executed. Currently, when we run the JIT, we employ user flags to tell the VM to JIT compile an entire program and to interpret nothing.
 
 
-### The Deserializer
-
-The base9 [deserializer] at [b9/src/deserialize.cpp] is responsible for taking the binary module and converting it to the in-memory Module. The deserializer is used in base9 in two different ways. Firstly, it's used by the VM to convert a binary module to an in-memory Module. Secondly, it is used by the disassembler at [b9/b9disasm/b9disasm.cpp]. The disassembler employs the deserializer to convert a binary module into an assembly-like interpretation, which we're calling [base9 assembly]. It's primarily used for debugging. Click the link below to learn more:
-
-[deserializer]: ./Dictionary.md#deserializer
-[b9/src/deserialize.cpp]: https://github.com/b9org/b9/blob/master/b9/src/deserialize.cpp
-[b9/b9disasm/b9disasm.cpp]: https://github.com/b9org/b9/blob/master/b9disasm/b9disasm.cpp
-[base9 assembly]: ./B9Assembly.md
-
-[Base9 Disassembler](./Disassembler.md)
-
-Let's run the disassembler using the binary module we just generated! Navigate to the build directory and run the following command:
-
-`b9disasm/b9disasm ../hello.b9mod`
-
-You should now be looking at a human readable version of the Hello, World! program as represented by [base9 assembly]. You'll notice that the first three functions (`b9PrintString`, `b9PrintNumber`, and `b9PrintStack`) are the b9stdlib functions that are included in each compiled program. They can be ignored. The important part is the `b9main` function. Let's have a look at the transition between the JavaScript and the base9 assembly:
-
-[base9 assembly]: ./Dictionary.md#base9-assembly
-
-```js
-function b9main() {
-  b9PrintString("Hello World!");
-}
-```
-
-<figure class="image">
-  <img src="./assets/images/downArrow.png" width="100%"/>
-</figure>
-
-```
-(function "b9main" 0 0
-  0  (str_push_constant 0)
-  1  (function_call 0)
-  2  (drop)
-  3  (int_push_constant 0)
-  4  (function_return)
-  5  (end_section))
-```
-
-Stepping through the bytecodes as represented by the base9 assembly:
-- `str_push_constant` pushes the string "Hello, World!" onto the operand stack
-- `function_call` does the call to `b9PrintString`
-- `drop` drops the top value from the operand stack (which was holding the unused return value of `b9PrintString`)
-- `int_push_constant` pushes 0 onto the operand stack as the return value of `b9main`
-- `function_return` does the actual return
-- `end_section` is the end-of-bytecodes marker, a safety feature should the interpreter continue running after the return
-
-
 ### Base9 Bytecodes
 
-Now that we've output some bytecodes, let's talk about their design.
-
-The base9 instruction set is stack oriented, which allows for straight-forward compilation and simple VM implementation. All instructions operate on the operand stack, which can be thought of as the VM's memory. One advantage of a stack-based instruction set over a [register-based model] is that stack-based instructions are smaller, with no need for a register immediate. One disadvantage is that the total number of instructions is larger. For more information on the difference between stack and register based virtual machines, you can [read this article on the internet].
+The base9 instruction set is stack oriented, which allows for straight-forward compilation and simple VM implementation. All instructions operate on the operand stack, which can be thought of as the VM's memory. One advantage of a stack-based instruction set over a register-based model is that stack-based instructions are smaller, with no need for a register immediate. One disadvantage is that the total number of instructions is larger. For more information on the difference between stack and register based virtual machines, you can [read this article on the internet].
 
 [read this article on the internet]: https://markfaction.wordpress.com/2012/07/15/stack-based-vs-register-based-virtual-machine-architecture-and-the-dalvik-vm/
 
@@ -223,6 +173,55 @@ Pop and return the result from the operand stack:
   <img src="./assets/images/bcStack4.png" width="100%"/>
 </figure>
 
+
+### The Deserializer
+
+The base9 [deserializer] at [b9/src/deserialize.cpp] is responsible for taking the binary module and converting it to the in-memory Module. The deserializer is used in base9 in two different ways. Firstly, it's used by the VM to convert a binary module to an in-memory Module. Secondly, it is used by the disassembler at [b9/b9disasm/b9disasm.cpp]. The disassembler employs the deserializer to convert a binary module into an assembly-like interpretation, which we're calling [base9 assembly]. It's primarily used for debugging. Click the link below to learn more:
+
+[deserializer]: ./Dictionary.md#deserializer
+[b9/src/deserialize.cpp]: https://github.com/b9org/b9/blob/master/b9/src/deserialize.cpp
+[b9/b9disasm/b9disasm.cpp]: https://github.com/b9org/b9/blob/master/b9disasm/b9disasm.cpp
+[base9 assembly]: ./B9Assembly.md
+
+[Base9 Disassembler](./Disassembler.md)
+
+Let's run the disassembler using the binary module we generated in the [Frontend Compiler section]! From the `build/` directory, run the following command:
+
+[Frontend Compiler section]: #frontend-compiler
+
+`b9disasm/b9disasm ../hello.b9mod`
+
+You should now be looking at a human readable version of the Hello, World! program as represented by [base9 assembly]. You'll notice that the first three functions (`b9PrintString`, `b9PrintNumber`, and `b9PrintStack`) are the b9stdlib functions that are included in each compiled program. They can be ignored. The important part is the `b9main` function. Let's have a look at the transition between the JavaScript and the base9 assembly:
+
+[base9 assembly]: ./Dictionary.md#base9-assembly
+
+```js
+function b9main() {
+  b9PrintString("Hello World!");
+}
+```
+
+<figure class="image">
+  <img src="./assets/images/downArrow.png" width="100%"/>
+</figure>
+
+```
+(function "b9main" 0 0
+  0  (str_push_constant 0)
+  1  (function_call 0)
+  2  (drop)
+  3  (int_push_constant 0)
+  4  (function_return)
+  5  (end_section))
+```
+
+Stepping through the bytecodes as represented by the base9 assembly:
+- `str_push_constant` pushes the string "Hello, World!" onto the operand stack
+- `function_call` does the call to `b9PrintString`
+- `drop` drops the top value from the operand stack (which was holding the unused return value of `b9PrintString`)
+- `int_push_constant` pushes 0 onto the operand stack as the return value of `b9main`
+- `function_return` does the actual return
+- `end_section` is the end-of-bytecodes marker, a safety feature should the interpreter continue running after the return
 
 
 ### The Virtual Machine
@@ -330,7 +329,6 @@ Note the `Config` struct in `RunConfig`:
 
 ```cpp
 struct Config {
-  std::size_t maxInlineDepth = 0;  //< The JIT's max inline depth
   bool jit = false;                //< Enable the JIT
   bool directCall = false;         //< Enable direct JIT to JIT calls
   bool passParam = false;          //< Pass arguments in CPU registers
@@ -633,15 +631,14 @@ Jit Options:
 Run Options:
   -function <f>: Run the function <f> (default: b9main)
   -loop <n>:     Run the program <n> times (default: 1)
-  -inline <n>:   Set the jit's max inline depth (default: 0)
   -debug:        Enable debug code
   -verbose:      Run with verbose printing
   -help:         Print this help message
 ```
 
-As you can see, there's a "Jit Options" section. Here we have a `-jit` option, as well as `-directcall`, `-passparam`, and `-lazyvmstate`. The latter three options are JIT optimizations that we'll explore in the [JIT Features] section. For now, the `-jit` option is all we need. Let's run the JIT with our Hello, World! binary module.
+As you can see, there's a "Jit Options" section. Here we have a `-jit` option, as well as `-directcall`, `-passparam`, and `-lazyvmstate`. The latter three options are [advanced JIT features] that we'll explore later. For now, the `-jit` option is all we need. Let's run the JIT with our Hello, World! binary module.
 
-[JIT Features]: #jit-features
+[advanced JIT Features]: #jit-features
 
 `./b9run/b9run -jit ../hello.b9mod`
 
@@ -659,16 +656,15 @@ Run fibonacci with the JIT:
   <img src="./assets/images/perfConsole.png" width="100%"/>
 </figure>
 
-That's a 9x speedup, and that isn't including any of the [JIT Optimizations].
+That's a 9x speedup, and that isn't including any of the [advanced JIT features].
 
-[JIT Optimizations]: #jit-features
+[advanced JIT features]: #advanced-jit-features
 
 ### JIT Design
 
 In general, compilers are vast and complex, with many layers and hidden depths. It can take years to become well versed in compiler technology, which discourages many developers from doing projects with them. That's why we built base9. We want to share the OMR technology with language developers and show them how adding a JIT compiler to a runtime can be easy! Let's start by taking a quick look at the JIT Design.
 
 <figure class="image">
-  <figcaption>Phases of the JIT</figcaption>
   <img src="./assets/images/jitOverview.png" width="100%"/>
 </figure>
 
@@ -718,7 +714,6 @@ VirtualMachine &virtualMachine_;
 const GlobalTypes &globalTypes_;
 const Config &cfg_;
 const std::size_t functionIndex_;
-int32_t maxInlineDepth_;
 int32_t firstArgumentIndex = 0;
 ```
 
@@ -728,9 +723,11 @@ The `MethodBuilder` constructor takes the `VirtualMachine` and `functionIndex_` 
 [the `Module`]: #the-in-memory-module
 [`main` function]: #the-main-function
 
-Base9 uses a single array, `argsAndTempNames`, to store the arguments and temporaries of both the outer and inlined functions. The `firstArgumentIndex` variable is used to track and access from this array. The `maxInlineDepth_` variable is set to 0 by default in the `Config` struct. It can be set using the `-inline` command line option.
+Base9 uses a single array, `argsAndTempNames`, to store the arguments and temporaries of both the outer and inlined functions. The `firstArgumentIndex` variable is used to track and access from this array.
 
-The final field to examine in `MethodBuilder` is `globalTypes_`. The `GlobalTypes` class uses `TR::TypeDictionary` to define the supported types. See [b9/src/Compiler.cpp] for the `GlobalTypes` class, as shown below:
+The final field to examine in `MethodBuilder` is `globalTypes_`. The `GlobalTypes` class uses `TR::TypeDictionary` to define the supported types. `TR::TypeDictionary` matches names of types to type data. JitBuilder expressions are typed, which means that any kind of operation is working with types. JitBuilder comes with a predefined set of basic types, corresponding to the fundamental types in C/C++. For example, JitBuilder provdes integer types of varying widths, doubles, and addresses. Jitbuilder allows us to define new types, derived from these builtins. For example, these facilities allow us to define pointer or struct types. 
+
+See [b9/src/Compiler.cpp] for the `GlobalTypes` class, as shown below:
 
 [b9/src/Compiler.cpp]: https://github.com/b9org/b9/blob/master/b9/include/b9/compiler/GlobalTypes.hpp
 
@@ -765,7 +762,15 @@ GlobalTypes::GlobalTypes(TR::TypeDictionary &td) {
 }
 ```
 
-Now that we've covered the `MethodBuilder` constructor, lets take a look in [b9/src/MethodBuilder.cpp]. Scroll down to the `generateILForBytecode` function: 
+`GlobalTypes` defines the various types we will be using in the base9 compiler. To start, we define a couple of common pointer-to-integer types, as well as a `StackElement` and `StackElementPtr` types. These types correspond to the types we've been using in C++. The last type we define, "b9::OperandStack", recreates the type information for the [OperandStack class], in the type dictionary. This gives JitBuilder expressions the ability to access fields inside the OperandStack. To create this struct type, we have to define the type and offset of each field.
+
+[OperandStack class]: #the-operandstack
+
+We've covered the `MethodBuilder` constructor, now we'll introduce `BytecodeBuilder`. Each `BytecodeBuilder` corresponds to one bytecode in the method. Each bytecode has an index associated with it, and from the index you can figure out the instruction, which bytecodes come next, which bytecodes come before it. Essentially, you can understand its position in the method.  
+
+TODO RWY: What is a bytecode builder
+
+Lets take a look in [b9/src/MethodBuilder.cpp]. Scroll down to the `generateILForBytecode` function: 
 
 [b9/src/MethodBuilder.cpp]: https://github.com/b9org/b9/blob/master/b9/src/MethodBuilder.cpp
 
@@ -874,7 +879,7 @@ for (std::size_t index = GetNextBytecodeFromWorklist(); index != -1;
 
 ### The `Compiler` class
 
-Let's start by taking a look at [b9/src/Compiler.hpp], where we define our `Compiler` class: 
+The `Compiler` class the piece of the runtime that glues everything together. Let's take a look at [b9/src/Compiler.hpp], where we define the class: 
 
 [b9/src/Compiler.hpp]: https://github.com/b9org/b9/blob/master/b9/include/b9/compiler/Compiler.hpp
 
@@ -929,16 +934,16 @@ JitFunction Compiler::generateCode(const std::size_t functionIndex) {
 
 The `generateCode` function takes a `functionIndex` as it's only parameter. It start's by accessing the current function using `virtualMachine_.getFunction(functionIndex)`. Recall that `getFunction()` is part of the `VirtualMachine` class, and it uses the function index to access a `FunctionDef` in the Module's function vector. We store it's return value in the function pointer `*function`. 
 
-The `rc` value is the return code of the program, and will return 0 on success.
+The `rc` value is the return code of `compilerMethodBuilder`, and will return 0 on success.
 
-The return value is simply a pointer to a uint8_t, which serves as the entry point into our Jitted function. 
+The return value is simply a pointer to our newly Jitted function. 
 
 `generateCode` is currently only called by the VM function `generateAllCode`,  because thus far we've only implemented the ability to JIT compile either everything or nothing.
 
 
-### JIT Features
+### Advanced JIT Features
 
-Currently, we've implemented 3 configurable JIT optimizations. Direct call, Pass Param, and Lazy VM State. 
+Currently, we've implemented 3 configurable advanced JIT features. Direct call, Pass Param, and Lazy VM State. 
 
 Direct call allows us to check whether or not the function we are calling has been JIT compiled, and then jump directly to the JITed function, bypassing the interpreter.
 
@@ -946,18 +951,21 @@ Pass Param allows JIT compiled methods calling other JIT compiled methods to pas
 
 Lazy VM State simulates the interpreter stack while running in a compiled method and restores the interpreter stack when returning into the interpreter. 
 
-Because of our current all-or-nothing `-jit` option, if one method is JIT compiled, they all are, and using the above optimizations will improve performance significantly. Let's see for ourselves! Run the following commands and note the speedup:
+Because of our current all-or-nothing `-jit` option, if one method is JIT compiled, they all are, and using the above features will improve performance significantly. Let's see for ourselves! Run the following commands and note the speedup:
 
 ```
-time ./b9run/b9run -jit -directcall -loop 1000 -function fib test/fib.b9mod 20 > log
-```
-
-```
-time ./b9run/b9run -jit -directcall -passparam -loop 1000 -function fib test/fib.b9mod 20 > log
+time ./b9run/b9run -jit -directcall -loop 1000  -function fib 
+  test/fib.b9mod 20 > log
 ```
 
 ```
-time ./b9run/b9run -jit -directcall -passparam -lazyvmstate -loop 1000 -function fib test/fib.b9mod 20 > log
+time ./b9run/b9run -jit -directcall -passparam -loop 1000 -function fib 
+  test/fib.b9mod 20 > log
+```
+
+```
+time ./b9run/b9run -jit -directcall -passparam -lazyvmstate -loop 1000 -function fib 
+  test/fib.b9mod 20 > log
 ```
 
 What kind of performance increase did you observe? 

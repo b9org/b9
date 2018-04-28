@@ -1,20 +1,16 @@
 ---
-layout: blog
+layout: page
 title: Base9 Documentation
 ---
 
 ### Setup Documentation
 
-[Setup Base9](./SetupBase9.md)
-
-[Setup on OSX](./SetupOSX.md)
-
-[Setup on Ubuntu](./SetupUbuntu.md)
+[Setup Base9](../setup/index.md)
 
 
 ### Base9 Introduction
 
-[About Base9](./AboutBase9.md)
+[About Base9](../about.md)
 
 [Base9 Dictionary](./Dictionary.md)
 
@@ -28,15 +24,8 @@ title: Base9 Documentation
 [Disassembler](./Disassembler.md)
 
 
-### Tutorials
-
-[Available Tutorials](./Tutorials.md)
-
-
 ### Other
 
 [Assembler Syntax](./AssemblerSyntax.md)
 
 [B9 Assembly Language](./B9Assembly.md)
-
-[Blog](./Blog.md)

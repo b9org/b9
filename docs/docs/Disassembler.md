@@ -1,6 +1,6 @@
 ---
-layout: default
 title: Base9 Disassembler
+layout: page
 ---
 
 ## The Base9 Disassembler

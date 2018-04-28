@@ -1,17 +1,18 @@
 ---
-layout: default
+layout: page
 title: Base9 Setup
+section: setup
 ---
 
 ## Getting Set-up 
 
 #### Set-up on Ubuntu:
 
-[Ubuntu Set-up Instructions](./SetupUbuntu.md)
+[Ubuntu Set-up Instructions](./ubuntu.md)
 
 #### Set-up on OSX:
 
-[OSX Set-up Instructions](./SetupOSX.md)
+[OSX Set-up Instructions](./osx.md)
 
 #### Clone the repository and get submodules
 ```

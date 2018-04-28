@@ -11,21 +11,7 @@ $link-clicked: #8c8c8c;
 $light: #e7edf4;
 $header:  #ffffff;
 
-/* Website Fonts */
-$font-style: 'Open Sans', sans-serif;
-$heading-font: 'Muli', sans-serif;
-
-/* Other */
-$content-width: 800px;
 
 %vertical-rhythm {
 	margin-bottom: $spacing-unit / 2;
-}
-
-*,
-*::before,
-*::after {
-	-webkit-box-sizing: border-box;
-	-moz-box-sizing: border-box;
-	box-sizing: border-box;
 }

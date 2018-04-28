@@ -1,63 +1,87 @@
 ---
 layout: devJourney
 title: Build your own Language Runtime
+section: build-a-runtime
+toc:
+  - title: Introduction
+    ref: Build your own Language Runtime
+    subsections:
+      - title: Setup
+      - title: Overview
+  - title: Frontend
+    subsections:
+      - title: Frontend Language
+      - title: Frontend Compiler
+  - title: Backend
+    subsections:
+      - title: Bytecodes
+      - title: The Operand Stack
+      - title: The Deserializer
+      - title: The Virtual Machine
+      - title: The Interpreter
+  - title: Implementation
+    subsections:
+      - title: The main Function
+      - title: The run Function
+      - title: The Loaded Module
+      - title: The Interpreter Loop
+      - title: Implementation Summary
+  - title: OMR and JitBuilder
+    subsections:
+      - title: OMR
+      - title: JitBuilder
+  - title: Integrate the Jit Compiler
+    subsections:
+      - title: The JIT compiler
+      - title: Plugging in the JIT
+      - title: JIT Features
 ---
-
-* Table of Contents
-{:toc}
-
-## Intro
 
 Welcome to the tutorial! If you're interested in building your own [language runtime], you've come to the right place. Base9 is a miniature language runtime, and thanks to [OMR] and [JitBuilder], it even has a [Just In Time (JIT) Compiler]! The goal of this tutorial is not to teach you how to build base9, but rather to pack your arsenal full of tools to build your own language runtime. We don't want to bog down the tutorial with information you don't need, so we'll keep things straightfoward, providing useful links/definitions along the way for you to peruse at your own convenience. If you'd like to get familiar with some of the vocabulary you'll encounter, feel free to visit the [tutorial dictionary].
 
-[language runtime]: ./Dictionary.md#language-runtime
+[language runtime]: ../docs/Dictionary.md#language-runtime
 [OMR]: https://www.eclipse.org/omr/
 [JitBuilder]: https://developer.ibm.com/open/2016/07/19/jitbuilder-library-and-eclipse-omr-just-in-time-compilers-made-easy/ 
-[Just In Time (JIT) Compiler]: ./Dictionary.md#jit-compiler
-[tutorial dictionary]: ./Dictionary.md
+[Just In Time (JIT) Compiler]: ../docs/Dictionary.md.md#jit-compiler
+[tutorial dictionary]: ../docs/Dictionary.md
 
 Before moving forward please familiarize yourself with the legend for our diagrams:
 
 <figure class="image">
   <figcaption>Legend</figcaption>
-  <img src="./assets/images/legend.png" width="100%"/>
+  <img src="{{"/assets/images/legend.png" | relative_url }}" width="100%"/>
 </figure>
 
 
-### Base9 Setup
+### Setup
 
 Before getting started, you should [get yourself setup with base9]. We're going to use it throughout the tutorial to explore and learn about language runtime concepts. Don't forget to read [about base9] before getting started.
 
-[get yourself setup with base9]: ./SetupBase9.md
-[about base9]: ./AboutBase9.md
+[get yourself setup with base9]: ../setup/index.md
+[about base9]: ../about.md
 
 
-### Base9 Overview
+### Overview
 
 Base9 has several major components that we'll discuss throughout the course of this tutorial. We'll provide insight about design decisions and implementation. Many of the design and implementation decisions were made based on the specific needs of the project. You may wish to deviate from these decisions along the way in order to best suit your own project.
 
 <figure class="image">
-  <img src="./assets/images/b9overview.png" width="100%"/>
+  <img src="{{"/assets/images/b9overview.png"  | relative_url }}" width="100%"/>
 </figure>
 
 The above diagram details the two high-level components of the base9 architecture: the [ahead-of-time compilation] (AOT) and the [virtual machine] (VM) units. The AOT unit runs the frontend language through the frontend compiler (the base9 frontend language is a primitive subset of JavaScript). The frontend compiler outputs the [bytecodes] to be consumed by the VM. The VM (or runtime unit) will either execute tbe bytecodes one by one using the [interpreter], or it can employ the [JIT compiler] to produce optimized native machine code.
 
-[ahead-of-time compilation]: ./Dictionary.md#ahead-of-time-compilation
-[virtual machine]: ./Dictionary.md#virtual-machine
-[bytecodes]: ./Dictionary.md#bytecode
-[interpreter]: ./Dictionary.md#interpreter
-[JIT compiler]: ./Dictionary.md#jit-compiler
-
-```
+[ahead-of-time compilation]: ../docs/Dictionary.md#ahead-of-time-compilation
+[virtual machine]: ../docs/Dictionary.md#virtual-machine
+[bytecodes]: ../docs/Dictionary.md#bytecode
+[interpreter]: ../docs/Dictionary.md#interpreter
+[JIT compiler]: ../docs/Dictionary.md#jit-compiler
 
 
-
-```
-
-## Base9 Frontend
+## Frontend
 
 <figure class="image">
-  <img src="./assets/images/b9frontend.png" width="100%"/>
+  <img src="{{"/assets/images/b9frontend.png" | relative_url }}" width="100%"/>
 </figure>
 
 ### Frontend Language
@@ -73,7 +97,7 @@ function b9main() {
 Above is a classic program that we all know and love, Hello, World! The source code can be found in [test/hello.src]. The `b9main` function is always the entry point to a program, like `int main` in C. `b9PrintString` is a method from a tiny library of functions that will be compiled with every program. The library is called b9stdlib and can be found in [b9/js_compiler/b9stdlib.src]. The functions in b9stdlib all call base9 [primitive functions]. In the Hello, World! program, `b9main` uses `b9PrintString` from b9stdlib to write text to console.
 
 [test/hello.src]: https://github.com/b9org/b9/blob/master/test/hello.src
-[primitive functions]: ./Dictionary.md#primitive-function
+[primitive functions]: ../docs/Dictionary.md.md#primitive-function
 [b9/js_compiler/b9stdlib.src]: https://github.com/b9org/b9/blob/master/js_compiler/b9stdlib.src
 
 
@@ -85,11 +109,11 @@ The frontend compiler is in [js_compiler/compiler.js]. It takes the source code 
 [frontend compiler]: https://github.com/b9org/b9/blob/master/js_compiler/compile.js
 [Esprima]: http://esprima.org
 [abstract syntax tree]: https://en.wikipedia.org/wiki/Abstract_syntax_tree
-[binary module]: ./Dictionary.md#binary-module
+[binary module]: ../docs/Dictionary.md.md#binary-module
 
 For a brief overview of the frontend compiler, as well as a more in depth look at the binary module, visit the link below:
 
-[Frontend Compiler and Binary Format](./FrontendAndBinaryMod.md)
+[Frontend Compiler and Binary Format](/docs/FrontendAndBinaryMod.md)
 
 Let’s convert the Hello, World! program to its binary format by running it through the frontend compiler. Hello, World! is in [b9/test/hello.src].
 
@@ -101,28 +125,22 @@ From the root directory, run:
 
 The above command will run the frontend compiler on `test/hello.src` and output a binary module with the name `hello.b9mod`. If you run the above command, you'll see `hello.b9mod` in the base9 root directory. The `.b9mod` files are in raw hexadecimal format, and are legible using a hex editor like `dhex`.
 
-```
-
-
-
-```
-
-## Base9 Backend
+## Backend
 
 <figure class="image">
-  <img src="./assets/images/b9backend.png" width="100%"/>
+  <img src="{{"/assets/images/b9backend.png" | relative_url }}" width="100%"/>
 </figure>
 
 Let's explore the VM design in greater detail.
 
 <figure class="image">
-  <img src="./assets/images/vmDesign.png" width="100%"/>
+  <img src="{{"/assets/images/vmDesign.png" | relative_url }}" width="100%"/>
 </figure>
 
 The above diagram shows the components of the VM in detail. The VM takes the binary module and uses the deserializer to convert it into an in-memory Module containing the bytecodes. After the conversion, the VM will employ either the interpreter or the JIT to run the program. The interpreter processes the bytecodes directly and one at a time. The JIT converts the bytecodes to native machine code and returns a function pointer. Once a program is JIT compiled, the bytecodes are no longer interpreted. Instead, the JIT compiled version is always executed. Currently, when we run the JIT, we employ user flags to tell the VM to JIT compile an entire program and to interpret nothing.
 
 
-### Base9 Bytecodes
+### Bytecodes
 
 The base9 instruction set is stack oriented, which allows for straight-forward compilation and simple VM implementation. All instructions operate on the operand stack, which can be thought of as the VM's memory. One advantage of a stack-based instruction set over a register-based model is that stack-based instructions are smaller, with no need for a register immediate. One disadvantage is that the total number of instructions is larger. For more information on the difference between stack and register based virtual machines, you can [read this article on the internet].
 
@@ -141,7 +159,7 @@ All base9 bytecodes are defined in [b9/include/b9/instructions.hpp].
 
 As mentioned, the base9 bytecodes are stack oriented. Let's take a look at what happens with the operand stack during a simple addition function:
 
-```javascript
+```js
 function simple_add() {
   return 5 + 6;
 } 
@@ -155,22 +173,22 @@ The following diagrams display the bytecodes generated from the "simple_add()" f
 
 Push 5 onto the operand stack:
 <figure class="image">
-  <img src="./assets/images/bcStack1.png" width="100%"/>
+  <img src="{{"/assets/images/bcStack1.png" | relative_url }}" width="100%"/>
 </figure>
 
 Push 6 onto the operand stack:
 <figure class="image">
-  <img src="./assets/images/bcStack2.png" width="100%"/>
+  <img src="{{"/assets/images/bcStack2.png" | relative_url }}" width="100%"/>
 </figure>
 
 Pop 5 and 6 off that stack, add them, push the result to the operand stack:
 <figure class="image">
-  <img src="./assets/images/bcStack3.png" width="100%"/>
+  <img src="{{"/assets/images/bcStack3.png" | relative_url }}" width="100%"/>
 </figure>
 
 Pop and return the result from the operand stack:
 <figure class="image">
-  <img src="./assets/images/bcStack4.png" width="100%"/>
+  <img src="{{"/assets/images/bcStack4.png" | relative_url }}" width="100%"/>
 </figure>
 
 
@@ -178,10 +196,10 @@ Pop and return the result from the operand stack:
 
 The base9 [deserializer] at [b9/src/deserialize.cpp] is responsible for taking the binary module and converting it to the in-memory Module. The deserializer is used in base9 in two different ways. Firstly, it's used by the VM to convert a binary module to an in-memory Module. Secondly, it is used by the disassembler at [b9/b9disasm/b9disasm.cpp]. The disassembler employs the deserializer to convert a binary module into an assembly-like interpretation, which we're calling [base9 assembly]. It's primarily used for debugging. Click the link below to learn more:
 
-[deserializer]: ./Dictionary.md#deserializer
+[deserializer]: ../docs/Dictionary.md.md#deserializer
 [b9/src/deserialize.cpp]: https://github.com/b9org/b9/blob/master/b9/src/deserialize.cpp
 [b9/b9disasm/b9disasm.cpp]: https://github.com/b9org/b9/blob/master/b9disasm/b9disasm.cpp
-[base9 assembly]: ./B9Assembly.md
+[base9 assembly]: ../docs/B9Assembly.md
 
 [Base9 Disassembler](./Disassembler.md)
 
@@ -193,7 +211,7 @@ Let's run the disassembler using the binary module we generated in the [Frontend
 
 You should now be looking at a human readable version of the Hello, World! program as represented by [base9 assembly]. You'll notice that the first three functions (`b9PrintString`, `b9PrintNumber`, and `b9PrintStack`) are the b9stdlib functions that are included in each compiled program. They can be ignored. The important part is the `b9main` function. Let's have a look at the transition between the JavaScript and the base9 assembly:
 
-[base9 assembly]: ./Dictionary.md#base9-assembly
+[base9 assembly]: ../docs/Dictionary.md.md#base9-assembly
 
 ```js
 function b9main() {
@@ -202,7 +220,7 @@ function b9main() {
 ```
 
 <figure class="image">
-  <img src="./assets/images/downArrow.png" width="100%"/>
+  <img src="{{"/assets/images/downArrow.png" | relative_url }}" width="100%"/>
 </figure>
 
 ```
@@ -245,7 +263,7 @@ The `=> (integer 0)` is the return code of the program.
 
 The interpreter's job is to take a sequence of bytecodes and match each of them with a corresponding C++ function. This relationship is one-to-one. Earlier, when we ran our Hello, World! program, it ran by default on the interpreter. The VM will always run the interpreter by default. The base9 interpreter is very simple, consisting of a while-loop and switch statement to iterate a sequence of bytecodes. Let's take a look at some pseudocode for the interpreter:
 
-```
+```c++
 interpreter (function) {
   for all bytecodes in the function {
     switch(bytecode) {
@@ -270,15 +288,10 @@ interpreter (function) {
 
 Hopefully the pseudocode has convinced you that the interpreter is actually super simple. Essentially, it's a loop around a switch statement, matching bytecodes to corresponding C++ functions.
 
-```
 
+## Implementation
 
-
-```
-
-## Base9 Implementation
-
-### The `main` function
+### The `main` Function
 
 Recall the command for running the VM with a binary module (from the `build/` directory):
 
@@ -288,7 +301,7 @@ The entry point for `b9run` can be found in [b9run/main.cpp]. Let's take a look 
 
 [b9run/main.cpp]: https://github.com/b9org/b9/blob/master/b9run/main.cpp
 
-```cpp
+```c++
 int main(int argc, char* argv[]) {
   OMR::Om::ProcessRuntime runtime;
   RunConfig cfg;
@@ -314,7 +327,7 @@ The first thing that occurs in `main` is the instatiation of `ProcessRuntime` an
 
 `RunConfig` is a struct (inside of [b9run/main.cpp]), which sets up the base9 global configuration:
 
-```cpp
+```c++
 struct RunConfig {
   b9::Config b9;
   const char* moduleName = "";
@@ -351,11 +364,11 @@ Back to the `main` function, the next thing to occur is the argument parsing. Th
 The final thing to occur in `main` is a call to `run(runtime, cfg)`. We wrapped this call in a `try` block, because there are plenty of things that could go wrong when running the VM, and proper error handling is next to godliness.
 
 
-### The `run` function
+### The `run` Function
 
 Let's look at the `run` function called by `main`:
 
-```
+```cpp
 static void run(OMR::Om::ProcessRuntime& runtime, const RunConfig& cfg) {
   b9::VirtualMachine vm{runtime, cfg.b9};
 
@@ -378,9 +391,9 @@ static void run(OMR::Om::ProcessRuntime& runtime, const RunConfig& cfg) {
 `run` is where the `VirtualMachine` class is instantiated. `VirtualMachine` can be found in [b9/include/b9/VirtualMachine.hpp]. The `run` function deserializes a binary module which has been compiled from JavaScript source code, and loads the resulting in-memory Module into the VM. Next, it checks if the JIT has been turned on. If yes, the bytecodes are JIT compiled using the `generateCode` function. If no, the VM obtains the main function of the program and begins interpreting.
 
 
-### The in-memory `Module`
+### The Loaded `Module`
 
-As mentioned, the in-memory Module is created by deserializing a [binary module]. Let's have a look at the `Module` class:
+As mentioned, the Module loaded into memory by deserializing a [binary module]. Let's have a look at the `Module` class:
 
 ```cpp
 struct Module {
@@ -566,11 +579,6 @@ To conclude this section, let's briefly walk over the components we've covered t
 [b9/include/b9/VirtualMachine.hpp]: https://github.com/b9org/b9/blob/master/b9/include/b9/VirtualMachine.hpp
 [b9/src/ExecutionContext.cpp]: https://github.com/b9org/b9/blob/master/b9/src/ExecutionContext.cpp
 
-```
-
-
-
-```
 
 ## OMR and JitBuilder
 
@@ -584,7 +592,7 @@ To conclude this section, let's briefly walk over the components we've covered t
 
 <figure class="image">
   <figcaption>OMR Overview</figcaption>
-  <img src="./assets/images/omrOverview.png" width="100%"/>
+  <img src="{{"/assets/images/omrOverview.png" | relative_url }}" width="100%"/>
 </figure>
 
 The above diagram depicts the base9 components in yellow. These are the components that a developer must implement independantly. The red areas are the components belonging to OMR.
@@ -595,13 +603,8 @@ The above diagram depicts the base9 components in yellow. These are the componen
 [JitBuilder] is an interface to the JIT compiler technology in OMR. It's designed to bootstrap a native-code JIT compiler for interpreted methods, and it allows the user to programatically describe the [intermediate language] (IL) that implements the semantics of the bytecodes. Using JitBuilder to employ the OMR JIT is not strictly necessary, but without it, one would require a deep understanding of JIT Compilation. JitBuilder makes it possible for someone without a background in compilers to easily plug-in and use the JIT compiler for their runtime.
 
 [JitBuilder]: https://developer.ibm.com/open/2016/07/19/jitbuilder-library-and-eclipse-omr-just-in-time-compilers-made-easy/
-[intermediate language]: ./Dictionary.md#intermediate-language
+[intermediate language]: ../docs/Dictionary.md.md#intermediate-language
 
-```
-
-
-
-```
 
 ## Integrate the JIT Compiler
 
@@ -612,7 +615,7 @@ As mentioned earlier, our JIT compiler is made possible by [OMR] and [JitBuilder
 [OMR]: https://eclipse.org/omr/
 [JitBuilder]: https://developer.ibm.com/open/2016/07/19/jitbuilder-library-and-eclipse-omr-just-in-time-compilers-made-easy/
 [third_party]: https://github.com/b9org/b9/tree/master/third_party
-[git submodule]: ./Dictionary.md#git-submodule
+[git submodule]: ../docs/Dictionary.md.md#git-submodule
 
 So how do we run a fully JIT compiled program? From `build/` directory, run:
 
@@ -653,7 +656,7 @@ Run fibonacci with the JIT:
 `time ./b9run/b9run -loop 1000 -jit -function fib test/fib.b9mod 20 > log`
 
 <figure class="image">
-  <img src="./assets/images/perfConsole.png" width="100%"/>
+  <img src="{{"/assets/images/perfConsole.png" | relative_url }}" width="100%"/>
 </figure>
 
 That's a 9x speedup, and that isn't including any of the [advanced JIT features].
@@ -665,15 +668,15 @@ That's a 9x speedup, and that isn't including any of the [advanced JIT features]
 In general, compilers are vast and complex, with many layers and hidden depths. It can take years to become well versed in compiler technology, which discourages many developers from doing projects with them. That's why we built base9. We want to share the OMR technology with language developers and show them how adding a JIT compiler to a runtime can be easy! Let's start by taking a quick look at the JIT Design.
 
 <figure class="image">
-  <img src="./assets/images/jitOverview.png" width="100%"/>
+  <img src="{{"/assets/images/jitOverview.png" | relative_url }}" width="100%"/>
 </figure>
 
 The above diagram shows the transition between the language bytecodes and the native machine code. The code must undergo several phases of transformation. The bytecodes are given to the [intermediate language (IL) generator] to be transformed into the IL. The IL is then further optimized via the [optimizer]. Optimized IL is then passed to the [code generator] for it's final converstion into [native machine code]. 
 
-[intermediate language (IL) generator]: ./Dictionary.md#il-generator
-[optimizer]: ./Dictionary.md#optimizer
-[code generator]: ./Dictionary.md#code-generator
-[native machine code]: ./Dictionary.md#native-machine-code
+[intermediate language (IL) generator]: ../docs/Dictionary.md.md#il-generator
+[optimizer]: ../docs/Dictionary.md.md#optimizer
+[code generator]: ../docs/Dictionary.md.md#code-generator
+[native machine code]: ../docs/Dictionary.md.md#native-machine-code
 
 
 ### Intermediate Language Generator and JitBuilder
@@ -969,4 +972,3 @@ time ./b9run/b9run -jit -directcall -passparam -lazyvmstate -loop 1000 -function
 ```
 
 What kind of performance increase did you observe? 
-

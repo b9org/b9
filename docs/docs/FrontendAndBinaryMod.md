@@ -1,6 +1,6 @@
 ---
-layout: default
 title: Frontend Compiler and Binary Format
+layout: page
 ---
 
 ## Frontend Compiler
@@ -43,21 +43,21 @@ The first diagram depicts the two sections of the binary module: the function se
 
 <figure class="image">
   <figcaption>Binary Module Sections</figcaption>
-  <img src="./assets/images/binModSections.png" width="100%"/>
+  <img src="{{"/assets/images/binModSections.png" | relative_url }}" width="100%"/>
 </figure>
 
 The second diagram depicts the function section of the binary module and the layout of the instructions.
 
 <figure class="image">
   <figcaption>Function Section</figcaption>
-  <img src="./assets/images/binModFunctions.png" width="100%"/>
+  <img src="{{"/assets/images/binModFunctions.png" | relative_url }}" width="100%"/>
 </figure>
 
 The last diagram depicts the string section of the binary module, and the layout of the strings within. Because the strings are not null-terminated, the size of each string is stored for the purpose of iteration.
 
 <figure class="image">
   <figcaption>String Section</figcaption>
-  <img src="./assets/images/binModStrings.png" width="100%"/>
+  <img src="{{"/assets/images/binModStrings.png" | relative_url }}" width="100%"/>
 </figure>
 
 

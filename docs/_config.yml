@@ -11,3 +11,20 @@ sass:
 include: ['_pages']
 markdown: kramdown
 highlighter: rouge
+collections:
+  - build-a-runtime
+  - docs
+  - setup
+defaults:
+  - scope:
+      path: docs
+    values:
+      section: docs
+  - scope:
+      path: setup
+    values:
+      section: setup
+  - scope:
+      path: build-a-runtime
+    values:
+      section: build-a-runtime

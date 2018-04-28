@@ -1,6 +1,6 @@
 ---
-layout: default
 title: Ubuntu Setup
+section: setup
 ---
 
 ## Setting up Base9 on Ubuntu

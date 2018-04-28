@@ -1,6 +1,6 @@
 ---
-layout: default
 title: Base9 Directory Structure
+layout: page
 ---
 
 # Base9 Directory Structure 

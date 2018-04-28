@@ -1,48 +1,19 @@
-<div id="dev-journey-sidenav" class="sidenav">
-  <nav class="nav nav-pills flex-column">
-
-    <a class="nav-link" href="#introduction">Introduction</a>
-    <nav class="nav nav-pills flex-column">
-      <a class="nav-link ml-3 my-1" href="#base9-setup">Base9 Setup</a>
-      <a class="nav-link ml-3 my-1" href="#base9-overview">Base9 Overview</a>
-    </nav>
-
-    <a class="nav-link" href="#the-base9-frontend">The Base9 Frontend</a>
-    <nav class="nav nav-pills flex-column">
-      <a class="nav-link ml-3 my-1" href="#frontend-language">Frontend Language</a>
-      <a class="nav-link ml-3 my-1" href="#frontend-compiler">Frontend Compiler</a>
-    </nav>
-
-    <a class="nav-link" href="#the-base9-backend">The Base9 Backend</a>
-    <nav class="nav nav-pills flex-column">
-      <a class="nav-link ml-3 my-1" href="#the-deserializer">The Deserializer</a>
-      <a class="nav-link ml-3 my-1" href="#the-base9-bytecodes">The Base9 Bytecodes</a>
-      <a class="nav-link ml-3 my-1" href="#the-stack">The Stack</a>
-      <a class="nav-link ml-3 my-1" href="#the-virtual-machine">The Virtual Machine</a>
-      <a class="nav-link ml-3 my-1" href="#the-interpreter">The Interpreter</a>
-    </nav>
-
-    <a class="nav-link" href="#base9-implementation">Base9 Implementation</a>
-    <nav class="nav nav-pills flex-column">
-      <a class="nav-link ml-3 my-1" href="#the-main-function">The "main" Function</a>
-      <a class="nav-link ml-3 my-1" href="#the-run-function">The "run" Function</a>
-      <a class="nav-link ml-3 my-1" href="#the-in-memory-module">The in memory module</a>
-      <a class="nav-link ml-3 my-1" href="#the-interpreter-loop">The Interpreter Loop</a>
-      <a class="nav-link ml-3 my-1" href="#implementation-summary">Implementation Summary</a>
-    </nav>
-
-    <a class="nav-link" href="#omr-and-jitbuilder">OMR and JitBuilder</a>
-    <nav class="nav nav-pills flex-column">
-      <a class="nav-link ml-3 my-1" href="#omr">OMR</a>
-      <a class="nav-link ml-3 my-1" href="#jitbuilder">JitBuilder</a>
-    </nav>
-
-    <a class="nav-link" href="#integrate-the-jit-compiler">Integrate The Jit Compiler</a>
-    <nav class="nav nav-pills flex-column">
-      <a class="nav-link ml-3 my-1" href="#the-jit-compiler">The Jit Compiler</a>
-      <a class="nav-link ml-3 my-1" href="#plugging-in-the-jit">Plugging in the JIT</a>
-      <a class="nav-link ml-3 my-1" href="#jit-features">JIT Features</a>
-    </nav>
-  </nav>
-</div>
-
+<nav class="sidebar col-md-3 col-lg-2 col-xl-2">
+  <a class="navbar-brand">Contents</a>
+  <ul class="nav flex-column nav-pills">
+    {% for entry in page.toc %}
+      <li class="nav-item">
+        <a class="nav-link text-secondary" href="#{{ entry.ref | default: entry.title | slugify }}">{{entry.title}}</a>
+        {% if entry.subsections %}
+          <ul class="nav flex-column ml-3">
+            {% for subentry in entry.subsections %}
+              <li class="nav-item">
+                <a class="nav-link text-secondary" href="#{{ subentry.ref | default: subentry.title | slugify }}">{{subentry.title}}</a>
+              </li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+</nav>

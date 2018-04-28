@@ -1,6 +1,6 @@
 ---
-layout: default
 title: Base9 Dictionary
+layout: page
 ---
 
 # Base9 Dictionary
@@ -20,7 +20,7 @@ The [base9 assembly] language is the human readable representation of both the b
 ### Binary Module
 A binary module is a representation of some data in binary format. In our case, it is a representation of the in memory module, which is a C++ data structure. It encodes meta data about the module and the bytecodes of each function. Visit our [Binary Module] page to learn more.  
 
-[Binary Module]: ./FrontendAndBinaryMod.md#binary-format
+[Binary Module]: FrontendAndBinaryMod.md#binary-format
 
 ### Bytecode 
 A bytecode is a type of instruction that can be consumed by a virtual machine. Bytecodes are independent of a specific processor's instruction set, allowing for cross-platform portability. Bytecodes are designed to be efficiently decoded and interpreted by a computer program, and are not necessarily human readable. 

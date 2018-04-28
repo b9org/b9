@@ -1,6 +1,7 @@
 ---
-layout: default
+layout: page
 title: Base9 Assembly
+section: docs
 ---
 
 # Base9 Assembly Example

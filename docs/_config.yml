@@ -2,7 +2,7 @@
 title: Base9
 description: >
   An educational virtual machine
-baseurl: /b9
+# baseurl: /b9
 github_username: b9org
 theme: minima
 # Build Settings

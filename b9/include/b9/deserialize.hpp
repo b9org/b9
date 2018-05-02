@@ -2,7 +2,7 @@
 #define B9_DESERIALIZE_HPP_
 
 #include <b9/instructions.hpp>
-#include <b9/module.hpp>
+#include <b9/Module.hpp>
 
 #include <string.h>
 #include <iostream>

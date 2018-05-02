@@ -1,7 +1,7 @@
 #include <b9/ExecutionContext.hpp>
 #include <b9/VirtualMachine.hpp>
 #include <b9/deserialize.hpp>
-#include <b9/module.hpp>
+#include <b9/Module.hpp>
 #include <b9/serialize.hpp>
 
 #include <gtest/gtest.h>

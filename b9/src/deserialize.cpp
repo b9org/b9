@@ -6,7 +6,7 @@
 
 #include <b9/deserialize.hpp>
 #include <b9/instructions.hpp>
-#include <b9/module.hpp>
+#include <b9/Module.hpp>
 
 namespace b9 {
 

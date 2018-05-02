@@ -4,7 +4,7 @@
 #include <b9/OperandStack.hpp>
 #include <b9/compiler/Compiler.hpp>
 #include <b9/instructions.hpp>
-#include <b9/module.hpp>
+#include <b9/Module.hpp>
 
 #include <OMR/Om/Allocator.inl.hpp>
 #include <OMR/Om/Context.inl.hpp>

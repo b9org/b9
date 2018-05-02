@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include <b9/assemble.hpp>
-#include <b9/module.hpp>
+#include <b9/Module.hpp>
 
 using namespace b9;
 

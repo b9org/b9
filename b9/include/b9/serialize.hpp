@@ -1,7 +1,7 @@
 #ifndef B9_SERIALIZE_HPP_
 #define B9_SERIALIZE_HPP_
 
-#include <b9/module.hpp>
+#include <b9/Module.hpp>
 #include <fstream>
 #include <iostream>
 

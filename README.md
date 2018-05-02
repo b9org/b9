@@ -7,29 +7,29 @@
 [![Build Status](https://api.travis-ci.org/b9org/b9.svg?branch=master)](https://travis-ci.org/b9org/b9)
 [![Coverage Status](https://coveralls.io/repos/github/b9org/b9/badge.svg?branch=master)](https://coveralls.io/github/b9org/b9?branch=master)
 
-Base9 is an educational language runtime and programming language! We’re using it to show people how to use [Eclipse OMR] to build their own language runtime with a Just in Time (JIT) Compiler! The base9 front-end language is a simple subset of JavaScript. For more information, visit the [base9 website], or see a complete listing of the [base9 documentation].
+Base9 is an educational language runtime and programming language! We’re using it to show people how to use [Eclipse OMR] to build their own language runtime with a Just in Time (JIT) Compiler! The base9 front-end language is a simple subset of JavaScript. For more information, visit the [base9 website].
 
 [Eclipse OMR]: https://github.com/eclipse/omr
-[base9 website]: https://b9org.github.io/b9/
-[base9 documentation]: https://b9org.github.io/b9/Documentation.html
+[base9 website]: https://www.base9.xyz
 
 ## Build your own Language Runtime
 
-If you'd like to build your own language runtime, visit the [Build A Runtime Tutorial] on the [base9 website]!
+If you'd like to build your own language runtime, visit our guide on [Building a Language Runtime]!
 
-[Build A Runtime Tutorial]: https://b9org.github.io/b9/BuildARuntime.html
+[Building A Language Runtime]: https://www.base9.xyz/build-a-runtime
 
 ## Getting started
 
 This page contains some basic instructions to get you started. For more detailed instructions, go to:
-* [Ubuntu set-up page](./docs/SetupUbuntu.md).
-* [OSX set-up page](./docs/SetupOSX.md).
+
+* [Ubuntu set-up page](./docs/setup/ubuntu.md).
+* [OSX set-up page](./docs/setup/osx.md).
 
 ### 1. Requirements
 
 To get started with base9 using the Ninja build system, you'll need the following:
 
-* `git` 
+* `git`
 * `build-essential`
 * `nodejs` **(Minimum version 4.5.0)**
 * `npm`
@@ -47,8 +47,7 @@ git clone --recursive https://github.com/b9org/b9.git
 
 ```sh
 cd b9 \
-&& npm install esprima \
-&& cd ..
+&& npm install esprima
 ```
 
 ### 4. Build base9
@@ -56,7 +55,7 @@ cd b9 \
 ```sh
 mkdir build \
 && cd build \
-&& cmake -GNinja -DCMAKE_BUILD_TYPE=Debug ../b9 \
+&& cmake -GNinja -DCMAKE_BUILD_TYPE=Debug .. \
 && ninja
 ```
 

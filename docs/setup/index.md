@@ -4,62 +4,56 @@ title: Base9 Setup
 section: setup
 ---
 
-## Getting Set-up 
+This page contains some basic instructions to get you started. For more detailed instructions, go to:
 
-#### Set-up on Ubuntu:
+* [Ubuntu set-up page](./docs/setup/ubuntu.md).
+* [OSX set-up page](./docs/setup/osx.md).
 
-[Ubuntu Set-up Instructions](./ubuntu.md)
+## Requirements
 
-#### Set-up on OSX:
+To get started with base9 using the Ninja build system, you'll need the following:
 
-[OSX Set-up Instructions](./osx.md)
+* `git` 
+* `build-essential`
+* `nodejs` **(Minimum version 4.5.0)**
+* `npm`
+* `esprima`
+* `cmake` **(Minimum version 3.2.0)**
+* `ninja`
 
-#### Clone the repository and get submodules
-```
+## Clone the repository and get the submodules
+
+```sh
 git clone --recursive https://github.com/b9org/b9.git
-cd Base9
-git submodule update --init
 ```
 
-## Directory Structure of Base9
+## Install Esprima
 
-Learn more about our [Directory Structure](./DirectoryStructure.md)
-
-
-## Build Base9
-```
-mkdir build && cd build
-npm install esprima
-cmake –GNinja –DCMAKE_BUILD_TYPE=Debug ..
-ninja
+```sh
+cd b9 \
+&& npm install esprima
 ```
 
-## Run Base9
+## Build base9
 
-#### Run Hello World!
+```sh
+mkdir build \
+&& cd build \
+&& cmake -GNinja -DCMAKE_BUILD_TYPE=Debug .. \
+&& ninja
+```
+
+## Run Hello World!
+
+In the `build` directory, run:
 
 ```sh
 ./b9run/b9run ./test/hello.b9mod
 ```
 
-#### Run a Base9 Benchmark (outdated)
+## Test base9
 
-Command structure:
-
-```sh
-b9run [-function <function>] <module> [<arg>...]
-```
-
-b9run is the main executable that runs the Base9 modules. In the following example, we are running the factorial function with an input of 20 by passing the factorial.b9mod shared object file to the virtual machine: 
-
-```sh
-./b9run/b9run -function factorial test/factorial.b9mod 20
-```
-
-
-## Test Base9 
-
-You can run the full Base9 test suit by running the following command from the build directory:
+You can run the full base9 test suite with:
 
 ```sh
 ninja test

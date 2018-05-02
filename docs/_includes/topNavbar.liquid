@@ -2,13 +2,13 @@
 <nav class="navbar navbar-expand-md navbar-light bg-light mb-4">
 
 	<a class="navbar-brand mr-md-4" href="{{ "/index.html" | relative_url}}">
-		<img src={{ "/assets/images/logoIcon.png" | relative_url }} height="30" title="Home" alt="Icon">
+		<img src={{ "/assets/images/logoIcon.png" | relative_url }} height="30" title="Home" alt="Icon" class="d-inline-block align-top">
 		Base9
 	</a>
 	<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#topNavBarContent" aria-controls="navbarToggler"
 	 aria-expanded="false">
 		<span class="navbar-toggler-icon"></span>
-</button>
+	</button>
 	<div class="collapse navbar-collapse" id="topNavBarContent">
 		<ul class="navbar-nav mr-auto mt-2 mt-lg-0">
 			{% for section in site.data.sections %}
@@ -27,7 +27,7 @@
 			<li class="nav-item link mr-sm-2">
 				<a class="btn btn-outline-primary" href="https://github.com/b9org/b9">
 					<span class="nav-item mr-2">GitHub</span>
-					<img class="align-middle" src={{ "/assets/images/logoGitHub.svg" | relative_url }} height="20" title="Base9 on GitHub" alt="GitHub Icon">
+					<img class="d-inline-block align-top" src={{ "/assets/images/logoGitHub.svg" | relative_url }} height="20" title="Base9 on GitHub" alt="GitHub Icon">
 				</a>
 			</li>
 		</ul>

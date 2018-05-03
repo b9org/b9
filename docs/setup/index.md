@@ -6,8 +6,8 @@ section: setup
 
 This page contains some basic instructions to get you started. For more detailed instructions, go to:
 
-* [Ubuntu set-up page](./docs/setup/ubuntu.md).
-* [OSX set-up page](./docs/setup/osx.md).
+* [Ubuntu set-up page](./ubuntu.md).
+* [OSX set-up page](./osx.md).
 
 ## Requirements
 

@@ -42,7 +42,7 @@ Welcome to the tutorial! If you're interested in building your own [language run
 [language runtime]: ../docs/Dictionary.md#language-runtime
 [OMR]: https://www.eclipse.org/omr/
 [JitBuilder]: https://developer.ibm.com/open/2016/07/19/jitbuilder-library-and-eclipse-omr-just-in-time-compilers-made-easy/ 
-[Just In Time (JIT) Compiler]: ../docs/Dictionary.md.md#jit-compiler
+[Just In Time (JIT) Compiler]: ../docs/Dictionary.md#jit-compiler
 [tutorial dictionary]: ../docs/Dictionary.md
 
 Before moving forward please familiarize yourself with the legend for our diagrams:
@@ -97,7 +97,7 @@ function b9main() {
 Above is a classic program that we all know and love, Hello, World! The source code can be found in [test/hello.src]. The `b9main` function is always the entry point to a program, like `int main` in C. `b9PrintString` is a method from a tiny library of functions that will be compiled with every program. The library is called b9stdlib and can be found in [b9/js_compiler/b9stdlib.src]. The functions in b9stdlib all call base9 [primitive functions]. In the Hello, World! program, `b9main` uses `b9PrintString` from b9stdlib to write text to console.
 
 [test/hello.src]: https://github.com/b9org/b9/blob/master/test/hello.src
-[primitive functions]: ../docs/Dictionary.md.md#primitive-function
+[primitive functions]: ../docs/Dictionary.md#primitive-function
 [b9/js_compiler/b9stdlib.src]: https://github.com/b9org/b9/blob/master/js_compiler/b9stdlib.src
 
 
@@ -109,7 +109,7 @@ The frontend compiler is in [js_compiler/compiler.js]. It takes the source code 
 [frontend compiler]: https://github.com/b9org/b9/blob/master/js_compiler/compile.js
 [Esprima]: http://esprima.org
 [abstract syntax tree]: https://en.wikipedia.org/wiki/Abstract_syntax_tree
-[binary module]: ../docs/Dictionary.md.md#binary-module
+[binary module]: ../docs/Dictionary.md#binary-module
 
 For a brief overview of the frontend compiler, as well as a more in depth look at the binary module, visit the link below:
 
@@ -196,12 +196,12 @@ Pop and return the result from the operand stack:
 
 The base9 [deserializer] at [b9/src/deserialize.cpp] is responsible for taking the binary module and converting it to the in-memory Module. The deserializer is used in base9 in two different ways. Firstly, it's used by the VM to convert a binary module to an in-memory Module. Secondly, it is used by the disassembler at [b9/b9disasm/b9disasm.cpp]. The disassembler employs the deserializer to convert a binary module into an assembly-like interpretation, which we're calling [base9 assembly]. It's primarily used for debugging. Click the link below to learn more:
 
-[deserializer]: ../docs/Dictionary.md.md#deserializer
+[deserializer]: ../docs/Dictionary.md#deserializer
 [b9/src/deserialize.cpp]: https://github.com/b9org/b9/blob/master/b9/src/deserialize.cpp
 [b9/b9disasm/b9disasm.cpp]: https://github.com/b9org/b9/blob/master/b9disasm/b9disasm.cpp
 [base9 assembly]: ../docs/B9Assembly.md
 
-[Base9 Disassembler](./Disassembler.md)
+[Base9 Disassembler](../docs/Disassembler.md)
 
 Let's run the disassembler using the binary module we generated in the [Frontend Compiler section]! From the `build/` directory, run the following command:
 
@@ -211,7 +211,7 @@ Let's run the disassembler using the binary module we generated in the [Frontend
 
 You should now be looking at a human readable version of the Hello, World! program as represented by [base9 assembly]. You'll notice that the first three functions (`b9PrintString`, `b9PrintNumber`, and `b9PrintStack`) are the b9stdlib functions that are included in each compiled program. They can be ignored. The important part is the `b9main` function. Let's have a look at the transition between the JavaScript and the base9 assembly:
 
-[base9 assembly]: ../docs/Dictionary.md.md#base9-assembly
+[base9 assembly]: ../docs/Dictionary.md#base9-assembly
 
 ```js
 function b9main() {
@@ -603,7 +603,7 @@ The above diagram depicts the base9 components in yellow. These are the componen
 [JitBuilder] is an interface to the JIT compiler technology in OMR. It's designed to bootstrap a native-code JIT compiler for interpreted methods, and it allows the user to programatically describe the [intermediate language] (IL) that implements the semantics of the bytecodes. Using JitBuilder to employ the OMR JIT is not strictly necessary, but without it, one would require a deep understanding of JIT Compilation. JitBuilder makes it possible for someone without a background in compilers to easily plug-in and use the JIT compiler for their runtime.
 
 [JitBuilder]: https://developer.ibm.com/open/2016/07/19/jitbuilder-library-and-eclipse-omr-just-in-time-compilers-made-easy/
-[intermediate language]: ../docs/Dictionary.md.md#intermediate-language
+[intermediate language]: ../docs/Dictionary.md#intermediate-language
 
 
 ## Integrate the JIT Compiler
@@ -615,7 +615,7 @@ As mentioned earlier, our JIT compiler is made possible by [OMR] and [JitBuilder
 [OMR]: https://eclipse.org/omr/
 [JitBuilder]: https://developer.ibm.com/open/2016/07/19/jitbuilder-library-and-eclipse-omr-just-in-time-compilers-made-easy/
 [third_party]: https://github.com/b9org/b9/tree/master/third_party
-[git submodule]: ../docs/Dictionary.md.md#git-submodule
+[git submodule]: ../docs/Dictionary.md#git-submodule
 
 So how do we run a fully JIT compiled program? From `build/` directory, run:
 
@@ -673,10 +673,10 @@ In general, compilers are vast and complex, with many layers and hidden depths. 
 
 The above diagram shows the transition between the language bytecodes and the native machine code. The code must undergo several phases of transformation. The bytecodes are given to the [intermediate language (IL) generator] to be transformed into the IL. The IL is then further optimized via the [optimizer]. Optimized IL is then passed to the [code generator] for it's final converstion into [native machine code]. 
 
-[intermediate language (IL) generator]: ../docs/Dictionary.md.md#il-generator
-[optimizer]: ../docs/Dictionary.md.md#optimizer
-[code generator]: ../docs/Dictionary.md.md#code-generator
-[native machine code]: ../docs/Dictionary.md.md#native-machine-code
+[intermediate language (IL) generator]: ../docs/Dictionary.md#il-generator
+[optimizer]: ../docs/Dictionary.md#optimizer
+[code generator]: ../docs/Dictionary.md#code-generator
+[native machine code]: ../docs/Dictionary.md#native-machine-code
 
 
 ### Intermediate Language Generator and JitBuilder

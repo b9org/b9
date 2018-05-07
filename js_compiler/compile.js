@@ -36,9 +36,7 @@ var OperatorCode = Object.freeze({
 	"POP_INTO_VAR": 8,
 	"INT_ADD": 9,
 	"INT_SUB": 10,
-  	"INT_MUL": 11,
-  	"INT_DIV": 12,
-  	"INT_PUSH_CONSTANT": 13,
+	"INT_PUSH_CONSTANT": 13,
 	"INT_NOT": 14,
 	"INT_JMP_EQ": 15,
 	"INT_JMP_NEQ": 16,
@@ -410,8 +408,6 @@ function FirstPassCodeGen() {
 		var AssignmentOperatorCode = Object.freeze({
 			"+=": "INT_ADD",
 			"-=": "INT_SUB",
-			"/=": "INT_DIV",
-			"*=": "INT_MUL"
 		});
 
 		if (expression.left.type == "Identifier") {
@@ -505,12 +501,6 @@ function FirstPassCodeGen() {
 		}
 		else if (decl.operator == "+") {
 			func.instructions.push(new Instruction("INT_ADD"));
-		}
-		else if (decl.operator == "*") {
-			func.instructions.push(new Instruction("INT_MUL"));
-		}
-		else if (decl.operator == "/") {
-			func.instructions.push(new Instruction("INT_DIV"));
 		}
 		else {
 			// TODO: Support comparison operators.

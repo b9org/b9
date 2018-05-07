@@ -68,10 +68,6 @@ class MethodBuilder : public TR::MethodBuilder {
                      TR::BytecodeBuilder *nextBuilder);
   void handle_bc_add(TR::BytecodeBuilder *builder,
                      TR::BytecodeBuilder *nextBuilder);
-  void handle_bc_mul(TR::BytecodeBuilder *builder,
-                     TR::BytecodeBuilder *nextBuilder);
-  void handle_bc_div(TR::BytecodeBuilder *builder,
-                     TR::BytecodeBuilder *nextBuilder);
   void handle_bc_not(TR::BytecodeBuilder *builder,
                      TR::BytecodeBuilder *nextBuilder);
   void handle_bc_call(TR::BytecodeBuilder *builder,

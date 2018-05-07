@@ -404,12 +404,6 @@ bool MethodBuilder::generateILForBytecode(
     case ByteCode::INT_ADD:
       handle_bc_add(builder, nextBytecodeBuilder);
       break;
-    case ByteCode::INT_MUL:
-      handle_bc_mul(builder, nextBytecodeBuilder);
-      break;
-    case ByteCode::INT_DIV:
-      handle_bc_div(builder, nextBytecodeBuilder);
-      break;
     case ByteCode::INT_NOT:
       handle_bc_not(builder, nextBytecodeBuilder);
       break;
@@ -704,24 +698,6 @@ void MethodBuilder::handle_bc_add(TR::BytecodeBuilder *builder,
   TR::IlValue *left = pop(builder);
 
   push(builder, builder->Add(left, right));
-  builder->AddFallThroughBuilder(nextBuilder);
-}
-
-void MethodBuilder::handle_bc_mul(TR::BytecodeBuilder *builder,
-                                  TR::BytecodeBuilder *nextBuilder) {
-  TR::IlValue *right = pop(builder);
-  TR::IlValue *left = pop(builder);
-
-  push(builder, builder->Mul(left, right));
-  builder->AddFallThroughBuilder(nextBuilder);
-}
-
-void MethodBuilder::handle_bc_div(TR::BytecodeBuilder *builder,
-                                  TR::BytecodeBuilder *nextBuilder) {
-  TR::IlValue *right = pop(builder);
-  TR::IlValue *left = pop(builder);
-
-  push(builder, builder->Div(left, right));
   builder->AddFallThroughBuilder(nextBuilder);
 }
 

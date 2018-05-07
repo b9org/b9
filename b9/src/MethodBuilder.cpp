@@ -222,7 +222,7 @@ bool MethodBuilder::buildIL() {
   /// entry. The calling convention is callee-cleanup, so at exit we pop all
   /// the args off the operand stack.
   ///
-  /// In the case of pass parameter, the arguments are not passed on the VM
+  /// In the case of pass immediate, the arguments are not passed on the VM
   /// stack. The arguments are passed on the C stack as a part of a cdecl call.
   if (!cfg_.passParam) {
     TR::IlValue *stackBase = IndexAt(globalTypes().stackElementPtr, stackTop,
@@ -335,17 +335,17 @@ bool MethodBuilder::generateILForBytecode(
   }
 
   switch (instruction.byteCode()) {
-    case ByteCode::PUSH_FROM_VAR:
-      push(builder, loadVarIndex(builder, instruction.parameter()));
+    case OpCode::PUSH_FROM_VAR:
+      push(builder, loadVarIndex(builder, instruction.immediate()));
       if (nextBytecodeBuilder)
         builder->AddFallThroughBuilder(nextBytecodeBuilder);
       break;
-    case ByteCode::POP_INTO_VAR:
-      storeVarIndex(builder, instruction.parameter(), pop(builder));
+    case OpCode::POP_INTO_VAR:
+      storeVarIndex(builder, instruction.immediate(), pop(builder));
       if (nextBytecodeBuilder)
         builder->AddFallThroughBuilder(nextBytecodeBuilder);
       break;
-    case ByteCode::FUNCTION_RETURN: {
+    case OpCode::FUNCTION_RETURN: {
       auto result = pop(builder);
 
       TR::IlValue *stack = builder->StructFieldInstanceAddress(
@@ -357,7 +357,7 @@ bool MethodBuilder::generateILForBytecode(
       builder->Return(
           builder->Or(result, builder->ConstInt64(Om::BoxKindTag::INTEGER)));
     } break;
-    case ByteCode::DUPLICATE: {
+    case OpCode::DUPLICATE: {
       auto x = pop(builder);
       push(builder, x);
       push(builder, x);
@@ -365,81 +365,81 @@ bool MethodBuilder::generateILForBytecode(
         builder->AddFallThroughBuilder(nextBytecodeBuilder);
       }
     } break;
-    case ByteCode::DROP:
+    case OpCode::DROP:
       drop(builder);
       if (nextBytecodeBuilder)
         builder->AddFallThroughBuilder(nextBytecodeBuilder);
       break;
-    case ByteCode::JMP:
+    case OpCode::JMP:
       handle_bc_jmp(builder, bytecodeBuilderTable, program, instructionIndex,
                     nextBytecodeBuilder);
       break;
-    case ByteCode::INT_JMP_EQ:
+    case OpCode::INT_JMP_EQ:
       handle_bc_jmp_eq(builder, bytecodeBuilderTable, program, instructionIndex,
                        nextBytecodeBuilder);
       break;
-    case ByteCode::INT_JMP_NEQ:
+    case OpCode::INT_JMP_NEQ:
       handle_bc_jmp_neq(builder, bytecodeBuilderTable, program,
                         instructionIndex, nextBytecodeBuilder);
       break;
-    case ByteCode::INT_JMP_LT:
+    case OpCode::INT_JMP_LT:
       handle_bc_jmp_lt(builder, bytecodeBuilderTable, program, instructionIndex,
                        nextBytecodeBuilder);
       break;
-    case ByteCode::INT_JMP_LE:
+    case OpCode::INT_JMP_LE:
       handle_bc_jmp_le(builder, bytecodeBuilderTable, program, instructionIndex,
                        nextBytecodeBuilder);
       break;
-    case ByteCode::INT_JMP_GT:
+    case OpCode::INT_JMP_GT:
       handle_bc_jmp_gt(builder, bytecodeBuilderTable, program, instructionIndex,
                        nextBytecodeBuilder);
       break;
-    case ByteCode::INT_JMP_GE:
+    case OpCode::INT_JMP_GE:
       handle_bc_jmp_ge(builder, bytecodeBuilderTable, program, instructionIndex,
                        nextBytecodeBuilder);
       break;
-    case ByteCode::INT_SUB:
+    case OpCode::INT_SUB:
       handle_bc_sub(builder, nextBytecodeBuilder);
       break;
-    case ByteCode::INT_ADD:
+    case OpCode::INT_ADD:
       handle_bc_add(builder, nextBytecodeBuilder);
       break;
-    case ByteCode::INT_MUL:
+    case OpCode::INT_MUL:
       handle_bc_mul(builder, nextBytecodeBuilder);
       break;
-    case ByteCode::INT_DIV:
+    case OpCode::INT_DIV:
       handle_bc_div(builder, nextBytecodeBuilder);
       break;
-    case ByteCode::INT_NOT:
+    case OpCode::INT_NOT:
       handle_bc_not(builder, nextBytecodeBuilder);
       break;
-    case ByteCode::INT_PUSH_CONSTANT: {
-      int constvalue = instruction.parameter();
+    case OpCode::INT_PUSH_CONSTANT: {
+      int constvalue = instruction.immediate();
       /// TODO: box/unbox here.
       push(builder, builder->ConstInt64(constvalue));
       if (nextBytecodeBuilder)
         builder->AddFallThroughBuilder(nextBytecodeBuilder);
     } break;
-    case ByteCode::STR_PUSH_CONSTANT: {
-      int index = instruction.parameter();
+    case OpCode::STR_PUSH_CONSTANT: {
+      int index = instruction.immediate();
       /// TODO: Box/unbox here.
       push(builder, builder->ConstInt64(index));
       if (nextBytecodeBuilder)
         builder->AddFallThroughBuilder(nextBytecodeBuilder);
     } break;
-    case ByteCode::PRIMITIVE_CALL: {
-      const std::size_t callindex = instruction.parameter();
+    case OpCode::PRIMITIVE_CALL: {
+      const std::size_t callindex = instruction.immediate();
 
       builder->vmState()->Commit(builder);
       TR::IlValue *result =
           builder->Call("primitive_call", 2, builder->Load("executionContext"),
-                        builder->ConstInt32(instruction.parameter()));
+                        builder->ConstInt32(instruction.immediate()));
       QRELOAD(builder);
       if (nextBytecodeBuilder)
         builder->AddFallThroughBuilder(nextBytecodeBuilder);
     } break;
-    case ByteCode::FUNCTION_CALL: {
-      const std::size_t callindex = instruction.parameter();
+    case OpCode::FUNCTION_CALL: {
+      const std::size_t callindex = instruction.immediate();
       const FunctionDef *callee = virtualMachine_.getFunction(callindex);
       const Instruction *tocall = callee->instructions.data();
       const std::uint32_t argsCount = callee->nargs;
@@ -581,7 +581,7 @@ void MethodBuilder::handle_bc_jmp(
     const std::vector<Instruction> &program, long bytecodeIndex,
     TR::BytecodeBuilder *nextBuilder) {
   Instruction instruction = program[bytecodeIndex];
-  int delta = instruction.parameter() + 1;
+  int delta = instruction.immediate() + 1;
   int next_bc_index = bytecodeIndex + delta;
   TR::BytecodeBuilder *destBuilder = bytecodeBuilderTable[next_bc_index];
   builder->Goto(destBuilder);
@@ -593,7 +593,7 @@ void MethodBuilder::handle_bc_jmp_eq(
     const std::vector<Instruction> &program, long bytecodeIndex,
     TR::BytecodeBuilder *nextBuilder) {
   Instruction instruction = program[bytecodeIndex];
-  int delta = instruction.parameter() + 1;
+  int delta = instruction.immediate() + 1;
   int next_bc_index = bytecodeIndex + delta;
   TR::BytecodeBuilder *jumpTo = bytecodeBuilderTable[next_bc_index];
 
@@ -610,7 +610,7 @@ void MethodBuilder::handle_bc_jmp_neq(
     const std::vector<Instruction> &program, long bytecodeIndex,
     TR::BytecodeBuilder *nextBuilder) {
   Instruction instruction = program[bytecodeIndex];
-  int delta = instruction.parameter() + 1;
+  int delta = instruction.immediate() + 1;
   int next_bc_index = bytecodeIndex + delta;
   TR::BytecodeBuilder *jumpTo = bytecodeBuilderTable[next_bc_index];
 
@@ -627,7 +627,7 @@ void MethodBuilder::handle_bc_jmp_lt(
     const std::vector<Instruction> &program, long bytecodeIndex,
     TR::BytecodeBuilder *nextBuilder) {
   Instruction instruction = program[bytecodeIndex];
-  int delta = instruction.parameter() + 1;
+  int delta = instruction.immediate() + 1;
   int next_bc_index = bytecodeIndex + delta;
   TR::BytecodeBuilder *jumpTo = bytecodeBuilderTable[next_bc_index];
 
@@ -644,7 +644,7 @@ void MethodBuilder::handle_bc_jmp_le(
     const std::vector<Instruction> &program, long bytecodeIndex,
     TR::BytecodeBuilder *nextBuilder) {
   Instruction instruction = program[bytecodeIndex];
-  int delta = instruction.parameter() + 1;
+  int delta = instruction.immediate() + 1;
   int next_bc_index = bytecodeIndex + delta;
   TR::BytecodeBuilder *jumpTo = bytecodeBuilderTable[next_bc_index];
 
@@ -661,7 +661,7 @@ void MethodBuilder::handle_bc_jmp_gt(
     const std::vector<Instruction> &program, long bytecodeIndex,
     TR::BytecodeBuilder *nextBuilder) {
   Instruction instruction = program[bytecodeIndex];
-  int delta = instruction.parameter() + 1;
+  int delta = instruction.immediate() + 1;
   int next_bc_index = bytecodeIndex + delta;
   TR::BytecodeBuilder *jumpTo = bytecodeBuilderTable[next_bc_index];
 
@@ -678,7 +678,7 @@ void MethodBuilder::handle_bc_jmp_ge(
     const std::vector<Instruction> &program, long bytecodeIndex,
     TR::BytecodeBuilder *nextBuilder) {
   Instruction instruction = program[bytecodeIndex];
-  int delta = instruction.parameter() + 1;
+  int delta = instruction.immediate() + 1;
   int next_bc_index = bytecodeIndex + delta;
   TR::BytecodeBuilder *jumpTo = bytecodeBuilderTable[next_bc_index];
 

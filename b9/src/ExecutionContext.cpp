@@ -94,92 +94,92 @@ StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
 
   while (*instructionPointer != END_SECTION) {
     switch (instructionPointer->byteCode()) {
-      case ByteCode::FUNCTION_CALL:
-        doFunctionCall(instructionPointer->parameter());
+      case OpCode::FUNCTION_CALL:
+        doFunctionCall(instructionPointer->immediate());
         break;
-      case ByteCode::FUNCTION_RETURN: {
+      case OpCode::FUNCTION_RETURN: {
         auto result = stack_.pop();
         stack_.restore(args);
         return result;
         break;
       }
-      case ByteCode::PRIMITIVE_CALL:
-        doPrimitiveCall(instructionPointer->parameter());
+      case OpCode::PRIMITIVE_CALL:
+        doPrimitiveCall(instructionPointer->immediate());
         break;
-      case ByteCode::JMP:
-        instructionPointer += instructionPointer->parameter();
+      case OpCode::JMP:
+        instructionPointer += instructionPointer->immediate();
         break;
-      case ByteCode::DUPLICATE:
+      case OpCode::DUPLICATE:
         doDuplicate();
         break;
-      case ByteCode::DROP:
+      case OpCode::DROP:
         doDrop();
         break;
-      case ByteCode::PUSH_FROM_VAR:
-        doPushFromVar(args, instructionPointer->parameter());
+      case OpCode::PUSH_FROM_VAR:
+        doPushFromVar(args, instructionPointer->immediate());
         break;
-      case ByteCode::POP_INTO_VAR:
+      case OpCode::POP_INTO_VAR:
         // TODO bad name, push or pop?
-        doPushIntoVar(args, instructionPointer->parameter());
+        doPushIntoVar(args, instructionPointer->immediate());
         break;
-      case ByteCode::INT_ADD:
+      case OpCode::INT_ADD:
         doIntAdd();
         break;
-      case ByteCode::INT_SUB:
+      case OpCode::INT_SUB:
         doIntSub();
         break;
-      case ByteCode::INT_MUL:
+      case OpCode::INT_MUL:
         doIntMul();
         break;
-      case ByteCode::INT_DIV:
+      case OpCode::INT_DIV:
         doIntDiv();
         break;
-      case ByteCode::INT_PUSH_CONSTANT:
-        doIntPushConstant(instructionPointer->parameter());
+      case OpCode::INT_PUSH_CONSTANT:
+        doIntPushConstant(instructionPointer->immediate());
         break;
-      case ByteCode::INT_NOT:
+      case OpCode::INT_NOT:
         doIntNot();
         break;
-      case ByteCode::INT_JMP_EQ:
-        instructionPointer += doIntJmpEq(instructionPointer->parameter());
+      case OpCode::INT_JMP_EQ:
+        instructionPointer += doIntJmpEq(instructionPointer->immediate());
         break;
-      case ByteCode::INT_JMP_NEQ:
-        instructionPointer += doIntJmpNeq(instructionPointer->parameter());
+      case OpCode::INT_JMP_NEQ:
+        instructionPointer += doIntJmpNeq(instructionPointer->immediate());
         break;
-      case ByteCode::INT_JMP_GT:
-        instructionPointer += doIntJmpGt(instructionPointer->parameter());
+      case OpCode::INT_JMP_GT:
+        instructionPointer += doIntJmpGt(instructionPointer->immediate());
         break;
-      case ByteCode::INT_JMP_GE:
-        instructionPointer += doIntJmpGe(instructionPointer->parameter());
+      case OpCode::INT_JMP_GE:
+        instructionPointer += doIntJmpGe(instructionPointer->immediate());
         break;
-      case ByteCode::INT_JMP_LT:
-        instructionPointer += doIntJmpLt(instructionPointer->parameter());
+      case OpCode::INT_JMP_LT:
+        instructionPointer += doIntJmpLt(instructionPointer->immediate());
         break;
-      case ByteCode::INT_JMP_LE:
-        instructionPointer += doIntJmpLe(instructionPointer->parameter());
+      case OpCode::INT_JMP_LE:
+        instructionPointer += doIntJmpLe(instructionPointer->immediate());
         break;
-      case ByteCode::STR_PUSH_CONSTANT:
-        doStrPushConstant(instructionPointer->parameter());
+      case OpCode::STR_PUSH_CONSTANT:
+        doStrPushConstant(instructionPointer->immediate());
         break;
-      case ByteCode::STR_JMP_EQ:
+      case OpCode::STR_JMP_EQ:
         // TODO
         break;
-      case ByteCode::STR_JMP_NEQ:
+      case OpCode::STR_JMP_NEQ:
         // TODO
         break;
-      case ByteCode::NEW_OBJECT:
+      case OpCode::NEW_OBJECT:
         doNewObject();
         break;
-      case ByteCode::PUSH_FROM_OBJECT:
-        doPushFromObject(OMR::Om::Id(instructionPointer->parameter()));
+      case OpCode::PUSH_FROM_OBJECT:
+        doPushFromObject(OMR::Om::Id(instructionPointer->immediate()));
         break;
-      case ByteCode::POP_INTO_OBJECT:
-        doPopIntoObject(OMR::Om::Id(instructionPointer->parameter()));
+      case OpCode::POP_INTO_OBJECT:
+        doPopIntoObject(OMR::Om::Id(instructionPointer->immediate()));
         break;
-      case ByteCode::CALL_INDIRECT:
+      case OpCode::CALL_INDIRECT:
         doCallIndirect();
         break;
-      case ByteCode::SYSTEM_COLLECT:
+      case OpCode::SYSTEM_COLLECT:
         doSystemCollect();
         break;
       default:
@@ -196,7 +196,7 @@ void ExecutionContext::push(StackElement value) { stack_.push(value); }
 
 StackElement ExecutionContext::pop() { return stack_.pop(); }
 
-void ExecutionContext::doFunctionCall(Parameter value) {
+void ExecutionContext::doFunctionCall(Immediate value) {
   auto f = virtualMachine_->getFunction((std::size_t)value);
   auto result = interpret(value);
   push(result);
@@ -206,12 +206,12 @@ void ExecutionContext::doFunctionReturn(StackElement returnVal) {
   // TODO
 }
 
-void ExecutionContext::doPrimitiveCall(Parameter value) {
+void ExecutionContext::doPrimitiveCall(Immediate value) {
   PrimitiveFunction *primitive = virtualMachine_->getPrimitive(value);
   (*primitive)(this);
 }
 
-Parameter ExecutionContext::doJmp(Parameter offset) { return offset; }
+Immediate ExecutionContext::doJmp(Immediate offset) { return offset; }
 
 void ExecutionContext::doDuplicate() {
   push(stack_.peek());
@@ -219,11 +219,11 @@ void ExecutionContext::doDuplicate() {
 
 void ExecutionContext::doDrop() { stack_.pop(); }
 
-void ExecutionContext::doPushFromVar(StackElement *args, Parameter offset) {
+void ExecutionContext::doPushFromVar(StackElement *args, Immediate offset) {
   stack_.push(args[offset]);
 }
 
-void ExecutionContext::doPushIntoVar(StackElement *args, Parameter offset) {
+void ExecutionContext::doPushIntoVar(StackElement *args, Immediate offset) {
   args[offset] = stack_.pop();
 }
 
@@ -259,7 +259,7 @@ void ExecutionContext::doIntDiv() {
   push(result);
 }
 
-void ExecutionContext::doIntPushConstant(Parameter value) {
+void ExecutionContext::doIntPushConstant(Immediate value) {
   stack_.push(StackElement().setInteger(value));
 }
 
@@ -270,7 +270,7 @@ void ExecutionContext::doIntNot() {
   push(v);
 }
 
-Parameter ExecutionContext::doIntJmpEq(Parameter delta) {
+Immediate ExecutionContext::doIntJmpEq(Immediate delta) {
   std::int32_t right = stack_.pop().getInteger();
   std::int32_t left = stack_.pop().getInteger();
   if (left == right) {
@@ -279,7 +279,7 @@ Parameter ExecutionContext::doIntJmpEq(Parameter delta) {
   return 0;
 }
 
-Parameter ExecutionContext::doIntJmpNeq(Parameter delta) {
+Immediate ExecutionContext::doIntJmpNeq(Immediate delta) {
   std::int32_t right = stack_.pop().getInteger();
   std::int32_t left = stack_.pop().getInteger();
   if (left != right) {
@@ -288,7 +288,7 @@ Parameter ExecutionContext::doIntJmpNeq(Parameter delta) {
   return 0;
 }
 
-Parameter ExecutionContext::doIntJmpGt(Parameter delta) {
+Immediate ExecutionContext::doIntJmpGt(Immediate delta) {
   std::int32_t right = stack_.pop().getInteger();
   std::int32_t left = stack_.pop().getInteger();
   if (left > right) {
@@ -298,7 +298,7 @@ Parameter ExecutionContext::doIntJmpGt(Parameter delta) {
 }
 
 // ( left right -- )
-Parameter ExecutionContext::doIntJmpGe(Parameter delta) {
+Immediate ExecutionContext::doIntJmpGe(Immediate delta) {
   std::int32_t right = stack_.pop().getInteger();
   std::int32_t left = stack_.pop().getInteger();
   if (left >= right) {
@@ -308,7 +308,7 @@ Parameter ExecutionContext::doIntJmpGe(Parameter delta) {
 }
 
 // ( left right -- )
-Parameter ExecutionContext::doIntJmpLt(Parameter delta) {
+Immediate ExecutionContext::doIntJmpLt(Immediate delta) {
   std::int32_t right = stack_.pop().getInteger();
   std::int32_t left = stack_.pop().getInteger();
   if (left < right) {
@@ -318,7 +318,7 @@ Parameter ExecutionContext::doIntJmpLt(Parameter delta) {
 }
 
 // ( left right -- )
-Parameter ExecutionContext::doIntJmpLe(Parameter delta) {
+Immediate ExecutionContext::doIntJmpLe(Immediate delta) {
   std::int32_t right = stack_.pop().getInteger();
   std::int32_t left = stack_.pop().getInteger();
   if (left <= right) {
@@ -328,7 +328,7 @@ Parameter ExecutionContext::doIntJmpLe(Parameter delta) {
 }
 
 // ( -- string )
-void ExecutionContext::doStrPushConstant(Parameter param) {
+void ExecutionContext::doStrPushConstant(Immediate param) {
   stack_.push(OMR::Om::Value().setInteger(param));
 }
 

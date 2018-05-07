@@ -34,7 +34,7 @@ class ExecutionContext {
   VirtualMachine *virtualMachine() const { return virtualMachine_; }
 
   // Available externally for jit-to-primitive calls.
-  void doPrimitiveCall(Parameter value);
+  void doPrimitiveCall(Immediate value);
 
   friend std::ostream &operator<<(std::ostream &stream,
                                   const ExecutionContext &ec);
@@ -43,22 +43,22 @@ class ExecutionContext {
   friend class VirtualMachine;
   friend class ExecutionContextOffset;
 
-  void doFunctionCall(Parameter value);
+  void doFunctionCall(Immediate value);
 
   /// A helper for interpreter-to-jit transitions.
   Om::Value callJitFunction(JitFunction jitFunction, std::size_t argCount);
 
   void doFunctionReturn(StackElement returnVal);
 
-  Parameter doJmp(Parameter offset);
+  Immediate doJmp(Immediate offset);
 
   void doDuplicate();
 
   void doDrop();
 
-  void doPushFromVar(StackElement *args, Parameter offset);
+  void doPushFromVar(StackElement *args, Immediate offset);
 
-  void doPushIntoVar(StackElement *args, Parameter offset);
+  void doPushIntoVar(StackElement *args, Immediate offset);
 
   void doIntAdd();
 
@@ -68,23 +68,23 @@ class ExecutionContext {
 
   void doIntDiv();
 
-  void doIntPushConstant(Parameter value);
+  void doIntPushConstant(Immediate value);
 
   void doIntNot();
 
-  Parameter doIntJmpEq(Parameter delta);
+  Immediate doIntJmpEq(Immediate delta);
 
-  Parameter doIntJmpNeq(Parameter delta);
+  Immediate doIntJmpNeq(Immediate delta);
 
-  Parameter doIntJmpGt(Parameter delta);
+  Immediate doIntJmpGt(Immediate delta);
 
-  Parameter doIntJmpGe(Parameter delta);
+  Immediate doIntJmpGe(Immediate delta);
 
-  Parameter doIntJmpLt(Parameter delta);
+  Immediate doIntJmpLt(Immediate delta);
 
-  Parameter doIntJmpLe(Parameter delta);
+  Immediate doIntJmpLe(Immediate delta);
 
-  void doStrPushConstant(Parameter value);
+  void doStrPushConstant(Immediate value);
 
   void doNewObject();
 

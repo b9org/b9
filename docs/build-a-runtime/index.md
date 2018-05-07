@@ -436,22 +436,22 @@ The fields of the `FunctionDef` are the function name, the index in the function
 
 ### The base9 Instruction Set
 
-The base9 VM executes it’s own instruction set. The instructions are compiled from the frontend language. Each instruction is a 32-bit little-endian value, which encodes an opcode (AKA a bytecode), and an optional parameter. The opcode is the most significant byte of the instruction. It tells the VM which functionality to execute. The opcode is one of the special predefined constants that the VM understands. Example opcodes are `int_add`, `int_sub`, `int_jmp_eq`, and `function_return`. Each opcode corresponds with a unique hexadecimal value between 0 and n, where n is the total number of bytecodes.
+The base9 VM executes it’s own instruction set. The instructions are compiled from the frontend language. Each instruction is a 32-bit little-endian value, which encodes an opcode (AKA a bytecode), and an optional immediate. The opcode is the most significant byte of the instruction. It tells the VM which functionality to execute. The opcode is one of the special predefined constants that the VM understands. Example opcodes are `int_add`, `int_sub`, `int_jmp_eq`, and `function_return`. Each opcode corresponds with a unique hexadecimal value between 0 and n, where n is the total number of bytecodes.
 
-The parameter encodes the constant data about an instruction. For example, a jump instruction encodes it’s jump target in the parameter. The parameter is a signed value stored in the lower 24 bits of the instruction.
+The immediate encodes the constant data about an instruction. For example, a jump instruction encodes it’s jump target in the immediate. The immediate is a signed value stored in the lower 24 bits of the instruction.
 
 The layout of the instructions is:
 
 ```
 |0000-0000 0000-0000 0000-0000 0000-0000
 |---------| bytecode (8 bits)
-          |-----------------------------| parameter (24 bits)
+          |-----------------------------| immediate (24 bits)
 ```
 
 Instructions are encoded as:
 
 ```cpp
-std::uint32_t instruction := (opcode << 24) | (parameter &0xFFFFFF);
+std::uint32_t instruction := (opcode << 24) | (immediate &0xFFFFFF);
 ```
 
 To decode an instructions opcode:
@@ -460,13 +460,13 @@ To decode an instructions opcode:
 std::uint8_t opcode = instruction >> 24;
 ```
 
-Decoding the parameter is a little more involved. Since the parameter is signed, we must sign extend the 24-bit value as we convert it to 32 bits:
+Decoding the immediate is a little more involved. Since the immediate is signed, we must sign extend the 24-bit value as we convert it to 32 bits:
 
 ```cpp
-std::uint32_t parameter = instruction & 0xFFFFFF;
-bool is_signed = parameter & (1 << 23);
+std::uint32_t immediate = instruction & 0xFFFFFF;
+bool is_signed = immediate & (1 << 23);
 if (is_signed)
-  parameter |= 0xFF << 24;
+  immediate |= 0xFF << 24;
 ```
 
 
@@ -521,7 +521,7 @@ StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
 
 ```
 
-As you can see, the second last line is popping the functions arguments off the operand stack. Let's back up. The first bit of the `interpret` function deals with some initial setup. The single parameter is `functionIndex`, which we use to get the individual function we wish to interpret. The interpreter then checks if the particular function has previously been JIT compiled. If it has, we use that function instead, and return from the interpreter. If it hasn't, the `instructionPointer` is initialized to the start of the instruction sequence, the arguments are collected from the top of the operand stack, and storage for local variables is allocated on the operand stack.
+As you can see, the second last line is popping the functions arguments off the operand stack. Let's back up. The first bit of the `interpret` function deals with some initial setup. The single immediate is `functionIndex`, which we use to get the individual function we wish to interpret. The interpreter then checks if the particular function has previously been JIT compiled. If it has, we use that function instead, and return from the interpreter. If it hasn't, the `instructionPointer` is initialized to the start of the instruction sequence, the arguments are collected from the top of the operand stack, and storage for local variables is allocated on the operand stack.
 
 Now let's take a look at the while-loop and switch-statement.
 
@@ -531,7 +531,7 @@ Now let's take a look at the while-loop and switch-statement.
 
       ...
 
-      case ByteCode::FUNCTION_RETURN: {
+      case OpCode::FUNCTION_RETURN: {
         auto result = stack_.pop();
         stack_.restore(args);
         return result;
@@ -540,7 +540,7 @@ Now let's take a look at the while-loop and switch-statement.
 
       ...
 
-      case ByteCode::INT_ADD:
+      case OpCode::INT_ADD:
         doIntAdd();
         break;
 
@@ -800,7 +800,7 @@ bool MethodBuilder::generateILForBytecode(
 
     ...
     
-    case ByteCode::DUPLICATE: {
+    case OpCode::DUPLICATE: {
       auto x = pop(builder);
       push(builder, x);
       push(builder, x);
@@ -811,7 +811,7 @@ bool MethodBuilder::generateILForBytecode(
     
     ...
     
-    case ByteCode::DROP:
+    case OpCode::DROP:
       drop(builder);
       if (nextBytecodeBuilder)
         builder->AddFallThroughBuilder(nextBytecodeBuilder);
@@ -819,12 +819,12 @@ bool MethodBuilder::generateILForBytecode(
     
     ...
 
-    case ByteCode::JMP:
+    case OpCode::JMP:
       handle_bc_jmp(builder, bytecodeBuilderTable, program, instructionIndex, nextBytecodeBuilder);
 
     ...
 
-    case ByteCode::INT_ADD:
+    case OpCode::INT_ADD:
       handle_bc_add(builder, nextBytecodeBuilder);
       break;
 
@@ -843,14 +843,14 @@ void MethodBuilder::handle_bc_jmp(
     const std::vector<Instruction> &program, long bytecodeIndex,
     TR::BytecodeBuilder *nextBuilder) {
   Instruction instruction = program[bytecodeIndex];
-  int delta = instruction.parameter() + 1;
+  int delta = instruction.immediate() + 1;
   int next_bc_index = bytecodeIndex + delta;
   TR::BytecodeBuilder *destBuilder = bytecodeBuilderTable[next_bc_index];
   builder->Goto(destBuilder);
 }
 ```
 
-`handle_bc_jmp` sets the `delta` variable to the jump target, `instruction.parameter() + 1`. It sets the next bytecode to the bytecode following the jump target. Note that the jump instruction does not contain the line `builder->AddFallThroughBuilder(nextBuilder);`. That's because it does not move to the next bytecode in the list incrementally.
+`handle_bc_jmp` sets the `delta` variable to the jump target, `instruction.immediate() + 1`. It sets the next bytecode to the bytecode following the jump target. Note that the jump instruction does not contain the line `builder->AddFallThroughBuilder(nextBuilder);`. That's because it does not move to the next bytecode in the list incrementally.
 
 
 `INT_ADD` calls:
@@ -935,7 +935,7 @@ JitFunction Compiler::generateCode(const std::size_t functionIndex) {
 }
 ```
 
-The `generateCode` function takes a `functionIndex` as it's only parameter. It start's by accessing the current function using `virtualMachine_.getFunction(functionIndex)`. Recall that `getFunction()` is part of the `VirtualMachine` class, and it uses the function index to access a `FunctionDef` in the Module's function vector. We store it's return value in the function pointer `*function`. 
+The `generateCode` function takes a `functionIndex` as it's only immediate. It start's by accessing the current function using `virtualMachine_.getFunction(functionIndex)`. Recall that `getFunction()` is part of the `VirtualMachine` class, and it uses the function index to access a `FunctionDef` in the Module's function vector. We store it's return value in the function pointer `*function`. 
 
 The `rc` value is the return code of `compilerMethodBuilder`, and will return 0 on success.
 

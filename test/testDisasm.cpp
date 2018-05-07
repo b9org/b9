@@ -21,10 +21,10 @@ std::shared_ptr<Module> makeEmptyModule() {
 
 std::shared_ptr<Module> makeSimpleModule() {
   auto m = std::make_shared<Module>();
-  std::vector<Instruction> i = {{ByteCode::INT_PUSH_CONSTANT, 2},
-                                {ByteCode::INT_PUSH_CONSTANT, 2},
-                                {ByteCode::INT_ADD},
-                                {ByteCode::FUNCTION_RETURN},
+  std::vector<Instruction> i = {{OpCode::INT_PUSH_CONSTANT, 2},
+                                {OpCode::INT_PUSH_CONSTANT, 2},
+                                {OpCode::INT_ADD},
+                                {OpCode::FUNCTION_RETURN},
                                 END_SECTION};
 
   m->functions.push_back(b9::FunctionDef{"add_args", 0, i, 2, 4});
@@ -35,24 +35,24 @@ std::shared_ptr<Module> makeSimpleModule() {
 
 std::shared_ptr<Module> makeComplexModule() {
   auto m = std::make_shared<Module>();
-  std::vector<Instruction> f1 = {{ByteCode::INT_PUSH_CONSTANT, 2},
-                                 {ByteCode::INT_PUSH_CONSTANT, 2},
-                                 {ByteCode::INT_ADD},
-                                 {ByteCode::FUNCTION_RETURN},
+  std::vector<Instruction> f1 = {{OpCode::INT_PUSH_CONSTANT, 2},
+                                 {OpCode::INT_PUSH_CONSTANT, 2},
+                                 {OpCode::INT_ADD},
+                                 {OpCode::FUNCTION_RETURN},
                                  END_SECTION};
 
-  std::vector<Instruction> f2 = {{ByteCode::PUSH_FROM_VAR, 0},
-                                 {ByteCode::PRIMITIVE_CALL, 0},
-                                 {ByteCode::DROP, 0},
-                                 {ByteCode::INT_PUSH_CONSTANT, 0},
-                                 {ByteCode::FUNCTION_RETURN, 0},
+  std::vector<Instruction> f2 = {{OpCode::PUSH_FROM_VAR, 0},
+                                 {OpCode::PRIMITIVE_CALL, 0},
+                                 {OpCode::DROP, 0},
+                                 {OpCode::INT_PUSH_CONSTANT, 0},
+                                 {OpCode::FUNCTION_RETURN, 0},
                                  END_SECTION};
 
-  std::vector<Instruction> f3 = {{ByteCode::PUSH_FROM_VAR, 0},
-                                 {ByteCode::PRIMITIVE_CALL, 1},
-                                 {ByteCode::DROP, 0},
-                                 {ByteCode::INT_PUSH_CONSTANT, 0},
-                                 {ByteCode::FUNCTION_RETURN, 0},
+  std::vector<Instruction> f3 = {{OpCode::PUSH_FROM_VAR, 0},
+                                 {OpCode::PRIMITIVE_CALL, 1},
+                                 {OpCode::DROP, 0},
+                                 {OpCode::INT_PUSH_CONSTANT, 0},
+                                 {OpCode::FUNCTION_RETURN, 0},
                                  END_SECTION};
 
   m->functions.push_back(b9::FunctionDef{"add_args", 0, f1, 1, 1});
@@ -100,18 +100,18 @@ bool roundTripInstructions(std::vector<Instruction> instructions) {
 }
 
 TEST(RoundTripSerializationTest, testInstructions) {
-  std::vector<Instruction> instructions1 = {{ByteCode::INT_PUSH_CONSTANT, 2},
-                                            {ByteCode::INT_PUSH_CONSTANT, 2},
-                                            {ByteCode::INT_ADD},
-                                            {ByteCode::FUNCTION_RETURN},
+  std::vector<Instruction> instructions1 = {{OpCode::INT_PUSH_CONSTANT, 2},
+                                            {OpCode::INT_PUSH_CONSTANT, 2},
+                                            {OpCode::INT_ADD},
+                                            {OpCode::FUNCTION_RETURN},
                                             END_SECTION};
 
   std::vector<Instruction> instructions2 = {};
 
-  std::vector<Instruction> instructions3 = {{ByteCode::INT_PUSH_CONSTANT, 2},
-                                            {ByteCode::INT_PUSH_CONSTANT, 2},
-                                            {ByteCode::INT_ADD},
-                                            {ByteCode::FUNCTION_RETURN}};
+  std::vector<Instruction> instructions3 = {{OpCode::INT_PUSH_CONSTANT, 2},
+                                            {OpCode::INT_PUSH_CONSTANT, 2},
+                                            {OpCode::INT_ADD},
+                                            {OpCode::FUNCTION_RETURN}};
 
   std::vector<Instruction> instructions4 = {END_SECTION};
 
@@ -133,10 +133,10 @@ void roundTripFunctionData(FunctionDef& f) {
 }
 
 TEST(RoundTripSerializationTest, testFunctionData) {
-  std::vector<Instruction> i1 = {{ByteCode::INT_PUSH_CONSTANT, 2},
-                                 {ByteCode::INT_PUSH_CONSTANT, 2},
-                                 {ByteCode::INT_ADD},
-                                 {ByteCode::FUNCTION_RETURN},
+  std::vector<Instruction> i1 = {{OpCode::INT_PUSH_CONSTANT, 2},
+                                 {OpCode::INT_PUSH_CONSTANT, 2},
+                                 {OpCode::INT_ADD},
+                                 {OpCode::FUNCTION_RETURN},
                                  END_SECTION};
   auto f1 = FunctionDef("testName", 0, i1, 4, 5);
 
@@ -163,10 +163,10 @@ void roundTripFunctionSection(std::vector<FunctionDef> functions) {
 }
 
 TEST(RoundTripSerializationTest, testFunctionSection) {
-  std::vector<Instruction> i1 = {{ByteCode::INT_PUSH_CONSTANT, 2},
-                                 {ByteCode::INT_PUSH_CONSTANT, 2},
-                                 {ByteCode::INT_ADD},
-                                 {ByteCode::FUNCTION_RETURN},
+  std::vector<Instruction> i1 = {{OpCode::INT_PUSH_CONSTANT, 2},
+                                 {OpCode::INT_PUSH_CONSTANT, 2},
+                                 {OpCode::INT_ADD},
+                                 {OpCode::FUNCTION_RETURN},
                                  END_SECTION};
   auto f1 = FunctionDef("testName", 0, i1, 4, 5);
   std::vector<FunctionDef> functions;
@@ -174,10 +174,10 @@ TEST(RoundTripSerializationTest, testFunctionSection) {
 
   roundTripFunctionSection(functions);
 
-  std::vector<Instruction> i2 = {{ByteCode::INT_PUSH_CONSTANT, 2},
-                                 {ByteCode::INT_PUSH_CONSTANT, 2},
-                                 {ByteCode::INT_ADD},
-                                 {ByteCode::FUNCTION_RETURN},
+  std::vector<Instruction> i2 = {{OpCode::INT_PUSH_CONSTANT, 2},
+                                 {OpCode::INT_PUSH_CONSTANT, 2},
+                                 {OpCode::INT_ADD},
+                                 {OpCode::FUNCTION_RETURN},
                                  END_SECTION};
   auto f2 = FunctionDef("testName", 5, i2, 1, 2);
   functions.push_back(f2);
@@ -205,10 +205,10 @@ TEST(RoundTripSerializationTest, testSerializeDeserialize) {
   roundTripSerializeDeserialize(m2);
 
   auto m3 = std::make_shared<Module>();
-  std::vector<Instruction> i = {{ByteCode::INT_PUSH_CONSTANT, 2},
-                                {ByteCode::INT_PUSH_CONSTANT, 2},
-                                {ByteCode::INT_ADD},
-                                {ByteCode::FUNCTION_RETURN},
+  std::vector<Instruction> i = {{OpCode::INT_PUSH_CONSTANT, 2},
+                                {OpCode::INT_PUSH_CONSTANT, 2},
+                                {OpCode::INT_ADD},
+                                {OpCode::FUNCTION_RETURN},
                                 END_SECTION};
   auto f = FunctionDef("testName", 0, i, 4, 5);
   std::vector<FunctionDef> functions;

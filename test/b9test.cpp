@@ -135,10 +135,10 @@ TEST(MyTest, arguments) {
   cfg.jit = true;
   b9::VirtualMachine vm{runtime, cfg};
   auto m = std::make_shared<Module>();
-  std::vector<Instruction> i = {{ByteCode::PUSH_FROM_VAR, 0},
-                                {ByteCode::PUSH_FROM_VAR, 1},
-                                {ByteCode::INT_ADD},
-                                {ByteCode::FUNCTION_RETURN},
+  std::vector<Instruction> i = {{OpCode::PUSH_FROM_VAR, 0},
+                                {OpCode::PUSH_FROM_VAR, 1},
+                                {OpCode::INT_ADD},
+                                {OpCode::FUNCTION_RETURN},
                                 END_SECTION};
   uint32_t index = 0;
   m->functions.push_back(b9::FunctionDef{"add_args", index, i, 2, 0});
@@ -152,8 +152,8 @@ TEST(MyTest, jitSimpleProgram) {
   cfg.jit = true;
   b9::VirtualMachine vm{runtime, cfg};
   auto m = std::make_shared<Module>();
-  std::vector<Instruction> i = {{ByteCode::INT_PUSH_CONSTANT, 0xdead},
-                                {ByteCode::FUNCTION_RETURN},
+  std::vector<Instruction> i = {{OpCode::INT_PUSH_CONSTANT, 0xdead},
+                                {OpCode::FUNCTION_RETURN},
                                 END_SECTION};
   m->functions.push_back(b9::FunctionDef{"add", 0, i, 0, 0});
   vm.load(m);
@@ -167,8 +167,8 @@ TEST(MyTest, haveAVariable) {
   cfg.jit = true;
   b9::VirtualMachine vm{runtime, cfg};
   auto m = std::make_shared<Module>();
-  std::vector<Instruction> i = {{ByteCode::INT_PUSH_CONSTANT, 0xdead},
-                                {ByteCode::FUNCTION_RETURN},
+  std::vector<Instruction> i = {{OpCode::INT_PUSH_CONSTANT, 0xdead},
+                                {OpCode::FUNCTION_RETURN},
                                 END_SECTION};
   m->functions.push_back(b9::FunctionDef{"add", 0, i, 0, 0});
   vm.load(m);
@@ -181,17 +181,17 @@ TEST(ObjectTest, allocateSomething) {
   b9::VirtualMachine vm{runtime, {}};
   auto m = std::make_shared<Module>();
   std::vector<Instruction> i = {
-      {ByteCode::NEW_OBJECT},            // new object
-      {ByteCode::POP_INTO_VAR, 0},       // store object into var0
-      {ByteCode::STR_PUSH_CONSTANT, 0},  // push "Hello, World"
-      {ByteCode::PUSH_FROM_VAR, 0},      // push var0 aka object
-      {ByteCode::POP_INTO_OBJECT,
+      {OpCode::NEW_OBJECT},            // new object
+      {OpCode::POP_INTO_VAR, 0},       // store object into var0
+      {OpCode::STR_PUSH_CONSTANT, 0},  // push "Hello, World"
+      {OpCode::PUSH_FROM_VAR, 0},      // push var0 aka object
+      {OpCode::POP_INTO_OBJECT,
        0},                           // pop "Hello, World" into object at slot 0
-      {ByteCode::SYSTEM_COLLECT},    // GC. Object is kept alive by var0
-      {ByteCode::PUSH_FROM_VAR, 0},  // push object
-      {ByteCode::PUSH_FROM_OBJECT, 0},  // get the string back
-      {ByteCode::PRIMITIVE_CALL, 0},    // call b9_prim_print_string
-      {ByteCode::FUNCTION_RETURN},      // finish with constant 0
+      {OpCode::SYSTEM_COLLECT},    // GC. Object is kept alive by var0
+      {OpCode::PUSH_FROM_VAR, 0},  // push object
+      {OpCode::PUSH_FROM_OBJECT, 0},  // get the string back
+      {OpCode::PRIMITIVE_CALL, 0},    // call b9_prim_print_string
+      {OpCode::FUNCTION_RETURN},      // finish with constant 0
       END_SECTION};
   m->strings.push_back("Hello, World");
   m->functions.push_back(b9::FunctionDef{"allocate_object", 0, i, 0, 1});

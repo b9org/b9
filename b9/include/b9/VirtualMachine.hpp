@@ -143,7 +143,7 @@ Om::RawValue interpret_3(ExecutionContext *context,
                          const std::size_t functionIndex, Om::RawValue p1,
                          Om::RawValue p2, Om::RawValue p3);
 
-void primitive_call(ExecutionContext *context, Parameter value);
+void primitive_call(ExecutionContext *context, Immediate value);
 }
 
 #endif  // B9_VIRTUALMACHINE_HPP_

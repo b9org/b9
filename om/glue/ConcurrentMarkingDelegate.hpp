@@ -140,7 +140,7 @@ class MM_ConcurrentMarkingDelegate {
   /**
    * Determine the next unit of tracing work that must be performed during root
    * collection. Each distinct value returned represents a discrete unit of
-   * language-dependent root collection work. The executionMode parameter
+   * language-dependent root collection work. The executionMode immediate
    * represents the current tracing mode, the returned valued with be the next
    * tracing mode. The first call during a concurrent collection cycle will
    * receive CONCURRENT_ROOT_TRACING as current tracing mode. When all language
@@ -170,7 +170,7 @@ class MM_ConcurrentMarkingDelegate {
   }
 
   /**
-   * Trace language-defined roots. The concurrentStatus parameter receives the
+   * Trace language-defined roots. The concurrentStatus immediate receives the
    * current tracing mode, which will be one of the language-defined tracing
    * modes returned by getNextTracingMode().
    *

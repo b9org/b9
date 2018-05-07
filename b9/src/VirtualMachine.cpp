@@ -55,7 +55,7 @@ void VirtualMachine::load(std::shared_ptr<const Module> module) {
   compiledFunctions_.reserve(getFunctionCount());
 }
 
-/// ByteCode Interpreter
+/// OpCode Interpreter
 
 
 JitFunction VirtualMachine::getJitAddress(std::size_t functionIndex) {
@@ -186,7 +186,7 @@ RawValue interpret_3(ExecutionContext *context, const std::size_t functionIndex,
 }
 
 // For primitive calls
-void primitive_call(ExecutionContext *context, Parameter value) {
+void primitive_call(ExecutionContext *context, Immediate value) {
   context->doPrimitiveCall(value);
 }
 

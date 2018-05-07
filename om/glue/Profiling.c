@@ -92,7 +92,7 @@ static void ex_omr_sampleStack(OMR_VMThread *omrVMThread, const void *context) {
  * may also need to call this function periodically.
  *
  * In this example, a backoff counter is used to control the sampling frequency
- * and restrict the overhead of callstack sampling. The context parameter
+ * and restrict the overhead of callstack sampling. The context immediate
  * represents a language-specific data structure containing the current
  * callstack, such as the current thread.
  *
@@ -120,7 +120,7 @@ void ex_omr_checkSampleStack(OMR_VMThread *omrVMThread, const void *context) {
  *
  * Method dictionary entries are needed to provide the names and locations of
  * methods that are sampled (see omr_ras_sampleStackTraceStart(),
- * omr_ras_sampleStackTraceContinue()). The method parameter represents a
+ * omr_ras_sampleStackTraceContinue()). The method immediate represents a
  * language-specific data structure which contains the properties for the method
  * entry.
  *

@@ -527,7 +527,7 @@ Now let's take a look at the while-loop and switch-statement.
 
 ```cpp
   while (*instructionPointer != END_SECTION) {
-    switch (instructionPointer->byteCode()) {
+    switch (instructionPointer->opCode()) {
 
       ...
 
@@ -796,7 +796,7 @@ bool MethodBuilder::generateILForBytecode(
 
   bool handled = true;
 
-  switch (instruction.byteCode()) {
+  switch (instruction.opCode()) {
 
     ...
     

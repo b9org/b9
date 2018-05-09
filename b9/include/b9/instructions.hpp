@@ -33,7 +33,7 @@ enum class OpCode : RawOpCode {
   // Push into a local variable
   POP_INTO_VAR = 0x8,
 
-  // Integer bytecodes
+  // Integer opcodes
 
   // Add two integers
   INT_ADD = 0x9,
@@ -159,11 +159,11 @@ using RawInstruction = std::uint32_t;
 /// signed values, so special care must be taken to sign extend 24bits to 32.
 using Immediate = std::int32_t;
 
-/// A RawInstruction wrapper that will encode and decode instruction bytecodes
+/// A RawInstruction wrapper that will encode and decode instruction opcodes
 /// and immediate parameters. The Instruction layout is:
 /// ```
 /// |0000-0000 0000-0000 0000-0000 0000-0000
-/// |---------| bytecode (8bits)
+/// |---------| opcode (8bits)
 ///           |-----------------------------| immediate (24bits)
 /// ```
 ///
@@ -185,14 +185,14 @@ class Instruction {
     return *this;
   }
 
-  /// Encode the bytecode
-  constexpr Instruction &byteCode(OpCode op) noexcept {
+  /// Encode the opcode
+  constexpr Instruction &opCode(OpCode op) noexcept {
     raw_ = (RawInstruction(op) << OPCODE_SHIFT) | (raw_ & IMMEDIATE_MASK);
     return *this;
   }
 
-  /// Decode the bytecode
-  constexpr OpCode byteCode() const noexcept {
+  /// Decode the opcode
+  constexpr OpCode opCode() const noexcept {
     return static_cast<OpCode>(raw_ >> OPCODE_SHIFT);
   }
 
@@ -229,14 +229,14 @@ class Instruction {
 };
 
 /// A special constant indicating the end of a sequence of instructions.
-/// END_SECTION should be the last element in every functions bytecode array.
+/// END_SECTION should be the last element in every functions opcode array.
 static constexpr Instruction END_SECTION{OpCode::END_SECTION, 0};
 
 /// Print an Instruction.
 inline std::ostream &operator<<(std::ostream &out, Instruction i) {
-  out << "(" << i.byteCode();
+  out << "(" << i.opCode();
 
-  switch (i.byteCode()) {
+  switch (i.opCode()) {
     // 0 parameters
     case OpCode::END_SECTION:
     case OpCode::DUPLICATE:

@@ -334,7 +334,7 @@ bool MethodBuilder::generateILForBytecode(
     //               builder->ConstInt64(instruction.raw()));
   }
 
-  switch (instruction.byteCode()) {
+  switch (instruction.opCode()) {
     case OpCode::PUSH_FROM_VAR:
       push(builder, loadVarIndex(builder, instruction.immediate()));
       if (nextBytecodeBuilder)

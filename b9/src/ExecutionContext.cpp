@@ -93,7 +93,7 @@ StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
   stack_.pushn(function->nregs);
 
   while (*instructionPointer != END_SECTION) {
-    switch (instructionPointer->byteCode()) {
+    switch (instructionPointer->opCode()) {
       case OpCode::FUNCTION_CALL:
         doFunctionCall(instructionPointer->immediate());
         break;

@@ -99,12 +99,13 @@ std::size_t VirtualMachine::getFunctionCount() {
 
 void VirtualMachine::generateAllCode() {
   assert(cfg_.jit);
-  auto functionIndex = 0;
+  compiledFunctions_.push_back(nullptr); //TODO: <body> function right now is "compiled" as null
+  auto functionIndex = 1; //0 index for <body>
 
   while (functionIndex < getFunctionCount()) {
     if (cfg_.debug)
       std::cout << "\nJitting function: " << getFunction(functionIndex)->name
-                << std::endl;
+                << " of index: " << functionIndex << std::endl;
     auto func = compiler_->generateCode(functionIndex);
     compiledFunctions_.push_back(func);
     ++functionIndex;

@@ -36,9 +36,9 @@ var OperatorCode = Object.freeze({
 	"POP_INTO_VAR": 8,
 	"INT_ADD": 9,
 	"INT_SUB": 10,
-  	"INT_MUL": 11,
-  	"INT_DIV": 12,
-  	"INT_PUSH_CONSTANT": 13,
+	"INT_MUL": 11,
+	"INT_DIV": 12,
+	"INT_PUSH_CONSTANT": 13,
 	"INT_NOT": 14,
 	"INT_JMP_EQ": 15,
 	"INT_JMP_NEQ": 16,
@@ -125,6 +125,150 @@ var SymbolTable = function () {
 	}
 }
 
+function GlobalContext() {
+	// index 0 is reserved for the script body!
+	this.nextFunctionId = 1;
+}
+
+function BlockEntry(globalContext) { //currently unused
+	
+	this.functionTable = {};
+	this.localTable = new SymbolTable();
+
+	this.lookup = function (symbol) {
+
+		var id = undefined;
+
+		id = this.localTable.lookup(symbol);
+		if (id !== undefined) {
+			return { type: "local", id: id };
+		}
+
+		id = this.functionTable[symbol];
+		if (id !== undefined) {
+			return { type: "function", id: id };
+		}
+		//console.warn("Did not find symbol: " + symbol + " in: " + JSON.stringify(this, null, 2));
+		return undefined;
+	}
+
+	this.defineFunction = function (symbol) {
+		this.functionTable[symbol] = globalContext.nextFunctionId;
+		globalContext.nextFunctionId++;
+		return this.lookup(symbol);
+	}
+
+	this.defineLocal = function (symbol) {
+		return this.localTable.get(symbol);
+	}
+};
+
+function BlockContext(globalContext) { //currently unused
+
+	this.stack = [];
+
+	this.push = function (entry) {
+		if (entry == undefined) {
+			throw new Error("Entering undefined block entry");
+		}
+		this.stack.push(entry);
+		return entry;
+	}
+
+	this.pop = function () {
+		return this.stack.pop();
+	}
+
+	this.defineFunction = function (symbol) {
+		return this.stack[this.stack.length - 1].defineFunction(symbol);
+	}
+
+	this.lookup = function (symbol) {
+		var i = 0;
+		for (; i < this.stack.length; i++) {
+			var result = this.stack[this.stack.length - i - 1].lookup(symbol);
+			if (result != undefined) {
+				return result;
+			}
+		}
+		return undefined;
+	}
+}
+
+function FunctionEntry(globalContext) {
+
+	this.parameterTable = new SymbolTable();
+	this.localTable = new SymbolTable();
+	this.functionTable = {};
+
+	this.defineParameter = function (symbol) {
+		return this.parameterTable.get(symbol);
+	}
+
+	this.defineFunction = function (symbol) {
+		this.functionTable[symbol] = globalContext.nextFunctionId;
+		globalContext.nextFunctionId++;
+		return this.lookup(symbol);
+	}
+
+	this.defineLocal = function (symbol) {
+		return this.localTable.get(symbol);
+	}
+
+	this.lookup = function (symbol) {
+
+		var id = undefined;
+
+		id = this.localTable.lookup(symbol);
+		if (id !== undefined) {
+			return { type: "local", id: id };
+		}
+
+		id = this.parameterTable.lookup(symbol);
+		if (id != undefined){
+			return {type: "parameter", id: id};
+		}
+
+		id = this.functionTable[symbol];
+		if (id !== undefined) {
+			return { type: "function", id: id };
+		}
+		return undefined;
+	}
+};
+
+function FunctionContext() {
+	this.stack = [];
+
+	this.currentFunction = function() {
+		return this.stack[this.stack.length - 1];
+	}
+
+	this.enterFunction = function (functionEntry) {
+		if (functionEntry == undefined) {
+			throw new Error("Entering undefined function entry");
+		}
+		this.stack.push(functionEntry);
+	}
+
+	this.exitFunction = function () {
+		this.stack.pop();
+	}
+
+	this.lookup = function (symbol) {
+		var i = 0;
+		for (; i < this.stack.length; i++) {
+			var result = this.stack[this.stack.length - i - 1].lookup(symbol);
+			if (result != undefined) {
+				result.hops = i;
+				return result;
+			}
+		}
+		throw new Error("could not find symbol: " + symbol + " in:\n" + JSON.stringify(this.stack, null, 2));
+		return undefined;
+	}
+};
+
 var LabelTable = function () {
 
 	this.table = [];
@@ -149,15 +293,12 @@ var LabelTable = function () {
 
 };
 
-var LexicalContext = function (outer) {
-	new SymbolTable();
-	this.outer = outer;
-};
-
 /// A section of code. CodeBody has information about args and registers, but no information about indexes or it's name.
 /// The name-to-index mapping is managed externally, by the module's FunctionTable. Eventually, the args and registers
 /// might move to a lexical environment, and this will become a simple bytecode array.
-function FunctionDefinition(outer) {
+function FunctionDefinition(outer, name, index) {
+	this.name = name;
+	this.index = index;
 	this.args = new SymbolTable();
 	this.regs = new SymbolTable();
 	this.labels = new LabelTable();
@@ -225,57 +366,15 @@ function FunctionDefinition(outer) {
 
 };
 
-/// The function table tracks function names and indexes. When a new name is encountered, the table automatically
-/// creates a new stub function definition. Eventually, it's expected that the definition will be filled in, later in
-/// the parsed script. Leaving any function undefined is an error.
-function FunctionTable() {
-
-	this.names = new SymbolTable();
-	this.bodies = [];
-
-	/// Look up the index of a 
-	this.indexof = function (name) {
-		return names.table.get(name);
-	};
-
-	/// Lookup a function's ID by name. If the function name hasn't been encountered before, reserve an ID for the name.
-	this.get = function (name) {
-		var id = this.names.get(name);
-		if (!this.bodies[id]) {
-			this.bodies[id] = null;
-		}
-		return id;
-	};
-
-	this.newFunctionDefinition = function (name, context) {
-		var id = this.names.get(name);
-		if (this.bodies[id]) {
-			throw "Error: function defined twice";
-		}
-		var func = new FunctionDefinition(context);
-		this.bodies[id] = func;
-		return func;
-	}
-
-	/// callback(name, index, body)
-	this.forEach = function (callback) {
-		var me = this;
-		this.names.forEach(function (name, index) {
-			callback(name, index, me.bodies[index]);
-		});
-	};
-};
-
 function Module() {
-
 	this.resolved = false;
-	this.functions = new FunctionTable();
+	this.functions = [];
 	this.strings = new SymbolTable();
 
 	/// After the module has been entirely built up, resolve any undefined references.
 	this.resolve = function () {
 		var me = this;
-		this.functions.forEach(function (name, index, body) {
+		this.functions.forEach(function (body) {
 			if (!body) {
 				throw "Undefined function reference: " + name;
 			}
@@ -307,16 +406,13 @@ function Module() {
 	this.outputFunctionSection = function (out) {
 		var me = this;
 		outputUInt32(out, 1); // the section code.
-		outputUInt32(out, this.functions.bodies.length);
-		this.functions.forEach(function (name, index, body) {
-			me.outputFunction(out, name, index, body);
-		});
-	}
-
-	this.outputFunction = function (out, name, index, body) {
-		outputString(out, name);
-		outputUInt32(out, index);
-		body.output(out);
+		outputUInt32(out, this.functions.length);
+		for (var i = 0; i < this.functions.length; ++i) {
+			var func = this.functions[i];
+			outputString(out, func.name);
+			outputUInt32(out, func.index);
+			func.output(out);
+		}
 	}
 
 	this.outputStringSection = function (out) {
@@ -330,15 +426,96 @@ function Module() {
 
 function FirstPassCodeGen() {
 
+	this.globalContext = new GlobalContext();
+	this.functionContext = new FunctionContext(this.globalContext);
 	this.module = undefined;
 	this.func = undefined;
 
 	this.compile = function (syntax) {
 		this.module = new Module();
-		var func = new FunctionDefinition(null); // top level
+		var func = new FunctionDefinition(null, "<body>", 0); // top level
+		this.module.functions.push(func);
+		this.augmentAST(syntax);
+		this.functionContext.enterFunction(syntax.functionEntry);
 		this.handleBody(func, syntax.body);
+		func.instructions.push(new Instruction("END_SECTION", 0)); //end of top level function
+		this.functionContext.exitFunction(); 
 		return this.module;
 	};
+
+	this.augmentAST = function (syntax) {
+		var global = new GlobalContext();
+		
+		syntax.functionEntry = new FunctionEntry(global);
+	
+		var stack = [{ todo: Object.assign([], syntax.body), func: syntax.functionEntry }];
+
+		while (stack.length != 0) {
+			var work = stack[stack.length - 1];
+
+			if (work.todo.length == 0) {
+				stack.pop();
+				continue;
+			}
+
+			var func = work.func;
+			var node = work.todo.shift();
+
+			switch (node.type) {
+				case "ForStatement":
+					node.init.functionEntry = func;
+					if (node.init.type == "VariableDeclaration"){
+						node.init.declarations.forEach(function(d){
+							node.init.functionEntry.defineLocal(d.id.name);
+						});
+					}
+					node.update.functionEntry = func;
+					node.body.functionEntry = func;
+					work = { todo: Object.assign([], node.body), func: func};
+					stack.push(work);
+					break;
+				case "WhileStatement":
+					node.body.functionEntry = func;
+					work = { todo: Object.assign([], node.body), func: func};
+					stack.push(work);
+					break;
+				case "IfStatement":
+					node.test.functionEntry = func;
+					if (node.alternate != null){
+						node.alternate.functionEntry = func;
+					}
+					node.consequent.blockEntry = func;
+					work = { todo: Object.assign([],node.consequent.body), func: func};
+					stack.push(work);
+					break;
+				case "FunctionDeclaration":
+					func.defineFunction(node.id.name);
+					node.functionEntry = new FunctionEntry(global);
+				
+					node.params.forEach(function (param) {
+						// TODO: Use Parameter Table from function entry
+						node.functionEntry.defineLocal(param.name);
+					});
+
+					node.body.functionEntry = node.functionEntry;
+					work = { todo: Object.assign([], node.body.body), func: node.functionEntry };
+					stack.push(work);
+				break;
+				case "BlockStatement":
+					node.functionEntry = func;
+					work = { todo: Object.assign([], node.body), func: func };
+					stack.push(work);
+					break;
+				case "VariableDeclaration":
+					node.declarations.forEach(function (d) {
+						func.defineLocal(d.id.name);
+					});
+					break;
+				default:
+					break;
+			}
+		}
+	}
 
 	this.handleBody = function (func, body) {
 		var me = this;
@@ -380,17 +557,35 @@ function FirstPassCodeGen() {
 	}
 
 	this.emitPushFromVar = function (func, name) {
-		var index = func.localIndex(name);
-		func.instructions.push(new Instruction("PUSH_FROM_VAR", index));
+		var symbol = this.functionContext.lookup(name);
+
+		// if (symbol.hops > 0) {
+		// 	throw new Error("Cannot access across scopes: " + symbol);
+		// }
+		if (symbol.type != "local") {
+			throw new Error("Cannot read from non-local: " + symbol);
+		}
+
+		func.instructions.push(new Instruction("PUSH_FROM_VAR", symbol.id));
 	}
 
 	this.emitPopIntoVar = function (func, name) {
-		var index = func.localIndex(name);
-		func.instructions.push(new Instruction("POP_INTO_VAR", index));
+		var symbol = this.functionContext.lookup(name);
+		// if (symbol.hops > 0) {
+		// 	throw new Error("Cannot access across scopes: " + symbol);
+		// }
+		if (symbol.type != "local") {
+			throw new Error("Cannot store to non-local: " + symbol);
+		}
+
+		func.instructions.push(new Instruction("POP_INTO_VAR", symbol.id));
 	}
 
-	this.handleFunctionDeclaration = function (func, declaration) {
-		var inner = this.module.functions.newFunctionDefinition(declaration.id.name, func);
+	this.handleFunctionDeclaration = function (outerFunc, declaration) {
+		this.functionContext.enterFunction(declaration.functionEntry);
+		var symbol = this.functionContext.lookup(declaration.id.name);
+		var inner = new FunctionDefinition(outerFunc, declaration.id.name, symbol.id);
+		this.module.functions.push(inner);
 		declaration.params.forEach(function (param) {
 			inner.args.get(param.name);
 		});
@@ -404,6 +599,7 @@ function FirstPassCodeGen() {
 		}
 
 		inner.instructions.push(new Instruction("END_SECTION", 0));
+		this.functionContext.exitFunction();
 	};
 
 	this.handleAssignmentExpression = function (func, expression) {
@@ -590,13 +786,10 @@ function FirstPassCodeGen() {
 	};
 
 	this.emitFunctionCall = function (func, expression) {
-		// TODO: what is this doing?
-		expression.arguments.forEach(function (element) {
-			element.isParameter = true;
-		});
+		var symbol = this.functionContext.lookup(expression.callee.name);
+		if (symbol.type != "function") throw Error("Target not a direct function call: " + JSON.stringify(symbol));
 		this.handleBody(func, expression.arguments);
-		var target = this.module.functions.get(expression.callee.name);
-		func.instructions.push(new Instruction("FUNCTION_CALL", target));
+		func.instructions.push(new Instruction("FUNCTION_CALL", symbol.id));
 	}
 
 	this.emitPrimitiveCall = function (func, expression) {

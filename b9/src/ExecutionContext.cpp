@@ -189,7 +189,8 @@ StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
     instructionPointer++;
     programCounter_++;
   }
-  throw std::runtime_error("Reached end of function");
+  //throw std::runtime_error("Reached end of function");
+  return StackElement(0);
 }
 
 void ExecutionContext::push(StackElement value) { stack_.push(value); }

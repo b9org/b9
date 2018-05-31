@@ -285,10 +285,10 @@ TEST(ReadBinaryTest, runValidModule) {
   serialize(buffer, *m1);
 
   auto m2 = deserialize(buffer);
-  OMR::Om::ProcessRuntime runtime;
+  Om::ProcessRuntime runtime;
   VirtualMachine vm(runtime, {});
   vm.load(m2);
-  vm.run(0, {OMR::Om::Value(1), OMR::Om::Value(2)});
+  vm.run(0, {Om::Value(Om::AS_INT48, 1), Om::Value(Om::AS_INT48, 2)});
 }
 
 }  // namespace test

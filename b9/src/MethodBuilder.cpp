@@ -268,7 +268,7 @@ TR::IlValue *MethodBuilder::loadVarIndex(TR::IlBuilder *builder, int varindex) {
     TR::IlValue *address = builder->IndexAt(globalTypes().stackElementPtr, args,
                                             builder->ConstInt32(varindex));
     TR::IlValue *data = builder->LoadAt(globalTypes().stackElementPtr, address);
-    result = builder->And(builder->ConstInt64(Om::VALUE_MASK), data);
+    result = builder->And(builder->ConstInt64(Om::Value::PAYLOAD_MASK), data);
   }
 
   return result;
@@ -289,7 +289,7 @@ void MethodBuilder::storeVarIndex(TR::IlBuilder *builder, int varindex,
     // this needs to be encoded for the GC to walk the stack.
     builder->StoreAt(
         address,
-        builder->Or(builder->ConstInt64(Om::BoxKindTag::INTEGER), value));
+        builder->Or(builder->ConstInt64(Om::Value::Tag::INT48), value));
   }
 }
 
@@ -355,7 +355,7 @@ bool MethodBuilder::generateILForBytecode(
                              builder->Load("stackBase"));
 
       builder->Return(
-          builder->Or(result, builder->ConstInt64(Om::BoxKindTag::INTEGER)));
+          builder->Or(result, builder->ConstInt64(Om::Value::Tag::INT48)));
     } break;
     case OpCode::DUPLICATE: {
       auto x = pop(builder);
@@ -745,7 +745,7 @@ TR::IlValue *MethodBuilder::pop(TR::BytecodeBuilder *builder) {
 
     TR::IlValue *boxedInt = vmState->_stack->Pop(builder);
 
-    return builder->And(boxedInt, builder->ConstInt64(Om::VALUE_MASK));
+    return builder->And(boxedInt, builder->ConstInt64(Om::Value::PAYLOAD_MASK));
   } else {
     TR::IlValue *stack = builder->StructFieldInstanceAddress(
         "b9::ExecutionContext", "stack_", builder->Load("executionContext"));
@@ -761,7 +761,7 @@ TR::IlValue *MethodBuilder::pop(TR::BytecodeBuilder *builder) {
     TR::IlValue *boxedInt =
         builder->LoadAt(globalTypes().stackElementPtr, newStackTop);
 
-    return builder->And(boxedInt, builder->ConstInt64(Om::VALUE_MASK));
+    return builder->And(boxedInt, builder->ConstInt64(Om::Value::PAYLOAD_MASK));
   }
 }
 
@@ -772,7 +772,7 @@ void MethodBuilder::push(TR::BytecodeBuilder *builder, TR::IlValue *value) {
         dynamic_cast<VirtualMachineState *>(builder->vmState());
 
     auto boxedInt =
-        builder->Or(value, builder->ConstInt64(Om::BoxKindTag::INTEGER));
+        builder->Or(value, builder->ConstInt64(Om::Value::Tag::INT48));
 
     vmState->_stack->Push(builder, boxedInt);
   } else {
@@ -783,7 +783,7 @@ void MethodBuilder::push(TR::BytecodeBuilder *builder, TR::IlValue *value) {
         builder->LoadIndirect("b9::OperandStack", "top_", stack);
 
     auto boxedInt =
-        builder->Or(value, builder->ConstInt64(Om::BoxKindTag::INTEGER));
+        builder->Or(value, builder->ConstInt64(Om::Value::Tag::INT48));
 
     builder->StoreAt(stackTop,
                      builder->ConvertTo(globalTypes().stackElement, boxedInt));

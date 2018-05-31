@@ -3,15 +3,13 @@
 #include <b9/compiler/Compiler.hpp>
 
 #include <omrgc.h>
-#include <OMR/Om/Allocator.inl.hpp>
-#include <OMR/Om/ArrayBuffer.inl.hpp>
-#include <OMR/Om/ArrayBufferMap.inl.hpp>
-#include <OMR/Om/Map.inl.hpp>
-#include <OMR/Om/Object.inl.hpp>
-#include <OMR/Om/ObjectMap.inl.hpp>
-#include <OMR/Om/RootRef.inl.hpp>
-#include <OMR/Om/Value.hpp>
 #include "Jit.hpp"
+
+#include <OMR/Om/ArrayOperations.hpp>
+#include <OMR/Om/ShapeOperations.hpp>
+#include <OMR/Om/ObjectOperations.hpp>
+#include <OMR/Om/RootRef.hpp>
+#include <OMR/Om/Value.hpp>
 
 #include <sys/time.h>
 #include <cassert>
@@ -29,8 +27,8 @@ ExecutionContext::ExecutionContext(VirtualMachine &virtualMachine,
     : omContext_(virtualMachine.memoryManager()),
       virtualMachine_(&virtualMachine),
       cfg_(&cfg) {
-  omContext().userRoots().push_back(
-      [this](Om::Context &cx, Om::Visitor &v) { this->visit(cx, v); });
+  omContext().userMarkingFns().push_back(
+      [this](Om::MarkingVisitor &v) { this->visit(v); });
 }
 
 void ExecutionContext::reset() {
@@ -74,7 +72,7 @@ Om::Value ExecutionContext::callJitFunction(JitFunction jitFunction,
     result = jitFunction(this);
   }
 
-  return Om::Value(Om::FROM_RAW, result);
+  return Om::Value(Om::AS_RAW, result);
 }
 
 StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
@@ -171,10 +169,10 @@ StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
         doNewObject();
         break;
       case OpCode::PUSH_FROM_OBJECT:
-        doPushFromObject(OMR::Om::Id(instructionPointer->immediate()));
+        doPushFromObject(Om::Id(instructionPointer->immediate()));
         break;
       case OpCode::POP_INTO_OBJECT:
-        doPopIntoObject(OMR::Om::Id(instructionPointer->immediate()));
+        doPopIntoObject(Om::Id(instructionPointer->immediate()));
         break;
       case OpCode::CALL_INDIRECT:
         doCallIndirect();
@@ -228,51 +226,41 @@ void ExecutionContext::doPushIntoVar(StackElement *args, Immediate offset) {
 }
 
 void ExecutionContext::doIntAdd() {
-  std::int32_t right = stack_.pop().getInteger();
-  std::int32_t left = stack_.pop().getInteger();
-  StackElement result;
-  result.setInteger(left + right);
-  push(result);
+  auto right = stack_.pop().getInt48();
+  auto left = stack_.pop().getInt48();
+  push({Om::AS_INT48, left + right});
 }
 
 void ExecutionContext::doIntSub() {
-  std::int32_t right = stack_.pop().getInteger();
-  std::int32_t left = stack_.pop().getInteger();
-  StackElement result;
-  result.setInteger(left - right);
-  push(result);
+  auto right = stack_.pop().getInt48();
+  auto left = stack_.pop().getInt48();
+  push({Om::AS_INT48, left - right});
 }
 
 void ExecutionContext::doIntMul() {
-  std::int32_t right = stack_.pop().getInteger();
-  std::int32_t left = stack_.pop().getInteger();
-  StackElement result;
-  result.setInteger(left * right);
-  push(result);
+  auto right = stack_.pop().getInt48();
+  auto left = stack_.pop().getInt48();
+  push({Om::AS_INT48, left * right});
 }
 
 void ExecutionContext::doIntDiv() {
-  std::int32_t right = stack_.pop().getInteger();
-  std::int32_t left = stack_.pop().getInteger();
-  StackElement result;
-  result.setInteger(left / right);
-  push(result);
+  auto right = stack_.pop().getInt48();
+  auto left = stack_.pop().getInt48();
+  push({Om::AS_INT48, left / right});
 }
 
 void ExecutionContext::doIntPushConstant(Immediate value) {
-  stack_.push(StackElement().setInteger(value));
+  stack_.push(StackElement().setInt48(value));
 }
 
 void ExecutionContext::doIntNot() {
-  std::int32_t i = stack_.pop().getInteger();
-  StackElement v;
-  v.setInteger(!i);
-  push(v);
+  auto x = stack_.pop().getInt48();
+  push({Om::AS_INT48, !x});
 }
 
 Immediate ExecutionContext::doIntJmpEq(Immediate delta) {
-  std::int32_t right = stack_.pop().getInteger();
-  std::int32_t left = stack_.pop().getInteger();
+  auto right = stack_.pop().getInt48();
+  auto left = stack_.pop().getInt48();
   if (left == right) {
     return delta;
   }
@@ -280,8 +268,8 @@ Immediate ExecutionContext::doIntJmpEq(Immediate delta) {
 }
 
 Immediate ExecutionContext::doIntJmpNeq(Immediate delta) {
-  std::int32_t right = stack_.pop().getInteger();
-  std::int32_t left = stack_.pop().getInteger();
+  auto right = stack_.pop().getInt48();
+  auto left = stack_.pop().getInt48();
   if (left != right) {
     return delta;
   }
@@ -289,8 +277,8 @@ Immediate ExecutionContext::doIntJmpNeq(Immediate delta) {
 }
 
 Immediate ExecutionContext::doIntJmpGt(Immediate delta) {
-  std::int32_t right = stack_.pop().getInteger();
-  std::int32_t left = stack_.pop().getInteger();
+  auto right = stack_.pop().getInt48();
+  auto left = stack_.pop().getInt48();
   if (left > right) {
     return delta;
   }
@@ -299,8 +287,8 @@ Immediate ExecutionContext::doIntJmpGt(Immediate delta) {
 
 // ( left right -- )
 Immediate ExecutionContext::doIntJmpGe(Immediate delta) {
-  std::int32_t right = stack_.pop().getInteger();
-  std::int32_t left = stack_.pop().getInteger();
+  auto right = stack_.pop().getInt48();
+  auto left = stack_.pop().getInt48();
   if (left >= right) {
     return delta;
   }
@@ -309,8 +297,8 @@ Immediate ExecutionContext::doIntJmpGe(Immediate delta) {
 
 // ( left right -- )
 Immediate ExecutionContext::doIntJmpLt(Immediate delta) {
-  std::int32_t right = stack_.pop().getInteger();
-  std::int32_t left = stack_.pop().getInteger();
+  auto right = stack_.pop().getInt48();
+  auto left = stack_.pop().getInt48();
   if (left < right) {
     return delta;
   }
@@ -319,8 +307,8 @@ Immediate ExecutionContext::doIntJmpLt(Immediate delta) {
 
 // ( left right -- )
 Immediate ExecutionContext::doIntJmpLe(Immediate delta) {
-  std::int32_t right = stack_.pop().getInteger();
-  std::int32_t left = stack_.pop().getInteger();
+  auto right = stack_.pop().getInt48();
+  auto left = stack_.pop().getInt48();
   if (left <= right) {
     return delta;
   }
@@ -329,27 +317,27 @@ Immediate ExecutionContext::doIntJmpLe(Immediate delta) {
 
 // ( -- string )
 void ExecutionContext::doStrPushConstant(Immediate param) {
-  stack_.push(OMR::Om::Value().setInteger(param));
+  stack_.push({Om::AS_INT48, param});
 }
 
 // ( -- object )
 void ExecutionContext::doNewObject() {
-  auto ref = OMR::Om::Object::allocate(*this);
-  stack_.push(OMR::Om::Value(ref));
+  auto ref = Om::allocateEmptyObject(*this);
+  stack_.push(Om::Value{Om::AS_REF, ref});
 }
 
 // ( object -- value )
 void ExecutionContext::doPushFromObject(Om::Id slotId) {
   auto value = stack_.pop();
-  if (!value.isPtr()) {
+  if (!value.isRef()) {
     throw std::runtime_error("Accessing non-object value as an object.");
   }
-  auto obj = value.getPtr<Om::Object>();
+  auto obj = value.getRef<Om::Object>();
   Om::SlotDescriptor descriptor;
-  auto found = Om::Object::lookup(*this, obj, slotId, descriptor);
+  auto found = Om::lookupSlot(*this, obj, slotId, descriptor);
   if (found) {
     Om::Value result;
-    result = Om::Object::getValue(*this, obj, descriptor);
+    result = Om::getValue(*this, obj, descriptor);
     stack_.push(result);
   } else {
     throw std::runtime_error("Accessing an object's field that doesn't exist.");
@@ -358,30 +346,30 @@ void ExecutionContext::doPushFromObject(Om::Id slotId) {
 
 // ( object value -- )
 void ExecutionContext::doPopIntoObject(Om::Id slotId) {
-  if (!stack_.peek().isPtr()) {
+  if (!stack_.peek().isRef()) {
     throw std::runtime_error("Accessing non-object as an object");
   }
 
   std::size_t offset = 0;
-  auto object = stack_.pop().getPtr<Om::Object>();
+  auto object = stack_.pop().getRef<Om::Object>();
 
   Om::SlotDescriptor descriptor;
-  bool found = Om::Object::lookup(*this, object, slotId, descriptor);
+  bool found = Om::lookupSlot(*this, object, slotId, descriptor);
 
   if (!found) {
     static constexpr Om::SlotType type(Om::Id(0), Om::CoreType::VALUE);
 
     Om::RootRef<Om::Object> root(*this, object);
-    auto map = Om::Object::transition(*this, root, {{type, slotId}});
+    auto map = Om::transitionLayout(*this, root, {{type, slotId}});
     assert(map != nullptr);
 
     // TODO: Get the descriptor fast after a single-slot transition.
-    Om::Object::lookup(*this, object, slotId, descriptor);
+    Om::lookupSlot(*this, object, slotId, descriptor);
     object = root.get();
   }
 
   auto val = pop();
-  Om::Object::setValue(*this, object, descriptor, val);
+  Om::setValue(*this, object, descriptor, val);
   // TODO: Write barrier the object on store.
 }
 
@@ -391,7 +379,7 @@ void ExecutionContext::doCallIndirect() {
 
 void ExecutionContext::doSystemCollect() {
   std::cout << "SYSTEM COLLECT!!!" << std::endl;
-  OMR_GC_SystemCollect(omContext_.omrVmThread(), 0);
+  OMR_GC_SystemCollect(omContext_.vmContext(), 0);
 }
 
 }  // namespace b9

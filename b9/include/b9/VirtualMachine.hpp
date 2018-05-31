@@ -6,16 +6,12 @@
 #include <b9/instructions.hpp>
 #include <b9/Module.hpp>
 
-#include <OMR/Om/Allocator.inl.hpp>
 #include <OMR/Om/Context.inl.hpp>
-#include <OMR/Om/Map.inl.hpp>
-#include <OMR/Om/MemoryManager.inl.hpp>
-#include <OMR/Om/Object.inl.hpp>
-#include <OMR/Om/ObjectMap.inl.hpp>
-#include <OMR/Om/RootRef.inl.hpp>
+#include <OMR/Om/MemorySystem.hpp>
+#include <OMR/Om/ObjectOperations.hpp>
+#include <OMR/Om/ShapeOperations.hpp>
+#include <OMR/Om/RootRef.hpp>
 #include <OMR/Om/Runtime.hpp>
-#include <OMR/Om/TransitionSet.inl.hpp>
-#include <OMR/Om/Traverse.hpp>
 #include <OMR/Om/Value.hpp>
 
 #include <cstring>
@@ -69,7 +65,7 @@ extern "C" typedef Om::RawValue (*JitFunction)(void *executionContext, ...);
 
 class VirtualMachine {
  public:
-  VirtualMachine(OMR::Om::ProcessRuntime &runtime, const Config &cfg);
+  VirtualMachine(Om::ProcessRuntime &runtime, const Config &cfg);
 
   ~VirtualMachine() noexcept;
 
@@ -100,9 +96,9 @@ class VirtualMachine {
 
   const std::shared_ptr<const Module> &module() { return module_; }
 
-  OMR::Om::MemoryManager &memoryManager() { return memoryManager_; }
+  Om::MemorySystem &memoryManager() { return memoryManager_; }
 
-  const OMR::Om::MemoryManager &memoryManager() const { return memoryManager_; }
+  const Om::MemorySystem &memoryManager() const { return memoryManager_; }
 
   std::shared_ptr<Compiler> compiler() { return compiler_; }
 
@@ -113,7 +109,7 @@ class VirtualMachine {
       b9_prim_print_string, b9_prim_print_number, b9_prim_print_stack};
 
   Config cfg_;
-  OMR::Om::MemoryManager memoryManager_;
+  Om::MemorySystem memoryManager_;
   std::shared_ptr<Compiler> compiler_;
   std::shared_ptr<const Module> module_;
   std::vector<JitFunction> compiledFunctions_;
@@ -134,7 +130,7 @@ using namespace b9;
 
 Om::RawValue interpret_0(ExecutionContext *context,
                          const std::size_t functionIndex);
-OMR::Om::RawValue interpret_1(ExecutionContext *context,
+Om::RawValue interpret_1(ExecutionContext *context,
                               const std::size_t functionIndex, Om::RawValue p1);
 Om::RawValue interpret_2(ExecutionContext *context,
                          const std::size_t functionIndex, Om::RawValue p1,

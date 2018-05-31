@@ -3,8 +3,8 @@
 #include <b9/deserialize.hpp>
 
 #include <OMR/Om/Context.inl.hpp>
-#include <OMR/Om/MemoryManager.inl.hpp>
-#include <OMR/Om/RootRef.inl.hpp>
+#include <OMR/Om/MemorySystem.hpp>
+#include <OMR/Om/RootRef.hpp>
 #include <OMR/Om/Runtime.hpp>
 
 #include <strings.h>
@@ -106,7 +106,7 @@ static bool parseArguments(RunConfig& cfg, const int argc, char* argv[]) {
 
   // check for user defined arguments
   for (; i < argc; i++) {
-    cfg.usrArgs.push_back(OMR::Om::Value(std::atoi(argv[i])));
+    cfg.usrArgs.push_back(Om::Value(Om::AS_INT48, std::atoi(argv[i])));
   }
 
   // check that dependent options are enabled
@@ -126,7 +126,7 @@ static bool parseArguments(RunConfig& cfg, const int argc, char* argv[]) {
   return true;
 }
 
-static void run(OMR::Om::ProcessRuntime& runtime, const RunConfig& cfg) {
+static void run(Om::ProcessRuntime& runtime, const RunConfig& cfg) {
   b9::VirtualMachine vm{runtime, cfg.b9};
 
   std::ifstream file(cfg.moduleName, std::ios_base::in | std::ios_base::binary);
@@ -145,7 +145,7 @@ static void run(OMR::Om::ProcessRuntime& runtime, const RunConfig& cfg) {
 }
 
 int main(int argc, char* argv[]) {
-  OMR::Om::ProcessRuntime runtime;
+  Om::ProcessRuntime runtime;
   RunConfig cfg;
 
   if (!parseArguments(cfg, argc, argv)) {

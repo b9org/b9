@@ -4,6 +4,8 @@
 #include <b9/OperandStack.hpp>
 #include <b9/VirtualMachine.hpp>
 
+#include <iostream>
+
 namespace b9 {
 
 class ExecutionContext {
@@ -21,8 +23,8 @@ class ExecutionContext {
   const OperandStack &stack() const { return stack_; }
 
   template <typename VisitorT>
-  void visit(Om::Context &cx, VisitorT &visitor) {
-    stack_.visit(cx, visitor);
+  void visit(VisitorT &visitor) {
+    stack_.visit(visitor);
   }
 
   Om::RunContext &omContext() { return omContext_; }
@@ -88,9 +90,9 @@ class ExecutionContext {
 
   void doNewObject();
 
-  void doPushFromObject(OMR::Om::Id slotId);
+  void doPushFromObject(Om::Id slotId);
 
-  void doPopIntoObject(OMR::Om::Id slotId);
+  void doPopIntoObject(Om::Id slotId);
 
   void doCallIndirect();
 
@@ -116,11 +118,3 @@ struct ExecutionContextOffset {
 }  // namespace b9
 
 #endif  // B9_EXECUTIONCONTEXT_HPP_
-
-/*
-    000
-   00000
-    000 MMM
-       MMMMM
-        MMM
-*/

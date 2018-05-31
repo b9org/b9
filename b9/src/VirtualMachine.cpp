@@ -135,15 +135,7 @@ StackElement VirtualMachine::run(const std::size_t functionIndex,
     throw BadFunctionCallException{message};
   }
 
-  // push user defined arguments to send to the program
-  for (std::size_t i = 0; i < argsCount; i++) {
-    auto idx = argsCount - i - 1;
-    auto arg = usrArgs[idx];
-    executionContext->push(arg);
-  }
-
-  StackElement result = executionContext->interpret(functionIndex);
-
+  StackElement result = executionContext->run(functionIndex, usrArgs);
   return result;
 }
 
@@ -185,7 +177,8 @@ RawValue interpret_3(ExecutionContext *context, const std::size_t functionIndex,
 
 // For primitive calls
 void primitive_call(ExecutionContext *context, Immediate value) {
-  context->doPrimitiveCall(value);
+  PrimitiveFunction *primitive = context->virtualMachine()->getPrimitive(index);
+  (*primitive)(this);
 }
 
 }  // extern "C"

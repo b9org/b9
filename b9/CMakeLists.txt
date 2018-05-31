@@ -17,5 +17,5 @@ target_include_directories(b9
 target_link_libraries(b9
 	PUBLIC
 		jitbuilder
-		omr_om
+		omrgc
 )

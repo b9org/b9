@@ -45,7 +45,7 @@ const std::vector<const char*> TEST_NAMES = {
 };
 // clang-format on
 
-OMR::Om::ProcessRuntime runtime;
+Om::ProcessRuntime runtime;
 
 class InterpreterTest : public ::testing::Test {
  public:
@@ -68,7 +68,7 @@ TEST_F(InterpreterTest, interpreter) {
   vm.load(module_);
 
   for (auto test : TEST_NAMES) {
-    EXPECT_TRUE(vm.run(test, {}).getInteger()) << "Test Failed: " << test;
+    EXPECT_TRUE(vm.run(test, {}).getInt48()) << "Test Failed: " << test;
   }
 }
 
@@ -81,7 +81,7 @@ TEST_F(InterpreterTest, jit) {
   vm.generateAllCode();
 
   for (auto test : TEST_NAMES) {
-    EXPECT_TRUE(vm.run(test, {}).getInteger()) << "Test Failed: " << test;
+    EXPECT_TRUE(vm.run(test, {}).getInt48()) << "Test Failed: " << test;
   }
 }
 
@@ -95,7 +95,7 @@ TEST_F(InterpreterTest, jit_dc) {
   vm.generateAllCode();
 
   for (auto test : TEST_NAMES) {
-    EXPECT_TRUE(vm.run(test, {}).getInteger()) << "Test Failed: " << test;
+    EXPECT_TRUE(vm.run(test, {}).getInt48()) << "Test Failed: " << test;
   }
 }
 
@@ -110,7 +110,7 @@ TEST_F(InterpreterTest, jit_pp) {
   vm.generateAllCode();
 
   for (auto test : TEST_NAMES) {
-    EXPECT_TRUE(vm.run(test, {}).getInteger()) << "Test Failed: " << test;
+    EXPECT_TRUE(vm.run(test, {}).getInt48()) << "Test Failed: " << test;
   }
 }
 
@@ -126,7 +126,7 @@ TEST_F(InterpreterTest, jit_lvms) {
   vm.generateAllCode();
 
   for (auto test : TEST_NAMES) {
-    EXPECT_TRUE(vm.run(test, {}).getInteger()) << "Test Failed: " << test;
+    EXPECT_TRUE(vm.run(test, {}).getInt48()) << "Test Failed: " << test;
   }
 }
 
@@ -143,8 +143,8 @@ TEST(MyTest, arguments) {
   uint32_t index = 0;
   m->functions.push_back(b9::FunctionDef{"add_args", index, i, 2, 0});
   vm.load(m);
-  auto r = vm.run("add_args", {OMR::Om::Value{1}, OMR::Om::Value{2}});
-  EXPECT_EQ(r, Value(3));
+  auto r = vm.run("add_args", {{AS_INT48, 1}, {AS_INT48, 2}});
+  EXPECT_EQ(r, Value(AS_INT48, 3));
 }
 
 TEST(MyTest, jitSimpleProgram) {
@@ -159,7 +159,7 @@ TEST(MyTest, jitSimpleProgram) {
   vm.load(m);
   vm.generateAllCode();
   auto r = vm.run("add", {});
-  EXPECT_EQ(r, Value(0xdead));
+  EXPECT_EQ(r, Value(AS_INT48, 0xdead));
 }
 
 TEST(MyTest, haveAVariable) {
@@ -174,7 +174,7 @@ TEST(MyTest, haveAVariable) {
   vm.load(m);
   vm.generateAllCode();
   auto r = vm.run("add", {});
-  EXPECT_EQ(r, Value(0xdead));
+  EXPECT_EQ(r, Value(AS_INT48, 0xdead));
 }
 
 TEST(ObjectTest, allocateSomething) {
@@ -197,7 +197,7 @@ TEST(ObjectTest, allocateSomething) {
   m->functions.push_back(b9::FunctionDef{"allocate_object", 0, i, 0, 1});
   vm.load(m);
   Value r = vm.run("allocate_object", {});
-  EXPECT_EQ(r, Value(0));
+  EXPECT_EQ(r, Value(AS_INT48, 0));
 }
 
 }  // namespace test

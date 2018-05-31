@@ -3,6 +3,9 @@
 
 #include <OMR/Om/Context.hpp>
 #include <OMR/Om/Value.hpp>
+#include <OMR/Om/Printing.hpp>
+
+#include <iostream>
 
 namespace b9 {
 
@@ -58,10 +61,10 @@ class OperandStack {
   void restore(StackElement *top) { top_ = top; }
 
   template <typename VisitorT>
-  void visit(OMR::Om::Context &cx, VisitorT &visitor) {
-    for (StackElement element : *this) {
-      if (element.isPtr()) {
-        visitor.rootEdge(cx, this, (Om::Cell *)element.getPtr());
+  void visit(VisitorT &visitor) {
+    for (StackElement& element : *this) {
+      if (element.isRef()) {
+        visitor.edge(nullptr, Om::ValueSlotHandle(&element));
       }
     }
   }

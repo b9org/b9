@@ -30,7 +30,7 @@ GlobalTypes::GlobalTypes(TR::TypeDictionary &td) {
 
   // Basic VM Data
 
-  stackElement = td.toIlType<OMR::Om::RawValue>();
+  stackElement = td.toIlType<Om::RawValue>();
   stackElementPtr = td.PointerTo(stackElement);
 
   instruction = td.toIlType<RawInstruction>();

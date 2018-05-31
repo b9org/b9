@@ -2,13 +2,11 @@
 #include <b9/ExecutionContext.hpp>
 #include <b9/compiler/Compiler.hpp>
 
-#include <OMR/Om/Allocator.inl.hpp>
-#include <OMR/Om/ArrayBuffer.inl.hpp>
-#include <OMR/Om/ArrayBufferMap.inl.hpp>
-#include <OMR/Om/Map.inl.hpp>
-#include <OMR/Om/Object.inl.hpp>
-#include <OMR/Om/ObjectMap.inl.hpp>
-#include <OMR/Om/RootRef.inl.hpp>
+#include <OMR/Om/Allocator.hpp>
+#include <OMR/Om/ArrayOperations.hpp>
+#include <OMR/Om/ShapeOperations.hpp>
+#include <OMR/Om/ObjectOperations.hpp>
+#include <OMR/Om/RootRef.hpp>
 #include <OMR/Om/Value.hpp>
 
 #include <omrgc.h>
@@ -27,7 +25,7 @@ namespace b9 {
 
 constexpr PrimitiveFunction *const VirtualMachine::primitives_[3];
 
-VirtualMachine::VirtualMachine(OMR::Om::ProcessRuntime &runtime,
+VirtualMachine::VirtualMachine(Om::ProcessRuntime &runtime,
                                const Config &cfg)
     : cfg_{cfg},
       memoryManager_(runtime),
@@ -166,22 +164,22 @@ RawValue interpret_0(ExecutionContext *context,
 
 RawValue interpret_1(ExecutionContext *context, const std::size_t functionIndex,
                      RawValue p1) {
-  context->push(Value{Om::FROM_RAW, p1});
+  context->push(Value{Om::AS_RAW, p1});
   return (RawValue)context->interpret(functionIndex);
 }
 
 RawValue interpret_2(ExecutionContext *context, const std::size_t functionIndex,
                      RawValue p1, RawValue p2) {
-  context->push(Value{Om::FROM_RAW, p1});
-  context->push(Value{Om::FROM_RAW, p2});
+  context->push(Value{Om::AS_RAW, p1});
+  context->push(Value{Om::AS_RAW, p2});
   return (RawValue)context->interpret(functionIndex);
 }
 
 RawValue interpret_3(ExecutionContext *context, const std::size_t functionIndex,
                      RawValue p1, RawValue p2, RawValue p3) {
-  context->push(Value{Om::FROM_RAW, p1});
-  context->push(Value{Om::FROM_RAW, p2});
-  context->push(Value{Om::FROM_RAW, p3});
+  context->push(Value{Om::AS_RAW, p1});
+  context->push(Value{Om::AS_RAW, p2});
+  context->push(Value{Om::AS_RAW, p3});
   return (RawValue)context->interpret(functionIndex);
 }
 

@@ -303,7 +303,7 @@ The entry point for `b9run` can be found in [b9run/main.cpp]. Let's take a look 
 
 ```c++
 int main(int argc, char* argv[]) {
-  OMR::Om::ProcessRuntime runtime;
+  Om::ProcessRuntime runtime;
   RunConfig cfg;
 
   if (!parseArguments(cfg, argc, argv)) {
@@ -369,7 +369,7 @@ The final thing to occur in `main` is a call to `run(runtime, cfg)`. We wrapped 
 Let's look at the `run` function called by `main`:
 
 ```cpp
-static void run(OMR::Om::ProcessRuntime& runtime, const RunConfig& cfg) {
+static void run(Om::ProcessRuntime& runtime, const RunConfig& cfg) {
   b9::VirtualMachine vm{runtime, cfg.b9};
 
   std::ifstream file(cfg.moduleName, std::ios_base::in | std::ios_base::binary);
@@ -552,10 +552,10 @@ We've excluded much of the interpreter loop for simplicity, but we'll discuss a 
 
 ```cpp
 void ExecutionContext::doIntAdd() {
-  std::int32_t right = stack_.pop().getInteger();
-  std::int32_t left = stack_.pop().getInteger();
+  std::int32_t right = stack_.pop().getInt48();
+  std::int32_t left = stack_.pop().getInt48();
   StackElement result;
-  result.setInteger(left + right);
+  result.setInt48(left + right);
   push(result);
 }
 ```
@@ -746,7 +746,7 @@ GlobalTypes::GlobalTypes(TR::TypeDictionary &td) {
 
   // Basic VM Data
 
-  stackElement = td.toIlType<OMR::Om::RawValue>();
+  stackElement = td.toIlType<Om::RawValue>();
   stackElementPtr = td.PointerTo(stackElement);
 
   instruction = td.toIlType<RawInstruction>();

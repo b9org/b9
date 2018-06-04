@@ -148,7 +148,6 @@ function BlockEntry(globalContext) { //currently unused
 		if (id !== undefined) {
 			return { type: "function", id: id };
 		}
-		//console.warn("Did not find symbol: " + symbol + " in: " + JSON.stringify(this, null, 2));
 		return undefined;
 	}
 
@@ -438,6 +437,8 @@ function FirstPassCodeGen() {
 		this.augmentAST(syntax);
 		this.functionContext.enterFunction(syntax.functionEntry);
 		this.handleBody(func, syntax.body);
+		func.instructions.push(new Instruction("INT_PUSH_CONSTANT", 0));
+		func.instructions.push(new Instruction("FUNCTION_RETURN", 0));
 		func.instructions.push(new Instruction("END_SECTION", 0)); //end of top level function
 		this.functionContext.exitFunction(); 
 		return this.module;

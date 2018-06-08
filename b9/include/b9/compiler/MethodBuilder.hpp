@@ -68,6 +68,10 @@ class MethodBuilder : public TR::MethodBuilder {
                                TR::BytecodeBuilder *nextBuilder);
   void handle_bc_pop_into_var(TR::BytecodeBuilder *builder,
                               TR::BytecodeBuilder *nextBuilder);
+  void handle_bc_push_from_arg(TR::BytecodeBuilder *builder,
+                               TR::BytecodeBuilder *nextBuilder);
+  void handle_bc_pop_into_arg(TR::BytecodeBuilder *builder,
+                              TR::BytecodeBuilder *nextBuilder);                                
   void handle_bc_sub(TR::BytecodeBuilder *builder,
                      TR::BytecodeBuilder *nextBuilder);
   void handle_bc_add(TR::BytecodeBuilder *builder,

@@ -48,7 +48,9 @@ var OperatorCode = Object.freeze({
 	"INT_JMP_LE": 20,
 	"STR_PUSH_CONSTANT": 21,
 	"STR_JMP_EQ": 22,
-	"STR_JMP_NEQ": 23
+	"STR_JMP_NEQ": 23,
+	"PUSH_FROM_ARG": 24,
+	"POP_INTO_ARG": 25
 });
 
 /// Binary comparison operators converted to jump instructions
@@ -494,8 +496,7 @@ function FirstPassCodeGen() {
 					node.functionEntry = new FunctionEntry(global);
 				
 					node.params.forEach(function (param) {
-						// TODO: Use Parameter Table from function entry
-						node.functionEntry.defineLocal(param.name);
+						node.functionEntry.defineParameter(param.name);
 					});
 
 					node.body.functionEntry = node.functionEntry;
@@ -563,11 +564,15 @@ function FirstPassCodeGen() {
 		// if (symbol.hops > 0) {
 		// 	throw new Error("Cannot access across scopes: " + symbol);
 		// }
-		if (symbol.type != "local") {
-			throw new Error("Cannot read from non-local: " + symbol);
+		if (symbol.type == "parameter") {
+			func.instructions.push(new Instruction("PUSH_FROM_ARG", symbol.id));
 		}
-
-		func.instructions.push(new Instruction("PUSH_FROM_VAR", symbol.id));
+		else if (symbol.type == "local"){
+			func.instructions.push(new Instruction("PUSH_FROM_VAR", symbol.id));
+		}
+		else{
+			throw new Error("Cannot read from lon-local/parameter: " + symbol);
+		}
 	}
 
 	this.emitPopIntoVar = function (func, name) {
@@ -575,11 +580,15 @@ function FirstPassCodeGen() {
 		// if (symbol.hops > 0) {
 		// 	throw new Error("Cannot access across scopes: " + symbol);
 		// }
-		if (symbol.type != "local") {
-			throw new Error("Cannot store to non-local: " + symbol);
+		if (symbol.type == "parameter") {
+			func.instructions.push(new Instruction("POP_INTO_ARG", symbol.id));
 		}
-
-		func.instructions.push(new Instruction("POP_INTO_VAR", symbol.id));
+		else if (symbol.type == "local"){
+			func.instructions.push(new Instruction("POP_INTO_VAR", symbol.id));
+		}
+		else{
+			throw new Error("Cannot store to non-local/parameter: " + symbol);
+		}
 	}
 
 	this.handleFunctionDeclaration = function (outerFunc, declaration) {

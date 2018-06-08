@@ -70,6 +70,12 @@ enum class OpCode : RawOpCode {
   // Jump if two strings are not equal
   STR_JMP_NEQ = 0x17,
 
+  //Push from function parameter
+  PUSH_FROM_ARG = 0x18,
+
+  //Pop into a parameter
+  POP_INTO_ARG = 0x19,
+
   // Object Bytecodes
 
   NEW_OBJECT = 0x20,
@@ -103,6 +109,10 @@ inline const char *toString(OpCode bc) {
       return "push_from_var";
     case OpCode::POP_INTO_VAR:
       return "pop_into_var";
+    case OpCode::PUSH_FROM_ARG:
+      return "push_from_arg";
+    case OpCode::POP_INTO_ARG:
+      return "pop_into_arg";
     case OpCode::INT_ADD:
       return "int_add";
     case OpCode::INT_SUB:

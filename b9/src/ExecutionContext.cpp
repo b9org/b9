@@ -117,8 +117,7 @@ StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
         doPushFromVar(args, instructionPointer->immediate());
         break;
       case OpCode::POP_INTO_VAR:
-        // TODO bad name, push or pop?
-        doPushIntoVar(args, instructionPointer->immediate());
+        doPopIntoVar(args, instructionPointer->immediate());
         break;
       case OpCode::INT_ADD:
         doIntAdd();
@@ -180,6 +179,12 @@ StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
       case OpCode::SYSTEM_COLLECT:
         doSystemCollect();
         break;
+      case OpCode::PUSH_FROM_ARG:
+        doPushFromArg(args, instructionPointer->immediate());
+        break;
+      case OpCode::POP_INTO_ARG:
+        doPopIntoArg(args, instructionPointer->immediate());
+        break;
       default:
         assert(false);
         break;
@@ -221,7 +226,15 @@ void ExecutionContext::doPushFromVar(StackElement *args, Immediate offset) {
   stack_.push(args[offset]);
 }
 
-void ExecutionContext::doPushIntoVar(StackElement *args, Immediate offset) {
+void ExecutionContext::doPopIntoVar(StackElement *args, Immediate offset) {
+  args[offset] = stack_.pop();
+}
+
+void ExecutionContext::doPushFromArg(StackElement *args, Immediate offset){
+  stack_.push(args[offset]);
+}
+
+void ExecutionContext::doPopIntoArg(StackElement *args, Immediate offset){
   args[offset] = stack_.pop();
 }
 

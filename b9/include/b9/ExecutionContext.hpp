@@ -60,7 +60,11 @@ class ExecutionContext {
 
   void doPushFromVar(StackElement *args, Immediate offset);
 
-  void doPushIntoVar(StackElement *args, Immediate offset);
+  void doPopIntoVar(StackElement *args, Immediate offset);
+
+  void doPushFromArg(StackElement *args, Immediate offset);
+
+  void doPopIntoArg(StackElement *args, Immediate offset);
 
   void doIntAdd();
 

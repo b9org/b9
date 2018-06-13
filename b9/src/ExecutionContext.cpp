@@ -26,12 +26,19 @@ ExecutionContext::ExecutionContext(VirtualMachine &virtualMachine,
                                    const Config &cfg)
     : omContext_(virtualMachine.memoryManager()),
       virtualMachine_(&virtualMachine),
-      cfg_(&cfg) {
+      cfg_(&cfg),
+      fn_(0),
+      ip_(0),
+      bp_(stack().top()),
+      continue_(true) {
   omContext().userMarkingFns().push_back(
       [this](Om::MarkingVisitor &v) { this->visit(v); });
 }
 
-void ExecutionContext::reset() { stack_.reset(); }
+void ExecutionContext::reset() {
+  continue_ = true;
+  stack_.reset();
+}
 
 Om::Value ExecutionContext::callJitFunction(JitFunction jitFunction,
                                             std::size_t nargs) {
@@ -83,7 +90,7 @@ StackElement ExecutionContext::run(std::size_t target,
     stack_.push(arg);
   }
 
-  enterCall(target);
+  enterCall(target, CallerType::OUTERMOST);
   interpret();
   return stack_.pop();
 }
@@ -100,7 +107,9 @@ StackElement ExecutionContext::run(std::size_t target) {
 }
 
 void ExecutionContext::interpret() {
-  while (*ip_ != END_SECTION) {
+  while (continue_) {
+    assert(ip_ != 0x00 || ip_ != (Instruction*)0x04);
+    std::cerr << getFunction(fn_).name << "(" << fn_ <<")" << ":" << ip_ << ": " << *ip_ << std::endl;
     switch (ip_->opCode()) {
       case OpCode::FUNCTION_CALL:
         doFunctionCall();
@@ -180,24 +189,27 @@ void ExecutionContext::interpret() {
       case OpCode::SYSTEM_COLLECT:
         doSystemCollect();
         break;
+      case OpCode::END_SECTION:
+        continue_ = false;
+        break;
       default:
         assert(false);
         break;
     }
   }
-  throw std::runtime_error("Reached end of function");
 }
 
-void ExecutionContext::enterCall(std::size_t target) {
+void ExecutionContext::enterCall(std::size_t target, CallerType type) {
   const FunctionDef &callee = getFunction(target);
 
   // reserve space for locals (args are already pushed)
   stack_.pushn(callee.nargs);
 
-  // save caller state
+  // save caller's interpreter state.
   stack_.push({Om::AS_UINT48, fn_});
   stack_.push({Om::AS_PTR, ip_});
   stack_.push({Om::AS_PTR, bp_});
+  stack_.push({Om::AS_UINT48, std::uint64_t(type)});
 
   // set up state for callee
   fn_ = target;
@@ -212,12 +224,28 @@ void ExecutionContext::exitCall() {
   stack_.restore(bp_);
 
   // restore caller state. note IP is restored verbatim, not incremented.
-  bp_ = stack_.pop().getPtr<Om::Value>();
-  ip_ = stack_.pop().getPtr<Instruction>();
-  fn_ = stack_.pop().getUint48();
+  CallerType type = CallerType(stack_.pop().getUint48());
 
-  // pop parameters and locals
-  stack_.popn(callee.nargs + callee.nregs);
+    // restore interpreter state
+    bp_ = stack_.pop().getPtr<Om::Value>();
+    ip_ = stack_.pop().getPtr<Instruction>();
+    fn_ = stack_.pop().getUint48();
+
+    // pop parameters and locals
+    stack_.popn(callee.nargs + callee.nregs);
+  
+  switch (type) {
+    case CallerType::INTERPRETER:
+      continue_ = true;
+      break;
+    case CallerType::OUTERMOST:
+      continue_ = false;
+      break;
+    case CallerType::COMPILED:
+      assert(0);
+      continue_ = false;
+      break;
+  }
 }
 
 void ExecutionContext::doFunctionCall() { enterCall(ip_->immediate()); }
@@ -439,4 +467,4 @@ void ExecutionContext::doSystemCollect() {
   ++ip_;
 }
 
-} // namespace b9
+}  // namespace b9

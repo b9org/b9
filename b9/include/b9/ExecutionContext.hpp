@@ -20,6 +20,7 @@ namespace b9 {
 // | * operand N
 // |---------- <<< bp
 // | Stack Frame:
+// | * caller type
 // | * caller bp
 // | * caller ip
 // | * caller fn
@@ -39,6 +40,10 @@ namespace b9 {
 // |---------- <<< stack base (low address)
 //
 // clang-format on
+
+enum class CallerType {
+  INTERPRETER, COMPILED, OUTERMOST
+};
 
 class ExecutionContext {
  public:
@@ -87,7 +92,7 @@ class ExecutionContext {
   /// Push all interpreter state to the operand stack. Adjusts bp, but leaves
   /// other state intact. The arguments are already pushed on the stack.
   /// Reserves space for target's locals.
-  void enterCall(std::size_t target);
+  void enterCall(std::size_t target, CallerType type = CallerType::INTERPRETER);
 
   /// Pop all interpreter state from the operand stack. Resets all interpreter
   /// state. Pops off the locals and arguments. Does not manage return values.
@@ -168,6 +173,8 @@ private:
   const Instruction *ip_;
   // pointer to base of current call frame.
   StackElement *bp_;
+  // becomes false when the interpreter must halt.
+  bool continue_;
   /// @}
 };
 

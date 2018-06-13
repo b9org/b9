@@ -3,6 +3,7 @@ add_library(b9 SHARED
 	src/Compiler.cpp
 	src/deserialize.cpp
 	src/ExecutionContext.cpp
+	src/JitHelpers.cpp
 	src/MethodBuilder.cpp
 	src/primitives.cpp
 	src/serialize.cpp

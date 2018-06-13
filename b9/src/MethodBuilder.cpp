@@ -1,5 +1,6 @@
 #include "b9/compiler/MethodBuilder.hpp"
 #include "b9/ExecutionContext.hpp"
+#include "b9/JitHelpers.hpp"
 #include "b9/VirtualMachine.hpp"
 #include "b9/compiler/Compiler.hpp"
 #include "b9/instructions.hpp"
@@ -134,19 +135,19 @@ void MethodBuilder::defineFunctions() {
     functionIndex++;
   }
 
-  DefineFunction((char *)"interpret_0", (char *)__FILE__, "interpret_0",
-                 (void *)&interpret_0, Int64, 2,
+  DefineFunction((char *)"interpret0", (char *)__FILE__, "interpret0",
+                 (void *)&interpret0, Int64, 2,
                  globalTypes().executionContextPtr, globalTypes().int32Ptr);
-  DefineFunction((char *)"interpret_1", (char *)__FILE__, "interpret_1",
-                 (void *)&interpret_1, Int64, 3,
+  DefineFunction((char *)"interpret1", (char *)__FILE__, "interpret1",
+                 (void *)&interpret1, Int64, 3,
                  globalTypes().executionContextPtr, globalTypes().int32Ptr,
                  globalTypes().stackElement);
-  DefineFunction((char *)"interpret_2", (char *)__FILE__, "interpret_2",
-                 (void *)&interpret_2, Int64, 4,
+  DefineFunction((char *)"interpret2", (char *)__FILE__, "interpret2",
+                 (void *)&interpret2, Int64, 4,
                  globalTypes().executionContextPtr, globalTypes().int32Ptr,
                  globalTypes().stackElement, globalTypes().stackElement);
-  DefineFunction((char *)"interpret_3", (char *)__FILE__, "interpret_3",
-                 (void *)&interpret_3, Int64, 5,
+  DefineFunction((char *)"interpret3", (char *)__FILE__, "interpret3",
+                 (void *)&interpret3, Int64, 5,
                  globalTypes().executionContextPtr, globalTypes().int32Ptr,
                  globalTypes().stackElement, globalTypes().stackElement,
                  globalTypes().stackElement);
@@ -293,7 +294,8 @@ TR::IlValue *MethodBuilder::loadVarIndex(TR::IlBuilder *builder, int varindex) {
     TR::IlValue *args = builder->Load("stackBase");
     TR::IlValue *address = builder->IndexAt(globalTypes().stackElementPtr, args,
                                             builder->ConstInt32(varindex));
-    TR::IlValue *result = builder->LoadAt(globalTypes().stackElementPtr, address);
+    TR::IlValue *result =
+        builder->LoadAt(globalTypes().stackElementPtr, address);
     return result;
   }
 }
@@ -471,8 +473,8 @@ bool MethodBuilder::generateILForBytecode(
       if (cfg_.directCall) {
         if (cfg_.debug)
           std::cout << "Handling direct calls to " << callee->name << std::endl;
-        const char *interpretName[] = {"interpret_0", "interpret_1",
-                                       "interpret_2", "interpret_3"};
+        const char *interpretName[] = {"interpret0", "interpret1", "interpret2",
+                                       "interpret3"};
         const char *nameToCall = interpretName[argsCount];
         bool interp = true;
         if (callee == function ||
@@ -554,9 +556,9 @@ bool MethodBuilder::generateILForBytecode(
           if (interp) {
             if (cfg_.debug)
               std::cout << "calling interpreter: interpreter_0" << std::endl;
-            result =
-                builder->Call("interpret_0", 2, builder->Load("executionContext"),
-                              builder->ConstInt32(callindex));
+            result = builder->Call("interpret_0", 2,
+                                   builder->Load("executionContext"),
+                                   builder->ConstInt32(callindex));
           } else {
             if (cfg_.debug)
               std::cout << "calling " << nameToCall << " directly" << std::endl;
@@ -569,12 +571,12 @@ bool MethodBuilder::generateILForBytecode(
       } else {
         // only use interpreter to dispatch the calls
         if (cfg_.debug)
-          std::cout << "Calling interpret_0 to dispatch call for "
+          std::cout << "Calling interpret0 to dispatch call for "
                     << callee->name << " with " << argsCount << " args"
                     << std::endl;
         builder->vmState()->Commit(builder);
         TR::IlValue *result =
-            builder->Call("interpret_0", 2, builder->Load("executionContext"),
+            builder->Call("interpret0", 2, builder->Load("executionContext"),
                           builder->ConstInt32(callindex));
         QRELOAD_DROP(builder, argsCount);
         pushValue(builder, result);

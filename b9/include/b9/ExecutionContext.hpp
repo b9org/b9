@@ -10,34 +10,35 @@ namespace b9 {
 
 // Stack layout in Base9:
 //
-// |---------- <<< stack upper limit.
+// clang-format off
+//
+// |---------- <<< stack upper limit (high address)
 // | ...
-// |---------- <<< top pointer
+// |---------- <<< tp
 // | Target Scratch Space:
 // | * operand 0
 // | * operand N
-// |---------- <<< base pointer
-// | Stack Frame (fixed size):
-// | * caller base pointer
-// | * caller instruction pointer (could be an offset into function's
-// instructions buffer) | * caller function index      (needed as well as IP) |
-// * caller arg pointer         (probably not needed--fixed offset from base
-// pointer) | * caller nargs               (needed later, for varargs) (not
-// implemented)
+// |---------- <<< bp
+// | Stack Frame:
+// | * caller bp
+// | * caller ip
+// | * caller fn
 // |----------
 // | Function Locals:
-// | * local 0
 // | * local N
+// | * local 0
 // |----------
-// | Function Call Parameters:
-// | * param 0
+// | Function Parameters (pushed left to right)
 // | * param N
-// |---------- <<< arg pointer    (aka bp - (frame_size + nregs + nargs))
+// | * param 0
+// |---------- <<< arg pointer (bp - (sizeof(frame) + callee.nregs + callee.nargs))
 // | Caller Scratch Space:
 // | * operand 0
 // | * operand N
 // | ...
-// |---------- <<< stack base
+// |---------- <<< stack base (low address)
+//
+// clang-format on
 
 class ExecutionContext {
  public:
@@ -48,6 +49,8 @@ class ExecutionContext {
   StackElement run(std::size_t target);
 
   void reset();
+
+  OperandStack &stack() { return stack_; }
 
   const OperandStack &stack() const { return stack_; }
 
@@ -71,8 +74,9 @@ class ExecutionContext {
   friend std::ostream &operator<<(std::ostream &stream,
                                   const ExecutionContext &ec);
 
- private:
+ protected:
   friend class ExecutionContextOffset;
+  friend class JitHelper;
 
   /// The main interpreter loop.
   void interpret();
@@ -89,10 +93,11 @@ class ExecutionContext {
   /// state. Pops off the locals and arguments. Does not manage return values.
   void exitCall();
 
-  const FunctionDef& getFunction(std::size_t target) { 
+  const FunctionDef &getFunction(std::size_t target) {
     return virtualMachine()->module()->functions[target];
   }
 
+private:
   /// @group Operator Handlers
   /// @{
 

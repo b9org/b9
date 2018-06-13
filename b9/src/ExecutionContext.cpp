@@ -6,9 +6,9 @@
 #include "Jit.hpp"
 
 #include <OMR/Om/ArrayOperations.hpp>
-#include <OMR/Om/ShapeOperations.hpp>
 #include <OMR/Om/ObjectOperations.hpp>
 #include <OMR/Om/RootRef.hpp>
+#include <OMR/Om/ShapeOperations.hpp>
 #include <OMR/Om/Value.hpp>
 
 #include <sys/time.h>
@@ -31,9 +31,7 @@ ExecutionContext::ExecutionContext(VirtualMachine &virtualMachine,
       [this](Om::MarkingVisitor &v) { this->visit(v); });
 }
 
-void ExecutionContext::reset() {
-  stack_.reset();
-}
+void ExecutionContext::reset() { stack_.reset(); }
 
 Om::Value ExecutionContext::callJitFunction(JitFunction jitFunction,
                                             std::size_t nargs) {
@@ -74,21 +72,27 @@ Om::Value ExecutionContext::callJitFunction(JitFunction jitFunction,
   return Om::Value(Om::AS_RAW, result);
 }
 
-StackElement ExecutionContext::run(std::size_t target, std::vector<StackElement> arguments) {
-  auto& callee = getFunction(target);
+StackElement ExecutionContext::run(std::size_t target,
+                                   std::vector<StackElement> arguments) {
+  auto &callee = getFunction(target);
   assert(callee.nargs == arguments.size());
+
+  reset();
 
   for (auto arg : arguments) {
     stack_.push(arg);
   }
+
   enterCall(target);
   interpret();
   return stack_.pop();
 }
 
 StackElement ExecutionContext::run(std::size_t target) {
-  auto& callee = getFunction(target);
+  auto &callee = getFunction(target);
   assert(callee.nargs == 0);
+
+  reset();
 
   enterCall(target);
   interpret();
@@ -185,15 +189,15 @@ void ExecutionContext::interpret() {
 }
 
 void ExecutionContext::enterCall(std::size_t target) {
-  const FunctionDef& callee = getFunction(target);
+  const FunctionDef &callee = getFunction(target);
 
   // reserve space for locals (args are already pushed)
   stack_.pushn(callee.nargs);
 
   // save caller state
   stack_.push({Om::AS_UINT48, fn_});
-  stack_.push({Om::AS_PTR,    ip_});
-  stack_.push({Om::AS_PTR,    bp_});
+  stack_.push({Om::AS_PTR, ip_});
+  stack_.push({Om::AS_PTR, bp_});
 
   // set up state for callee
   fn_ = target;
@@ -202,7 +206,7 @@ void ExecutionContext::enterCall(std::size_t target) {
 }
 
 void ExecutionContext::exitCall() {
-  const FunctionDef& callee = getFunction(fn_);
+  const FunctionDef &callee = getFunction(fn_);
 
   // pop callee scratch space
   stack_.restore(bp_);
@@ -216,9 +220,7 @@ void ExecutionContext::exitCall() {
   stack_.popn(callee.nargs + callee.nregs);
 }
 
-void ExecutionContext::doFunctionCall() {
-  enterCall(ip_->immediate());
-}
+void ExecutionContext::doFunctionCall() { enterCall(ip_->immediate()); }
 
 void ExecutionContext::doFunctionReturn() {
   StackElement result = stack_.pop();
@@ -234,9 +236,7 @@ void ExecutionContext::doPrimitiveCall() {
   ++ip_;
 }
 
-void ExecutionContext::doJmp() {
-  ip_ += ip_->immediate() + 1;
-}
+void ExecutionContext::doJmp() { ip_ += ip_->immediate() + 1; }
 
 void ExecutionContext::doDuplicate() {
   stack_.push(stack_.peek());
@@ -249,16 +249,18 @@ void ExecutionContext::doDrop() {
 }
 
 void ExecutionContext::doPushFromVar() {
-  const FunctionDef& callee = getFunction(fn_);
-  Om::Value* args = bp_ - (3 + callee.nargs + callee.nregs); // TODO: Improve variable indexing
+  const FunctionDef &callee = getFunction(fn_);
+  Om::Value *args = bp_ - (3 + callee.nargs +
+                           callee.nregs);  // TODO: Improve variable indexing
   Immediate index = ip_->immediate();
   stack_.push(args[index]);
   ++ip_;
 }
 
 void ExecutionContext::doPopIntoVar() {
-  const FunctionDef& callee = getFunction(fn_);
-  Om::Value* args = bp_ - (3 + callee.nargs + callee.nregs); // TODO: Improve variable indexing
+  const FunctionDef &callee = getFunction(fn_);
+  Om::Value *args = bp_ - (3 + callee.nargs +
+                           callee.nregs);  // TODO: Improve variable indexing
   Immediate index = ip_->immediate();
   args[index] = stack_.pop();
   ++ip_;
@@ -312,8 +314,7 @@ void ExecutionContext::doIntJmpNeq() {
   auto left = stack_.pop().getInt48();
   if (left != right) {
     ip_ += ip_->immediate() + 1;
-  }
-  else {
+  } else {
     ++ip_;
   }
 }
@@ -323,8 +324,7 @@ void ExecutionContext::doIntJmpGt() {
   auto left = stack_.pop().getInt48();
   if (left > right) {
     ip_ += ip_->immediate() + 1;
-  }
-  else {
+  } else {
     ++ip_;
   }
 }
@@ -335,8 +335,7 @@ void ExecutionContext::doIntJmpGe() {
   auto left = stack_.pop().getInt48();
   if (left >= right) {
     ip_ += ip_->immediate() + 1;
-  }
-  else {
+  } else {
     ++ip_;
   }
 }
@@ -347,8 +346,7 @@ void ExecutionContext::doIntJmpLt() {
   std::int32_t left = stack_.pop().getInt48();
   if (left < right) {
     ip_ += ip_->immediate() + 1;
-  }
-  else {
+  } else {
     ++ip_;
   }
 }
@@ -359,8 +357,7 @@ void ExecutionContext::doIntJmpLe() {
   auto left = stack_.pop().getInt48();
   if (left <= right) {
     ip_ += ip_->immediate() + 1;
-  }
-  else {
+  } else {
     ++ip_;
   }
 }
@@ -442,4 +439,4 @@ void ExecutionContext::doSystemCollect() {
   ++ip_;
 }
 
-}  // namespace b9
+} // namespace b9

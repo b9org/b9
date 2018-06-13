@@ -4,13 +4,11 @@ function factorial(a) {
   return a * factorial(a - 1);
 }
 
-function b9main() {
-    b9PrintString("");
-    b9PrintString("Factorial");
-    var a = 1;
-    while (a <= 20) {
-        b9PrintNumber(factorial(a));
-        a++;
-    }
-}
+b9PrintString("");
+b9PrintString("Factorial");
 
+var a = 1;
+while (a <= 20) {
+    b9PrintNumber(factorial(a));
+    a++;
+}

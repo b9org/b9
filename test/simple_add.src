@@ -2,7 +2,4 @@ function simple_add() {
 	return 1 + 2;
 }
 
-function b9main() {
-	return simple_add();
-}
-
+simple_add();

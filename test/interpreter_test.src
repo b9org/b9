@@ -263,6 +263,4 @@ function test_for_sum() {
     return 1;
 }
 
-function b9main() {
-    b9PrintString("This is the interpreter test suite - to run, run ./test/b9test");
-}
+b9PrintString("This is the interpreter test suite - to run, run ./test/b9test");

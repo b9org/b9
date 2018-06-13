@@ -6,10 +6,9 @@ function fib(a) {
     }
 }
 
-function b9main() {
-    b9PrintString("");
-    b9PrintString("Fibonacci");
-    for (var a = 1; a <= 20; a++) {
-        b9PrintNumber(fib(a));
-    }
+b9PrintString("");
+b9PrintString("Fibonacci");
+
+for (var a = 1; a <= 20; a++) {
+    b9PrintNumber(fib(a));
 }

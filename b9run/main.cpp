@@ -24,7 +24,7 @@ static const char* usage =
     "  -passparam:    Pass arguments in CPU registers\n"
     "  -lazyvmstate:  Only update the VM state as needed\n"
     "Run Options:\n"
-    "  -function <f>: Run the function <f> (default: b9main)\n"
+    "  -function <f>: Run the function <f> (default: first function)\n"
     "  -loop <n>:     Run the program <n> times (default: 1)\n"
     "  -inline <n>:   Set the jit's max inline depth (default: 0)\n"
     "  -debug:        Enable debug code\n"

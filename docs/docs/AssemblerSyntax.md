@@ -1,7 +1,7 @@
 ## Example Program
 
 ```lisp
-(function "b9main" 0 0
+(function "example" 0 0
   (push_string "Hello, World!")
   (call_primitive print_string))
 ```

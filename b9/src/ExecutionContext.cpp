@@ -109,7 +109,11 @@ StackElement ExecutionContext::run(std::size_t target) {
 void ExecutionContext::interpret() {
   while (continue_) {
     assert(ip_ != 0x00 || ip_ != (Instruction*)0x04);
-    std::cerr << getFunction(fn_).name << "(" << fn_ <<")" << ":" << ip_ << ": " << *ip_ << std::endl;
+
+    if (cfg_->debug) {
+      printTrace(std::cerr, getFunction(fn_), ip_) << std::endl;
+    }
+
     switch (ip_->opCode()) {
       case OpCode::FUNCTION_CALL:
         doFunctionCall();
@@ -195,6 +199,11 @@ void ExecutionContext::interpret() {
       default:
         assert(false);
         break;
+    }
+
+    if (cfg_->debug) {
+      backtrace(std::cerr) << std::endl;
+      // printStack(std::cerr, stack());
     }
   }
 }
@@ -465,6 +474,91 @@ void ExecutionContext::doSystemCollect() {
   std::cout << "SYSTEM COLLECT!!!" << std::endl;
   OMR_GC_SystemCollect(omContext_.vmContext(), 0);
   ++ip_;
+}
+
+/// prints (top, base]
+void printStackSegment(std::ostream& out, const Om::Value* top,
+                       const Om::Value* base) {
+  out << "\n    (stack";
+  for (const Om::Value* x = top - 1; x >= base; --x) {
+    out << "\n      " << *x;
+  }
+  out << ")";
+}
+
+void printLocals(std::ostream& out, const Om::Value* locals,
+                 std::size_t nlocals) {
+  out << "\n    (locals";
+  for (std::size_t i = 0; i < nlocals; ++i) {
+    out << "\n      "
+        << "(local " << i << " " << locals[i] << ")";
+  }
+  out << ")";
+}
+
+void printParams(std::ostream& out, const Om::Value* params,
+                 std::size_t nparams) {
+  out << "\n    (params";
+  for (std::size_t i = 0; i < nparams; ++i) {
+    out << "\n      "
+        << "(param " << i << " " << params[i] << ")";
+  }
+  out << ")";
+}
+
+std::ostream& ExecutionContext::backtrace(std::ostream& out) const {
+  out << "(backtrace";
+
+  // first frame:
+
+  std::size_t fn = fn_;
+  const Om::Value* bp = bp_;
+  const Instruction* ip = ip_;
+  const Om::Value* tp = stack().top();
+
+  std::size_t i = 0;
+
+  while (bp > stack().base()) {
+    printCall(out, i, fn, ip, tp, bp);
+
+    // next frame:
+
+    ++i;
+
+    const FunctionDef& callee = getFunction(fn);
+    const Om::Value* frame = bp;
+
+    bp = frame[-2].getPtr<Om::Value>();
+    ip = frame[-3].getPtr<const Instruction>();
+    fn = frame[-4].getUint48();
+    tp = frame - 4 - callee.nregs - callee.nargs;
+  };
+
+  out << ")";
+
+  return out;
+}
+
+void ExecutionContext::printCall(std::ostream& out, std::size_t i,
+                                 std::size_t fn, const Instruction* ip,
+                                 const Om::Value* tp, const Om::Value* bp) const {
+  const FunctionDef& callee = getFunction(fn);
+  std::size_t nlocals = callee.nregs;
+  std::size_t nparams = callee.nargs;
+
+  out << "\n  (frame " << i;
+  out << " (fn " << callee.name << " " << fn << ")";
+
+  printStackSegment(out, tp, bp);
+  printLocals(out, bp - 4 - nlocals, nlocals);
+  printParams(out, bp - 4 - nlocals - nparams, nparams);
+
+  out << ")";
+}
+
+std::ostream& printTrace(std::ostream& out, const b9::FunctionDef& function,
+                    const b9::Instruction* ip) {
+  return out << "(trace " << function.name << " " << ip << " " << *ip << ")";
 }
 
 }  // namespace b9

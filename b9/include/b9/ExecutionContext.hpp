@@ -79,6 +79,8 @@ class ExecutionContext {
   friend std::ostream &operator<<(std::ostream &stream,
                                   const ExecutionContext &ec);
 
+  std::ostream &backtrace(std::ostream &out) const;
+
  protected:
   friend class ExecutionContextOffset;
   friend class JitHelper;
@@ -98,11 +100,15 @@ class ExecutionContext {
   /// state. Pops off the locals and arguments. Does not manage return values.
   void exitCall();
 
-  const FunctionDef &getFunction(std::size_t target) {
+  const FunctionDef &getFunction(std::size_t target) const {
     return virtualMachine()->module()->functions[target];
   }
 
-private:
+ private:
+  void printCall(std::ostream &out, std::size_t i, std::size_t fn,
+                 const Instruction *ip, const Om::Value *tp,
+                 const Om::Value *bp) const;
+
   /// @group Operator Handlers
   /// @{
 
@@ -191,6 +197,9 @@ struct ExecutionContextOffset {
 
   static constexpr std::size_t BP = offsetof(ExecutionContext, bp_);
 };
+
+std::ostream &printTrace(std::ostream &out, const b9::FunctionDef &function,
+                         const b9::Instruction *ip);
 
 }  // namespace b9
 

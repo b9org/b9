@@ -553,9 +553,9 @@ bool MethodBuilder::generateILForBytecode(
           builder->vmState()->Commit(builder);
           if (interp) {
             if (cfg_.debug)
-              std::cout << "calling interpreter " << nameToCall << std::endl;
+              std::cout << "calling interpreter: interpreter_0" << std::endl;
             result =
-                builder->Call(nameToCall, 2, builder->Load("executionContext"),
+                builder->Call("interpret_0", 2, builder->Load("executionContext"),
                               builder->ConstInt32(callindex));
           } else {
             if (cfg_.debug)

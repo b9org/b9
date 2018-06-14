@@ -350,10 +350,13 @@ bool MethodBuilder::generateILForBytecode(
                 << ": ";
     }
 
+    builder->Call("print_stack", 1, builder->Load("executionContext"));
+
+    builder->Call(
+        "trace", 2, builder->ConstAddress(function),
+        builder->ConstAddress(&function->instructions[instructionIndex]));
+
     builder->vmState()->Commit(builder);
-    // builder->Call("b9PrintStack", 3, Load("executionContext"),
-    //               builder->ConstInt64(bytecodeIndex),
-    //               builder->ConstInt64(instruction.raw()));
   }
 
   switch (instruction.opCode()) {

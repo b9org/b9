@@ -9,6 +9,18 @@
 
 namespace b9 {
 
+namespace ValueBuilder {
+
+TR::IlValue *getInt48(TR::BytecodeBuilder *builder, TR::IlValue *value) {
+  return builder->And(value, builder->ConstInt64(Om::Value::PAYLOAD_MASK));
+}
+
+TR::IlValue *fromInt48(TR::BytecodeBuilder *builder, TR::IlValue *value) {
+  return builder->Or(value, builder->ConstInt64(Om::Value::Tag::INT48));
+}
+
+}  // namespace ValueBuilder
+
 MethodBuilder::MethodBuilder(VirtualMachine &virtualMachine,
                              const std::size_t functionIndex)
     : TR::MethodBuilder(&virtualMachine.compiler()->typeDictionary()),

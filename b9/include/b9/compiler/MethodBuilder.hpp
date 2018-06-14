@@ -42,9 +42,13 @@ class MethodBuilder : public TR::MethodBuilder {
 
   // Helpers
 
-  TR::IlValue *pop(TR::BytecodeBuilder *builder);
+  void pushValue(TR::BytecodeBuilder *builder, TR::IlValue *value);
 
-  void push(TR::BytecodeBuilder *builder, TR::IlValue *value);
+  TR::IlValue *popValue(TR::BytecodeBuilder *builder);
+
+  void pushInt48(TR::BytecodeBuilder *builder, TR::IlValue *value);
+
+  TR::IlValue *popInt48(TR::BytecodeBuilder *builder);
 
   void drop(TR::BytecodeBuilder *builder);
 

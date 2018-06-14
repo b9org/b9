@@ -1,4 +1,5 @@
 #include "b9/compiler/MethodBuilder.hpp"
+#include "b9/ExecutionContext.hpp"
 #include "b9/VirtualMachine.hpp"
 #include "b9/compiler/Compiler.hpp"
 #include "b9/instructions.hpp"
@@ -7,7 +8,32 @@
 #include <ilgen/VirtualMachineRegister.hpp>
 #include <ilgen/VirtualMachineRegisterInStruct.hpp>
 
+extern "C" {
+
+void trace(b9::FunctionDef *function, b9::Instruction *instruction) {
+  std::cerr << function->name << "@" << instruction << ": " << *instruction
+            << std::endl;
+}
+
+void print_stack(b9::ExecutionContext *context) {
+  printStack(std::cerr, context->stack());
+}
+
+}  // extern "C"
+
 namespace b9 {
+
+namespace ValueBuilder {
+
+TR::IlValue *getInt48(TR::BytecodeBuilder *builder, TR::IlValue *value) {
+  return builder->And(value, builder->ConstInt64(Om::Value::PAYLOAD_MASK));
+}
+
+TR::IlValue *fromInt48(TR::BytecodeBuilder *builder, TR::IlValue *value) {
+  return builder->Or(value, builder->ConstInt64(Om::Value::Tag::INT48));
+}
+
+}  // namespace ValueBuilder
 
 MethodBuilder::MethodBuilder(VirtualMachine &virtualMachine,
                              const std::size_t functionIndex)
@@ -127,9 +153,11 @@ void MethodBuilder::defineFunctions() {
   DefineFunction((char *)"primitive_call", (char *)__FILE__, "primitive_call",
                  (void *)&primitive_call, NoType, 2,
                  globalTypes().executionContextPtr, Int32);
-  // DefineFunction((char *)"b9PrintStack", (char *)__FILE__, "b9PrintStack",
-  //                (void *)&b9PrintStack, NoType, 4, globalTypes().addressPtr,
-  //                Int64, Int64, Int64);
+  DefineFunction((char *)"trace", (char *)__FILE__, "trace", (void *)&trace,
+                 NoType, 2, globalTypes().addressPtr, globalTypes().addressPtr);
+  DefineFunction((char *)"print_stack", (char *)__FILE__, "print_stack",
+                 (void *)&print_stack, NoType, 1,
+                 globalTypes().executionContextPtr);
 }
 
 #define QSTACK(b) (((VirtualMachineState *)(b)->vmState())->_stack)
@@ -259,19 +287,15 @@ TR::IlValue *MethodBuilder::loadVarIndex(TR::IlBuilder *builder, int varindex) {
     varindex += firstArgumentIndex;
   }
 
-  TR::IlValue *result = nullptr;
-
   if (cfg_.passParam) {
-    result = builder->Load(argsAndTempNames[varindex]);
+    return builder->Load(argsAndTempNames[varindex]);
   } else {
     TR::IlValue *args = builder->Load("stackBase");
     TR::IlValue *address = builder->IndexAt(globalTypes().stackElementPtr, args,
                                             builder->ConstInt32(varindex));
-    TR::IlValue *data = builder->LoadAt(globalTypes().stackElementPtr, address);
-    result = builder->And(builder->ConstInt64(Om::Value::PAYLOAD_MASK), data);
+    TR::IlValue *result = builder->LoadAt(globalTypes().stackElementPtr, address);
+    return result;
   }
-
-  return result;
 }
 
 void MethodBuilder::storeVarIndex(TR::IlBuilder *builder, int varindex,
@@ -286,10 +310,8 @@ void MethodBuilder::storeVarIndex(TR::IlBuilder *builder, int varindex,
     TR::IlValue *args = builder->Load("stackBase");
     TR::IlValue *address = builder->IndexAt(globalTypes().stackElementPtr, args,
                                             builder->ConstInt32(varindex));
-    // this needs to be encoded for the GC to walk the stack.
-    builder->StoreAt(
-        address,
-        builder->Or(builder->ConstInt64(Om::Value::Tag::INT48), value));
+
+    builder->StoreAt(address, value);
   }
 }
 
@@ -328,25 +350,28 @@ bool MethodBuilder::generateILForBytecode(
                 << ": ";
     }
 
+    builder->Call("print_stack", 1, builder->Load("executionContext"));
+
+    builder->Call(
+        "trace", 2, builder->ConstAddress(function),
+        builder->ConstAddress(&function->instructions[instructionIndex]));
+
     builder->vmState()->Commit(builder);
-    // builder->Call("b9PrintStack", 3, Load("executionContext"),
-    //               builder->ConstInt64(bytecodeIndex),
-    //               builder->ConstInt64(instruction.raw()));
   }
 
   switch (instruction.opCode()) {
     case OpCode::PUSH_FROM_VAR:
-      push(builder, loadVarIndex(builder, instruction.immediate()));
+      pushValue(builder, loadVarIndex(builder, instruction.immediate()));
       if (nextBytecodeBuilder)
         builder->AddFallThroughBuilder(nextBytecodeBuilder);
       break;
     case OpCode::POP_INTO_VAR:
-      storeVarIndex(builder, instruction.immediate(), pop(builder));
+      storeVarIndex(builder, instruction.immediate(), popValue(builder));
       if (nextBytecodeBuilder)
         builder->AddFallThroughBuilder(nextBytecodeBuilder);
       break;
     case OpCode::FUNCTION_RETURN: {
-      auto result = pop(builder);
+      auto result = popValue(builder);
 
       TR::IlValue *stack = builder->StructFieldInstanceAddress(
           "b9::ExecutionContext", "stack_", builder->Load("executionContext"));
@@ -358,9 +383,9 @@ bool MethodBuilder::generateILForBytecode(
           builder->Or(result, builder->ConstInt64(Om::Value::Tag::INT48)));
     } break;
     case OpCode::DUPLICATE: {
-      auto x = pop(builder);
-      push(builder, x);
-      push(builder, x);
+      auto x = popValue(builder);
+      pushValue(builder, x);
+      pushValue(builder, x);
       if (nextBytecodeBuilder) {
         builder->AddFallThroughBuilder(nextBytecodeBuilder);
       }
@@ -416,20 +441,18 @@ bool MethodBuilder::generateILForBytecode(
     case OpCode::INT_PUSH_CONSTANT: {
       int constvalue = instruction.immediate();
       /// TODO: box/unbox here.
-      push(builder, builder->ConstInt64(constvalue));
+      pushInt48(builder, builder->ConstInt64(constvalue));
       if (nextBytecodeBuilder)
         builder->AddFallThroughBuilder(nextBytecodeBuilder);
     } break;
     case OpCode::STR_PUSH_CONSTANT: {
       int index = instruction.immediate();
       /// TODO: Box/unbox here.
-      push(builder, builder->ConstInt64(index));
+      pushInt48(builder, builder->ConstInt64(index));
       if (nextBytecodeBuilder)
         builder->AddFallThroughBuilder(nextBytecodeBuilder);
     } break;
     case OpCode::PRIMITIVE_CALL: {
-      const std::size_t callindex = instruction.immediate();
-
       builder->vmState()->Commit(builder);
       TR::IlValue *result =
           builder->Call("primitive_call", 2, builder->Load("executionContext"),
@@ -477,7 +500,7 @@ bool MethodBuilder::generateILForBytecode(
               int storeInto = argsCount;
               while (storeInto-- > 0) {
                 // firstArgumentIndex is added in storeVarIndex
-                storeVarIndex(builder, storeInto, pop(builder));
+                storeVarIndex(builder, storeInto, popValue(builder));
               }
 
               bool result = inlineProgramIntoBuilder(callindex, false, builder,
@@ -507,19 +530,19 @@ bool MethodBuilder::generateILForBytecode(
           memset(p, 0, sizeof(p));
           int popInto = argsCount;
           while (popInto--) {
-            p[popInto] = pop(builder);
+            p[popInto] = popValue(builder);
           }
           if (interp) {
             TR::IlValue *result = builder->Call(
                 nameToCall, 2 + argsCount, builder->Load("executionContext"),
                 builder->ConstInt32(callindex), p[0], p[1], p[2], p[3], p[4],
                 p[5], p[6], p[7]);
-            push(builder, result);
+            pushValue(builder, result);
           } else {
             TR::IlValue *result = builder->Call(
                 nameToCall, argsCount + 1, builder->Load("executionContext"),
                 p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7]);
-            push(builder, result);
+            pushValue(builder, result);
           }
         } else {
           if (cfg_.debug) {
@@ -530,9 +553,9 @@ bool MethodBuilder::generateILForBytecode(
           builder->vmState()->Commit(builder);
           if (interp) {
             if (cfg_.debug)
-              std::cout << "calling interpreter " << nameToCall << std::endl;
+              std::cout << "calling interpreter: interpreter_0" << std::endl;
             result =
-                builder->Call(nameToCall, 2, builder->Load("executionContext"),
+                builder->Call("interpret_0", 2, builder->Load("executionContext"),
                               builder->ConstInt32(callindex));
           } else {
             if (cfg_.debug)
@@ -541,7 +564,7 @@ bool MethodBuilder::generateILForBytecode(
                 builder->Call(nameToCall, 1, builder->Load("executionContext"));
           }
           QRELOAD_DROP(builder, argsCount);
-          push(builder, result);
+          pushValue(builder, result);
         }
       } else {
         // only use interpreter to dispatch the calls
@@ -554,7 +577,7 @@ bool MethodBuilder::generateILForBytecode(
             builder->Call("interpret_0", 2, builder->Load("executionContext"),
                           builder->ConstInt32(callindex));
         QRELOAD_DROP(builder, argsCount);
-        push(builder, result);
+        pushValue(builder, result);
       }
 
       if (nextBytecodeBuilder)
@@ -597,8 +620,8 @@ void MethodBuilder::handle_bc_jmp_eq(
   int next_bc_index = bytecodeIndex + delta;
   TR::BytecodeBuilder *jumpTo = bytecodeBuilderTable[next_bc_index];
 
-  TR::IlValue *right = pop(builder);
-  TR::IlValue *left = pop(builder);
+  TR::IlValue *right = popInt48(builder);
+  TR::IlValue *left = popInt48(builder);
 
   builder->IfCmpEqual(jumpTo, left, right);
   builder->AddFallThroughBuilder(nextBuilder);
@@ -614,8 +637,8 @@ void MethodBuilder::handle_bc_jmp_neq(
   int next_bc_index = bytecodeIndex + delta;
   TR::BytecodeBuilder *jumpTo = bytecodeBuilderTable[next_bc_index];
 
-  TR::IlValue *right = pop(builder);
-  TR::IlValue *left = pop(builder);
+  TR::IlValue *right = popInt48(builder);
+  TR::IlValue *left = popInt48(builder);
 
   builder->IfCmpNotEqual(jumpTo, left, right);
   builder->AddFallThroughBuilder(nextBuilder);
@@ -631,8 +654,8 @@ void MethodBuilder::handle_bc_jmp_lt(
   int next_bc_index = bytecodeIndex + delta;
   TR::BytecodeBuilder *jumpTo = bytecodeBuilderTable[next_bc_index];
 
-  TR::IlValue *right = pop(builder);
-  TR::IlValue *left = pop(builder);
+  TR::IlValue *right = popInt48(builder);
+  TR::IlValue *left = popInt48(builder);
 
   builder->IfCmpLessThan(jumpTo, left, right);
   builder->AddFallThroughBuilder(nextBuilder);
@@ -648,8 +671,8 @@ void MethodBuilder::handle_bc_jmp_le(
   int next_bc_index = bytecodeIndex + delta;
   TR::BytecodeBuilder *jumpTo = bytecodeBuilderTable[next_bc_index];
 
-  TR::IlValue *right = pop(builder);
-  TR::IlValue *left = pop(builder);
+  TR::IlValue *right = popInt48(builder);
+  TR::IlValue *left = popInt48(builder);
 
   builder->IfCmpLessOrEqual(jumpTo, left, right);
   builder->AddFallThroughBuilder(nextBuilder);
@@ -665,8 +688,8 @@ void MethodBuilder::handle_bc_jmp_gt(
   int next_bc_index = bytecodeIndex + delta;
   TR::BytecodeBuilder *jumpTo = bytecodeBuilderTable[next_bc_index];
 
-  TR::IlValue *right = pop(builder);
-  TR::IlValue *left = pop(builder);
+  TR::IlValue *right = popInt48(builder);
+  TR::IlValue *left = popInt48(builder);
 
   builder->IfCmpGreaterThan(jumpTo, left, right);
   builder->AddFallThroughBuilder(nextBuilder);
@@ -682,8 +705,8 @@ void MethodBuilder::handle_bc_jmp_ge(
   int next_bc_index = bytecodeIndex + delta;
   TR::BytecodeBuilder *jumpTo = bytecodeBuilderTable[next_bc_index];
 
-  TR::IlValue *right = pop(builder);
-  TR::IlValue *left = pop(builder);
+  TR::IlValue *right = popInt48(builder);
+  TR::IlValue *left = popInt48(builder);
 
   builder->IfCmpGreaterOrEqual(jumpTo, left, right);
   builder->AddFallThroughBuilder(nextBuilder);
@@ -691,61 +714,88 @@ void MethodBuilder::handle_bc_jmp_ge(
 
 void MethodBuilder::handle_bc_sub(TR::BytecodeBuilder *builder,
                                   TR::BytecodeBuilder *nextBuilder) {
-  TR::IlValue *right = pop(builder);
-  TR::IlValue *left = pop(builder);
+  TR::IlValue *right = popInt48(builder);
+  TR::IlValue *left = popInt48(builder);
 
-  push(builder, builder->Sub(left, right));
+  pushInt48(builder, builder->Sub(left, right));
   builder->AddFallThroughBuilder(nextBuilder);
 }
 
 void MethodBuilder::handle_bc_add(TR::BytecodeBuilder *builder,
                                   TR::BytecodeBuilder *nextBuilder) {
-  TR::IlValue *right = pop(builder);
-  TR::IlValue *left = pop(builder);
+  TR::IlValue *right = popInt48(builder);
+  TR::IlValue *left = popInt48(builder);
 
-  push(builder, builder->Add(left, right));
+  pushInt48(builder, builder->Add(left, right));
   builder->AddFallThroughBuilder(nextBuilder);
 }
 
 void MethodBuilder::handle_bc_mul(TR::BytecodeBuilder *builder,
                                   TR::BytecodeBuilder *nextBuilder) {
-  TR::IlValue *right = pop(builder);
-  TR::IlValue *left = pop(builder);
+  TR::IlValue *right = popInt48(builder);
+  TR::IlValue *left = popInt48(builder);
 
-  push(builder, builder->Mul(left, right));
+  pushInt48(builder, builder->Mul(left, right));
   builder->AddFallThroughBuilder(nextBuilder);
 }
 
 void MethodBuilder::handle_bc_div(TR::BytecodeBuilder *builder,
                                   TR::BytecodeBuilder *nextBuilder) {
-  TR::IlValue *right = pop(builder);
-  TR::IlValue *left = pop(builder);
+  TR::IlValue *right = popInt48(builder);
+  TR::IlValue *left = popInt48(builder);
 
-  push(builder, builder->Div(left, right));
+  pushInt48(builder, builder->Div(left, right));
   builder->AddFallThroughBuilder(nextBuilder);
 }
 
 void MethodBuilder::handle_bc_not(TR::BytecodeBuilder *builder,
                                   TR::BytecodeBuilder *nextBuilder) {
   auto zero = builder->ConstInteger(globalTypes().stackElement, 0);
-  auto value = pop(builder);
+  auto value = popInt48(builder);
   auto result = builder->ConvertTo(globalTypes().stackElement,
                                    builder->EqualTo(value, zero));
-  push(builder, result);
+  pushInt48(builder, result);
   builder->AddFallThroughBuilder(nextBuilder);
 }
 
-void MethodBuilder::drop(TR::BytecodeBuilder *builder) { pop(builder); }
+void MethodBuilder::drop(TR::BytecodeBuilder *builder) { popValue(builder); }
 
-/// output is an unboxed value.
-TR::IlValue *MethodBuilder::pop(TR::BytecodeBuilder *builder) {
+/// Input is a Value.
+void MethodBuilder::pushValue(TR::BytecodeBuilder *builder,
+                              TR::IlValue *value) {
   if (cfg_.lazyVmState) {
     VirtualMachineState *vmState =
         dynamic_cast<VirtualMachineState *>(builder->vmState());
 
-    TR::IlValue *boxedInt = vmState->_stack->Pop(builder);
+    vmState->_stack->Push(builder, value);
 
-    return builder->And(boxedInt, builder->ConstInt64(Om::Value::PAYLOAD_MASK));
+  } else {
+    TR::IlValue *stack = builder->StructFieldInstanceAddress(
+        "b9::ExecutionContext", "stack_", builder->Load("executionContext"));
+
+    TR::IlValue *stackTop =
+        builder->LoadIndirect("b9::OperandStack", "top_", stack);
+
+    builder->StoreAt(stackTop,
+                     builder->ConvertTo(globalTypes().stackElement, value));
+
+    TR::IlValue *newStackTop = builder->IndexAt(
+        globalTypes().stackElementPtr, stackTop, builder->ConstInt32(1));
+
+    builder->StoreIndirect("b9::OperandStack", "top_", stack, newStackTop);
+  }
+}
+
+/// output is an unboxed value.
+TR::IlValue *MethodBuilder::popValue(TR::BytecodeBuilder *builder) {
+  if (cfg_.lazyVmState) {
+    VirtualMachineState *vmState =
+        dynamic_cast<VirtualMachineState *>(builder->vmState());
+
+    TR::IlValue *result = vmState->_stack->Pop(builder);
+
+    return result;
+
   } else {
     TR::IlValue *stack = builder->StructFieldInstanceAddress(
         "b9::ExecutionContext", "stack_", builder->Load("executionContext"));
@@ -758,41 +808,21 @@ TR::IlValue *MethodBuilder::pop(TR::BytecodeBuilder *builder) {
 
     builder->StoreIndirect("b9::OperandStack", "top_", stack, newStackTop);
 
-    TR::IlValue *boxedInt =
+    TR::IlValue *value =
         builder->LoadAt(globalTypes().stackElementPtr, newStackTop);
 
-    return builder->And(boxedInt, builder->ConstInt64(Om::Value::PAYLOAD_MASK));
+    return value;
   }
 }
 
-/// input is an unboxed value.
-void MethodBuilder::push(TR::BytecodeBuilder *builder, TR::IlValue *value) {
-  if (cfg_.lazyVmState) {
-    VirtualMachineState *vmState =
-        dynamic_cast<VirtualMachineState *>(builder->vmState());
+/// input is an unboxed int48.
+void MethodBuilder::pushInt48(TR::BytecodeBuilder *builder,
+                              TR::IlValue *value) {
+  pushValue(builder, ValueBuilder::fromInt48(builder, value));
+}
 
-    auto boxedInt =
-        builder->Or(value, builder->ConstInt64(Om::Value::Tag::INT48));
-
-    vmState->_stack->Push(builder, boxedInt);
-  } else {
-    TR::IlValue *stack = builder->StructFieldInstanceAddress(
-        "b9::ExecutionContext", "stack_", builder->Load("executionContext"));
-
-    TR::IlValue *stackTop =
-        builder->LoadIndirect("b9::OperandStack", "top_", stack);
-
-    auto boxedInt =
-        builder->Or(value, builder->ConstInt64(Om::Value::Tag::INT48));
-
-    builder->StoreAt(stackTop,
-                     builder->ConvertTo(globalTypes().stackElement, boxedInt));
-
-    TR::IlValue *newStackTop = builder->IndexAt(
-        globalTypes().stackElementPtr, stackTop, builder->ConstInt32(1));
-
-    builder->StoreIndirect("b9::OperandStack", "top_", stack, newStackTop);
-  }
+TR::IlValue *MethodBuilder::popInt48(TR::BytecodeBuilder *builder) {
+  return ValueBuilder::getInt48(builder, popValue(builder));
 }
 
 }  // namespace b9

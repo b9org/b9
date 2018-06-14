@@ -89,12 +89,10 @@ The above diagram details the two high-level components of the base9 architectur
 Our frontend language is a primitive subset of JavaScript. Currently, it can only operate on integers. Let's have a look at some code:
  
  ```js
-function b9main() {
-  b9PrintString("Hello World!");
-}
+b9PrintString("Hello World!");
 ```
 
-Above is a classic program that we all know and love, Hello, World! The source code can be found in [test/hello.src]. The `b9main` function is always the entry point to a program, like `int main` in C. `b9PrintString` is a method from a tiny library of functions that will be compiled with every program. The library is called b9stdlib and can be found in [b9/js_compiler/b9stdlib.src]. The functions in b9stdlib all call base9 [primitive functions]. In the Hello, World! program, `b9main` uses `b9PrintString` from b9stdlib to write text to console.
+ `b9PrintString` is a method from a tiny library of functions that will be compiled with every program. The library is called b9stdlib and can be found in [b9/js_compiler/b9stdlib.src]. The functions in b9stdlib all call base9 [primitive functions]. In the Hello, World! program, Our script uses `b9PrintString` from b9stdlib to write text to console.
 
 [test/hello.src]: https://github.com/b9org/b9/blob/master/test/hello.src
 [primitive functions]: ../docs/Dictionary.md#primitive-function
@@ -209,14 +207,12 @@ Let's run the disassembler using the binary module we generated in the [Frontend
 
 `b9disasm/b9disasm ../hello.b9mod`
 
-You should now be looking at a human readable version of the Hello, World! program as represented by [base9 assembly]. You'll notice that the first three functions (`b9PrintString`, `b9PrintNumber`, and `b9PrintStack`) are the b9stdlib functions that are included in each compiled program. They can be ignored. The important part is the `b9main` function. Let's have a look at the transition between the JavaScript and the base9 assembly:
+You should now be looking at a human readable version of the Hello, World! program as represented by [base9 assembly]. You'll notice that the first three functions (`b9PrintString`, `b9PrintNumber`, and `b9PrintStack`) are the b9stdlib functions that are included in each compiled program. They can be ignored. The important part is the `<body>` function, which is the special script-body function, and the main entry to our program. Let's have a look at the transition between the JavaScript and the base9 assembly:
 
 [base9 assembly]: ../docs/Dictionary.md#base9-assembly
 
 ```js
-function b9main() {
-  b9PrintString("Hello World!");
-}
+b9PrintString("Hello World!");
 ```
 
 <figure class="image">
@@ -224,7 +220,7 @@ function b9main() {
 </figure>
 
 ```
-(function "b9main" 0 0
+(function "<body>" 0 0
   0  (str_push_constant 0)
   1  (function_call 0)
   2  (drop)
@@ -237,7 +233,7 @@ Stepping through the bytecodes as represented by the base9 assembly:
 - `str_push_constant` pushes the string "Hello, World!" onto the operand stack
 - `function_call` does the call to `b9PrintString`
 - `drop` drops the top value from the operand stack (which was holding the unused return value of `b9PrintString`)
-- `int_push_constant` pushes 0 onto the operand stack as the return value of `b9main`
+- `int_push_constant` pushes 0 onto the operand stack as the return value of our script.
 - `function_return` does the actual return
 - `end_section` is the end-of-bytecodes marker, a safety feature should the interpreter continue running after the return
 
@@ -331,7 +327,7 @@ The first thing that occurs in `main` is the instatiation of `ProcessRuntime` an
 struct RunConfig {
   b9::Config b9;
   const char* moduleName = "";
-  const char* mainFunction = "b9main";
+  const char* mainFunction = "<body>";
   std::size_t loopCount = 1;
   bool verbose = false;
   std::vector<b9::StackElement> usrArgs;
@@ -632,7 +628,7 @@ Jit Options:
   -passparam:    Pass arguments in CPU registers
   -lazyvmstate:  Only update the VM state as needed
 Run Options:
-  -function <f>: Run the function <f> (default: b9main)
+  -function <f>: Run the function <f> (default: first function)
   -loop <n>:     Run the program <n> times (default: 1)
   -debug:        Enable debug code
   -verbose:      Run with verbose printing

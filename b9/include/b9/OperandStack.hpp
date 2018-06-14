@@ -2,8 +2,8 @@
 #define B9_OPERANDSTACK_HPP_
 
 #include <OMR/Om/Context.hpp>
-#include <OMR/Om/Value.hpp>
 #include <OMR/Om/Printing.hpp>
+#include <OMR/Om/Value.hpp>
 
 #include <iostream>
 
@@ -29,7 +29,7 @@ class OperandStack {
   }
 
   StackElement *pushn(std::size_t n) {
-    memset(top_, 0, sizeof(*top_)* n);
+    memset(top_, 0, sizeof(*top_) * n);
     top_ += n;
     return top_;
   }
@@ -62,7 +62,7 @@ class OperandStack {
 
   template <typename VisitorT>
   void visit(VisitorT &visitor) {
-    for (StackElement& element : *this) {
+    for (StackElement &element : *this) {
       if (element.isRef()) {
         visitor.edge(nullptr, Om::ValueSlotHandle(&element));
       }
@@ -77,14 +77,13 @@ class OperandStack {
 };
 
 inline std::ostream &printStack(std::ostream &out, const OperandStack &stack) {
-  if (stack.begin() == stack.end()) {
-    out << "<stack empty>" << std::endl;
-    return out;
-  }
+  out << "(stack";
 
   for (auto e : stack) {
-    std::cout << e << std::endl;
+    out << std::endl << "  " << e;
   }
+
+  out << ")" << std::endl;
   return out;
 }
 

@@ -8,6 +8,19 @@
 #include <ilgen/VirtualMachineRegister.hpp>
 #include <ilgen/VirtualMachineRegisterInStruct.hpp>
 
+extern "C" {
+
+void trace(b9::FunctionDef *function, b9::Instruction *instruction) {
+  std::cerr << function->name << "@" << instruction << ": " << *instruction
+            << std::endl;
+}
+
+void print_stack(b9::ExecutionContext *context) {
+  printStack(std::cerr, context->stack());
+}
+
+}  // extern "C"
+
 namespace b9 {
 
 namespace ValueBuilder {
@@ -140,9 +153,11 @@ void MethodBuilder::defineFunctions() {
   DefineFunction((char *)"primitive_call", (char *)__FILE__, "primitive_call",
                  (void *)&primitive_call, NoType, 2,
                  globalTypes().executionContextPtr, Int32);
-  // DefineFunction((char *)"b9PrintStack", (char *)__FILE__, "b9PrintStack",
-  //                (void *)&b9PrintStack, NoType, 4, globalTypes().addressPtr,
-  //                Int64, Int64, Int64);
+  DefineFunction((char *)"trace", (char *)__FILE__, "trace", (void *)&trace,
+                 NoType, 2, globalTypes().addressPtr, globalTypes().addressPtr);
+  DefineFunction((char *)"print_stack", (char *)__FILE__, "print_stack",
+                 (void *)&print_stack, NoType, 1,
+                 globalTypes().executionContextPtr);
 }
 
 #define QSTACK(b) (((VirtualMachineState *)(b)->vmState())->_stack)

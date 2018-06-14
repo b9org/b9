@@ -453,8 +453,6 @@ bool MethodBuilder::generateILForBytecode(
         builder->AddFallThroughBuilder(nextBytecodeBuilder);
     } break;
     case OpCode::PRIMITIVE_CALL: {
-      const std::size_t callindex = instruction.immediate();
-
       builder->vmState()->Commit(builder);
       TR::IlValue *result =
           builder->Call("primitive_call", 2, builder->Load("executionContext"),

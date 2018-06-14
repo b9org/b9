@@ -8,7 +8,7 @@ b9PrintString("");
 b9PrintString("Factorial");
 
 var a = 1;
-while (a <= 20) {
+while (a <= 10) {
     b9PrintNumber(factorial(a));
     a++;
 }

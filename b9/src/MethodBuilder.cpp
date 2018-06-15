@@ -364,7 +364,7 @@ bool MethodBuilder::generateILForBytecode(
     case OpCode::PUSH_FROM_VAR:
       pushValue(builder, loadVarIndex(builder, instruction.immediate()));
       if (nextBytecodeBuilder)
-        builder->AddFallThroughBuilder(nextBytecodeBuilder);
+      builder->AddFallThroughBuilder(nextBytecodeBuilder);
       break;
     case OpCode::POP_INTO_ARG:
     case OpCode::POP_INTO_VAR:

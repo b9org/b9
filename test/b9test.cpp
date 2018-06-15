@@ -135,8 +135,8 @@ TEST(MyTest, arguments) {
   cfg.jit = true;
   b9::VirtualMachine vm{runtime, cfg};
   auto m = std::make_shared<Module>();
-  std::vector<Instruction> i = {{OpCode::PUSH_FROM_VAR, 0},
-                                {OpCode::PUSH_FROM_VAR, 1},
+  std::vector<Instruction> i = {{OpCode::PUSH_FROM_ARG, 0},
+                                {OpCode::PUSH_FROM_ARG, 1},
                                 {OpCode::INT_ADD},
                                 {OpCode::FUNCTION_RETURN},
                                 END_SECTION};

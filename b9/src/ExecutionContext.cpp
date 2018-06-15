@@ -88,7 +88,7 @@ StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
   const Instruction *instructionPointer = function->instructions.data();
 
   StackElement *args = stack_.top() - function->nargs;
-  stack_.pushn(function->nregs);
+  stack_.pushn(function->nregs + function->nargs);
 
   while (*instructionPointer != END_SECTION) {
     switch (instructionPointer->opCode()) {
@@ -114,10 +114,10 @@ StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
         doDrop();
         break;
       case OpCode::PUSH_FROM_VAR:
-        doPushFromVar(args, instructionPointer->immediate());
+        doPushFromVar(args, instructionPointer->immediate() + function->nargs);
         break;
       case OpCode::POP_INTO_VAR:
-        doPopIntoVar(args, instructionPointer->immediate());
+        doPopIntoVar(args, instructionPointer->immediate() + function->nargs);
         break;
       case OpCode::INT_ADD:
         doIntAdd();
@@ -230,11 +230,11 @@ void ExecutionContext::doPopIntoVar(StackElement *args, Immediate offset) {
   args[offset] = stack_.pop();
 }
 
-void ExecutionContext::doPushFromArg(StackElement *args, Immediate offset){
+void ExecutionContext::doPushFromArg(StackElement *args, Immediate offset) {
   stack_.push(args[offset]);
 }
 
-void ExecutionContext::doPopIntoArg(StackElement *args, Immediate offset){
+void ExecutionContext::doPopIntoArg(StackElement *args, Immediate offset) {
   args[offset] = stack_.pop();
 }
 

@@ -46,6 +46,12 @@ class OperandStack {
 
   StackElement *top() { return top_; }
 
+  const StackElement *top() const { return top_; }
+
+  StackElement *base() { return stack_; }
+
+  const StackElement *base() const { return stack_; }
+
   void drop() { --top_; }
 
   StackElement peek() const { return *(top_ - 1); }

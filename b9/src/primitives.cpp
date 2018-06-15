@@ -21,10 +21,8 @@ extern "C" void b9_prim_print_string(ExecutionContext *context) {
   context->push({Om::AS_INT48, 0});
 }
 
+/// ( -- 0 )
 extern "C" void b9_prim_print_stack(ExecutionContext *context) {
-  std::cout << "----------stack begin\n";
   printStack(std::cout, context->stack());
-  std::cout << "----------stack end" << std::endl;
   context->push(Om::Value(Om::AS_INT48, 0));
 }
- 

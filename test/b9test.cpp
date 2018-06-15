@@ -64,6 +64,8 @@ class InterpreterTest : public ::testing::Test {
 TEST_F(InterpreterTest, interpreter) {
   Config cfg;
 
+  cfg.debug = true;
+
   VirtualMachine vm{runtime, cfg};
   vm.load(module_);
 

@@ -41,9 +41,7 @@ namespace b9 {
 //
 // clang-format on
 
-enum class CallerType {
-  INTERPRETER, COMPILED, OUTERMOST
-};
+enum class CallerType { INTERPRETER, COMPILED, OUTERMOST };
 
 class ExecutionContext {
  public:

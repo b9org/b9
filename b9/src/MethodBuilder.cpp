@@ -9,18 +9,6 @@
 #include <ilgen/VirtualMachineRegister.hpp>
 #include <ilgen/VirtualMachineRegisterInStruct.hpp>
 
-extern "C" {
-
-void trace(b9::FunctionDef *function, b9::Instruction *instruction) {
-  std::cerr << function->name << "@" << instruction << ": " << *instruction
-            << std::endl;
-}
-
-void print_stack(b9::ExecutionContext *context) {
-  printStack(std::cerr, context->stack());
-}
-
-}  // extern "C"
 
 namespace b9 {
 
@@ -555,8 +543,8 @@ bool MethodBuilder::generateILForBytecode(
           builder->vmState()->Commit(builder);
           if (interp) {
             if (cfg_.debug)
-              std::cout << "calling interpreter: interpreter_0" << std::endl;
-            result = builder->Call("interpret_0", 2,
+              std::cout << "calling interpreter: interpret0" << std::endl;
+            result = builder->Call("interpret0", 2,
                                    builder->Load("executionContext"),
                                    builder->ConstInt32(callindex));
           } else {

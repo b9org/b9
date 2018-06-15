@@ -1,4 +1,5 @@
 #include <b9/ExecutionContext.hpp>
+#include <b9/JitHelpers.hpp>
 #include <b9/VirtualMachine.hpp>
 #include <b9/compiler/Compiler.hpp>
 
@@ -22,8 +23,8 @@
 
 namespace b9 {
 
-ExecutionContext::ExecutionContext(VirtualMachine &virtualMachine,
-                                   const Config &cfg)
+ExecutionContext::ExecutionContext(VirtualMachine& virtualMachine,
+                                   const Config& cfg)
     : omContext_(virtualMachine.memoryManager()),
       virtualMachine_(&virtualMachine),
       cfg_(&cfg),
@@ -32,7 +33,7 @@ ExecutionContext::ExecutionContext(VirtualMachine &virtualMachine,
       bp_(stack().top()),
       continue_(true) {
   omContext().userMarkingFns().push_back(
-      [this](Om::MarkingVisitor &v) { this->visit(v); });
+      [this](Om::MarkingVisitor& v) { this->visit(v); });
 }
 
 void ExecutionContext::reset() {
@@ -81,7 +82,7 @@ Om::Value ExecutionContext::callJitFunction(JitFunction jitFunction,
 
 StackElement ExecutionContext::run(std::size_t target,
                                    std::vector<StackElement> arguments) {
-  auto &callee = getFunction(target);
+  auto& callee = getFunction(target);
   assert(callee.nargs == arguments.size());
 
   reset();
@@ -96,7 +97,7 @@ StackElement ExecutionContext::run(std::size_t target,
 }
 
 StackElement ExecutionContext::run(std::size_t target) {
-  auto &callee = getFunction(target);
+  auto& callee = getFunction(target);
   assert(callee.nargs == 0);
 
   reset();
@@ -208,11 +209,13 @@ void ExecutionContext::interpret() {
   }
 }
 
+std::size_t FRAME_SIZE = sizeof(Om::Value) * 4;
+
 void ExecutionContext::enterCall(std::size_t target, CallerType type) {
-  const FunctionDef &callee = getFunction(target);
+  const FunctionDef& callee = getFunction(target);
 
   // reserve space for locals (args are already pushed)
-  stack_.pushn(callee.nargs);
+  stack_.pushn(callee.nregs);
 
   // save caller's interpreter state.
   stack_.push({Om::AS_UINT48, fn_});
@@ -227,22 +230,20 @@ void ExecutionContext::enterCall(std::size_t target, CallerType type) {
 }
 
 void ExecutionContext::exitCall() {
-  const FunctionDef &callee = getFunction(fn_);
+  const FunctionDef& callee = getFunction(fn_);
 
   // pop callee scratch space
   stack_.restore(bp_);
 
   // restore caller state. note IP is restored verbatim, not incremented.
   CallerType type = CallerType(stack_.pop().getUint48());
+  bp_ = stack_.pop().getPtr<Om::Value>();
+  ip_ = stack_.pop().getPtr<Instruction>();
+  fn_ = stack_.pop().getUint48();
 
-    // restore interpreter state
-    bp_ = stack_.pop().getPtr<Om::Value>();
-    ip_ = stack_.pop().getPtr<Instruction>();
-    fn_ = stack_.pop().getUint48();
+  // pop parameters and locals
+  stack_.popn(callee.nargs + callee.nregs);
 
-    // pop parameters and locals
-    stack_.popn(callee.nargs + callee.nregs);
-  
   switch (type) {
     case CallerType::INTERPRETER:
       continue_ = true;
@@ -268,7 +269,7 @@ void ExecutionContext::doFunctionReturn() {
 
 void ExecutionContext::doPrimitiveCall() {
   Immediate index = ip_->immediate();
-  PrimitiveFunction *primitive = virtualMachine_->getPrimitive(index);
+  PrimitiveFunction* primitive = virtualMachine_->getPrimitive(index);
   (*primitive)(this);
   ++ip_;
 }
@@ -286,8 +287,8 @@ void ExecutionContext::doDrop() {
 }
 
 void ExecutionContext::doPushFromVar() {
-  const FunctionDef &callee = getFunction(fn_);
-  Om::Value *args = bp_ - (3 + callee.nargs +
+  const FunctionDef& callee = getFunction(fn_);
+  Om::Value* args = bp_ - (4 + callee.nargs +
                            callee.nregs);  // TODO: Improve variable indexing
   Immediate index = ip_->immediate();
   stack_.push(args[index]);
@@ -295,8 +296,8 @@ void ExecutionContext::doPushFromVar() {
 }
 
 void ExecutionContext::doPopIntoVar() {
-  const FunctionDef &callee = getFunction(fn_);
-  Om::Value *args = bp_ - (3 + callee.nargs +
+  const FunctionDef& callee = getFunction(fn_);
+  Om::Value* args = bp_ - (4 + callee.nargs +
                            callee.nregs);  // TODO: Improve variable indexing
   Immediate index = ip_->immediate();
   args[index] = stack_.pop();
@@ -307,24 +308,28 @@ void ExecutionContext::doIntAdd() {
   auto right = stack_.pop().getInt48();
   auto left = stack_.pop().getInt48();
   push({Om::AS_INT48, left + right});
+  ++ip_;
 }
 
 void ExecutionContext::doIntSub() {
   auto right = stack_.pop().getInt48();
   auto left = stack_.pop().getInt48();
   push({Om::AS_INT48, left - right});
+  ++ip_;
 }
 
 void ExecutionContext::doIntMul() {
   auto right = stack_.pop().getInt48();
   auto left = stack_.pop().getInt48();
   push({Om::AS_INT48, left * right});
+  ++ip_;
 }
 
 void ExecutionContext::doIntDiv() {
   auto right = stack_.pop().getInt48();
   auto left = stack_.pop().getInt48();
   push({Om::AS_INT48, left / right});
+  ++ip_;
 }
 
 void ExecutionContext::doIntPushConstant() {
@@ -343,6 +348,8 @@ void ExecutionContext::doIntJmpEq() {
   auto left = stack_.pop().getInt48();
   if (left == right) {
     ip_ += ip_->immediate() + 1;
+  } else {
+    ip_++;
   }
 }
 

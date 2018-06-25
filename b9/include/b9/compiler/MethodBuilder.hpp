@@ -52,9 +52,17 @@ class MethodBuilder : public TR::MethodBuilder {
 
   void drop(TR::BytecodeBuilder *builder);
 
-  TR::IlValue *loadVarIndex(TR::IlBuilder *builder, int varindex);
+  TR::IlValue *loadVal(TR::IlBuilder *builder, int valIndex);
 
-  void storeVarIndex(TR::IlBuilder *builder, int varindex, TR::IlValue *value);
+  void storeVal(TR::IlBuilder *builder, int valIndex, TR::IlValue *value);
+
+  TR::IlValue *loadLocalIndex(TR::IlBuilder *builder, int localIndex);
+
+  void storeLocalIndex(TR::IlBuilder *builder, int localIndex, TR::IlValue *value);
+
+  TR::IlValue *loadParamIndex(TR::IlBuilder *builder, int paramIndex);
+
+  void storeParamIndex(TR::IlBuilder *builder, int paramIndex, TR::IlValue *value);
 
   // Bytecode Handlers
 

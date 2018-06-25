@@ -37,7 +37,7 @@ void ExecutionContext::reset() {
 }
 
 Om::Value ExecutionContext::callJitFunction(JitFunction jitFunction,
-                                            std::size_t nargs) {
+                                            std::size_t nparams) {
   if (cfg_->verbose) {
     std::cout << "Int: transition to jit: " << jitFunction << std::endl;
   }
@@ -45,7 +45,7 @@ Om::Value ExecutionContext::callJitFunction(JitFunction jitFunction,
   Om::RawValue result = 0;
 
   if (cfg_->passParam) {
-    switch (nargs) {
+    switch (nparams) {
       case 0: {
         result = jitFunction(this);
       } break;
@@ -77,18 +77,21 @@ Om::Value ExecutionContext::callJitFunction(JitFunction jitFunction,
 
 StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
   auto function = virtualMachine_->getFunction(functionIndex);
-  auto argsCount = function->nargs;
+  auto paramsCount = function->nparams;
+  auto localsCount = function->nlocals;
   auto jitFunction = virtualMachine_->getJitAddress(functionIndex);
 
   if (jitFunction) {
-    return callJitFunction(jitFunction, argsCount);
+    return callJitFunction(jitFunction, paramsCount);
   }
 
   // interpret the method otherwise
   const Instruction *instructionPointer = function->instructions.data();
 
-  StackElement *args = stack_.top() - function->nargs;
-  stack_.pushn(function->nregs + function->nargs);
+  StackElement *params = stack_.top() - paramsCount;
+  
+  stack_.pushn(localsCount); //make room for locals in the stack
+  StackElement *locals = stack_.top() - localsCount;
 
   while (*instructionPointer != END_SECTION) {
     switch (instructionPointer->opCode()) {
@@ -97,7 +100,7 @@ StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
         break;
       case OpCode::FUNCTION_RETURN: {
         auto result = stack_.pop();
-        stack_.restore(args);
+        stack_.restore(params);
         return result;
         break;
       }
@@ -113,11 +116,17 @@ StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
       case OpCode::DROP:
         doDrop();
         break;
-      case OpCode::PUSH_FROM_VAR:
-        doPushFromVar(args, instructionPointer->immediate() + function->nargs);
+      case OpCode::PUSH_FROM_LOCAL:
+        doPushFromLocal(locals, instructionPointer->immediate());
         break;
-      case OpCode::POP_INTO_VAR:
-        doPopIntoVar(args, instructionPointer->immediate() + function->nargs);
+      case OpCode::POP_INTO_LOCAL:
+        doPopIntoLocal(locals, instructionPointer->immediate());
+        break;
+      case OpCode::PUSH_FROM_PARAM:
+        doPushFromParam(params, instructionPointer->immediate());
+        break;
+      case OpCode::POP_INTO_PARAM:
+        doPopIntoParam(params, instructionPointer->immediate());
         break;
       case OpCode::INT_ADD:
         doIntAdd();
@@ -179,12 +188,6 @@ StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
       case OpCode::SYSTEM_COLLECT:
         doSystemCollect();
         break;
-      case OpCode::PUSH_FROM_ARG:
-        doPushFromArg(args, instructionPointer->immediate());
-        break;
-      case OpCode::POP_INTO_ARG:
-        doPopIntoArg(args, instructionPointer->immediate());
-        break;
       default:
         assert(false);
         break;
@@ -222,20 +225,20 @@ void ExecutionContext::doDuplicate() {
 
 void ExecutionContext::doDrop() { stack_.pop(); }
 
-void ExecutionContext::doPushFromVar(StackElement *args, Immediate offset) {
-  stack_.push(args[offset]);
+void ExecutionContext::doPushFromLocal(StackElement *locals, Immediate offset) {
+  stack_.push(locals[offset]);
 }
 
-void ExecutionContext::doPopIntoVar(StackElement *args, Immediate offset) {
-  args[offset] = stack_.pop();
+void ExecutionContext::doPopIntoLocal(StackElement *locals, Immediate offset) {
+  locals[offset] = stack_.pop();
 }
 
-void ExecutionContext::doPushFromArg(StackElement *args, Immediate offset) {
-  stack_.push(args[offset]);
+void ExecutionContext::doPushFromParam(StackElement *params, Immediate offset) {
+  stack_.push(params[offset]);
 }
 
-void ExecutionContext::doPopIntoArg(StackElement *args, Immediate offset) {
-  args[offset] = stack_.pop();
+void ExecutionContext::doPopIntoParam(StackElement *params, Immediate offset) {
+  params[offset] = stack_.pop();
 }
 
 void ExecutionContext::doIntAdd() {

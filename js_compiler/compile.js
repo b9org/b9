@@ -32,10 +32,10 @@ var OperatorCode = Object.freeze({
 	"JMP": 4,
 	"DUPLICATE": 5,
 	"DROP": 6,
-	"PUSH_FROM_VAR": 7,
-	"POP_INTO_VAR": 8,
-	"PUSH_FROM_ARG": 9,
-	"POP_INTO_ARG": 10,
+	"PUSH_FROM_LOCAL": 7,
+	"POP_INTO_LOCAL": 8,
+	"PUSH_FROM_PARAM": 9,
+	"POP_INTO_PARAM": 10,
 	"INT_ADD": 11,
 	"INT_SUB": 12,
 	"INT_MUL": 13,
@@ -294,14 +294,14 @@ var LabelTable = function () {
 
 };
 
-/// A section of code. CodeBody has information about args and registers, but no information about indexes or it's name.
-/// The name-to-index mapping is managed externally, by the module's FunctionTable. Eventually, the args and registers
+/// A section of code. CodeBody has information about params and locals, but no information about indexes or it's name.
+/// The name-to-index mapping is managed externally, by the module's FunctionTable. Eventually, the params and locals
 /// might move to a lexical environment, and this will become a simple bytecode array.
 function FunctionDefinition(outer, name, index) {
 	this.name = name;
 	this.index = index;
-	this.args = new SymbolTable();
-	this.regs = new SymbolTable();
+	this.params = new SymbolTable();
+	this.locals = new SymbolTable();
 	this.labels = new LabelTable();
 	this.instructions = [];
 
@@ -334,8 +334,8 @@ function FunctionDefinition(outer, name, index) {
 
 	this.output = function (out) {
 		// note that name and index are output by the module.
-		outputUInt32(out, this.args.next);
-		outputUInt32(out, this.regs.next);
+		outputUInt32(out, this.params.next);
+		outputUInt32(out, this.locals.next);
 		this.instructions.forEach(function (instruction) {
 			instruction.output(out);
 		})
@@ -350,11 +350,11 @@ function FunctionDefinition(outer, name, index) {
 	}
 
 	this.localIndex = function (name) {
-		var index = this.regs.lookup(name);
+		var index = this.locals.lookup(name);
 		if (index) {
-			return index + this.args.next;
+			return index + this.params.next;
 		}
-		return this.args.lookup(name);
+		return this.params.lookup(name);
 	}
 
 	this.placeLabel = function (label) {
@@ -565,10 +565,10 @@ function FirstPassCodeGen() {
 		// 	throw new Error("Cannot access across scopes: " + symbol);
 		// }
 		if (symbol.type == "parameter") {
-			func.instructions.push(new Instruction("PUSH_FROM_ARG", symbol.id));
+			func.instructions.push(new Instruction("PUSH_FROM_PARAM", symbol.id));
 		}
 		else if (symbol.type == "local"){
-			func.instructions.push(new Instruction("PUSH_FROM_VAR", symbol.id));
+			func.instructions.push(new Instruction("PUSH_FROM_LOCAL", symbol.id));
 		}
 		else{
 			throw new Error("Cannot read from lon-local/parameter: " + symbol);
@@ -581,10 +581,10 @@ function FirstPassCodeGen() {
 		// 	throw new Error("Cannot access across scopes: " + symbol);
 		// }
 		if (symbol.type == "parameter") {
-			func.instructions.push(new Instruction("POP_INTO_ARG", symbol.id));
+			func.instructions.push(new Instruction("POP_INTO_PARAM", symbol.id));
 		}
 		else if (symbol.type == "local"){
-			func.instructions.push(new Instruction("POP_INTO_VAR", symbol.id));
+			func.instructions.push(new Instruction("POP_INTO_LOCAL", symbol.id));
 		}
 		else{
 			throw new Error("Cannot store to non-local/parameter: " + symbol);
@@ -597,9 +597,9 @@ function FirstPassCodeGen() {
 		var inner = new FunctionDefinition(outerFunc, declaration.id.name, symbol.id);
 		this.module.functions.push(inner);
 		declaration.params.forEach(function (param) {
-			inner.args.get(param.name);
+			inner.params.get(param.name);
 		});
-		inner.nargs = declaration.params.length;
+		inner.nparams = declaration.params.length;
 		this.handle(inner, declaration.body);
 
 		/// this discards the result of the last expression
@@ -647,7 +647,7 @@ function FirstPassCodeGen() {
 	}
 
 	this.handleVariableDeclarator = function (func, declarator) {
-		var id = func.regs.get(declarator.id.name);
+		var id = func.locals.get(declarator.id.name);
 		if (declarator.init) {
 			this.handle(func, declarator.init);
 			this.emitPopIntoVar(func, declarator.id.name);
@@ -807,11 +807,11 @@ function FirstPassCodeGen() {
 		/// It's not compiled as an expression.
 		var code = PrimitiveCode[expression.arguments[0].value];
 
-		var args = expression.arguments.slice(1);
-		args.forEach(function (element) {
+		var params = expression.arguments.slice(1);
+		params.forEach(function (element) {
 			element.isParameter = true;
 		});
-		this.handleBody(func, args);
+		this.handleBody(func, params);
 		func.instructions.push(new Instruction("PRIMITIVE_CALL", code));
 		return true;
 	};

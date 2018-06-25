@@ -135,8 +135,8 @@ TEST(MyTest, arguments) {
   cfg.jit = true;
   b9::VirtualMachine vm{runtime, cfg};
   auto m = std::make_shared<Module>();
-  std::vector<Instruction> i = {{OpCode::PUSH_FROM_ARG, 0},
-                                {OpCode::PUSH_FROM_ARG, 1},
+  std::vector<Instruction> i = {{OpCode::PUSH_FROM_PARAM, 0},
+                                {OpCode::PUSH_FROM_PARAM, 1},
                                 {OpCode::INT_ADD},
                                 {OpCode::FUNCTION_RETURN},
                                 END_SECTION};
@@ -182,13 +182,13 @@ TEST(ObjectTest, allocateSomething) {
   auto m = std::make_shared<Module>();
   std::vector<Instruction> i = {
       {OpCode::NEW_OBJECT},            // new object
-      {OpCode::POP_INTO_VAR, 0},       // store object into var0
+      {OpCode::POP_INTO_LOCAL, 0},       // store object into var0
       {OpCode::STR_PUSH_CONSTANT, 0},  // push "Hello, World"
-      {OpCode::PUSH_FROM_VAR, 0},      // push var0 aka object
+      {OpCode::PUSH_FROM_LOCAL, 0},      // push var0 aka object
       {OpCode::POP_INTO_OBJECT,
        0},                           // pop "Hello, World" into object at slot 0
       {OpCode::SYSTEM_COLLECT},    // GC. Object is kept alive by var0
-      {OpCode::PUSH_FROM_VAR, 0},  // push object
+      {OpCode::PUSH_FROM_LOCAL, 0},  // push object
       {OpCode::PUSH_FROM_OBJECT, 0},  // get the string back
       {OpCode::PRIMITIVE_CALL, 0},    // call b9_prim_print_string
       {OpCode::FUNCTION_RETURN},      // finish with constant 0

@@ -422,8 +422,8 @@ struct FunctionDef {
   // Function Data
   std::string name;
   uint32_t index;
-  std::uint32_t nargs;
-  std::uint32_t nregs;
+  std::uint32_t nparams;
+  std::uint32_t nlocals;
   std::vector<Instruction> instructions;
 };
 ```
@@ -498,21 +498,22 @@ The interpreter is implemented in [b9/src/ExecutionContext.cpp]. It uses the `Op
 [b9/src/ExecutionContext.cpp]: https://github.com/b9org/b9/blob/master/b9/src/ExecutionContext.cpp
 
 ```cpp
-StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
   auto function = virtualMachine_->getFunction(functionIndex);
-  auto argsCount = function->nargs;
+  auto paramsCount = function->nparams;
+  auto localsCount = function->nlocals;
   auto jitFunction = virtualMachine_->getJitAddress(functionIndex);
 
   if (jitFunction) {
-    return callJitFunction(jitFunction, argsCount);
+    return callJitFunction(jitFunction, paramsCount);
   }
 
   // interpret the method otherwise
   const Instruction *instructionPointer = function->instructions.data();
 
-  StackElement *args = stack_.top() - function->nargs;
-  stack_.pushn(function->nregs);
-
+  StackElement *params = stack_.top() - paramsCount;
+  
+  stack_.pushn(localsCount); //make room for locals in the stack
+  StackElement *locals = stack_.top() - localsCount;
   ...
 
 ```

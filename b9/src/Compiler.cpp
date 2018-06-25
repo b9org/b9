@@ -76,7 +76,7 @@ JitFunction Compiler::generateCode(const std::size_t functionIndex) {
 
   if (rc != 0) {
     std::cout << "Failed to compile function: " << function->name
-              << " nargs: " << function->nargs << std::endl;
+              << " nparams: " << function->nparams << std::endl;
     throw b9::CompilationException{"IL generation failed"};
   }
 

@@ -64,13 +64,13 @@ class MethodBuilder : public TR::MethodBuilder {
                              TR::BytecodeBuilder *nextBuilder);
   void handle_bc_drop(TR::BytecodeBuilder *builder,
                       TR::BytecodeBuilder *nextBuilder);
-  void handle_bc_push_from_var(TR::BytecodeBuilder *builder,
+  void handle_bc_push_from_local(TR::BytecodeBuilder *builder,
                                TR::BytecodeBuilder *nextBuilder);
-  void handle_bc_pop_into_var(TR::BytecodeBuilder *builder,
+  void handle_bc_pop_into_local(TR::BytecodeBuilder *builder,
                               TR::BytecodeBuilder *nextBuilder);
-  void handle_bc_push_from_arg(TR::BytecodeBuilder *builder,
+  void handle_bc_push_from_param(TR::BytecodeBuilder *builder,
                                TR::BytecodeBuilder *nextBuilder);
-  void handle_bc_pop_into_arg(TR::BytecodeBuilder *builder,
+  void handle_bc_pop_into_param(TR::BytecodeBuilder *builder,
                               TR::BytecodeBuilder *nextBuilder);                                
   void handle_bc_sub(TR::BytecodeBuilder *builder,
                      TR::BytecodeBuilder *nextBuilder);

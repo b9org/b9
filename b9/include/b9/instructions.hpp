@@ -30,52 +30,50 @@ enum class OpCode : RawOpCode {
   DROP = 0x6,
   // Push from a local variable
   PUSH_FROM_VAR = 0x7,
-  // Push into a local variable
+  // Pop into a local variable
   POP_INTO_VAR = 0x8,
+  // Push from a function parameter
+  PUSH_FROM_ARG = 0x9,
+  // Pop into a function parameter
+  POP_INTO_ARG = 0xa,
 
   // Integer opcodes
-
+  
   // Add two integers
-  INT_ADD = 0x9,
+  INT_ADD = 0xb,
   // Subtract two integers
-  INT_SUB = 0xa,
+  INT_SUB = 0xc,
   // Multiply two integers
-  INT_MUL = 0xb,
+  INT_MUL = 0xd,
   // Divide two integers
-  INT_DIV = 0xc,
+  INT_DIV = 0xe,
 
   // Push a constant
-  INT_PUSH_CONSTANT = 0xd,
+  INT_PUSH_CONSTANT = 0xf,
   // Invert a boolean value, all non-zero integers are true
-  INT_NOT = 0xe,
+  INT_NOT = 0x10,
   // Jump if two integers are equal
-  INT_JMP_EQ = 0xf,
+  INT_JMP_EQ = 0x11,
   // Jump if two integer are not equal
-  INT_JMP_NEQ = 0x10,
+  INT_JMP_NEQ = 0x12,
   // Jump if the first integer is greater than the second
-  INT_JMP_GT = 0x11,
+  INT_JMP_GT = 0x13,
   // Jump if the first integer is greater than or equal to the second
-  INT_JMP_GE = 0x12,
+  INT_JMP_GE = 0x14,
   // Jump if the first integer is less than to the second
-  INT_JMP_LT = 0x13,
+  INT_JMP_LT = 0x15,
   // Jump if the first integer is less than or equal to the second
-  INT_JMP_LE = 0x14,
+  INT_JMP_LE = 0x16,
 
   // String ByteCodes
 
   // Push a string from this module's constant pool
-  STR_PUSH_CONSTANT = 0x15,
+  STR_PUSH_CONSTANT = 0x17,
   // Jump if two strings are equal
-  STR_JMP_EQ = 0x16,
+  STR_JMP_EQ = 0x18,
   // Jump if two strings are not equal
-  STR_JMP_NEQ = 0x17,
-
-  //Push from function parameter
-  PUSH_FROM_ARG = 0x18,
-
-  //Pop into a parameter
-  POP_INTO_ARG = 0x19,
-
+  STR_JMP_NEQ = 0x19,
+  
   // Object Bytecodes
 
   NEW_OBJECT = 0x20,

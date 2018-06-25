@@ -276,15 +276,34 @@ bool MethodBuilder::buildIL() {
   auto paramsCount = function->nparams;
   auto localsCount = function->nlocals;
   for (int i = paramsCount; i < paramsCount + localsCount; i++) {
-    storeVarIndex(this, i, this->ConstInt64(0));
+    storeVal(this, i, this->ConstInt64(0));
   }
 
   return inlineProgramIntoBuilder(functionIndex_, true);
 }
 
-TR::IlValue *MethodBuilder::loadVarIndex(TR::IlBuilder *builder, int varindex) {
+void MethodBuilder::storeVal(TR::IlBuilder *builder, int valIndex, TR::IlValue *value) {
+    if (firstArgumentIndex > 0) {
+    valIndex += firstArgumentIndex;
+  }
+
+  if (cfg_.passParam) {
+    builder->Store(argsAndTempNames[valIndex], value);
+  } else {
+    TR::IlValue *args = builder->Load("stackBase");
+    TR::IlValue *address = builder->IndexAt(globalTypes().stackElementPtr, args,
+                                            builder->ConstInt32(valIndex));
+    // this needs to be encoded for the GC to walk the stack.
+    builder->StoreAt(
+        address,
+        builder->Or(builder->ConstInt64(Om::BoxKindTag::INTEGER), value));
+  }
+}
+
+
+TR::IlValue *MethodBuilder::loadVal(TR::IlBuilder *builder, int valIndex) {
   if (firstArgumentIndex > 0) {
-    varindex += firstArgumentIndex;
+    valIndex += firstArgumentIndex;
   }
 
   if (cfg_.passParam) {
@@ -292,27 +311,32 @@ TR::IlValue *MethodBuilder::loadVarIndex(TR::IlBuilder *builder, int varindex) {
   } else {
     TR::IlValue *args = builder->Load("stackBase");
     TR::IlValue *address = builder->IndexAt(globalTypes().stackElementPtr, args,
-                                            builder->ConstInt32(varindex));
+                                            builder->ConstInt32(valIndex));
     TR::IlValue *result = builder->LoadAt(globalTypes().stackElementPtr, address);
     return result;
   }
 }
 
-void MethodBuilder::storeVarIndex(TR::IlBuilder *builder, int varindex,
+TR::IlValue *MethodBuilder::loadLocalIndex(TR::IlBuilder *builder, 
+                                          int localIndex) {
+  const FunctionDef *currentFunction = virtualMachine_.getFunction(functionIndex_);
+  return loadVal(builder, localIndex + currentFunction->nparams);
+}
+
+void MethodBuilder::storeLocalIndex(TR::IlBuilder *builder, int localIndex,
                                   TR::IlValue *value) {
-  if (firstArgumentIndex > 0) {
-    varindex += firstArgumentIndex;
-  }
+  const FunctionDef *currentFunction = virtualMachine_.getFunction(functionIndex_);
+  storeVal(builder, localIndex + currentFunction->nparams, value);
+}
 
-  if (cfg_.passParam) {
-    builder->Store(argsAndTempNames[varindex], value);
-  } else {
-    TR::IlValue *args = builder->Load("stackBase");
-    TR::IlValue *address = builder->IndexAt(globalTypes().stackElementPtr, args,
-                                            builder->ConstInt32(varindex));
+TR::IlValue * MethodBuilder::loadParamIndex(TR::IlBuilder *builder, 
+                                          int paramIndex) {
+  return loadVal(builder, paramIndex);
+}
 
-    builder->StoreAt(address, value);
-  }
+void MethodBuilder::storeParamIndex(TR::IlBuilder *builder, int paramIndex, 
+                                  TR::IlValue *value) {
+  storeVal(builder, paramIndex, value);
 }
 
 bool MethodBuilder::generateILForBytecode(
@@ -360,23 +384,23 @@ bool MethodBuilder::generateILForBytecode(
   }
 
   switch (instruction.opCode()) {
-    case OpCode::PUSH_FROM_PARAM:
-      pushValue(builder, loadVarIndex(builder, instruction.immediate()));
-      if (nextBytecodeBuilder)
-      builder->AddFallThroughBuilder(nextBytecodeBuilder);
-      break;
     case OpCode::PUSH_FROM_LOCAL:
-      pushValue(builder, loadVarIndex(builder, instruction.immediate() + function->nparams));
-      if (nextBytecodeBuilder)
-        builder->AddFallThroughBuilder(nextBytecodeBuilder);
-      break;
-    case OpCode::POP_INTO_PARAM:
-      storeVarIndex(builder, instruction.immediate(), popValue(builder));
+      pushValue(builder, loadLocalIndex(builder, instruction.immediate()));
       if (nextBytecodeBuilder)
         builder->AddFallThroughBuilder(nextBytecodeBuilder);
       break;
     case OpCode::POP_INTO_LOCAL:
-      storeVarIndex(builder, instruction.immediate() + function->nparams, popValue(builder));
+      storeLocalIndex(builder, instruction.immediate(), popValue(builder));
+      if (nextBytecodeBuilder)
+        builder->AddFallThroughBuilder(nextBytecodeBuilder);
+      break;
+    case OpCode::PUSH_FROM_PARAM:
+      pushValue(builder, loadParamIndex(builder, instruction.immediate()));
+      if (nextBytecodeBuilder)
+      builder->AddFallThroughBuilder(nextBytecodeBuilder);
+      break;
+    case OpCode::POP_INTO_PARAM:
+      storeParamIndex(builder, instruction.immediate(), popValue(builder));
       if (nextBytecodeBuilder)
         builder->AddFallThroughBuilder(nextBytecodeBuilder);
       break;
@@ -509,8 +533,8 @@ bool MethodBuilder::generateILForBytecode(
             if ((firstArgumentIndex + spaceNeeded) < MAX_ARGS_TEMPS_AVAIL) {
               int storeInto = paramsCount;
               while (storeInto-- > 0) {
-                // firstArgumentIndex is added in storeVarIndex
-                storeVarIndex(builder, storeInto, popValue(builder));
+                // firstArgumentIndex is added in storeVal
+                storeParamIndex(builder, storeInto, popValue(builder));
               }
 
               bool result = inlineProgramIntoBuilder(callindex, false, builder,

@@ -58,13 +58,13 @@ class ExecutionContext {
 
   void doDrop();
 
-  void doPushFromVar(StackElement *args, Immediate offset);
+  void doPushFromLocal(StackElement *locals, Immediate offset);
 
-  void doPopIntoVar(StackElement *args, Immediate offset);
+  void doPopIntoLocal(StackElement *locals, Immediate offset);
 
-  void doPushFromArg(StackElement *args, Immediate offset);
+  void doPushFromParam(StackElement *params, Immediate offset);
 
-  void doPopIntoArg(StackElement *args, Immediate offset);
+  void doPopIntoParam(StackElement *params, Immediate offset);
 
   void doIntAdd();
 

@@ -102,10 +102,10 @@ By default, `this` is the global object.
 
 ### Call
 ```lisp
-(call-function fn-index nargs)  ;; ( arg* -- result )
+(call-function fn-index nparams)  ;; ( arg* -- result )
 (call-primitive prim-index)     ;; ( arg* -- 0 )
 (push-function fn-index)        ;; ( -- fn-object )            push fn-object
-(call-object nargs)             ;; ( args* object -- result )  pop object and call as function
+(call-object nparams)             ;; ( args* object -- result )  pop object and call as function
 ```
 
 ### Arithmetic

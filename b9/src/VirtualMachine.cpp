@@ -117,27 +117,27 @@ StackElement VirtualMachine::run(const std::string &name,
 StackElement VirtualMachine::run(const std::size_t functionIndex,
                                  const std::vector<StackElement> &usrArgs) {
   auto function = getFunction(functionIndex);
-  auto argsCount = function->nargs;
+  auto paramsCount = function->nparams;
 
   ExecutionContext *executionContext = new ExecutionContext(*this, cfg_);
 
   if (cfg_.verbose) {
     std::cout << "+++++++++++++++++++++++" << std::endl;
     std::cout << "Running function: " << function->name
-              << " nargs: " << argsCount << std::endl;
+              << " nparams: " << paramsCount << std::endl;
   }
 
-  if (argsCount != usrArgs.size()) {
+  if (paramsCount != usrArgs.size()) {
     std::stringstream ss;
     ss << function->name << " - Got " << usrArgs.size()
-       << " arguments, expected " << argsCount;
+       << " arguments, expected " << paramsCount;
     std::string message = ss.str();
     throw BadFunctionCallException{message};
   }
 
   // push user defined arguments to send to the program
-  for (std::size_t i = 0; i < argsCount; i++) {
-    auto idx = argsCount - i - 1;
+  for (std::size_t i = 0; i < paramsCount; i++) {
+    auto idx = paramsCount - i - 1;
     auto arg = usrArgs[idx];
     executionContext->push(arg);
   }

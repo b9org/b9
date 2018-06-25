@@ -29,16 +29,16 @@ enum class OpCode : RawOpCode {
   // Drop the top element of the stack
   DROP = 0x6,
   // Push from a local variable
-  PUSH_FROM_VAR = 0x7,
+  PUSH_FROM_LOCAL = 0x7,
   // Pop into a local variable
-  POP_INTO_VAR = 0x8,
+  POP_INTO_LOCAL = 0x8,
   // Push from a function parameter
-  PUSH_FROM_ARG = 0x9,
+  PUSH_FROM_PARAM = 0x9,
   // Pop into a function parameter
-  POP_INTO_ARG = 0xa,
+  POP_INTO_PARAM = 0xa,
 
   // Integer opcodes
-  
+
   // Add two integers
   INT_ADD = 0xb,
   // Subtract two integers
@@ -103,14 +103,14 @@ inline const char *toString(OpCode bc) {
       return "duplicate";
     case OpCode::DROP:
       return "drop";
-    case OpCode::PUSH_FROM_VAR:
-      return "push_from_var";
-    case OpCode::POP_INTO_VAR:
-      return "pop_into_var";
-    case OpCode::PUSH_FROM_ARG:
-      return "push_from_arg";
-    case OpCode::POP_INTO_ARG:
-      return "pop_into_arg";
+    case OpCode::PUSH_FROM_LOCAL:
+      return "push_from_local";
+    case OpCode::POP_INTO_LOCAL:
+      return "pop_into_local";
+    case OpCode::PUSH_FROM_PARAM:
+      return "push_from_param";
+    case OpCode::POP_INTO_PARAM:
+      return "pop_into_param";
     case OpCode::INT_ADD:
       return "int_add";
     case OpCode::INT_SUB:
@@ -263,8 +263,8 @@ inline std::ostream &operator<<(std::ostream &out, Instruction i) {
     case OpCode::FUNCTION_CALL:
     case OpCode::PRIMITIVE_CALL:
     case OpCode::JMP:
-    case OpCode::PUSH_FROM_VAR:
-    case OpCode::POP_INTO_VAR:
+    case OpCode::PUSH_FROM_LOCAL:
+    case OpCode::POP_INTO_LOCAL:
     case OpCode::INT_PUSH_CONSTANT:
     case OpCode::INT_JMP_EQ:
     case OpCode::INT_JMP_NEQ:

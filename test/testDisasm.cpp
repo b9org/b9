@@ -41,14 +41,14 @@ std::shared_ptr<Module> makeComplexModule() {
                                  {OpCode::FUNCTION_RETURN},
                                  END_SECTION};
 
-  std::vector<Instruction> f2 = {{OpCode::PUSH_FROM_VAR, 0},
+  std::vector<Instruction> f2 = {{OpCode::PUSH_FROM_LOCAL, 0},
                                  {OpCode::PRIMITIVE_CALL, 0},
                                  {OpCode::DROP, 0},
                                  {OpCode::INT_PUSH_CONSTANT, 0},
                                  {OpCode::FUNCTION_RETURN, 0},
                                  END_SECTION};
 
-  std::vector<Instruction> f3 = {{OpCode::PUSH_FROM_VAR, 0},
+  std::vector<Instruction> f3 = {{OpCode::PUSH_FROM_LOCAL, 0},
                                  {OpCode::PRIMITIVE_CALL, 1},
                                  {OpCode::DROP, 0},
                                  {OpCode::INT_PUSH_CONSTANT, 0},

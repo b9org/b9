@@ -77,14 +77,14 @@ static const char *argsAndTempNames[] = {
 void MethodBuilder::defineParameters() {
   const FunctionDef *function = virtualMachine_.getFunction(functionIndex_);
   if (cfg_.debug) {
-    std::cout << "Defining " << function->nargs << " parameters\n";
+    std::cout << "Defining " << function->nparams << " parameters\n";
   }
 
   /// first argument is always the execution context
   DefineParameter("executionContext", globalTypes().executionContextPtr);
 
   if (cfg_.passParam) {
-    for (int i = 0; i < function->nargs; i++) {
+    for (int i = 0; i < function->nparams; i++) {
       DefineParameter(argsAndTempNames[i], globalTypes().stackElement);
     }
   }
@@ -93,7 +93,7 @@ void MethodBuilder::defineParameters() {
 void MethodBuilder::defineLocals() {
   const FunctionDef *function = virtualMachine_.getFunction(functionIndex_);
   if (cfg_.debug) {
-    std::cout << "Defining " << function->nregs << " locals\n";
+    std::cout << "Defining " << function->nlocals << " locals\n";
   }
 
   // Pointer to the base of the frame.  Used for rolling back the stack pointer
@@ -110,8 +110,8 @@ void MethodBuilder::defineLocals() {
     // for locals we pre-define all the locals we could use, for the toplevel
     // and all the inlined names which are simply referenced via a skew to reach
     // past callers functions args/temps
-    for (std::size_t i = function->nargs;
-         i < (function->nregs + function->nargs); i++) {
+    for (std::size_t i = function->nparams;
+         i < (function->nlocals + function->nparams); i++) {
       DefineLocal(argsAndTempNames[i], globalTypes().stackElement);
     }
   }
@@ -125,7 +125,7 @@ void MethodBuilder::defineFunctions() {
       auto name = function->name.c_str();
       DefineFunction(name, (char *)__FILE__, name,
                      (void *)virtualMachine_.getJitAddress(functionIndex),
-                     Int64, function->nargs, globalTypes().stackElement,
+                     Int64, function->nparams, globalTypes().stackElement,
                      globalTypes().stackElement, globalTypes().stackElement,
                      globalTypes().stackElement, globalTypes().stackElement,
                      globalTypes().stackElement, globalTypes().stackElement,
@@ -254,7 +254,7 @@ bool MethodBuilder::buildIL() {
   /// stack. The arguments are passed on the C stack as a part of a cdecl call.
   if (!cfg_.passParam) {
     TR::IlValue *stackBase = IndexAt(globalTypes().stackElementPtr, stackTop,
-                                     ConstInt32(-function->nargs));
+                                     ConstInt32(-function->nparams));
     Store("stackBase", stackBase);
   } else {
     Store("stackBase", stackTop);
@@ -265,17 +265,17 @@ bool MethodBuilder::buildIL() {
   //
   // In the case of passParam, locals are not stored on the VM stack.  Local
   // variables are stored as compiler immidiets.
-  if (!cfg_.passParam && function->nregs > 0) {
+  if (!cfg_.passParam && function->nlocals > 0) {
     TR::IlValue *newStackTop = IndexAt(globalTypes().stackElementPtr, stackTop,
-                                       ConstInt32(function->nregs));
+                                       ConstInt32(function->nlocals));
 
     StoreIndirect("b9::OperandStack", "top_", stack, newStackTop);
   }
 
   // initialize all locals to 0
-  auto argsCount = function->nargs;
-  auto regsCount = function->nregs;
-  for (int i = argsCount; i < argsCount + regsCount; i++) {
+  auto paramsCount = function->nparams;
+  auto localsCount = function->nlocals;
+  for (int i = paramsCount; i < paramsCount + localsCount; i++) {
     storeVarIndex(this, i, this->ConstInt64(0));
   }
 
@@ -360,15 +360,23 @@ bool MethodBuilder::generateILForBytecode(
   }
 
   switch (instruction.opCode()) {
-    case OpCode::PUSH_FROM_ARG:
-    case OpCode::PUSH_FROM_VAR:
+    case OpCode::PUSH_FROM_PARAM:
       pushValue(builder, loadVarIndex(builder, instruction.immediate()));
       if (nextBytecodeBuilder)
       builder->AddFallThroughBuilder(nextBytecodeBuilder);
       break;
-    case OpCode::POP_INTO_ARG:
-    case OpCode::POP_INTO_VAR:
+    case OpCode::PUSH_FROM_LOCAL:
+      pushValue(builder, loadVarIndex(builder, instruction.immediate() + function->nparams));
+      if (nextBytecodeBuilder)
+        builder->AddFallThroughBuilder(nextBytecodeBuilder);
+      break;
+    case OpCode::POP_INTO_PARAM:
       storeVarIndex(builder, instruction.immediate(), popValue(builder));
+      if (nextBytecodeBuilder)
+        builder->AddFallThroughBuilder(nextBytecodeBuilder);
+      break;
+    case OpCode::POP_INTO_LOCAL:
+      storeVarIndex(builder, instruction.immediate() + function->nparams, popValue(builder));
       if (nextBytecodeBuilder)
         builder->AddFallThroughBuilder(nextBytecodeBuilder);
       break;
@@ -467,15 +475,15 @@ bool MethodBuilder::generateILForBytecode(
       const std::size_t callindex = instruction.immediate();
       const FunctionDef *callee = virtualMachine_.getFunction(callindex);
       const Instruction *tocall = callee->instructions.data();
-      const std::uint32_t argsCount = callee->nargs;
-      const std::uint32_t regsCount = callee->nregs;
+      const std::uint32_t paramsCount = callee->nparams;
+      const std::uint32_t localsCount = callee->nlocals;
 
       if (cfg_.directCall) {
         if (cfg_.debug)
           std::cout << "Handling direct calls to " << callee->name << std::endl;
         const char *interpretName[] = {"interpret_0", "interpret_1",
                                        "interpret_2", "interpret_3"};
-        const char *nameToCall = interpretName[argsCount];
+        const char *nameToCall = interpretName[paramsCount];
         bool interp = true;
         if (callee == function ||
             virtualMachine_.getJitAddress(callindex) != nullptr) {
@@ -492,14 +500,14 @@ bool MethodBuilder::generateILForBytecode(
           // Attempt to inline the function we're calling
           if (maxInlineDepth_ >= 0 && !interp) {
             int32_t save = firstArgumentIndex;
-            int32_t skipLocals = function->nargs + function->nregs;
-            int32_t spaceNeeded = argsCount + regsCount;
+            int32_t skipLocals = function->nparams + function->nlocals;
+            int32_t spaceNeeded = paramsCount + localsCount;
             firstArgumentIndex += skipLocals;
             // no need to define locals here, the outer program registered
             // all locals. it means some locals will be reused which will
             // affect liveness of a variable
             if ((firstArgumentIndex + spaceNeeded) < MAX_ARGS_TEMPS_AVAIL) {
-              int storeInto = argsCount;
+              int storeInto = paramsCount;
               while (storeInto-- > 0) {
                 // firstArgumentIndex is added in storeVarIndex
                 storeVarIndex(builder, storeInto, popValue(builder));
@@ -522,7 +530,7 @@ bool MethodBuilder::generateILForBytecode(
                       << std::endl;
           }
 
-          if (argsCount > 8) {
+          if (paramsCount > 8) {
             throw std::runtime_error{
                 "Need to add handlers for more parameters"};
             break;
@@ -530,19 +538,19 @@ bool MethodBuilder::generateILForBytecode(
 
           TR::IlValue *p[8];
           memset(p, 0, sizeof(p));
-          int popInto = argsCount;
+          int popInto = paramsCount;
           while (popInto--) {
             p[popInto] = popValue(builder);
           }
           if (interp) {
             TR::IlValue *result = builder->Call(
-                nameToCall, 2 + argsCount, builder->Load("executionContext"),
+                nameToCall, 2 + paramsCount, builder->Load("executionContext"),
                 builder->ConstInt32(callindex), p[0], p[1], p[2], p[3], p[4],
                 p[5], p[6], p[7]);
             pushValue(builder, result);
           } else {
             TR::IlValue *result = builder->Call(
-                nameToCall, argsCount + 1, builder->Load("executionContext"),
+                nameToCall, paramsCount + 1, builder->Load("executionContext"),
                 p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7]);
             pushValue(builder, result);
           }
@@ -565,20 +573,20 @@ bool MethodBuilder::generateILForBytecode(
             result =
                 builder->Call(nameToCall, 1, builder->Load("executionContext"));
           }
-          QRELOAD_DROP(builder, argsCount);
+          QRELOAD_DROP(builder, paramsCount);
           pushValue(builder, result);
         }
       } else {
         // only use interpreter to dispatch the calls
         if (cfg_.debug)
           std::cout << "Calling interpret_0 to dispatch call for "
-                    << callee->name << " with " << argsCount << " args"
+                    << callee->name << " with " << paramsCount << " args"
                     << std::endl;
         builder->vmState()->Commit(builder);
         TR::IlValue *result =
             builder->Call("interpret_0", 2, builder->Load("executionContext"),
                           builder->ConstInt32(callindex));
-        QRELOAD_DROP(builder, argsCount);
+        QRELOAD_DROP(builder, paramsCount);
         pushValue(builder, result);
       }
 

@@ -20,33 +20,33 @@ struct FunctionDef {
   // Copy Constructor
   FunctionDef(const std::string& name, std::uint32_t index,
               const std::vector<Instruction>& instructions,
-              std::uint32_t nargs = 0, std::uint32_t nregs = 0)
+              std::uint32_t nparams = 0, std::uint32_t nlocals = 0)
       : name{name},
         index{index},
         instructions{instructions},
-        nargs{nargs},
-        nregs{nregs} {}
+        nparams{nparams},
+        nlocals{nlocals} {}
 
   // Move Constructor
   FunctionDef(const std::string& name, std::uint32_t index,
-              std::vector<Instruction>&& instructions, std::uint32_t nargs = 0,
-              std::uint32_t nregs = 0)
+              std::vector<Instruction>&& instructions, std::uint32_t nparams = 0,
+              std::uint32_t nlocals = 0)
       : name{name},
         index{index},
         instructions{std::move(instructions)},
-        nargs{nargs},
-        nregs{nregs} {}
+        nparams{nparams},
+        nlocals{nlocals} {}
 
   // Function Data
   std::string name;
   uint32_t index;
-  std::uint32_t nargs;
-  std::uint32_t nregs;
+  std::uint32_t nparams;
+  std::uint32_t nlocals;
   std::vector<Instruction> instructions;
 };
 
 inline void operator<<(std::ostream& out, const FunctionDef& f) {
-  out << "(function \"" << f.name << "\" " << f.nargs << " " <<  f.nregs;
+  out << "(function \"" << f.name << "\" " << f.nparams << " " <<  f.nlocals;
   std::size_t i = 0;
   for (auto instruction : f.instructions) {
     out << std::endl << "  " << i << "  " << instruction;
@@ -57,7 +57,7 @@ inline void operator<<(std::ostream& out, const FunctionDef& f) {
 
 inline bool operator==(const FunctionDef& lhs, const FunctionDef& rhs) {
   return lhs.name == rhs.name && lhs.index == rhs.index &&
-         lhs.nargs == rhs.nargs && lhs.nregs == rhs.nregs;
+         lhs.nparams == rhs.nparams && lhs.nlocals == rhs.nlocals;
 }
 
 /// Function not found exception.

@@ -293,10 +293,7 @@ void MethodBuilder::storeVal(TR::IlBuilder *builder, int valIndex, TR::IlValue *
     TR::IlValue *args = builder->Load("stackBase");
     TR::IlValue *address = builder->IndexAt(globalTypes().stackElementPtr, args,
                                             builder->ConstInt32(valIndex));
-    // this needs to be encoded for the GC to walk the stack.
-    builder->StoreAt(
-        address,
-        builder->Or(builder->ConstInt64(Om::BoxKindTag::INTEGER), value));
+    builder->StoreAt(address, value);
   }
 }
 
@@ -307,7 +304,7 @@ TR::IlValue *MethodBuilder::loadVal(TR::IlBuilder *builder, int valIndex) {
   }
 
   if (cfg_.passParam) {
-    return builder->Load(argsAndTempNames[varindex]);
+    return builder->Load(argsAndTempNames[valIndex]);
   } else {
     TR::IlValue *args = builder->Load("stackBase");
     TR::IlValue *address = builder->IndexAt(globalTypes().stackElementPtr, args,

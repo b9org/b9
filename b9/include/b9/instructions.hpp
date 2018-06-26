@@ -245,7 +245,7 @@ inline std::ostream &operator<<(std::ostream &out, Instruction i) {
   out << "(" << i.opCode();
 
   switch (i.opCode()) {
-    // 0 parameters
+    // 0 immediate
     case OpCode::END_SECTION:
     case OpCode::DUPLICATE:
     case OpCode::FUNCTION_RETURN:
@@ -265,6 +265,8 @@ inline std::ostream &operator<<(std::ostream &out, Instruction i) {
     case OpCode::JMP:
     case OpCode::PUSH_FROM_LOCAL:
     case OpCode::POP_INTO_LOCAL:
+    case OpCode::PUSH_FROM_PARAM:
+    case OpCode::POP_INTO_PARAM:
     case OpCode::INT_PUSH_CONSTANT:
     case OpCode::INT_JMP_EQ:
     case OpCode::INT_JMP_NEQ:

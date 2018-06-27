@@ -24,8 +24,6 @@ static const char* usage =
     "  -passparam:    Pass arguments in CPU registers\n"
     "  -lazyvmstate:  Only update the VM state as needed\n"
     "Run Options:\n"
-    "  -function <f>: Run the function <f> (default: first function)\n"
-    "  -loop <n>:     Run the program <n> times (default: 1)\n"
     "  -inline <n>:   Set the jit's max inline depth (default: 0)\n"
     "  -debug:        Enable debug code\n"
     "  -verbose:      Run with verbose printing\n"
@@ -36,15 +34,12 @@ struct RunConfig {
   b9::Config b9;
   const char* moduleName = "";
   const char* mainFunction = "<script>";
-  std::size_t loopCount = 1;
   bool verbose = false;
   std::vector<b9::StackElement> usrArgs;
 };
 
 std::ostream& operator<<(std::ostream& out, const RunConfig& cfg) {
-  out << "Module:       " << cfg.moduleName << std::endl
-      << "Function:     " << cfg.mainFunction << std::endl
-      << "Looping:      " << cfg.loopCount << std::endl;
+  out << "Module:       " << cfg.moduleName << std::endl;
 
   out << "Arguments:    [ ";
   for (const auto& arg : cfg.usrArgs) {
@@ -66,8 +61,6 @@ static bool parseArguments(RunConfig& cfg, const int argc, char* argv[]) {
     if (strcasecmp(arg, "-help") == 0) {
       std::cout << usage << std::endl;
       exit(EXIT_SUCCESS);
-    } else if (strcasecmp(arg, "-loop") == 0) {
-      cfg.loopCount = atoi(argv[++i]);
     } else if (strcasecmp(arg, "-inline") == 0) {
       cfg.b9.maxInlineDepth = atoi(argv[++i]);
     } else if (strcasecmp(arg, "-verbose") == 0) {
@@ -75,8 +68,6 @@ static bool parseArguments(RunConfig& cfg, const int argc, char* argv[]) {
       cfg.b9.verbose = true;
     } else if (strcasecmp(arg, "-debug") == 0) {
       cfg.b9.debug = true;
-    } else if (strcasecmp(arg, "-function") == 0) {
-      cfg.mainFunction = argv[++i];
     } else if (strcasecmp(arg, "-jit") == 0) {
       cfg.b9.jit = true;
     } else if (strcasecmp(arg, "-directcall") == 0) {
@@ -138,10 +129,8 @@ static void run(Om::ProcessRuntime& runtime, const RunConfig& cfg) {
   }
 
   size_t functionIndex = module->getFunctionIndex(cfg.mainFunction);
-  for (std::size_t i = 0; i < cfg.loopCount; i += 1) {
-    auto result = vm.run(functionIndex, cfg.usrArgs);
-    std::cout << std::endl << "=> " << result << std::endl;
-  }
+  auto result = vm.run(functionIndex, cfg.usrArgs);
+  std::cout << std::endl << "=> " << result << std::endl;
 }
 
 int main(int argc, char* argv[]) {

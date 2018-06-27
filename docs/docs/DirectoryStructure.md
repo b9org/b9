@@ -96,7 +96,7 @@ The above directories inside of the `docs/` folder are strictly related to our w
 The `js_compiler` directory is where we keep our [front-end compiler] and our [base9 primitives].
 
 [front-end compiler]: ./FrontendAndBinaryMod.md
-[base9 primitives]: https://github.com/b9org/b9/blob/master/js_compiler/b9stdlib.src
+[base9 primitives]: https://github.com/b9org/b9/blob/master/js_compiler/b9stdlib.js
 
 
 ### The /test directory

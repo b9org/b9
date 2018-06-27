@@ -597,8 +597,6 @@ function FirstPassCodeGen() {
 
 	// Iterate expressions array
 	this.handleSequenceExpression = function (func, sequence) {
-		var expressions = sequence.expressions;
-		var droplast = !decl.isParameter;
 
 		for (expression in sequence.expressions.slice(0, -1)) {
 			this.handle(func, expression);
@@ -837,7 +835,7 @@ function FirstPassCodeGen() {
 ///  1. Parse -- translate a JS program to a syntax tree.
 ///  2. Compile -- first pass compilation of the program to a module.
 ///  3. resolve -- final stage of linking up unresolved reference in the input program.
-function compile(code, output, verbose) {
+function compile(code, output) {
 	var syntax = esprima.parse(code);
 	var compiler = new FirstPassCodeGen();
 	var module = compiler.compile(syntax);

@@ -62,7 +62,7 @@ A piece of the compiler responsible for taking some intermediate representation 
 ### Primitive Function 
 A function written in C++, but callable from the JavaScript source code. When calling a primitive function, it is indistinguishable from calling a frontend JavaScript function. The base9 primitives are stored in our [b9_primitives table], and their definitions can be found in [b9/src/primitives.cpp]. 
 
-[b9_primitives table]: https://github.com/b9org/b9/blob/master/js_compiler/b9stdlib.src
+[b9_primitives table]: https://github.com/b9org/b9/blob/master/js_compiler/b9stdlib.js
 [b9/src/primitives.cpp]: https://github.com/b9org/b9/blob/master/b9/src/primitives.cpp
 
 ### Virtual Machine 

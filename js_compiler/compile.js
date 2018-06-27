@@ -853,7 +853,7 @@ function main() {
 	inputPath = process.argv[2];
 	outputPath = process.argv[3];
 
-	var code = fs.readFileSync(__dirname + "/b9stdlib.src", 'utf-8');
+	var code = fs.readFileSync(__dirname + "/b9stdlib.js", 'utf-8');
 	code += fs.readFileSync(inputPath, 'utf-8');
 
 

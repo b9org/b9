@@ -370,7 +370,7 @@ function FirstPassCodeGen() {
 
 	this.compile = function (syntax) {
 		this.module = new Module();
-		var func = new FunctionDefinition(null, "<body>", 0); // top level
+		var func = new FunctionDefinition(null, "<script>", 0); // top level
 		this.module.functions.push(func);
 		this.augmentAST(syntax);
 		this.functionContext.enterFunction(syntax.functionEntry);

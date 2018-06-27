@@ -35,7 +35,7 @@ static const char* usage =
 struct RunConfig {
   b9::Config b9;
   const char* moduleName = "";
-  const char* mainFunction = "<body>";
+  const char* mainFunction = "<script>";
   std::size_t loopCount = 1;
   bool verbose = false;
   std::vector<b9::StackElement> usrArgs;

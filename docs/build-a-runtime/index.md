@@ -207,7 +207,7 @@ Let's run the disassembler using the binary module we generated in the [Frontend
 
 `b9disasm/b9disasm ../hello.b9mod`
 
-You should now be looking at a human readable version of the Hello, World! program as represented by [base9 assembly]. You'll notice that the first three functions (`b9PrintString`, `b9PrintNumber`, and `b9PrintStack`) are the b9stdlib functions that are included in each compiled program. They can be ignored. The important part is the `<body>` function, which is the special script-body function, and the main entry to our program. Let's have a look at the transition between the JavaScript and the base9 assembly:
+You should now be looking at a human readable version of the Hello, World! program as represented by [base9 assembly]. You'll notice that the first three functions (`b9PrintString`, `b9PrintNumber`, and `b9PrintStack`) are the b9stdlib functions that are included in each compiled program. They can be ignored. The important part is the `<script>` function, which is the special script-body function, and the main entry to our program. Let's have a look at the transition between the JavaScript and the base9 assembly:
 
 [base9 assembly]: ../docs/Dictionary.md#base9-assembly
 
@@ -220,7 +220,7 @@ b9PrintString("Hello World!");
 </figure>
 
 ```
-(function "<body>" 0 0
+(function "<script>" 0 0
   0  (str_push_constant 0)
   1  (function_call 0)
   2  (drop)
@@ -327,7 +327,7 @@ The first thing that occurs in `main` is the instatiation of `ProcessRuntime` an
 struct RunConfig {
   b9::Config b9;
   const char* moduleName = "";
-  const char* mainFunction = "<body>";
+  const char* mainFunction = "<script>";
   std::size_t loopCount = 1;
   bool verbose = false;
   std::vector<b9::StackElement> usrArgs;

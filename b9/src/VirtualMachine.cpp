@@ -97,7 +97,7 @@ std::size_t VirtualMachine::getFunctionCount() {
 
 void VirtualMachine::generateAllCode() {
   assert(cfg_.jit);
-  auto functionIndex = 0; //0 index for <body>
+  auto functionIndex = 0; //0 index for <script>
 
   while (functionIndex < getFunctionCount()) {
     if (cfg_.debug)

@@ -629,8 +629,6 @@ Jit Options:
   -passparam:    Pass arguments in CPU registers
   -lazyvmstate:  Only update the VM state as needed
 Run Options:
-  -function <f>: Run the function <f> (default: first function)
-  -loop <n>:     Run the program <n> times (default: 1)
   -debug:        Enable debug code
   -verbose:      Run with verbose printing
   -help:         Print this help message
@@ -642,21 +640,7 @@ As you can see, there's a "Jit Options" section. Here we have a `-jit` option, a
 
 `./b9run/b9run -jit ../hello.b9mod`
 
-The output should look exactly the same as when run with the interpreter. So what's the difference? The difference isn't really apparant when running a tiny program like Hello, World! But what if we run a larger program? Looking back at the output from `-help`, notice the `-function` and `-loop` options. `-function` allows us to run a particular function from within our program, and `-loop` lets us loop over that particular function a certain number of times. Let's run fibonacci with the `time` command, first using the interpreter, and then the JIT. The intepreter will run the bytecodes. The JIT, however, will optimize the heck out of the bytecodes before turning them into native binary machine code. Now, this optimized, native machine code will run every time the function or program is run. So let's go ahead and make some real comparisons. 
-
-Run fibonacci with the interpreter:
-
-`time ./b9run/b9run -loop 1000 -function fib test/fib.b9mod 20 > log`
-
-Run fibonacci with the JIT:
-
-`time ./b9run/b9run -loop 1000 -jit -function fib test/fib.b9mod 20 > log`
-
-<figure class="image">
-  <img src="{{"/assets/images/perfConsole.png" | relative_url }}" width="100%"/>
-</figure>
-
-That's a 9x speedup, and that isn't including any of the [advanced JIT features].
+The output should look exactly the same as when run with the interpreter. So what's the difference? The difference isn't really apparent when running a tiny program like Hello, World! The difference is apparent when re-running the same program multiple times, or running a very large program. We experienced about 9x speedup using the JIT, and that is excluding any of the [advanced JIT features].
 
 [advanced JIT features]: #advanced-jit-features
 
@@ -951,21 +935,4 @@ Pass Param allows JIT compiled methods calling other JIT compiled methods to pas
 
 Lazy VM State simulates the interpreter stack while running in a compiled method and restores the interpreter stack when returning into the interpreter. 
 
-Because of our current all-or-nothing `-jit` option, if one method is JIT compiled, they all are, and using the above features will improve performance significantly. Let's see for ourselves! Run the following commands and note the speedup:
-
-```
-time ./b9run/b9run -jit -directcall -loop 1000  -function fib 
-  test/fib.b9mod 20 > log
-```
-
-```
-time ./b9run/b9run -jit -directcall -passparam -loop 1000 -function fib 
-  test/fib.b9mod 20 > log
-```
-
-```
-time ./b9run/b9run -jit -directcall -passparam -lazyvmstate -loop 1000 -function fib 
-  test/fib.b9mod 20 > log
-```
-
-What kind of performance increase did you observe? 
+Because of our current all-or-nothing `-jit` option, if one method is JIT compiled, they all are, and using the above features will improve performance significantly.

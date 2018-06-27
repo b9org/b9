@@ -78,7 +78,7 @@ set(OMR_GC         ON  CACHE INTERNAL "Enable the GC")
 set(OMR_FVTEST     OFF CACHE INTERNAL "Disable OMR's internal test suite, it's incompatible with b9")
 set(OMR_WARNINGS_AS_ERRORS OFF CACHE INTERNAL "OMR doesn't compile cleanly on my laptop :p")
 
-# Compile a b9-js *.js (formerly, *.src) to C++
+# Compile a b9-js *.js to C++
 function(add_b9_module src)
 	add_custom_target(compile_${src} ALL
 		COMMAND

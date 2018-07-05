@@ -17,7 +17,6 @@ class VirtualMachine;
 
 // Function Definition
 struct FunctionDef {
-  // Copy Constructor
   FunctionDef(const std::string& name, std::uint32_t index,
               const std::vector<Instruction>& instructions,
               std::uint32_t nparams = 0, std::uint32_t nlocals = 0)
@@ -26,17 +25,7 @@ struct FunctionDef {
         instructions{instructions},
         nparams{nparams},
         nlocals{nlocals} {}
-
-  // Move Constructor
-  FunctionDef(const std::string& name, std::uint32_t index,
-              std::vector<Instruction>&& instructions, std::uint32_t nparams = 0,
-              std::uint32_t nlocals = 0)
-      : name{name},
-        index{index},
-        instructions{std::move(instructions)},
-        nparams{nparams},
-        nlocals{nlocals} {}
-
+        
   // Function Data
   std::string name;
   uint32_t index;

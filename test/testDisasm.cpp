@@ -28,7 +28,7 @@ std::shared_ptr<Module> makeSimpleModule() {
                                 END_SECTION};
 
   m->functions.push_back(b9::FunctionDef{"add_args", 0, i, 2, 4});
-  m->strings = {"FruitBat", "cantelope", "123$#*"};
+  m->strings = {"FruitBat", "cantaloupe", "123$#*"};
 
   return m;
 }
@@ -128,7 +128,7 @@ void roundTripFunctionData(FunctionDef& f) {
 
   std::vector<Instruction> i2;
   auto f2 = FunctionDef("", 0, i2, 0, 0);
-  readFunctionData(buffer, f2);
+  readFunctionData(buffer, f2, 0);
   EXPECT_EQ(f, f2);
 }
 
@@ -174,14 +174,6 @@ TEST(RoundTripSerializationTest, testFunctionSection) {
 
   roundTripFunctionSection(functions);
 
-  std::vector<Instruction> i2 = {{OpCode::INT_PUSH_CONSTANT, 2},
-                                 {OpCode::INT_PUSH_CONSTANT, 2},
-                                 {OpCode::INT_ADD},
-                                 {OpCode::FUNCTION_RETURN},
-                                 END_SECTION};
-  auto f2 = FunctionDef("testName", 5, i2, 1, 2);
-  functions.push_back(f2);
-  EXPECT_THROW(roundTripFunctionSection(functions), DeserializeException);
 }
 
 void roundTripSerializeDeserialize(std::shared_ptr<Module> module) {

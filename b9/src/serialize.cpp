@@ -33,8 +33,7 @@ bool writeInstructions(std::ostream &out,
 
 void writeFunctionData(std::ostream &out, const FunctionDef &functionDef) {
   writeString(out, functionDef.name);
-  bool ok = writeNumber(out, functionDef.index) &&
-            writeNumber(out, functionDef.nparams) &&
+  bool ok = writeNumber(out, functionDef.nparams) &&
             writeNumber(out, functionDef.nlocals);
   if (!ok) {
     throw SerializeException("Error writing function data");

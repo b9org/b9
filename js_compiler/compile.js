@@ -347,7 +347,6 @@ function Module() {
 		for (var i = 0; i < this.functions.length; ++i) {
 			var func = this.functions[i];
 			outputString(out, func.name);
-			outputUInt32(out, func.index);
 			func.output(out);
 		}
 	}

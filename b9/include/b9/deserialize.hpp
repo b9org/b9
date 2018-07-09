@@ -48,9 +48,9 @@ void readStringSection(std::istream &in, std::vector<std::string> &strings);
 
 bool readInstructions(std::istream &in, std::vector<Instruction> &instructions);
 
-void readFunctionData(std::istream &in, FunctionDef &functionSpec);
+void readFunctionData(std::istream &in, FunctionDef &functionSpec, uint32_t index);
 
-void readFunction(std::istream &in, FunctionDef &functionDef);
+void readFunction(std::istream &in, FunctionDef &functionDef, uint32_t index);
 
 void readFunctionSection(std::istream &in, std::vector<FunctionDef> &functions);
 

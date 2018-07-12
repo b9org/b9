@@ -150,9 +150,6 @@ void MethodBuilder::defineFunctions() {
                  globalTypes().executionContextPtr);
 }
 
-#define QRELOAD_DROP(b, toDrop) \
-  if (cfg_.lazyVmState) getVmState(b)->Drop(b, toDrop);
-
 bool MethodBuilder::inlineProgramIntoBuilder(
     const std::size_t functionIndex, bool isTopLevel,
     TR::BytecodeBuilder *currentBuilder,

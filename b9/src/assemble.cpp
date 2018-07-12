@@ -8,30 +8,14 @@
 
 namespace b9 {
 
-  void assembleStringTable(std::istream &in, std::ostream &out) {
+void assembleStringTable(std::istream &in, std::ostream &out) {}
 
+void assembleInstruction(std::istream &in, std::ostream &out) {}
 
-  }
-  
-  void assembleInstruction(std::istream &in, std::ostream &out) {
+void assembleFunctionData(std::istream &in, std::ostream &out) {}
 
+void assembleFunction(std::istream &in, std::ostream &out) {}
 
-  }
+void assemble(std::istream &in, std::ostream &out) {}
 
-  void assembleFunctionData(std::istream &in, std::ostream &out) {
-
-
-  }
-
-  void assembleFunction(std::istream &in, std::ostream &out) {
-
-
-  }
-
-  void assemble(std::istream &in, std::ostream &out) {
-
-
-  }
-
-
-} // namespace b9
+}  // namespace b9

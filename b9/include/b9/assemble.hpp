@@ -21,7 +21,6 @@ void assembleFunction(std::istream &in, std::ostream &out);
 
 void assemble(std::istream &in, std::ostream &out);
 
-} // namespace b9
+}  // namespace b9
 
 #endif  // B9_ASSEMBLE_HPP_
-

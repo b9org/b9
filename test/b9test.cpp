@@ -1,10 +1,10 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/time.h>
 #include <b9/ExecutionContext.hpp>
 #include <b9/deserialize.hpp>
 #include <fstream>
 #include <iostream>
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/time.h>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -54,7 +54,7 @@ class InterpreterTest : public ::testing::Test {
   virtual void SetUp() {
     auto moduleName = getenv("B9_TEST_MODULE");
     ASSERT_NE(moduleName, nullptr);
-    
+
     std::ifstream file(moduleName, std::ios_base::in | std::ios_base::binary);
 
     module_ = b9::deserialize(file);
@@ -182,12 +182,11 @@ TEST(ObjectTest, allocateSomething) {
   auto m = std::make_shared<Module>();
   std::vector<Instruction> i = {
       {OpCode::NEW_OBJECT},            // new object
-      {OpCode::POP_INTO_LOCAL, 0},       // store object into var0
+      {OpCode::POP_INTO_LOCAL, 0},     // store object into var0
       {OpCode::STR_PUSH_CONSTANT, 0},  // push "Hello, World"
-      {OpCode::PUSH_FROM_LOCAL, 0},      // push var0 aka object
-      {OpCode::POP_INTO_OBJECT,
-       0},                           // pop "Hello, World" into object at slot 0
-      {OpCode::SYSTEM_COLLECT},    // GC. Object is kept alive by var0
+      {OpCode::PUSH_FROM_LOCAL, 0},    // push var0 aka object
+      {OpCode::POP_INTO_OBJECT, 0},  // pop "Hello, World" into object at slot 0
+      {OpCode::SYSTEM_COLLECT},      // GC. Object is kept alive by var0
       {OpCode::PUSH_FROM_LOCAL, 0},  // push object
       {OpCode::PUSH_FROM_OBJECT, 0},  // get the string back
       {OpCode::PRIMITIVE_CALL, 0},    // call b9_prim_print_string

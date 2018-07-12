@@ -7,10 +7,5 @@
 #include <vector>
 
 namespace b9 {
-namespace test {
-
-
-
-
-} // namespace b9
-} // namespace test
+namespace test {}  // namespace test
+}  // namespace b9

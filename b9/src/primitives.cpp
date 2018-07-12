@@ -27,4 +27,3 @@ extern "C" void b9_prim_print_stack(ExecutionContext *context) {
   std::cout << "----------stack end" << std::endl;
   context->push(Om::Value(Om::AS_INT48, 0));
 }
- 

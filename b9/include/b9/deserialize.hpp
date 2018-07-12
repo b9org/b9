@@ -1,8 +1,8 @@
 #ifndef B9_DESERIALIZE_HPP_
 #define B9_DESERIALIZE_HPP_
 
-#include <b9/instructions.hpp>
 #include <b9/Module.hpp>
+#include <b9/instructions.hpp>
 
 #include <string.h>
 #include <iostream>
@@ -48,7 +48,8 @@ void readStringSection(std::istream &in, std::vector<std::string> &strings);
 
 bool readInstructions(std::istream &in, std::vector<Instruction> &instructions);
 
-void readFunctionData(std::istream &in, FunctionDef &functionSpec, uint32_t index);
+void readFunctionData(std::istream &in, FunctionDef &functionSpec,
+                      uint32_t index);
 
 void readFunction(std::istream &in, FunctionDef &functionDef, uint32_t index);
 

@@ -73,7 +73,7 @@ enum class OpCode : RawOpCode {
   STR_JMP_EQ = 0x18,
   // Jump if two strings are not equal
   STR_JMP_NEQ = 0x19,
-  
+
   // Object Bytecodes
 
   NEW_OBJECT = 0x20,

@@ -34,10 +34,8 @@ bool readInstructions(std::istream &in,
   return true;
 }
 
-void readFunctionData(std::istream &in, FunctionDef &functionDef,
-                      uint32_t index) {
+void readFunctionData(std::istream &in, FunctionDef &functionDef) {
   readString(in, functionDef.name);
-  functionDef.index = index;
   bool ok = readNumber(in, functionDef.nparams) &&
             readNumber(in, functionDef.nlocals);
   if (!ok) {
@@ -45,8 +43,8 @@ void readFunctionData(std::istream &in, FunctionDef &functionDef,
   }
 }
 
-void readFunction(std::istream &in, FunctionDef &functionDef, uint32_t index) {
-  readFunctionData(in, functionDef, index);
+void readFunction(std::istream &in, FunctionDef &functionDef) {
+  readFunctionData(in, functionDef);
   if (!readInstructions(in, functionDef.instructions)) {
     throw DeserializeException{"Error reading instructions"};
   }
@@ -59,9 +57,8 @@ void readFunctionSection(std::istream &in,
     throw DeserializeException{"Error reading function count"};
   }
   for (uint32_t i = 0; i < functionCount; i++) {
-    functions.emplace_back(
-        FunctionDef{"", 0, std::vector<Instruction>{}, 0, 0});
-    readFunction(in, functions.back(), i);
+    functions.emplace_back(FunctionDef{"", std::vector<Instruction>{}, 0, 0});
+    readFunction(in, functions.back());
   }
 }
 

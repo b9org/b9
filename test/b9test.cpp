@@ -140,8 +140,7 @@ TEST(MyTest, arguments) {
                                 {OpCode::INT_ADD},
                                 {OpCode::FUNCTION_RETURN},
                                 END_SECTION};
-  uint32_t index = 0;
-  m->functions.push_back(b9::FunctionDef{"add_args", index, i, 2, 0});
+  m->functions.push_back(b9::FunctionDef{"add_args", i, 2, 0});
   vm.load(m);
   auto r = vm.run("add_args", {{AS_INT48, 1}, {AS_INT48, 2}});
   EXPECT_EQ(r, Value(AS_INT48, 3));
@@ -155,7 +154,7 @@ TEST(MyTest, jitSimpleProgram) {
   std::vector<Instruction> i = {{OpCode::INT_PUSH_CONSTANT, 0xdead},
                                 {OpCode::FUNCTION_RETURN},
                                 END_SECTION};
-  m->functions.push_back(b9::FunctionDef{"add", 0, i, 0, 0});
+  m->functions.push_back(b9::FunctionDef{"add", i, 0, 0});
   vm.load(m);
   vm.generateAllCode();
   auto r = vm.run("add", {});
@@ -170,7 +169,7 @@ TEST(MyTest, haveAVariable) {
   std::vector<Instruction> i = {{OpCode::INT_PUSH_CONSTANT, 0xdead},
                                 {OpCode::FUNCTION_RETURN},
                                 END_SECTION};
-  m->functions.push_back(b9::FunctionDef{"add", 0, i, 0, 0});
+  m->functions.push_back(b9::FunctionDef{"add", i, 0, 0});
   vm.load(m);
   vm.generateAllCode();
   auto r = vm.run("add", {});
@@ -193,7 +192,7 @@ TEST(ObjectTest, allocateSomething) {
       {OpCode::FUNCTION_RETURN},      // finish with constant 0
       END_SECTION};
   m->strings.push_back("Hello, World");
-  m->functions.push_back(b9::FunctionDef{"allocate_object", 0, i, 0, 1});
+  m->functions.push_back(b9::FunctionDef{"allocate_object", i, 0, 1});
   vm.load(m);
   Value r = vm.run("allocate_object", {});
   EXPECT_EQ(r, Value(AS_INT48, 0));

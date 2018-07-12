@@ -233,9 +233,8 @@ var LabelTable = function () {
 /// A section of code. CodeBody has information about params and locals, but no information about indexes or it's name.
 /// The name-to-index mapping is managed externally, by the module's FunctionTable. Eventually, the params and locals
 /// might move to a lexical environment, and this will become a simple bytecode array.
-function FunctionDefinition(outer, name, index) {
+function FunctionDefinition(outer, name) {
 	this.name = name;
-	this.index = index;
 	this.params = new SymbolTable();
 	this.locals = new SymbolTable();
 	this.labels = new LabelTable();

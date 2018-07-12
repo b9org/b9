@@ -19,7 +19,6 @@ class VirtualMachine;
 
 struct FunctionDef {
   std::string name;
-  uint32_t index;
   std::vector<Instruction> instructions;
   std::uint32_t nparams;
   std::uint32_t nlocals;

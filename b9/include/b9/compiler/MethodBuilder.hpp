@@ -4,7 +4,7 @@
 #include "b9/VirtualMachine.hpp"
 #include "b9/compiler/Compiler.hpp"
 #include "b9/compiler/GlobalTypes.hpp"
-#include "b9/compiler/VirtualMachineState.hpp"
+#include "b9/compiler/State.hpp"
 #include "b9/instructions.hpp"
 
 #include <Jit.hpp>
@@ -25,7 +25,9 @@ class MethodBuilder : public TR::MethodBuilder {
 
  private:
   void defineFunctions();
+
   void defineLocals();
+
   void defineParameters();
 
   /// For a single bytecode, generate the
@@ -50,7 +52,7 @@ class MethodBuilder : public TR::MethodBuilder {
 
   TR::IlValue *popInt48(TR::BytecodeBuilder *builder);
 
-  void drop(TR::BytecodeBuilder *builder);
+  void drop(TR::BytecodeBuilder *builder, std::size_t n = 1);
 
   TR::IlValue *loadVal(TR::IlBuilder *builder, int valIndex);
 

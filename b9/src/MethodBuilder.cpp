@@ -4,6 +4,8 @@
 #include "b9/compiler/Compiler.hpp"
 #include "b9/instructions.hpp"
 
+#include <OMR/Om/ValueBuilder.hpp>
+
 #include <ilgen/VirtualMachineOperandStack.hpp>
 #include <ilgen/VirtualMachineRegister.hpp>
 #include <ilgen/VirtualMachineRegisterInStruct.hpp>
@@ -22,18 +24,6 @@ void print_stack(b9::ExecutionContext *context) {
 }  // extern "C"
 
 namespace b9 {
-
-namespace ValueBuilder {
-
-TR::IlValue *getInt48(TR::BytecodeBuilder *builder, TR::IlValue *value) {
-  return builder->And(value, builder->ConstInt64(Om::Value::PAYLOAD_MASK));
-}
-
-TR::IlValue *fromInt48(TR::BytecodeBuilder *builder, TR::IlValue *value) {
-  return builder->Or(value, builder->ConstInt64(Om::Value::Tag::INT48));
-}
-
-}  // namespace ValueBuilder
 
 MethodBuilder::MethodBuilder(VirtualMachine &virtualMachine,
                              const std::size_t functionIndex)
@@ -160,11 +150,8 @@ void MethodBuilder::defineFunctions() {
                  globalTypes().executionContextPtr);
 }
 
-#define QSTACK(b) (((VirtualMachineState *)(b)->vmState())->_stack)
-#define QRELOAD(b) \
-  if (cfg_.lazyVmState) ((b)->vmState()->Reload(b));
 #define QRELOAD_DROP(b, toDrop) \
-  if (cfg_.lazyVmState) QSTACK(b)->Drop(b, toDrop);
+  if (cfg_.lazyVmState) getVmState(b)->Drop(b, toDrop);
 
 bool MethodBuilder::inlineProgramIntoBuilder(
     const std::size_t functionIndex, bool isTopLevel,
@@ -231,19 +218,9 @@ bool MethodBuilder::buildIL() {
   Store("stackTop", stackTop);
 
   if (cfg_.lazyVmState) {
-    auto simulatedStackTop = new OMR::VirtualMachineRegisterInStruct(
-        this, "b9::OperandStack", "stack", "top_", "stackTop");
-
-    auto simulateOperandStack = new OMR::VirtualMachineOperandStack(
-        this, 64 /* starting size */, globalTypes().stackElement,
-        simulatedStackTop, true /* grows up */, 0 /* commit address offset */);
-
-    auto vms = new VirtualMachineState(simulateOperandStack, simulatedStackTop);
-
-    setVMState(vms);
-
+    setVMState(new ModelState(this, globalTypes()));
   } else {
-    setVMState(new OMR::VirtualMachineState());
+    setVMState(new ActiveState(this, globalTypes()));
   }
 
   /// When this function exits, we reset the stack top to the beginning of
@@ -380,7 +357,7 @@ bool MethodBuilder::generateILForBytecode(
         "trace", 2, builder->ConstAddress(function),
         builder->ConstAddress(&function->instructions[instructionIndex]));
 
-    builder->vmState()->Commit(builder);
+    state(builder)->Commit(builder);
   }
 
   switch (instruction.opCode()) {
@@ -487,11 +464,11 @@ bool MethodBuilder::generateILForBytecode(
         builder->AddFallThroughBuilder(nextBytecodeBuilder);
     } break;
     case OpCode::PRIMITIVE_CALL: {
-      builder->vmState()->Commit(builder);
+      state(builder)->Commit(builder);
       TR::IlValue *result =
           builder->Call("primitive_call", 2, builder->Load("executionContext"),
                         builder->ConstInt32(instruction.immediate()));
-      QRELOAD(builder);
+      state(builder)->Reload(builder);
       if (nextBytecodeBuilder)
         builder->AddFallThroughBuilder(nextBytecodeBuilder);
     } break;
@@ -584,7 +561,7 @@ bool MethodBuilder::generateILForBytecode(
                       << std::endl;
           }
           TR::IlValue *result;
-          builder->vmState()->Commit(builder);
+          state(builder)->Commit(builder);
           if (interp) {
             if (cfg_.debug)
               std::cout << "calling interpreter: interpreter_0" << std::endl;
@@ -597,7 +574,8 @@ bool MethodBuilder::generateILForBytecode(
             result =
                 builder->Call(nameToCall, 1, builder->Load("executionContext"));
           }
-          QRELOAD_DROP(builder, paramsCount);
+          state(builder)->adjust(builder, -paramsCount);
+          state(builder)->Reload(builder);
           pushValue(builder, result);
         }
       } else {
@@ -606,11 +584,12 @@ bool MethodBuilder::generateILForBytecode(
           std::cout << "Calling interpret_0 to dispatch call for "
                     << callee->name << " with " << paramsCount << " args"
                     << std::endl;
-        builder->vmState()->Commit(builder);
+        state(builder)->Commit(builder);
         TR::IlValue *result =
             builder->Call("interpret_0", 2, builder->Load("executionContext"),
                           builder->ConstInt32(callindex));
-        QRELOAD_DROP(builder, paramsCount);
+        state(builder)->adjust(builder, -paramsCount);
+        state(builder)->Reload(builder);
         pushValue(builder, result);
       }
 
@@ -792,71 +771,30 @@ void MethodBuilder::handle_bc_not(TR::BytecodeBuilder *builder,
   builder->AddFallThroughBuilder(nextBuilder);
 }
 
-void MethodBuilder::drop(TR::BytecodeBuilder *builder) { popValue(builder); }
+void MethodBuilder::drop(TR::BytecodeBuilder *builder, std::size_t n) {
+  for (std::size_t i = 0; i < n; i++) popValue(builder);
+}
 
 /// Input is a Value.
-void MethodBuilder::pushValue(TR::BytecodeBuilder *builder,
-                              TR::IlValue *value) {
-  if (cfg_.lazyVmState) {
-    VirtualMachineState *vmState =
-        dynamic_cast<VirtualMachineState *>(builder->vmState());
-
-    vmState->_stack->Push(builder, value);
-
-  } else {
-    TR::IlValue *stack = builder->StructFieldInstanceAddress(
-        "b9::ExecutionContext", "stack_", builder->Load("executionContext"));
-
-    TR::IlValue *stackTop =
-        builder->LoadIndirect("b9::OperandStack", "top_", stack);
-
-    builder->StoreAt(stackTop,
-                     builder->ConvertTo(globalTypes().stackElement, value));
-
-    TR::IlValue *newStackTop = builder->IndexAt(
-        globalTypes().stackElementPtr, stackTop, builder->ConstInt32(1));
-
-    builder->StoreIndirect("b9::OperandStack", "top_", stack, newStackTop);
-  }
+/// state may model the push, or keep the vm updated.
+void MethodBuilder::pushValue(TR::BytecodeBuilder *b, TR::IlValue *value) {
+  return state(b)->pushValue(b, value);
 }
 
 /// output is an unboxed value.
-TR::IlValue *MethodBuilder::popValue(TR::BytecodeBuilder *builder) {
-  if (cfg_.lazyVmState) {
-    VirtualMachineState *vmState =
-        dynamic_cast<VirtualMachineState *>(builder->vmState());
-
-    TR::IlValue *result = vmState->_stack->Pop(builder);
-
-    return result;
-
-  } else {
-    TR::IlValue *stack = builder->StructFieldInstanceAddress(
-        "b9::ExecutionContext", "stack_", builder->Load("executionContext"));
-
-    TR::IlValue *stackTop =
-        builder->LoadIndirect("b9::OperandStack", "top_", stack);
-
-    TR::IlValue *newStackTop = builder->IndexAt(
-        globalTypes().stackElementPtr, stackTop, builder->ConstInt32(-1));
-
-    builder->StoreIndirect("b9::OperandStack", "top_", stack, newStackTop);
-
-    TR::IlValue *value =
-        builder->LoadAt(globalTypes().stackElementPtr, newStackTop);
-
-    return value;
-  }
+/// State may model the pop, or keep the vm updated.
+TR::IlValue *MethodBuilder::popValue(TR::BytecodeBuilder *b) {
+  return state(b)->popValue(b);
 }
 
 /// input is an unboxed int48.
 void MethodBuilder::pushInt48(TR::BytecodeBuilder *builder,
                               TR::IlValue *value) {
-  pushValue(builder, ValueBuilder::fromInt48(builder, value));
+  pushValue(builder, OMR::Om::ValueBuilder::fromInt48(builder, value));
 }
 
 TR::IlValue *MethodBuilder::popInt48(TR::BytecodeBuilder *builder) {
-  return ValueBuilder::getInt48(builder, popValue(builder));
+  return OMR::Om::ValueBuilder::getInt48(builder, popValue(builder));
 }
 
 }  // namespace b9

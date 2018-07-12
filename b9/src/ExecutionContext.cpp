@@ -6,9 +6,9 @@
 #include "Jit.hpp"
 
 #include <OMR/Om/ArrayOperations.hpp>
-#include <OMR/Om/ShapeOperations.hpp>
 #include <OMR/Om/ObjectOperations.hpp>
 #include <OMR/Om/RootRef.hpp>
+#include <OMR/Om/ShapeOperations.hpp>
 #include <OMR/Om/Value.hpp>
 
 #include <sys/time.h>
@@ -89,8 +89,8 @@ StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
   const Instruction *instructionPointer = function->instructions.data();
 
   StackElement *params = stack_.top() - paramsCount;
-  
-  stack_.pushn(localsCount); //make room for locals in the stack
+
+  stack_.pushn(localsCount);  // make room for locals in the stack
   StackElement *locals = stack_.top() - localsCount;
 
   while (*instructionPointer != END_SECTION) {
@@ -219,9 +219,7 @@ void ExecutionContext::doPrimitiveCall(Immediate value) {
 
 Immediate ExecutionContext::doJmp(Immediate offset) { return offset; }
 
-void ExecutionContext::doDuplicate() {
-  push(stack_.peek());
-}
+void ExecutionContext::doDuplicate() { push(stack_.peek()); }
 
 void ExecutionContext::doDrop() { stack_.pop(); }
 

@@ -1,8 +1,8 @@
-#include <iostream>
 #include <fstream>
+#include <iostream>
 
-#include <b9/deserialize.hpp>
 #include <b9/Module.hpp>
+#include <b9/deserialize.hpp>
 
 using namespace b9;
 
@@ -12,8 +12,7 @@ extern "C" int main(int argc, char** argv) {
 
   if (argc == 1) {
     inbuffer = std::cin.rdbuf();
-  }
-  else {
+  } else {
     infile.open(argv[1], std::ios::in | std::ios::binary);
     inbuffer = infile.rdbuf();
   }

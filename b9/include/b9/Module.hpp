@@ -25,7 +25,7 @@ struct FunctionDef {
         instructions{instructions},
         nparams{nparams},
         nlocals{nlocals} {}
-        
+
   // Function Data
   std::string name;
   uint32_t index;
@@ -35,7 +35,7 @@ struct FunctionDef {
 };
 
 inline void operator<<(std::ostream& out, const FunctionDef& f) {
-  out << "(function \"" << f.name << "\" " << f.nparams << " " <<  f.nlocals;
+  out << "(function \"" << f.name << "\" " << f.nparams << " " << f.nlocals;
   std::size_t i = 0;
   for (auto instruction : f.instructions) {
     out << std::endl << "  " << i << "  " << instruction;

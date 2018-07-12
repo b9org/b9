@@ -1,17 +1,17 @@
 #ifndef B9_VIRTUALMACHINE_HPP_
 #define B9_VIRTUALMACHINE_HPP_
 
+#include <b9/Module.hpp>
 #include <b9/OperandStack.hpp>
 #include <b9/compiler/Compiler.hpp>
 #include <b9/instructions.hpp>
-#include <b9/Module.hpp>
 
 #include <OMR/Om/Context.inl.hpp>
 #include <OMR/Om/MemorySystem.hpp>
 #include <OMR/Om/ObjectOperations.hpp>
-#include <OMR/Om/ShapeOperations.hpp>
 #include <OMR/Om/RootRef.hpp>
 #include <OMR/Om/Runtime.hpp>
+#include <OMR/Om/ShapeOperations.hpp>
 #include <OMR/Om/Value.hpp>
 
 #include <cstring>
@@ -92,7 +92,7 @@ class VirtualMachine {
 
   void generateAllCode();
 
-  const std::string& getString(int index);
+  const std::string &getString(int index);
 
   const std::shared_ptr<const Module> &module() { return module_; }
 
@@ -131,7 +131,7 @@ using namespace b9;
 Om::RawValue interpret_0(ExecutionContext *context,
                          const std::size_t functionIndex);
 Om::RawValue interpret_1(ExecutionContext *context,
-                              const std::size_t functionIndex, Om::RawValue p1);
+                         const std::size_t functionIndex, Om::RawValue p1);
 Om::RawValue interpret_2(ExecutionContext *context,
                          const std::size_t functionIndex, Om::RawValue p1,
                          Om::RawValue p2);

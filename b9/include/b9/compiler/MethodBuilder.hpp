@@ -58,11 +58,13 @@ class MethodBuilder : public TR::MethodBuilder {
 
   TR::IlValue *loadLocalIndex(TR::IlBuilder *builder, int localIndex);
 
-  void storeLocalIndex(TR::IlBuilder *builder, int localIndex, TR::IlValue *value);
+  void storeLocalIndex(TR::IlBuilder *builder, int localIndex,
+                       TR::IlValue *value);
 
   TR::IlValue *loadParamIndex(TR::IlBuilder *builder, int paramIndex);
 
-  void storeParamIndex(TR::IlBuilder *builder, int paramIndex, TR::IlValue *value);
+  void storeParamIndex(TR::IlBuilder *builder, int paramIndex,
+                       TR::IlValue *value);
 
   // Bytecode Handlers
 
@@ -73,13 +75,13 @@ class MethodBuilder : public TR::MethodBuilder {
   void handle_bc_drop(TR::BytecodeBuilder *builder,
                       TR::BytecodeBuilder *nextBuilder);
   void handle_bc_push_from_local(TR::BytecodeBuilder *builder,
-                               TR::BytecodeBuilder *nextBuilder);
+                                 TR::BytecodeBuilder *nextBuilder);
   void handle_bc_pop_into_local(TR::BytecodeBuilder *builder,
-                              TR::BytecodeBuilder *nextBuilder);
+                                TR::BytecodeBuilder *nextBuilder);
   void handle_bc_push_from_param(TR::BytecodeBuilder *builder,
-                               TR::BytecodeBuilder *nextBuilder);
+                                 TR::BytecodeBuilder *nextBuilder);
   void handle_bc_pop_into_param(TR::BytecodeBuilder *builder,
-                              TR::BytecodeBuilder *nextBuilder);                                
+                                TR::BytecodeBuilder *nextBuilder);
   void handle_bc_sub(TR::BytecodeBuilder *builder,
                      TR::BytecodeBuilder *nextBuilder);
   void handle_bc_add(TR::BytecodeBuilder *builder,

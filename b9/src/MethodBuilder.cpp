@@ -282,8 +282,9 @@ bool MethodBuilder::buildIL() {
   return inlineProgramIntoBuilder(functionIndex_, true);
 }
 
-void MethodBuilder::storeVal(TR::IlBuilder *builder, int valIndex, TR::IlValue *value) {
-    if (firstArgumentIndex > 0) {
+void MethodBuilder::storeVal(TR::IlBuilder *builder, int valIndex,
+                             TR::IlValue *value) {
+  if (firstArgumentIndex > 0) {
     valIndex += firstArgumentIndex;
   }
 
@@ -297,7 +298,6 @@ void MethodBuilder::storeVal(TR::IlBuilder *builder, int valIndex, TR::IlValue *
   }
 }
 
-
 TR::IlValue *MethodBuilder::loadVal(TR::IlBuilder *builder, int valIndex) {
   if (firstArgumentIndex > 0) {
     valIndex += firstArgumentIndex;
@@ -309,30 +309,33 @@ TR::IlValue *MethodBuilder::loadVal(TR::IlBuilder *builder, int valIndex) {
     TR::IlValue *args = builder->Load("stackBase");
     TR::IlValue *address = builder->IndexAt(globalTypes().stackElementPtr, args,
                                             builder->ConstInt32(valIndex));
-    TR::IlValue *result = builder->LoadAt(globalTypes().stackElementPtr, address);
+    TR::IlValue *result =
+        builder->LoadAt(globalTypes().stackElementPtr, address);
     return result;
   }
 }
 
-TR::IlValue *MethodBuilder::loadLocalIndex(TR::IlBuilder *builder, 
-                                          int localIndex) {
-  const FunctionDef *currentFunction = virtualMachine_.getFunction(functionIndex_);
+TR::IlValue *MethodBuilder::loadLocalIndex(TR::IlBuilder *builder,
+                                           int localIndex) {
+  const FunctionDef *currentFunction =
+      virtualMachine_.getFunction(functionIndex_);
   return loadVal(builder, localIndex + currentFunction->nparams);
 }
 
 void MethodBuilder::storeLocalIndex(TR::IlBuilder *builder, int localIndex,
-                                  TR::IlValue *value) {
-  const FunctionDef *currentFunction = virtualMachine_.getFunction(functionIndex_);
+                                    TR::IlValue *value) {
+  const FunctionDef *currentFunction =
+      virtualMachine_.getFunction(functionIndex_);
   storeVal(builder, localIndex + currentFunction->nparams, value);
 }
 
-TR::IlValue * MethodBuilder::loadParamIndex(TR::IlBuilder *builder, 
-                                          int paramIndex) {
+TR::IlValue *MethodBuilder::loadParamIndex(TR::IlBuilder *builder,
+                                           int paramIndex) {
   return loadVal(builder, paramIndex);
 }
 
-void MethodBuilder::storeParamIndex(TR::IlBuilder *builder, int paramIndex, 
-                                  TR::IlValue *value) {
+void MethodBuilder::storeParamIndex(TR::IlBuilder *builder, int paramIndex,
+                                    TR::IlValue *value) {
   storeVal(builder, paramIndex, value);
 }
 
@@ -394,7 +397,7 @@ bool MethodBuilder::generateILForBytecode(
     case OpCode::PUSH_FROM_PARAM:
       pushValue(builder, loadParamIndex(builder, instruction.immediate()));
       if (nextBytecodeBuilder)
-      builder->AddFallThroughBuilder(nextBytecodeBuilder);
+        builder->AddFallThroughBuilder(nextBytecodeBuilder);
       break;
     case OpCode::POP_INTO_PARAM:
       storeParamIndex(builder, instruction.immediate(), popValue(builder));
@@ -585,9 +588,9 @@ bool MethodBuilder::generateILForBytecode(
           if (interp) {
             if (cfg_.debug)
               std::cout << "calling interpreter: interpreter_0" << std::endl;
-            result =
-                builder->Call("interpret_0", 2, builder->Load("executionContext"),
-                              builder->ConstInt32(callindex));
+            result = builder->Call("interpret_0", 2,
+                                   builder->Load("executionContext"),
+                                   builder->ConstInt32(callindex));
           } else {
             if (cfg_.debug)
               std::cout << "calling " << nameToCall << " directly" << std::endl;

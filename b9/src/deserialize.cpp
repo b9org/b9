@@ -4,9 +4,9 @@
 #include <memory>
 #include <vector>
 
+#include <b9/Module.hpp>
 #include <b9/deserialize.hpp>
 #include <b9/instructions.hpp>
-#include <b9/Module.hpp>
 
 namespace b9 {
 
@@ -34,7 +34,8 @@ bool readInstructions(std::istream &in,
   return true;
 }
 
-void readFunctionData(std::istream &in, FunctionDef &functionDef, uint32_t index) {
+void readFunctionData(std::istream &in, FunctionDef &functionDef,
+                      uint32_t index) {
   readString(in, functionDef.name);
   functionDef.index = index;
   bool ok = readNumber(in, functionDef.nparams) &&
@@ -44,7 +45,7 @@ void readFunctionData(std::istream &in, FunctionDef &functionDef, uint32_t index
   }
 }
 
-void readFunction(std::istream &in, FunctionDef &functionDef,uint32_t index) {
+void readFunction(std::istream &in, FunctionDef &functionDef, uint32_t index) {
   readFunctionData(in, functionDef, index);
   if (!readInstructions(in, functionDef.instructions)) {
     throw DeserializeException{"Error reading instructions"};

@@ -1,12 +1,12 @@
-#include <b9/VirtualMachine.hpp>
 #include <b9/ExecutionContext.hpp>
+#include <b9/VirtualMachine.hpp>
 #include <b9/compiler/Compiler.hpp>
 
 #include <OMR/Om/Allocator.hpp>
 #include <OMR/Om/ArrayOperations.hpp>
-#include <OMR/Om/ShapeOperations.hpp>
 #include <OMR/Om/ObjectOperations.hpp>
 #include <OMR/Om/RootRef.hpp>
+#include <OMR/Om/ShapeOperations.hpp>
 #include <OMR/Om/Value.hpp>
 
 #include <omrgc.h>
@@ -25,11 +25,8 @@ namespace b9 {
 
 constexpr PrimitiveFunction *const VirtualMachine::primitives_[3];
 
-VirtualMachine::VirtualMachine(Om::ProcessRuntime &runtime,
-                               const Config &cfg)
-    : cfg_{cfg},
-      memoryManager_(runtime),
-      compiler_{nullptr} {
+VirtualMachine::VirtualMachine(Om::ProcessRuntime &runtime, const Config &cfg)
+    : cfg_{cfg}, memoryManager_(runtime), compiler_{nullptr} {
   if (cfg_.verbose) std::cout << "VM initializing..." << std::endl;
 
   if (cfg_.jit) {
@@ -54,7 +51,6 @@ void VirtualMachine::load(std::shared_ptr<const Module> module) {
 }
 
 /// OpCode Interpreter
-
 
 JitFunction VirtualMachine::getJitAddress(std::size_t functionIndex) {
   if (functionIndex >= compiledFunctions_.size()) {
@@ -87,7 +83,7 @@ JitFunction VirtualMachine::generateCode(const std::size_t functionIndex) {
   }
 }
 
-const std::string& VirtualMachine::getString(int index) {
+const std::string &VirtualMachine::getString(int index) {
   return module_->strings[index];
 }
 
@@ -97,7 +93,7 @@ std::size_t VirtualMachine::getFunctionCount() {
 
 void VirtualMachine::generateAllCode() {
   assert(cfg_.jit);
-  auto functionIndex = 0; //0 index for <script>
+  auto functionIndex = 0;  // 0 index for <script>
 
   while (functionIndex < getFunctionCount()) {
     if (cfg_.debug)

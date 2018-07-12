@@ -59,7 +59,8 @@ void readFunctionSection(std::istream &in,
     throw DeserializeException{"Error reading function count"};
   }
   for (uint32_t i = 0; i < functionCount; i++) {
-    functions.emplace_back("", -1, std::vector<Instruction>{});
+    functions.emplace_back(
+        FunctionDef{"", 0, std::vector<Instruction>{}, 0, 0});
     readFunction(in, functions.back(), i);
   }
 }

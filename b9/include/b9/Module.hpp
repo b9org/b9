@@ -16,22 +16,13 @@ class ExecutionContext;
 class VirtualMachine;
 
 // Function Definition
-struct FunctionDef {
-  FunctionDef(const std::string& name, std::uint32_t index,
-              const std::vector<Instruction>& instructions,
-              std::uint32_t nparams = 0, std::uint32_t nlocals = 0)
-      : name{name},
-        index{index},
-        instructions{instructions},
-        nparams{nparams},
-        nlocals{nlocals} {}
 
-  // Function Data
+struct FunctionDef {
   std::string name;
   uint32_t index;
+  std::vector<Instruction> instructions;
   std::uint32_t nparams;
   std::uint32_t nlocals;
-  std::vector<Instruction> instructions;
 };
 
 inline void operator<<(std::ostream& out, const FunctionDef& f) {
@@ -45,8 +36,8 @@ inline void operator<<(std::ostream& out, const FunctionDef& f) {
 }
 
 inline bool operator==(const FunctionDef& lhs, const FunctionDef& rhs) {
-  return lhs.name == rhs.name && lhs.index == rhs.index &&
-         lhs.nparams == rhs.nparams && lhs.nlocals == rhs.nlocals;
+  return lhs.name == rhs.name && lhs.nparams == rhs.nparams &&
+         lhs.nlocals == rhs.nlocals;
 }
 
 /// Function not found exception.

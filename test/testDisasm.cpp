@@ -35,29 +35,29 @@ std::shared_ptr<Module> makeSimpleModule() {
 
 std::shared_ptr<Module> makeComplexModule() {
   auto m = std::make_shared<Module>();
-  std::vector<Instruction> f1 = {{OpCode::INT_PUSH_CONSTANT, 2},
+
+  std::vector<Instruction> i1 = {{OpCode::INT_PUSH_CONSTANT, 2},
                                  {OpCode::INT_PUSH_CONSTANT, 2},
                                  {OpCode::INT_ADD},
                                  {OpCode::FUNCTION_RETURN},
                                  END_SECTION};
+  m->functions.push_back(b9::FunctionDef{"add_args", 0, i1, 1, 1});
 
-  std::vector<Instruction> f2 = {{OpCode::PUSH_FROM_LOCAL, 0},
+  std::vector<Instruction> i2 = {{OpCode::PUSH_FROM_LOCAL, 0},
                                  {OpCode::PRIMITIVE_CALL, 0},
                                  {OpCode::DROP, 0},
                                  {OpCode::INT_PUSH_CONSTANT, 0},
                                  {OpCode::FUNCTION_RETURN, 0},
                                  END_SECTION};
+  m->functions.push_back(b9::FunctionDef{"b9PrintString", 1, i2, 2, 2});
 
-  std::vector<Instruction> f3 = {{OpCode::PUSH_FROM_LOCAL, 0},
+  std::vector<Instruction> i3 = {{OpCode::PUSH_FROM_LOCAL, 0},
                                  {OpCode::PRIMITIVE_CALL, 1},
                                  {OpCode::DROP, 0},
                                  {OpCode::INT_PUSH_CONSTANT, 0},
                                  {OpCode::FUNCTION_RETURN, 0},
                                  END_SECTION};
-
-  m->functions.push_back(b9::FunctionDef{"add_args", 0, f1, 1, 1});
-  m->functions.push_back(b9::FunctionDef{"b9PrintString", 1, f2, 2, 2});
-  m->functions.push_back(b9::FunctionDef{"b9PrintNumber", 2, f3, 3, 3});
+  m->functions.push_back(b9::FunctionDef{"b9PrintNumber", 2, i3, 3, 3});
 
   m->strings = {"mercury", "Venus", "EARTH", "mars", "JuPiTeR", "sAtUrN"};
 
@@ -127,7 +127,7 @@ void roundTripFunctionData(FunctionDef& f) {
   EXPECT_TRUE(buffer.good());
 
   std::vector<Instruction> i2;
-  auto f2 = FunctionDef("", 0, i2, 0, 0);
+  auto f2 = FunctionDef{"", 0, i2, 0, 0};
   readFunctionData(buffer, f2, 0);
   EXPECT_EQ(f, f2);
 }
@@ -138,10 +138,10 @@ TEST(RoundTripSerializationTest, testFunctionData) {
                                  {OpCode::INT_ADD},
                                  {OpCode::FUNCTION_RETURN},
                                  END_SECTION};
-  auto f1 = FunctionDef("testName", 0, i1, 4, 5);
+  auto f1 = FunctionDef{"testName", 0, i1, 4, 5};
 
   std::vector<Instruction> i2 = {};
-  auto f2 = FunctionDef("testName", 0, i2, 4, 5);
+  auto f2 = FunctionDef{"testName", 0, i2, 4, 5};
 
   roundTripFunctionData(f1);
   roundTripFunctionData(f2);
@@ -168,7 +168,7 @@ TEST(RoundTripSerializationTest, testFunctionSection) {
                                  {OpCode::INT_ADD},
                                  {OpCode::FUNCTION_RETURN},
                                  END_SECTION};
-  auto f1 = FunctionDef("testName", 0, i1, 4, 5);
+  auto f1 = FunctionDef{"testName", 0, i1, 4, 5};
   std::vector<FunctionDef> functions;
   functions.push_back(f1);
 
@@ -201,7 +201,7 @@ TEST(RoundTripSerializationTest, testSerializeDeserialize) {
                                 {OpCode::INT_ADD},
                                 {OpCode::FUNCTION_RETURN},
                                 END_SECTION};
-  auto f = FunctionDef("testName", 0, i, 4, 5);
+  auto f = FunctionDef{"testName", 0, i, 4, 5};
   std::vector<FunctionDef> functions;
   functions.push_back(f);
   m3->functions = functions;

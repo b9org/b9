@@ -67,7 +67,7 @@ JitFunction Compiler::generateCode(const std::size_t functionIndex) {
   const FunctionDef *function = virtualMachine_.getFunction(functionIndex);
   MethodBuilder methodBuilder(virtualMachine_, functionIndex);
 
-  if (cfg_.debug)
+  if (cfg_.verbose)
     std::cout << "MethodBuilder for function: " << function->name
               << " is constructed" << std::endl;
 
@@ -80,7 +80,7 @@ JitFunction Compiler::generateCode(const std::size_t functionIndex) {
     throw b9::CompilationException{"IL generation failed"};
   }
 
-  if (cfg_.debug)
+  if (cfg_.verbose)
     std::cout << "Compilation completed with return code: " << rc
               << ", code address: " << static_cast<void *>(result) << std::endl;
 

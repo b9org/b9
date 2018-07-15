@@ -66,7 +66,7 @@ static const char *argsAndTempNames[] = {
 /// PassParam mode.
 void MethodBuilder::defineParameters() {
   const FunctionDef *function = virtualMachine_.getFunction(functionIndex_);
-  if (cfg_.debug) {
+  if (cfg_.verbose) {
     std::cout << "Defining " << function->nparams << " parameters\n";
   }
 
@@ -82,7 +82,7 @@ void MethodBuilder::defineParameters() {
 
 void MethodBuilder::defineLocals() {
   const FunctionDef *function = virtualMachine_.getFunction(functionIndex_);
-  if (cfg_.debug) {
+  if (cfg_.verbose) {
     std::cout << "Defining " << function->nlocals << " locals\n";
   }
 
@@ -163,14 +163,14 @@ bool MethodBuilder::inlineProgramIntoBuilder(
   auto numberOfBytecodes = function->instructions.size();
 
   if (numberOfBytecodes == 0) {
-    if (cfg_.debug) {
+    if (cfg_.verbose) {
       std::cerr << "unexpected EMPTY function body for " << function->name
                 << std::endl;
     }
     return false;
   }
 
-  if (cfg_.debug)
+  if (cfg_.verbose)
     std::cout << "Creating " << numberOfBytecodes << " bytecode builders"
               << std::endl;
 
@@ -322,13 +322,13 @@ bool MethodBuilder::generateILForBytecode(
   const std::vector<Instruction> &program = function->instructions;
   const Instruction instruction = program[instructionIndex];
 
-  if (cfg_.debug) {
+  if (cfg_.verbose) {
     std::cout << "generating index=" << instructionIndex
               << " bc=" << instruction << std::endl;
   }
 
   if (nullptr == builder) {
-    if (cfg_.debug)
+    if (cfg_.verbose)
       std::cout << "unexpected NULL BytecodeBuilder!" << std::endl;
     return false;
   }

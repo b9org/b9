@@ -380,15 +380,11 @@ bool MethodBuilder::generateILForBytecode(
       break;
     case OpCode::FUNCTION_RETURN: {
       auto result = popValue(builder);
-
       TR::IlValue *stack = builder->StructFieldInstanceAddress(
           "b9::ExecutionContext", "stack_", builder->Load("executionContext"));
-
       builder->StoreIndirect("b9::OperandStack", "top_", stack,
                              builder->Load("stackBase"));
-
-      builder->Return(
-          builder->Or(result, builder->ConstInt64(Om::Value::Tag::INT48)));
+      builder->Return(result);
     } break;
     case OpCode::DUPLICATE: {
       auto x = popValue(builder);

@@ -21,6 +21,10 @@ void print_stack(b9::ExecutionContext *context) {
   printStack(std::cerr, context->stack());
 }
 
+void print_value(Om::Value v) { std::cerr << v << std::endl; }
+
+void print_ptr(void *v) { std::cerr << v << std::endl; }
+
 }  // extern "C"
 
 namespace b9 {
@@ -148,6 +152,10 @@ void MethodBuilder::defineFunctions() {
   DefineFunction((char *)"print_stack", (char *)__FILE__, "print_stack",
                  (void *)&print_stack, NoType, 1,
                  globalTypes().executionContextPtr);
+  DefineFunction((char *)"print_value", (char *)__FILE__, "print_value",
+                 (void *)&print_value, NoType, 1, globalTypes().stackElement);
+  DefineFunction((char *)"print_ptr", (char *)__FILE__, "print_ptr",
+                 (void *)&print_ptr, NoType, 1, globalTypes().addressPtr);
 }
 
 bool MethodBuilder::inlineProgramIntoBuilder(

@@ -12,6 +12,9 @@
 #include <ilgen/MethodBuilder.hpp>
 #include <ilgen/TypeDictionary.hpp>
 
+#include <string>
+#include <vector>
+
 namespace b9 {
 
 class VirtualMachine;
@@ -26,9 +29,9 @@ class MethodBuilder : public TR::MethodBuilder {
  private:
   void defineFunctions();
 
-  void defineLocals();
+  void defineParams();
 
-  void defineParameters();
+  void defineLocals();
 
   /// For a single bytecode, generate the
   bool generateILForBytecode(
@@ -54,29 +57,25 @@ class MethodBuilder : public TR::MethodBuilder {
 
   void drop(TR::BytecodeBuilder *builder, std::size_t n = 1);
 
-  TR::IlValue *loadVal(TR::IlBuilder *builder, int valIndex);
+  TR::IlValue *loadLocal(TR::IlBuilder *b, std::size_t index);
 
-  void storeVal(TR::IlBuilder *builder, int valIndex, TR::IlValue *value);
+  void storeLocal(TR::IlBuilder *b, std::size_t index, TR::IlValue *value);
 
-  TR::IlValue *loadLocalIndex(TR::IlBuilder *builder, int localIndex);
+  TR::IlValue *loadParam(TR::IlBuilder *b, std::size_t index);
 
-  void storeLocalIndex(TR::IlBuilder *builder, int localIndex,
-                       TR::IlValue *value);
+  void storeParam(TR::IlBuilder *b, std::size_t index, TR::IlValue *value);
 
-  TR::IlValue *loadParamIndex(TR::IlBuilder *builder, int paramIndex);
-
-  void storeParamIndex(TR::IlBuilder *builder, int paramIndex,
-                       TR::IlValue *value);
-
-  void interpreterCall(TR::BytecodeBuilder* builder, std::size_t target);
+  void interpreterCall(TR::BytecodeBuilder *builder, std::size_t target);
 
   void directCall(TR::BytecodeBuilder *builder, std::size_t target);
 
-  void passParamCall(TR::BytecodeBuilder* builder, std::size_t target);
+  void passParamCall(TR::BytecodeBuilder *builder, std::size_t target);
 
   // Bytecode Handlers
 
-  void handle_bc_function_call(TR::BytecodeBuilder *builder, TR::BytecodeBuilder *nextBuilder, std::size_t target);
+  void handle_bc_function_call(TR::BytecodeBuilder *builder,
+                               TR::BytecodeBuilder *nextBuilder,
+                               std::size_t target);
 
   void handle_bc_push_constant(TR::BytecodeBuilder *builder,
                                TR::BytecodeBuilder *nextBuilder);
@@ -146,6 +145,8 @@ class MethodBuilder : public TR::MethodBuilder {
   const GlobalTypes &globalTypes_;
   const Config &cfg_;
   const std::size_t functionIndex_;
+  std::vector<std::string> params_;
+  std::vector<std::string> locals_;
   int32_t maxInlineDepth_;
   int32_t firstArgumentIndex = 0;
 };

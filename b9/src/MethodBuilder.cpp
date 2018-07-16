@@ -47,7 +47,7 @@ MethodBuilder::MethodBuilder(VirtualMachine &virtualMachine,
 
   DefineReturnType(globalTypes().stackElement);
 
-  defineParameters();
+  defineParams();
 
   defineLocals();
 
@@ -56,19 +56,13 @@ MethodBuilder::MethodBuilder(VirtualMachine &virtualMachine,
   AllLocalsHaveBeenDefined();
 }
 
-static const char *argsAndTempNames[] = {
-    "arg00", "arg01", "arg02", "arg03", "arg04", "arg05", "arg06",
-    "arg07", "arg08", "arg09", "arg10", "arg11", "arg12", "arg13",
-    "arg14", "arg15", "arg16", "arg17", "arg18", "arg19", "arg20",
-    "arg21", "arg22", "arg23", "arg24", "arg25", "arg26", "arg27",
-    "arg28", "arg29", "arg30", "arg31", "arg32"};
-#define MAX_ARGS_TEMPS_AVAIL \
-  (sizeof(argsAndTempNames) / sizeof(argsAndTempNames[0]))
+static const std::string PARAM_STRING = "param";
+static const std::string LOCAL_STRING = "local";
 
 /// The first argument is always executionContext.
 /// The remaining function arguments are only passed as native arguments in
 /// PassParam mode.
-void MethodBuilder::defineParameters() {
+void MethodBuilder::defineParams() {
   const FunctionDef *function = virtualMachine_.getFunction(functionIndex_);
   if (cfg_.verbose) {
     std::cout << "Defining " << function->nparams << " parameters\n";
@@ -77,9 +71,13 @@ void MethodBuilder::defineParameters() {
   /// first argument is always the execution context
   DefineParameter("executionContext", globalTypes().executionContextPtr);
 
+  /// In pass param, arguments are passed using C linkage. Otherwise, parameters
+  /// are on the stack.
   if (cfg_.passParam) {
+    params_.resize(function->nparams);
     for (int i = 0; i < function->nparams; i++) {
-      DefineParameter(argsAndTempNames[i], globalTypes().stackElement);
+      params_[i] = PARAM_STRING + std::to_string(i);
+      DefineParameter(params_[i].c_str(), globalTypes().stackElement);
     }
   }
 }
@@ -100,14 +98,11 @@ void MethodBuilder::defineLocals() {
   // Address of the current stack top
   DefineLocal("stackTop", globalTypes().stackElementPtr);
 
-  if (cfg_.passParam) {
-    // for locals we pre-define all the locals we could use, for the toplevel
-    // and all the inlined names which are simply referenced via a skew to reach
-    // past callers functions args/temps
-    for (std::size_t i = function->nparams;
-         i < (function->nlocals + function->nparams); i++) {
-      DefineLocal(argsAndTempNames[i], globalTypes().stackElement);
-    }
+  locals_.resize(function->nlocals);
+
+  for (std::size_t i = 0; i < function->nlocals; i++) {
+    locals_[i] = LOCAL_STRING + std::to_string(i);
+    DefineLocal(locals_[i].c_str(), globalTypes().stackElement);
   }
 }
 
@@ -229,83 +224,40 @@ bool MethodBuilder::buildIL() {
     Store("stackBase", stackTop);
   }
 
-  // Locals are stored on the stack. Bump the stackTop by the number of
-  // registers/locals in the function.
-  //
-  // In the case of passParam, locals are not stored on the VM stack.  Local
-  // variables are stored as compiler immidiets.
-  if (!cfg_.passParam && function->nlocals > 0) {
-    TR::IlValue *newStackTop = IndexAt(globalTypes().stackElementPtr, stackTop,
-                                       ConstInt32(function->nlocals));
-
-    StoreIndirect("b9::OperandStack", "top_", stack, newStackTop);
-  }
-
-  // initialize all locals to 0
-  auto paramsCount = function->nparams;
-  auto localsCount = function->nlocals;
-  for (int i = paramsCount; i < paramsCount + localsCount; i++) {
-    storeVal(this, i, this->ConstInt64(0));
-  }
-
   return inlineProgramIntoBuilder(functionIndex_, true);
 }
 
-void MethodBuilder::storeVal(TR::IlBuilder *builder, int valIndex,
-                             TR::IlValue *value) {
-  if (firstArgumentIndex > 0) {
-    valIndex += firstArgumentIndex;
-  }
-
-  if (cfg_.passParam) {
-    builder->Store(argsAndTempNames[valIndex], value);
-  } else {
-    TR::IlValue *args = builder->Load("stackBase");
-    TR::IlValue *address = builder->IndexAt(globalTypes().stackElementPtr, args,
-                                            builder->ConstInt32(valIndex));
-    builder->StoreAt(address, value);
-  }
+TR::IlValue *MethodBuilder::loadLocal(TR::IlBuilder *b, std::size_t index) {
+  return b->Load(locals_[index].c_str());
 }
 
-TR::IlValue *MethodBuilder::loadVal(TR::IlBuilder *builder, int valIndex) {
-  if (firstArgumentIndex > 0) {
-    valIndex += firstArgumentIndex;
-  }
+void MethodBuilder::storeLocal(TR::IlBuilder *b, std::size_t index,
+                               TR::IlValue *value) {
+  b->Store(locals_[index].c_str(), value);
+}
 
+TR::IlValue *MethodBuilder::loadParam(TR::IlBuilder *b, std::size_t index) {
   if (cfg_.passParam) {
-    return builder->Load(argsAndTempNames[valIndex]);
+    return b->Load(params_[index].c_str());
   } else {
-    TR::IlValue *args = builder->Load("stackBase");
-    TR::IlValue *address = builder->IndexAt(globalTypes().stackElementPtr, args,
-                                            builder->ConstInt32(valIndex));
-    TR::IlValue *result =
-        builder->LoadAt(globalTypes().stackElementPtr, address);
+    TR::IlValue *args = b->Load("stackBase");
+    TR::IlValue *address =
+        b->IndexAt(globalTypes().stackElementPtr, args, b->ConstInt32(index));
+    TR::IlValue *result = b->LoadAt(globalTypes().stackElementPtr, address);
     return result;
   }
 }
 
-TR::IlValue *MethodBuilder::loadLocalIndex(TR::IlBuilder *builder,
-                                           int localIndex) {
-  const FunctionDef *currentFunction =
-      virtualMachine_.getFunction(functionIndex_);
-  return loadVal(builder, localIndex + currentFunction->nparams);
-}
-
-void MethodBuilder::storeLocalIndex(TR::IlBuilder *builder, int localIndex,
-                                    TR::IlValue *value) {
-  const FunctionDef *currentFunction =
-      virtualMachine_.getFunction(functionIndex_);
-  storeVal(builder, localIndex + currentFunction->nparams, value);
-}
-
-TR::IlValue *MethodBuilder::loadParamIndex(TR::IlBuilder *builder,
-                                           int paramIndex) {
-  return loadVal(builder, paramIndex);
-}
-
-void MethodBuilder::storeParamIndex(TR::IlBuilder *builder, int paramIndex,
-                                    TR::IlValue *value) {
-  storeVal(builder, paramIndex, value);
+void MethodBuilder::storeParam(TR::IlBuilder *b, std::size_t index,
+                               TR::IlValue *value) {
+  if (cfg_.passParam) {
+    b->Store(params_[index].c_str(), value);
+  } else {
+    TR::IlValue *args = b->Load("stackBase");
+    TR::IlValue *address =
+        b->IndexAt(globalTypes().stackElementPtr, args, b->ConstInt32(index));
+    b->StoreAt(address, value);
+  }
 }
 
 bool MethodBuilder::generateILForBytecode(
@@ -354,22 +306,22 @@ bool MethodBuilder::generateILForBytecode(
 
   switch (instruction.opCode()) {
     case OpCode::PUSH_FROM_LOCAL:
-      pushValue(builder, loadLocalIndex(builder, instruction.immediate()));
+      pushValue(builder, loadLocal(builder, instruction.immediate()));
       if (nextBytecodeBuilder)
         builder->AddFallThroughBuilder(nextBytecodeBuilder);
       break;
     case OpCode::POP_INTO_LOCAL:
-      storeLocalIndex(builder, instruction.immediate(), popValue(builder));
+      storeLocal(builder, instruction.immediate(), popValue(builder));
       if (nextBytecodeBuilder)
         builder->AddFallThroughBuilder(nextBytecodeBuilder);
       break;
     case OpCode::PUSH_FROM_PARAM:
-      pushValue(builder, loadParamIndex(builder, instruction.immediate()));
+      pushValue(builder, loadParam(builder, instruction.immediate()));
       if (nextBytecodeBuilder)
         builder->AddFallThroughBuilder(nextBytecodeBuilder);
       break;
     case OpCode::POP_INTO_PARAM:
-      storeParamIndex(builder, instruction.immediate(), popValue(builder));
+      storeParam(builder, instruction.immediate(), popValue(builder));
       if (nextBytecodeBuilder)
         builder->AddFallThroughBuilder(nextBytecodeBuilder);
       break;

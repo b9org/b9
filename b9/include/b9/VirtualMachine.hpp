@@ -115,9 +115,6 @@ class VirtualMachine {
   std::vector<JitFunction> compiledFunctions_;
 };
 
-typedef StackElement (*Interpret)(ExecutionContext *context,
-                                  const std::size_t functionIndex);
-
 }  // namespace b9
 
 // define C callable Interpret API for each arg call
@@ -128,16 +125,8 @@ extern "C" {
 
 using namespace b9;
 
-Om::RawValue interpret_0(ExecutionContext *context,
+Om::RawValue interpret(ExecutionContext *context,
                          const std::size_t functionIndex);
-Om::RawValue interpret_1(ExecutionContext *context,
-                         const std::size_t functionIndex, Om::RawValue p1);
-Om::RawValue interpret_2(ExecutionContext *context,
-                         const std::size_t functionIndex, Om::RawValue p1,
-                         Om::RawValue p2);
-Om::RawValue interpret_3(ExecutionContext *context,
-                         const std::size_t functionIndex, Om::RawValue p1,
-                         Om::RawValue p2, Om::RawValue p3);
 
 void primitive_call(ExecutionContext *context, Immediate value);
 }

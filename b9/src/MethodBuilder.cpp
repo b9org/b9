@@ -128,22 +128,9 @@ void MethodBuilder::defineFunctions() {
     functionIndex++;
   }
 
-  DefineFunction((char *)"interpret_0", (char *)__FILE__, "interpret_0",
-                 (void *)&interpret_0, Int64, 2,
-                 globalTypes().executionContextPtr, globalTypes().int32Ptr);
-  DefineFunction((char *)"interpret_1", (char *)__FILE__, "interpret_1",
-                 (void *)&interpret_1, Int64, 3,
-                 globalTypes().executionContextPtr, globalTypes().int32Ptr,
-                 globalTypes().stackElement);
-  DefineFunction((char *)"interpret_2", (char *)__FILE__, "interpret_2",
-                 (void *)&interpret_2, Int64, 4,
-                 globalTypes().executionContextPtr, globalTypes().int32Ptr,
-                 globalTypes().stackElement, globalTypes().stackElement);
-  DefineFunction((char *)"interpret_3", (char *)__FILE__, "interpret_3",
-                 (void *)&interpret_3, Int64, 5,
-                 globalTypes().executionContextPtr, globalTypes().int32Ptr,
-                 globalTypes().stackElement, globalTypes().stackElement,
-                 globalTypes().stackElement);
+  DefineFunction((char *)"interpret", (char *)__FILE__, "interpret",
+                 (void *)&interpret, Int64, 2,
+                 globalTypes().executionContextPtr, globalTypes().size);
   DefineFunction((char *)"primitive_call", (char *)__FILE__, "primitive_call",
                  (void *)&primitive_call, NoType, 2,
                  globalTypes().executionContextPtr, Int32);
@@ -497,7 +484,7 @@ void MethodBuilder::interpreterCall(TR::BytecodeBuilder *b,
   }
 
   state(b)->Commit(b);
-  TR::IlValue *result = b->Call("interpret_0", 2, b->Load("executionContext"),
+  TR::IlValue *result = b->Call("interpret", 2, b->Load("executionContext"),
                                 b->ConstInt64(target));
   state(b)->adjust(b, -callee.nparams);
   state(b)->Reload(b);

@@ -68,7 +68,15 @@ class MethodBuilder : public TR::MethodBuilder {
   void storeParamIndex(TR::IlBuilder *builder, int paramIndex,
                        TR::IlValue *value);
 
+  void interpreterCall(TR::BytecodeBuilder* builder, std::size_t target);
+
+  void directCall(TR::BytecodeBuilder *builder, std::size_t target);
+
+  void passParamCall(TR::BytecodeBuilder* builder, std::size_t target);
+
   // Bytecode Handlers
+
+  void handle_bc_function_call(TR::BytecodeBuilder *builder, TR::BytecodeBuilder *nextBuilder, std::size_t target);
 
   void handle_bc_push_constant(TR::BytecodeBuilder *builder,
                                TR::BytecodeBuilder *nextBuilder);

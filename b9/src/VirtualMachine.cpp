@@ -151,32 +151,9 @@ StackElement VirtualMachine::run(const std::size_t functionIndex,
 
 extern "C" {
 
-using namespace Om;
-
-RawValue interpret_0(ExecutionContext *context,
+Om::RawValue interpret(ExecutionContext *context,
                      const std::size_t functionIndex) {
-  return (RawValue)context->interpret(functionIndex);
-}
-
-RawValue interpret_1(ExecutionContext *context, const std::size_t functionIndex,
-                     RawValue p1) {
-  context->push(Value{Om::AS_RAW, p1});
-  return (RawValue)context->interpret(functionIndex);
-}
-
-RawValue interpret_2(ExecutionContext *context, const std::size_t functionIndex,
-                     RawValue p1, RawValue p2) {
-  context->push(Value{Om::AS_RAW, p1});
-  context->push(Value{Om::AS_RAW, p2});
-  return (RawValue)context->interpret(functionIndex);
-}
-
-RawValue interpret_3(ExecutionContext *context, const std::size_t functionIndex,
-                     RawValue p1, RawValue p2, RawValue p3) {
-  context->push(Value{Om::AS_RAW, p1});
-  context->push(Value{Om::AS_RAW, p2});
-  context->push(Value{Om::AS_RAW, p3});
-  return (RawValue)context->interpret(functionIndex);
+  return (Om::RawValue)context->interpret(functionIndex);
 }
 
 // For primitive calls

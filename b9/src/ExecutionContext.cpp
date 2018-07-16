@@ -38,13 +38,13 @@ void ExecutionContext::reset() {
 
 Om::Value ExecutionContext::callJitFunction(JitFunction jitFunction,
                                             std::size_t nparams) {
-  if (cfg_->verbose) {
-    std::cout << "Int: transition to jit: " << jitFunction << std::endl;
-  }
-
   Om::RawValue result = 0;
 
   if (cfg_->passParam) {
+    if (cfg_->verbose) {
+      std::cout << "Int: transition to Jit(PP): " << (void *)jitFunction
+                << std::endl;
+    }
     switch (nparams) {
       case 0: {
         result = jitFunction(this);
@@ -69,6 +69,10 @@ Om::Value ExecutionContext::callJitFunction(JitFunction jitFunction,
         break;
     }
   } else {
+    if (cfg_->verbose) {
+      std::cout << "Int: transition to Jit: " << (void *)jitFunction
+                << std::endl;
+    }
     result = jitFunction(this);
   }
 
@@ -80,6 +84,11 @@ StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
   auto paramsCount = function->nparams;
   auto localsCount = function->nlocals;
   auto jitFunction = virtualMachine_->getJitAddress(functionIndex);
+
+  if (cfg_->debug) {
+    std::cerr << "intepret: " << function->name
+              << " nparams: " << function->nparams << std::endl;
+  }
 
   if (jitFunction) {
     return callJitFunction(jitFunction, paramsCount);

@@ -10,6 +10,7 @@ class GlobalTypes {
  public:
   GlobalTypes(TR::TypeDictionary &td);
 
+  TR::IlType *size;
   TR::IlType *addressPtr;
   TR::IlType *int64Ptr;
   TR::IlType *int32Ptr;

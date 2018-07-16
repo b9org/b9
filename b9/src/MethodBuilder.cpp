@@ -21,6 +21,10 @@ void print_stack(b9::ExecutionContext *context) {
   printStack(std::cerr, context->stack());
 }
 
+void print_value(Om::Value v) { std::cerr << v << std::endl; }
+
+void print_ptr(void *v) { std::cerr << v << std::endl; }
+
 }  // extern "C"
 
 namespace b9 {
@@ -66,7 +70,7 @@ static const char *argsAndTempNames[] = {
 /// PassParam mode.
 void MethodBuilder::defineParameters() {
   const FunctionDef *function = virtualMachine_.getFunction(functionIndex_);
-  if (cfg_.debug) {
+  if (cfg_.verbose) {
     std::cout << "Defining " << function->nparams << " parameters\n";
   }
 
@@ -82,7 +86,7 @@ void MethodBuilder::defineParameters() {
 
 void MethodBuilder::defineLocals() {
   const FunctionDef *function = virtualMachine_.getFunction(functionIndex_);
-  if (cfg_.debug) {
+  if (cfg_.verbose) {
     std::cout << "Defining " << function->nlocals << " locals\n";
   }
 
@@ -124,22 +128,9 @@ void MethodBuilder::defineFunctions() {
     functionIndex++;
   }
 
-  DefineFunction((char *)"interpret_0", (char *)__FILE__, "interpret_0",
-                 (void *)&interpret_0, Int64, 2,
-                 globalTypes().executionContextPtr, globalTypes().int32Ptr);
-  DefineFunction((char *)"interpret_1", (char *)__FILE__, "interpret_1",
-                 (void *)&interpret_1, Int64, 3,
-                 globalTypes().executionContextPtr, globalTypes().int32Ptr,
-                 globalTypes().stackElement);
-  DefineFunction((char *)"interpret_2", (char *)__FILE__, "interpret_2",
-                 (void *)&interpret_2, Int64, 4,
-                 globalTypes().executionContextPtr, globalTypes().int32Ptr,
-                 globalTypes().stackElement, globalTypes().stackElement);
-  DefineFunction((char *)"interpret_3", (char *)__FILE__, "interpret_3",
-                 (void *)&interpret_3, Int64, 5,
-                 globalTypes().executionContextPtr, globalTypes().int32Ptr,
-                 globalTypes().stackElement, globalTypes().stackElement,
-                 globalTypes().stackElement);
+  DefineFunction((char *)"interpret", (char *)__FILE__, "interpret",
+                 (void *)&interpret, Int64, 2,
+                 globalTypes().executionContextPtr, globalTypes().size);
   DefineFunction((char *)"primitive_call", (char *)__FILE__, "primitive_call",
                  (void *)&primitive_call, NoType, 2,
                  globalTypes().executionContextPtr, Int32);
@@ -148,6 +139,10 @@ void MethodBuilder::defineFunctions() {
   DefineFunction((char *)"print_stack", (char *)__FILE__, "print_stack",
                  (void *)&print_stack, NoType, 1,
                  globalTypes().executionContextPtr);
+  DefineFunction((char *)"print_value", (char *)__FILE__, "print_value",
+                 (void *)&print_value, NoType, 1, globalTypes().stackElement);
+  DefineFunction((char *)"print_ptr", (char *)__FILE__, "print_ptr",
+                 (void *)&print_ptr, NoType, 1, globalTypes().addressPtr);
 }
 
 bool MethodBuilder::inlineProgramIntoBuilder(
@@ -163,14 +158,14 @@ bool MethodBuilder::inlineProgramIntoBuilder(
   auto numberOfBytecodes = function->instructions.size();
 
   if (numberOfBytecodes == 0) {
-    if (cfg_.debug) {
+    if (cfg_.verbose) {
       std::cerr << "unexpected EMPTY function body for " << function->name
                 << std::endl;
     }
     return false;
   }
 
-  if (cfg_.debug)
+  if (cfg_.verbose)
     std::cout << "Creating " << numberOfBytecodes << " bytecode builders"
               << std::endl;
 
@@ -322,13 +317,13 @@ bool MethodBuilder::generateILForBytecode(
   const std::vector<Instruction> &program = function->instructions;
   const Instruction instruction = program[instructionIndex];
 
-  if (cfg_.debug) {
+  if (cfg_.verbose) {
     std::cout << "generating index=" << instructionIndex
               << " bc=" << instruction << std::endl;
   }
 
   if (nullptr == builder) {
-    if (cfg_.debug)
+    if (cfg_.verbose)
       std::cout << "unexpected NULL BytecodeBuilder!" << std::endl;
     return false;
   }
@@ -380,15 +375,11 @@ bool MethodBuilder::generateILForBytecode(
       break;
     case OpCode::FUNCTION_RETURN: {
       auto result = popValue(builder);
-
       TR::IlValue *stack = builder->StructFieldInstanceAddress(
           "b9::ExecutionContext", "stack_", builder->Load("executionContext"));
-
       builder->StoreIndirect("b9::OperandStack", "top_", stack,
                              builder->Load("stackBase"));
-
-      builder->Return(
-          builder->Or(result, builder->ConstInt64(Om::Value::Tag::INT48)));
+      builder->Return(result);
     } break;
     case OpCode::DUPLICATE: {
       auto x = popValue(builder);
@@ -470,128 +461,8 @@ bool MethodBuilder::generateILForBytecode(
         builder->AddFallThroughBuilder(nextBytecodeBuilder);
     } break;
     case OpCode::FUNCTION_CALL: {
-      const std::size_t callindex = instruction.immediate();
-      const FunctionDef *callee = virtualMachine_.getFunction(callindex);
-      const Instruction *tocall = callee->instructions.data();
-      const std::uint32_t paramsCount = callee->nparams;
-      const std::uint32_t localsCount = callee->nlocals;
-
-      if (cfg_.directCall) {
-        if (cfg_.debug)
-          std::cout << "Handling direct calls to " << callee->name << std::endl;
-        const char *interpretName[] = {"interpret_0", "interpret_1",
-                                       "interpret_2", "interpret_3"};
-        const char *nameToCall = interpretName[paramsCount];
-        bool interp = true;
-        if (callee == function ||
-            virtualMachine_.getJitAddress(callindex) != nullptr) {
-          nameToCall = callee->name.c_str();
-          interp = false;
-        }
-
-        if (cfg_.passParam) {
-          if (cfg_.debug) {
-            std::cout << "Parameters are passed to the function call"
-                      << std::endl;
-          }
-
-          // Attempt to inline the function we're calling
-          if (maxInlineDepth_ >= 0 && !interp) {
-            int32_t save = firstArgumentIndex;
-            int32_t skipLocals = function->nparams + function->nlocals;
-            int32_t spaceNeeded = paramsCount + localsCount;
-            firstArgumentIndex += skipLocals;
-            // no need to define locals here, the outer program registered
-            // all locals. it means some locals will be reused which will
-            // affect liveness of a variable
-            if ((firstArgumentIndex + spaceNeeded) < MAX_ARGS_TEMPS_AVAIL) {
-              int storeInto = paramsCount;
-              while (storeInto-- > 0) {
-                // firstArgumentIndex is added in storeVal
-                storeParamIndex(builder, storeInto, popValue(builder));
-              }
-
-              bool result = inlineProgramIntoBuilder(callindex, false, builder,
-                                                     nextBytecodeBuilder);
-              if (!result) {
-                std::cerr << "Failed inlineProgramIntoBuilder" << std::endl;
-                return result;
-              }
-
-              if (cfg_.debug)
-                std::cout << "Successfully inlined: " << callee->name
-                          << std::endl;
-              firstArgumentIndex = save;
-              break;
-            }
-            std::cerr << "SKIP INLINE DUE TO EXCESSIVE TEMPS NEEDED"
-                      << std::endl;
-          }
-
-          if (paramsCount > 8) {
-            throw std::runtime_error{
-                "Need to add handlers for more parameters"};
-            break;
-          }
-
-          TR::IlValue *p[8];
-          memset(p, 0, sizeof(p));
-          int popInto = paramsCount;
-          while (popInto--) {
-            p[popInto] = popValue(builder);
-          }
-          if (interp) {
-            TR::IlValue *result = builder->Call(
-                nameToCall, 2 + paramsCount, builder->Load("executionContext"),
-                builder->ConstInt32(callindex), p[0], p[1], p[2], p[3], p[4],
-                p[5], p[6], p[7]);
-            pushValue(builder, result);
-          } else {
-            TR::IlValue *result = builder->Call(
-                nameToCall, paramsCount + 1, builder->Load("executionContext"),
-                p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7]);
-            pushValue(builder, result);
-          }
-        } else {
-          if (cfg_.debug) {
-            std::cout << "Parameters are on stack to the function call"
-                      << std::endl;
-          }
-          TR::IlValue *result;
-          state(builder)->Commit(builder);
-          if (interp) {
-            if (cfg_.debug)
-              std::cout << "calling interpreter: interpreter_0" << std::endl;
-            result = builder->Call("interpret_0", 2,
-                                   builder->Load("executionContext"),
-                                   builder->ConstInt32(callindex));
-          } else {
-            if (cfg_.debug)
-              std::cout << "calling " << nameToCall << " directly" << std::endl;
-            result =
-                builder->Call(nameToCall, 1, builder->Load("executionContext"));
-          }
-          state(builder)->adjust(builder, -paramsCount);
-          state(builder)->Reload(builder);
-          pushValue(builder, result);
-        }
-      } else {
-        // only use interpreter to dispatch the calls
-        if (cfg_.debug)
-          std::cout << "Calling interpret_0 to dispatch call for "
-                    << callee->name << " with " << paramsCount << " args"
-                    << std::endl;
-        state(builder)->Commit(builder);
-        TR::IlValue *result =
-            builder->Call("interpret_0", 2, builder->Load("executionContext"),
-                          builder->ConstInt32(callindex));
-        state(builder)->adjust(builder, -paramsCount);
-        state(builder)->Reload(builder);
-        pushValue(builder, result);
-      }
-
-      if (nextBytecodeBuilder)
-        builder->AddFallThroughBuilder(nextBytecodeBuilder);
+      handle_bc_function_call(builder, nextBytecodeBuilder,
+                              instruction.immediate());
     } break;
     default:
       if (cfg_.debug) {
@@ -602,6 +473,80 @@ bool MethodBuilder::generateILForBytecode(
   }
 
   return handled;
+}
+
+void MethodBuilder::interpreterCall(TR::BytecodeBuilder *b,
+                                    std::size_t target) {
+  const auto &callee = virtualMachine_.module()->functions[target];
+
+  if (cfg_.verbose) {
+    std::cerr << "interpreterCall: " << callee.name << std::endl;
+  }
+
+  state(b)->Commit(b);
+  TR::IlValue *result = b->Call("interpret", 2, b->Load("executionContext"),
+                                b->ConstInt64(target));
+  state(b)->adjust(b, -callee.nparams);
+  state(b)->Reload(b);
+  state(b)->pushValue(b, result);
+}
+
+void MethodBuilder::directCall(TR::BytecodeBuilder *b, std::size_t target) {
+  const auto &callee = virtualMachine_.module()->functions[target];
+
+  if (cfg_.verbose) {
+    std::cout << "directCall: " << callee.name << std::endl;
+  }
+
+  assert(virtualMachine_.getJitAddress(target) || target == functionIndex_);
+
+  state(b)->Commit(b);
+  auto result = b->Call(callee.name.c_str(), 2, b->Load("executionContext"),
+                        b->ConstInt64(target));
+  state(b)->adjust(b, -callee.nparams);
+  state(b)->Reload(b);
+  state(b)->pushValue(b, result);
+}
+
+void MethodBuilder::passParamCall(TR::BytecodeBuilder *b, std::size_t target) {
+  const auto &callee = virtualMachine_.module()->functions[target];
+
+  if (cfg_.verbose) {
+    std::cout << "passParamCall: " << callee.name << std::endl;
+  }
+
+  assert(virtualMachine_.getJitAddress(target) || target == functionIndex_);
+
+  /// Pop the args for passing. Args are pushed left-to-right, so popping is
+  /// right-to-left.
+  std::vector<TR::IlValue *> params(callee.nparams + 1);
+  for (std::size_t i = callee.nparams; i >= 1; --i) {
+    std::cerr << "popping arg: " << callee.nparams - i << std::endl;
+    params.at(i) = state(b)->popValue(b);
+  }
+  params.at(0) = b->Load("executionContext");
+
+  auto result = b->Call(callee.name.c_str(), params.size(), params.data());
+  state(b)->pushValue(b, result);
+}
+
+void MethodBuilder::handle_bc_function_call(TR::BytecodeBuilder *builder,
+                                            TR::BytecodeBuilder *nextBuilder,
+                                            std::size_t target) {
+  bool interpret = cfg_.debug || (!virtualMachine_.getJitAddress(target) &&
+                                  target != functionIndex_);
+
+  if (interpret) {
+    interpreterCall(builder, target);
+  } else if (cfg_.passParam) {
+    passParamCall(builder, target);
+  } else if (cfg_.directCall) {
+    directCall(builder, target);
+  } else {
+    interpreterCall(builder, target);
+  }
+
+  if (nextBuilder) builder->AddFallThroughBuilder(nextBuilder);
 }
 
 /*************************************************

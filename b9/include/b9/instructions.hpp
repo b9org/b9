@@ -52,27 +52,23 @@ enum class OpCode : RawOpCode {
   INT_PUSH_CONSTANT = 0xf,
   // Invert a boolean value, all non-zero integers are true
   INT_NOT = 0x10,
-  // Jump if two integers are equal
-  INT_JMP_EQ = 0x11,
-  // Jump if two integer are not equal
-  INT_JMP_NEQ = 0x12,
-  // Jump if the first integer is greater than the second
-  INT_JMP_GT = 0x13,
-  // Jump if the first integer is greater than or equal to the second
-  INT_JMP_GE = 0x14,
-  // Jump if the first integer is less than to the second
-  INT_JMP_LT = 0x15,
-  // Jump if the first integer is less than or equal to the second
-  INT_JMP_LE = 0x16,
+  // Jump if two values are equal
+  JMP_EQ = 0x11,
+  // Jump if two values are not equal
+  JMP_NEQ = 0x12,
+  // Jump if the first value is greater than the second
+  JMP_GT = 0x13,
+  // Jump if the first value is greater than or equal to the second
+  JMP_GE = 0x14,
+  // Jump if the first value is less than to the second
+  JMP_LT = 0x15,
+  // Jump if the first value is less than or equal to the second
+  JMP_LE = 0x16,
 
   // String ByteCodes
 
   // Push a string from this module's constant pool
   STR_PUSH_CONSTANT = 0x17,
-  // Jump if two strings are equal
-  STR_JMP_EQ = 0x18,
-  // Jump if two strings are not equal
-  STR_JMP_NEQ = 0x19,
 
   // Object Bytecodes
 
@@ -123,24 +119,20 @@ inline const char *toString(OpCode bc) {
       return "int_push_constant";
     case OpCode::INT_NOT:
       return "int_not";
-    case OpCode::INT_JMP_EQ:
-      return "int_jmp_eq";
-    case OpCode::INT_JMP_NEQ:
-      return "int_jmp_neq";
-    case OpCode::INT_JMP_GT:
-      return "int_jmp_gt";
-    case OpCode::INT_JMP_GE:
-      return "int_jmp_ge";
-    case OpCode::INT_JMP_LT:
-      return "int_jmp_lt";
-    case OpCode::INT_JMP_LE:
-      return "int_jmp_le";
+    case OpCode::JMP_EQ:
+      return "jmp_eq";
+    case OpCode::JMP_NEQ:
+      return "jmp_neq";
+    case OpCode::JMP_GT:
+      return "jmp_gt";
+    case OpCode::JMP_GE:
+      return "jmp_ge";
+    case OpCode::JMP_LT:
+      return "jmp_lt";
+    case OpCode::JMP_LE:
+      return "jmp_le";
     case OpCode::STR_PUSH_CONSTANT:
       return "str_push_constant";
-    case OpCode::STR_JMP_EQ:
-      return "str_jmp_eq";
-    case OpCode::STR_JMP_NEQ:
-      return "str_jmp_neq";
     case OpCode::NEW_OBJECT:
       return "new_object";
     case OpCode::PUSH_FROM_OBJECT:
@@ -268,15 +260,13 @@ inline std::ostream &operator<<(std::ostream &out, Instruction i) {
     case OpCode::PUSH_FROM_PARAM:
     case OpCode::POP_INTO_PARAM:
     case OpCode::INT_PUSH_CONSTANT:
-    case OpCode::INT_JMP_EQ:
-    case OpCode::INT_JMP_NEQ:
-    case OpCode::INT_JMP_GT:
-    case OpCode::INT_JMP_GE:
-    case OpCode::INT_JMP_LT:
-    case OpCode::INT_JMP_LE:
+    case OpCode::JMP_EQ:
+    case OpCode::JMP_NEQ:
+    case OpCode::JMP_GT:
+    case OpCode::JMP_GE:
+    case OpCode::JMP_LT:
+    case OpCode::JMP_LE:
     case OpCode::STR_PUSH_CONSTANT:
-    case OpCode::STR_JMP_EQ:
-    case OpCode::STR_JMP_NEQ:
     case OpCode::PUSH_FROM_OBJECT:
     case OpCode::POP_INTO_OBJECT:
     default:

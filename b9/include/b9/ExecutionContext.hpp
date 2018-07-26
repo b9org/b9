@@ -78,17 +78,17 @@ class ExecutionContext {
 
   void doIntNot();
 
-  Immediate doIntJmpEq(Immediate delta);
+  Immediate doJmpEq(Immediate delta);
 
-  Immediate doIntJmpNeq(Immediate delta);
+  Immediate doJmpNeq(Immediate delta);
 
-  Immediate doIntJmpGt(Immediate delta);
+  Immediate doJmpGt(Immediate delta);
 
-  Immediate doIntJmpGe(Immediate delta);
+  Immediate doJmpGe(Immediate delta);
 
-  Immediate doIntJmpLt(Immediate delta);
+  Immediate doJmpLt(Immediate delta);
 
-  Immediate doIntJmpLe(Immediate delta);
+  Immediate doJmpLe(Immediate delta);
 
   void doStrPushConstant(Immediate value);
 

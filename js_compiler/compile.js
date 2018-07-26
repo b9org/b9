@@ -42,36 +42,34 @@ var OperatorCode = Object.freeze({
 	"INT_DIV": 14,
 	"INT_PUSH_CONSTANT": 15,
 	"INT_NOT": 16,
-	"INT_JMP_EQ": 17,
-	"INT_JMP_NEQ": 18,
-	"INT_JMP_GT": 19,
-	"INT_JMP_GE": 20,
-	"INT_JMP_LT": 21,
-	"INT_JMP_LE": 22,
+	"JMP_EQ": 17,
+	"JMP_NEQ": 18,
+	"JMP_GT": 19,
+	"JMP_GE": 20,
+	"JMP_LT": 21,
+	"JMP_LE": 22,
 	"STR_PUSH_CONSTANT": 23,
-	"STR_JMP_EQ": 24,
-	"STR_JMP_NEQ": 25
 });
 
 /// Binary comparison operators converted to jump instructions
 JumpOperator = Object.freeze({
-	"==": "INT_JMP_EQ",
-	"!=": "INT_JMP_NEQ",
-	"<=": "INT_JMP_LE",
-	">=": "INT_JMP_GE",
-	"<": "INT_JMP_LT",
-	">": "INT_JMP_GT"
+	"==": "JMP_EQ",
+	"!=": "JMP_NEQ",
+	"<=": "JMP_LE",
+	">=": "JMP_GE",
+	"<": "JMP_LT",
+	">": "JMP_GT"
 });
 
 /// Map binary comparison operators to jump instructions that invert the condition.
 /// as an example, the if statement handler will use this table to invert a comparison, and jump over the if-true block.
 var NegJumpOperator = Object.freeze({
-	"==": "INT_JMP_NEQ",
-	"!=": "INT_JMP_EQ",
-	"<=": "INT_JMP_GT",
-	">=": "INT_JMP_LT",
-	"<": "INT_JMP_GE",
-	">": "INT_JMP_LE"
+	"==": "JMP_NEQ",
+	"!=": "JMP_EQ",
+	"<=": "JMP_GT",
+	">=": "JMP_LT",
+	"<": "JMP_GE",
+	">": "JMP_LE"
 });
 
 /// Map a++ style operators to b9 operator codes.
@@ -254,12 +252,12 @@ function FunctionDefinition(outer, name) {
 			var instruction = this.instructions[index];
 			switch (instruction.operator) {
 				case "JMP":
-				case "INT_JMP_EQ":
-				case "INT_JMP_NEQ":
-				case "INT_JMP_GT":
-				case "INT_JMP_GE":
-				case "INT_JMP_LT":
-				case "INT_JMP_LE":
+				case "JMP_EQ":
+				case "JMP_NEQ":
+				case "JMP_GT":
+				case "JMP_GE":
+				case "JMP_LT":
+				case "JMP_LE":
 					// the label id is stuffed in the operand.
 					// translate the label to a relative offset.
 					instruction.operand = this.resolveLabel(instruction.operand, index);
@@ -797,7 +795,7 @@ function FirstPassCodeGen() {
 	this.handleIfStatement = function (func, statement) {
 		var alternateLabel = func.labels.create();
 		var endLabel = func.labels.create();
-		comparator = this.emitTest(func, statement.test);
+		var comparator = this.emitTest(func, statement.test);
 		if (statement.alternate) {
 			func.instructions.push(new Instruction(NegJumpOperator[comparator], alternateLabel));
 		} else {

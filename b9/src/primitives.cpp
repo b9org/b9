@@ -15,8 +15,8 @@ extern "C" void b9_prim_print_number(ExecutionContext *context) {
 /// ( string -- 0 )
 extern "C" void b9_prim_print_string(ExecutionContext *context) {
   auto value = context->pop();
-  assert(value.isInt48());
-  auto string = context->virtualMachine()->getString(value.getInt48());
+  assert(value.isUint48());
+  auto string = context->virtualMachine()->getString(value.getUint48());
   std::cout << string << std::endl;
   context->push({Om::AS_INT48, 0});
 }

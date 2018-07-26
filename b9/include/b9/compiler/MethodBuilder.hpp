@@ -53,7 +53,11 @@ class MethodBuilder : public TR::MethodBuilder {
 
   void pushInt48(TR::BytecodeBuilder *builder, TR::IlValue *value);
 
+  void pushUint48(TR::BytecodeBuilder *builder, TR::IlValue *value);
+
   TR::IlValue *popInt48(TR::BytecodeBuilder *builder);
+
+  TR::IlValue *popUint48(TR::BytecodeBuilder *builder);
 
   void drop(TR::BytecodeBuilder *builder, std::size_t n = 1);
 

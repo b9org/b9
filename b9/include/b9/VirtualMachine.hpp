@@ -126,7 +126,7 @@ extern "C" {
 using namespace b9;
 
 Om::RawValue interpret(ExecutionContext *context,
-                         const std::size_t functionIndex);
+                       const std::size_t functionIndex);
 
 void primitive_call(ExecutionContext *context, Immediate value);
 }

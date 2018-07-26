@@ -222,7 +222,7 @@ function helper_test_string_return_string() {
 
 function test_string_return_string() {
     var a = helper_test_string_return_string();
-    if (a != 0) {
+    if (a == "Hi") {
         return 1;
     }
     return 0;

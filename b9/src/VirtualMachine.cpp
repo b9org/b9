@@ -152,7 +152,7 @@ StackElement VirtualMachine::run(const std::size_t functionIndex,
 extern "C" {
 
 Om::RawValue interpret(ExecutionContext *context,
-                     const std::size_t functionIndex) {
+                       const std::size_t functionIndex) {
   return (Om::RawValue)context->interpret(functionIndex);
 }
 

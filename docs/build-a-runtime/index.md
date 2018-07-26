@@ -432,7 +432,7 @@ The fields of the `FunctionDef` are the function name, the index in the function
 
 ### The base9 Instruction Set
 
-The base9 VM executes it’s own instruction set. The instructions are compiled from the frontend language. Each instruction is a 32-bit little-endian value, which encodes an opcode (AKA a bytecode), and an optional immediate. The opcode is the most significant byte of the instruction. It tells the VM which functionality to execute. The opcode is one of the special predefined constants that the VM understands. Example opcodes are `int_add`, `int_sub`, `int_jmp_eq`, and `function_return`. Each opcode corresponds with a unique hexadecimal value between 0 and n, where n is the total number of bytecodes.
+The base9 VM executes it’s own instruction set. The instructions are compiled from the frontend language. Each instruction is a 32-bit little-endian value, which encodes an opcode (AKA a bytecode), and an optional immediate. The opcode is the most significant byte of the instruction. It tells the VM which functionality to execute. The opcode is one of the special predefined constants that the VM understands. Example opcodes are `int_add`, `int_sub`, `jmp_eq`, and `function_return`. Each opcode corresponds with a unique hexadecimal value between 0 and n, where n is the total number of bytecodes.
 
 The immediate encodes the constant data about an instruction. For example, a jump instruction encodes it’s jump target in the immediate. The immediate is a signed value stored in the lower 24 bits of the instruction.
 

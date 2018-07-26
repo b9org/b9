@@ -37,7 +37,6 @@ const std::vector<const char*> TEST_NAMES = {
   "test_lessThanOrEqual_1",
   "test_call",
   "test_string_declare_string_var",
-  "helper_test_string_return_string",
   "test_string_return_string",
   "test_while",
   "test_for_never_run_body",

@@ -350,27 +350,27 @@ bool MethodBuilder::generateILForBytecode(
       handle_bc_jmp(builder, bytecodeBuilderTable, program, instructionIndex,
                     nextBytecodeBuilder);
       break;
-    case OpCode::INT_JMP_EQ:
+    case OpCode::JMP_EQ:
       handle_bc_jmp_eq(builder, bytecodeBuilderTable, program, instructionIndex,
                        nextBytecodeBuilder);
       break;
-    case OpCode::INT_JMP_NEQ:
+    case OpCode::JMP_NEQ:
       handle_bc_jmp_neq(builder, bytecodeBuilderTable, program,
                         instructionIndex, nextBytecodeBuilder);
       break;
-    case OpCode::INT_JMP_LT:
+    case OpCode::JMP_LT:
       handle_bc_jmp_lt(builder, bytecodeBuilderTable, program, instructionIndex,
                        nextBytecodeBuilder);
       break;
-    case OpCode::INT_JMP_LE:
+    case OpCode::JMP_LE:
       handle_bc_jmp_le(builder, bytecodeBuilderTable, program, instructionIndex,
                        nextBytecodeBuilder);
       break;
-    case OpCode::INT_JMP_GT:
+    case OpCode::JMP_GT:
       handle_bc_jmp_gt(builder, bytecodeBuilderTable, program, instructionIndex,
                        nextBytecodeBuilder);
       break;
-    case OpCode::INT_JMP_GE:
+    case OpCode::JMP_GE:
       handle_bc_jmp_ge(builder, bytecodeBuilderTable, program, instructionIndex,
                        nextBytecodeBuilder);
       break;
@@ -399,7 +399,7 @@ bool MethodBuilder::generateILForBytecode(
     case OpCode::STR_PUSH_CONSTANT: {
       int index = instruction.immediate();
       /// TODO: Box/unbox here.
-      pushInt48(builder, builder->ConstInt64(index));
+      pushUint48(builder, builder->ConstInt64(index));
       if (nextBytecodeBuilder)
         builder->AddFallThroughBuilder(nextBytecodeBuilder);
     } break;
@@ -544,8 +544,8 @@ void MethodBuilder::handle_bc_jmp_neq(
   int next_bc_index = bytecodeIndex + delta;
   TR::BytecodeBuilder *jumpTo = bytecodeBuilderTable[next_bc_index];
 
-  TR::IlValue *right = popInt48(builder);
-  TR::IlValue *left = popInt48(builder);
+  TR::IlValue *right = popValue(builder);
+  TR::IlValue *left = popValue(builder);
 
   builder->IfCmpNotEqual(jumpTo, left, right);
   builder->AddFallThroughBuilder(nextBuilder);
@@ -561,8 +561,8 @@ void MethodBuilder::handle_bc_jmp_lt(
   int next_bc_index = bytecodeIndex + delta;
   TR::BytecodeBuilder *jumpTo = bytecodeBuilderTable[next_bc_index];
 
-  TR::IlValue *right = popInt48(builder);
-  TR::IlValue *left = popInt48(builder);
+  TR::IlValue *right = popValue(builder);
+  TR::IlValue *left = popValue(builder);
 
   builder->IfCmpLessThan(jumpTo, left, right);
   builder->AddFallThroughBuilder(nextBuilder);
@@ -689,6 +689,15 @@ void MethodBuilder::pushInt48(TR::BytecodeBuilder *builder,
 
 TR::IlValue *MethodBuilder::popInt48(TR::BytecodeBuilder *builder) {
   return OMR::Om::ValueBuilder::getInt48(builder, popValue(builder));
+}
+
+void MethodBuilder::pushUint48(TR::BytecodeBuilder *builder,
+                               TR::IlValue *value) {
+  pushValue(builder, OMR::Om::ValueBuilder::fromUint48(builder, value));
+}
+
+TR::IlValue *MethodBuilder::popUint48(TR::BytecodeBuilder *builder) {
+  return OMR::Om::ValueBuilder::getUint48(builder, popValue(builder));
 }
 
 }  // namespace b9

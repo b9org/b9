@@ -155,32 +155,26 @@ StackElement ExecutionContext::interpret(const std::size_t functionIndex) {
       case OpCode::INT_NOT:
         doIntNot();
         break;
-      case OpCode::INT_JMP_EQ:
-        instructionPointer += doIntJmpEq(instructionPointer->immediate());
+      case OpCode::JMP_EQ:
+        instructionPointer += doJmpEq(instructionPointer->immediate());
         break;
-      case OpCode::INT_JMP_NEQ:
-        instructionPointer += doIntJmpNeq(instructionPointer->immediate());
+      case OpCode::JMP_NEQ:
+        instructionPointer += doJmpNeq(instructionPointer->immediate());
         break;
-      case OpCode::INT_JMP_GT:
-        instructionPointer += doIntJmpGt(instructionPointer->immediate());
+      case OpCode::JMP_GT:
+        instructionPointer += doJmpGt(instructionPointer->immediate());
         break;
-      case OpCode::INT_JMP_GE:
-        instructionPointer += doIntJmpGe(instructionPointer->immediate());
+      case OpCode::JMP_GE:
+        instructionPointer += doJmpGe(instructionPointer->immediate());
         break;
-      case OpCode::INT_JMP_LT:
-        instructionPointer += doIntJmpLt(instructionPointer->immediate());
+      case OpCode::JMP_LT:
+        instructionPointer += doJmpLt(instructionPointer->immediate());
         break;
-      case OpCode::INT_JMP_LE:
-        instructionPointer += doIntJmpLe(instructionPointer->immediate());
+      case OpCode::JMP_LE:
+        instructionPointer += doJmpLe(instructionPointer->immediate());
         break;
       case OpCode::STR_PUSH_CONSTANT:
         doStrPushConstant(instructionPointer->immediate());
-        break;
-      case OpCode::STR_JMP_EQ:
-        // TODO
-        break;
-      case OpCode::STR_JMP_NEQ:
-        // TODO
         break;
       case OpCode::NEW_OBJECT:
         doNewObject();
@@ -273,74 +267,124 @@ void ExecutionContext::doIntDiv() {
 }
 
 void ExecutionContext::doIntPushConstant(Immediate value) {
-  stack_.push(StackElement().setInt48(value));
+  stack_.push({Om::AS_INT48, static_cast<std::int64_t>(value)});
 }
 
 void ExecutionContext::doIntNot() {
-  auto x = stack_.pop().getInt48();
-  push({Om::AS_INT48, !x});
+  auto x = stack_.pop();
+  assert(x.isInt48());
+  push({Om::AS_INT48, !(x.getInt48())});
 }
 
-Immediate ExecutionContext::doIntJmpEq(Immediate delta) {
-  auto right = stack_.pop().getInt48();
-  auto left = stack_.pop().getInt48();
+Immediate ExecutionContext::doJmpEq(Immediate delta) {
+  auto right = stack_.pop();
+  auto left = stack_.pop();
   if (left == right) {
     return delta;
   }
   return 0;
 }
 
-Immediate ExecutionContext::doIntJmpNeq(Immediate delta) {
-  auto right = stack_.pop().getInt48();
-  auto left = stack_.pop().getInt48();
+Immediate ExecutionContext::doJmpNeq(Immediate delta) {
+  auto right = stack_.pop();
+  auto left = stack_.pop();
   if (left != right) {
     return delta;
   }
   return 0;
 }
 
-Immediate ExecutionContext::doIntJmpGt(Immediate delta) {
-  auto right = stack_.pop().getInt48();
-  auto left = stack_.pop().getInt48();
-  if (left > right) {
-    return delta;
+Immediate ExecutionContext::doJmpGt(Immediate delta) {
+  auto right = stack_.pop();
+  auto left = stack_.pop();
+
+  if (right.isInt48() && left.isInt48()) {
+    if (left.getInt48() > right.getInt48()) {
+      return delta;
+    }
+  } else if (right.isUint48() && left.isUint48()) {
+    const auto &strRight = virtualMachine_->getString(right.getUint48());
+    const auto &strLeft = virtualMachine_->getString(left.getUint48());
+    if (strLeft > strRight) {
+      return delta;
+    }
+  } else {
+    throw std::runtime_error("Operands for comparison not of same type.");
   }
+
   return 0;
 }
 
 // ( left right -- )
-Immediate ExecutionContext::doIntJmpGe(Immediate delta) {
-  auto right = stack_.pop().getInt48();
-  auto left = stack_.pop().getInt48();
-  if (left >= right) {
-    return delta;
+Immediate ExecutionContext::doJmpGe(Immediate delta) {
+  auto right = stack_.pop();
+  auto left = stack_.pop();
+
+  if (right.isInt48() && left.isInt48()) {
+    if (left.getInt48() >= right.getInt48()) {
+      return delta;
+    }
+  } else if (right.isUint48() && left.isUint48()) {
+    const auto &strRight = virtualMachine_->getString(right.getUint48());
+    const auto &strLeft = virtualMachine_->getString(left.getUint48());
+    if (strLeft >= strRight) {
+      return delta;
+    }
+  } else {
+    throw std::runtime_error("Operands for comparison not of same type.");
   }
+
   return 0;
 }
 
 // ( left right -- )
-Immediate ExecutionContext::doIntJmpLt(Immediate delta) {
-  auto right = stack_.pop().getInt48();
-  auto left = stack_.pop().getInt48();
-  if (left < right) {
-    return delta;
+Immediate ExecutionContext::doJmpLt(Immediate delta) {
+  auto right = stack_.pop();
+  auto left = stack_.pop();
+
+  if (right.isInt48() && left.isInt48()) {
+    if (left.getInt48() < right.getInt48()) {
+      return delta;
+    }
+  } else if (right.isUint48() && left.isUint48()) {
+    const auto &strRight = virtualMachine_->getString(right.getUint48());
+    const auto &strLeft = virtualMachine_->getString(left.getUint48());
+    if (strLeft < strRight) {
+      return delta;
+    }
+  } else {
+    throw std::runtime_error("Operands for comparison not of same type.");
   }
+
   return 0;
 }
 
 // ( left right -- )
-Immediate ExecutionContext::doIntJmpLe(Immediate delta) {
-  auto right = stack_.pop().getInt48();
-  auto left = stack_.pop().getInt48();
-  if (left <= right) {
-    return delta;
+Immediate ExecutionContext::doJmpLe(Immediate delta) {
+  auto right = stack_.pop();
+  auto left = stack_.pop();
+
+  if (right.isInt48() && left.isInt48()) {
+    if (left.getInt48() <= right.getInt48()) {
+      return delta;
+    }
+  } else if (right.isUint48() && left.isUint48()) {
+    const auto &strRight = virtualMachine_->getString(right.getUint48());
+    const auto &strLeft = virtualMachine_->getString(left.getUint48());
+    if (strLeft <= strRight) {
+      return delta;
+    }
+  } else {
+    throw std::runtime_error("Operands for comparison not of same type.");
   }
+
   return 0;
 }
 
 // ( -- string )
 void ExecutionContext::doStrPushConstant(Immediate param) {
-  stack_.push({Om::AS_INT48, param});
+  assert(param >= 0);
+  stack_.push({Om::AS_UINT48, static_cast<std::uint64_t>(param)});
 }
 
 // ( -- object )

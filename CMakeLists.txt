@@ -80,15 +80,22 @@ set(OMR_WARNINGS_AS_ERRORS OFF CACHE INTERNAL "OMR doesn't compile cleanly on my
 
 # Compile a b9-js *.js to C++
 function(add_b9_module src)
-	add_custom_target(compile_${src} ALL
+	add_custom_command(
+		OUTPUT
+			"${CMAKE_CURRENT_BINARY_DIR}/${src}.b9mod"
 		COMMAND
 			${NODE_EXECUTABLE}
 			"${CMAKE_SOURCE_DIR}/js_compiler/compile.js"
 			"${CMAKE_CURRENT_SOURCE_DIR}/${src}.js"
 			"${src}.b9mod"
-		DEPENDS
+		MAIN_DEPENDENCY
 			"${CMAKE_CURRENT_SOURCE_DIR}/${src}.js"
+		DEPENDS
 			"${CMAKE_SOURCE_DIR}/js_compiler/compile.js"
+	)
+	add_custom_target(compile_${src} ALL
+		DEPENDS
+			"${CMAKE_CURRENT_BINARY_DIR}/${src}.b9mod"
 	)
 endfunction(add_b9_module)
 

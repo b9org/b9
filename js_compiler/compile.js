@@ -7,6 +7,13 @@ CONVERT B9 PORCELAIN TO BINARY MODULE
 var esprima = require('esprima');
 var fs = require('fs');
 
+// Support for old versions of node, which don't have Buffer.alloc
+if (!Buffer.alloc) {
+    Buffer.alloc = function(sz) {
+        return new Buffer(sz);
+    }
+}
+
 function outputUInt32(out, value) {
 	var buf = Buffer.alloc(4);
 	buf.writeUInt32LE(value, 0);

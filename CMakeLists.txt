@@ -70,12 +70,13 @@ endif(B9_UBSAN)
 
 # OMR Configuration
 
-set(OMR_COMPILER   ON  CACHE INTERNAL "Enable the Compiler.")
-set(OMR_JITBUILDER ON  CACHE INTERNAL "We use OMR's jitbuilder tool for the b9 JIT")
-set(OMR_EXAMPLE    OFF CACHE INTERNAL "Disable the GC example")
-set(OMR_OM         ON  CACHE INTERNAL "Enable OMR Om, a GC object model")
-set(OMR_GC         ON  CACHE INTERNAL "Enable the GC")
-set(OMR_FVTEST     OFF CACHE INTERNAL "Disable OMR's internal test suite, it's incompatible with b9")
+set(OMR_COMPILER           ON  CACHE INTERNAL "Enable the Compiler.")
+set(OMR_JITBUILDER         ON  CACHE INTERNAL "We use OMR's jitbuilder tool for the b9 JIT")
+set(OMR_EXAMPLE            OFF CACHE INTERNAL "Disable the GC example")
+set(OMR_OM                 ON  CACHE INTERNAL "Enable OMR Om, a GC object model")
+set(OMR_GC                 ON  CACHE INTERNAL "Enable the GC")
+set(OMR_GC_EXTENDED_API    ON  CACHE INTERNAL "Required for Om.")
+set(OMR_FVTEST             OFF CACHE INTERNAL "Disable OMR's internal test suite, it's incompatible with b9")
 set(OMR_WARNINGS_AS_ERRORS OFF CACHE INTERNAL "OMR doesn't compile cleanly on my laptop :p")
 
 # Compile a b9-js *.js to C++

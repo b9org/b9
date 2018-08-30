@@ -2,10 +2,9 @@
 #include <b9/compiler/Compiler.hpp>
 #include <b9/deserialize.hpp>
 
-#include <OMR/Om/Context.inl.hpp>
-#include <OMR/Om/MemorySystem.hpp>
-#include <OMR/Om/RootRef.hpp>
-#include <OMR/Om/Runtime.hpp>
+#include <OMR/GC/StackRoot.hpp>
+#include <OMR/Om/Context.hpp>
+#include <OMR/Runtime.hpp>
 
 #include <strings.h>
 #include <cstdio>
@@ -117,7 +116,7 @@ static bool parseArguments(RunConfig& cfg, const int argc, char* argv[]) {
   return true;
 }
 
-static void run(Om::ProcessRuntime& runtime, const RunConfig& cfg) {
+static void run(OMR::Runtime& runtime, const RunConfig& cfg) {
   b9::VirtualMachine vm{runtime, cfg.b9};
 
   std::ifstream file(cfg.moduleName, std::ios_base::in | std::ios_base::binary);
@@ -134,7 +133,7 @@ static void run(Om::ProcessRuntime& runtime, const RunConfig& cfg) {
 }
 
 int main(int argc, char* argv[]) {
-  Om::ProcessRuntime runtime;
+  OMR::Runtime runtime;
   RunConfig cfg;
 
   if (!parseArguments(cfg, argc, argv)) {

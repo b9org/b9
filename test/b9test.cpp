@@ -12,7 +12,8 @@
 namespace b9 {
 namespace test {
 
-using namespace OMR::Om;
+namespace Om = OMR::Om;
+namespace GC = OMR::GC;
 
 // clang-format off
 const std::vector<const char*> TEST_NAMES = {
@@ -44,7 +45,7 @@ const std::vector<const char*> TEST_NAMES = {
 };
 // clang-format on
 
-Om::ProcessRuntime runtime;
+OMR::Runtime runtime;
 
 class InterpreterTest : public ::testing::Test {
  public:
@@ -141,8 +142,8 @@ TEST(MyTest, arguments) {
                                 END_SECTION};
   m->functions.push_back(b9::FunctionDef{"add_args", i, 2, 0});
   vm.load(m);
-  auto r = vm.run("add_args", {{AS_INT48, 1}, {AS_INT48, 2}});
-  EXPECT_EQ(r, Value(AS_INT48, 3));
+  auto r = vm.run("add_args", {{Om::AS_INT48, 1}, {Om::AS_INT48, 2}});
+  EXPECT_EQ(r, Om::Value(Om::AS_INT48, 3));
 }
 
 TEST(MyTest, jitSimpleProgram) {
@@ -157,7 +158,7 @@ TEST(MyTest, jitSimpleProgram) {
   vm.load(m);
   vm.generateAllCode();
   auto r = vm.run("add", {});
-  EXPECT_EQ(r, Value(AS_INT48, 0xdead));
+  EXPECT_EQ(r, Om::Value(Om::AS_INT48, 0xdead));
 }
 
 TEST(MyTest, haveAVariable) {
@@ -172,7 +173,7 @@ TEST(MyTest, haveAVariable) {
   vm.load(m);
   vm.generateAllCode();
   auto r = vm.run("add", {});
-  EXPECT_EQ(r, Value(AS_INT48, 0xdead));
+  EXPECT_EQ(r, Om::Value(Om::AS_INT48, 0xdead));
 }
 
 TEST(ObjectTest, allocateSomething) {
@@ -193,8 +194,8 @@ TEST(ObjectTest, allocateSomething) {
   m->strings.push_back("Hello, World");
   m->functions.push_back(b9::FunctionDef{"allocate_object", i, 0, 1});
   vm.load(m);
-  Value r = vm.run("allocate_object", {});
-  EXPECT_EQ(r, Value(AS_INT48, 0));
+  Om::Value r = vm.run("allocate_object", {});
+  EXPECT_EQ(r, Om::Value(Om::AS_INT48, 0));
 }
 
 }  // namespace test

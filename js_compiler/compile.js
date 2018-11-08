@@ -104,8 +104,8 @@ var Instruction = function (operator, operand) {
 
 var SymbolTable = function () {
 
-	this.next = 0;
-	this.map = {};
+	this.next = 0; 
+	this.map = Object.create(null);  
 
 	/// Look up a symbol without interning.
 	this.lookup = function (symbol) {

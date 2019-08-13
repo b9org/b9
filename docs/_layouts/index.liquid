@@ -2,10 +2,12 @@
 layout: default
 ---
 <div class=container>
-	<main class="page-content" aria-label="Content">
-	<div class="col-md-10 col-xl-9">
-		<center> {%- include logo.liquid -%} </center>
-		{{ content }}
-	</div>
-	</main>
+  <div class="row">
+    <div class="col">
+      <main class="page-content" aria-label="Content">
+        <center>{%- include logo.liquid -%}</center>
+        {{ content }}
+      </main>
+    </div>
+  </div>
 </div>

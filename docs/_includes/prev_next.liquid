@@ -1,0 +1,40 @@
+{%- capture prev_page_title_str -%}
+  {%- if prev_page_chapter_num -%}
+    {{ prev_page_chapter_num }}
+    {%- if prev_page_subchapter_num -%}
+      .{{ prev_page_subchapter_num }}
+    {%- endif -%}
+  {%- endif -%}
+  &ndash;{{ prev_page.title }}
+{%- endcapture -%}
+
+{%- capture next_page_title_str -%}
+  {%- if next_page_chapter_num -%}
+    {{ next_page_chapter_num }}
+    {%- if next_page_subchapter_num -%}
+      .{{ next_page_subchapter_num }}
+    {%- endif -%}
+  {%- endif -%}
+  &ndash;{{ next_page.title }}
+{%- endcapture -%}
+
+<div class="row justify-content-center pt-5 pb-4">
+  <div class="col mr-1 text-right">
+    {% if prev_page -%}
+      <a class="text-secondary" href="{{ prev_page.url | relative_url }}">
+        &laquo; {{ prev_page_title_str }}
+      </a>
+    {%- else -%}
+      <a class="text-secondary" href="{{ "build-a-runtime/" | relative_url }}">
+        &laquo; Contents
+      </a>
+    {%- endif -%}
+  </div>
+  <div class="col ml-1">
+    {% if next_page -%}
+        <a class="text-secondary" href="{{ next_page.url | relative_url }}">
+          {{ next_page_title_str }} &raquo;
+        </a>
+    {%- endif -%}
+  </div>
+</div>

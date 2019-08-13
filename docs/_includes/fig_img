@@ -1,0 +1,8 @@
+<figure class="figure">
+  <img src="{{ include.src | prepend: "/assets/images/" | relative_url }}" class="figure-img img-fluid">
+  {%- if include.cap -%}
+    <figcaption class="figure-caption text-right">
+      {{ include.cap }}
+    </figcaption>
+  {%- endif -%}
+</figure>

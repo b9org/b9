@@ -1,0 +1,19 @@
+{% if page.subchapters -%}
+  <div class="row">
+    <div class="col">
+      <h2>Chapter Contents</h2>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col">
+      <ul class="nav flex-column">
+        {% for subchapter_name in page.subchapters %}
+          {% assign subchapter = site.pages | where: 'name', subchapter_name | first %}
+          <a class="nav-link" href="{{ subchapter.url | relative_url }}">
+            {{ curr_chapter_num }}.{{ forloop.index }}&ndash;{{ subchapter.title }}
+          </a>
+        {%- endfor -%}
+      </ul>
+    </div>
+  </div>
+{% endif -%}

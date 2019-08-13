@@ -1,0 +1,5 @@
+<img
+  class="img-fluid"
+  src="{{ include.img | relative_url }}"
+  alt="{{ include.alt }}"
+/>

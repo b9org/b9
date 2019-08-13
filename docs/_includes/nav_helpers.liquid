@@ -1,0 +1,219 @@
+{%- comment -%}
+  WARNING: This code assumes there is only one book-layout page.
+{%- endcomment -%}
+
+{%- assign all_books       = site.pages | where: "layout", "book" -%}
+{%- assign all_chapters    = site.pages | where: "layout", "chapter" -%}
+{%- assign all_subchapters = site.pages | where: "layout", "subchapter" -%}
+
+{%- assign book            = all_books | first -%}
+
+{%- comment -%}
+  For all pages:
+  * page_found        - true if the current page was correctly indexed
+  * curr_chapter      - current chapter object 
+  * curr_chapter_num  - 1-based current chapter index
+  * curr_chapter_idx  - 0-based chapter index
+  * curr_chapter_name - name of the current chapter (curr_chapter.name)
+
+  For subchapters only:
+  * curr_subchapter      - current subchapter object (aka `page`).
+  * curr_subchapter_num  - 1-based subchapter index
+  * curr_subchapter_idx  - 0-based subchapter index
+  * curr_subchapter_name - name of the current subchapter (page.name)
+{%- endcomment -%}
+
+{%- assign page_found = false -%}
+
+{%- for chapter_name in book.chapters -%}
+
+  {%- assign chapter     = all_chapters | where: "name", chapter_name | first -%}
+  {%- assign chapter_num = forloop.index -%}
+  {%- assign chapter_idx = forloop.index0 -%}
+
+  {%- if chapter.name == page.name -%}
+    {%- assign curr_chapter_name   = chapter_name -%}
+    {%- assign curr_chapter_num    = chapter_num -%}
+    {%- assign curr_chapter_idx    = chapter_idx -%}
+    {%- assign curr_chapter        = chapter -%}
+    {%- assign curr_subchapter_num = nil -%}
+    {%- assign curr_subchapter_idx = nil -%}
+    {%- assign page_found          = true -%}
+    {%- break -%}
+  {%- endif -%}
+
+  {%- for subchapter_name in chapter.subchapters -%}
+
+    {%- assign subchapter     = all_subchapters | where: "name", subchapter_name | first -%}
+    {%- assign subchapter_num = forloop.index -%}
+    {%- assign subchapter_idx = forloop.index0 -%}
+  
+    {%- if subchapter.name == page.name -%}
+      {%- assign curr_chapter_num     = chapter_num -%}
+      {%- assign curr_chapter_idx     = chapter_idx -%}
+      {%- assign curr_chapter_name    = chapter_name -%}
+      {%- assign curr_chapter         = chapter -%}
+      {%- assign curr_subchapter_num  = subchapter_num -%}
+      {%- assign curr_subchapter_idx  = subchapter_idx -%}
+      {%- assign curr_subchapter_name = subchapter_name -%}
+      {%- assign curr_subchapter      = subchapter -%}
+      {%- assign page_found           = true -%}
+      {%- break -%}
+    {%- endif -%}
+  {%- endfor -%}
+{%- endfor -%}
+
+{%- comment -%}
+  * prev_chapter     - object representing the previous chapter
+  * prev_chapter_num - 1-based index of the previous chapter
+  * prev_chapter_idx - 0-based index of the previous chapter
+{%- endcomment -%}
+
+{%- if 1 < curr_chapter_num -%}
+  {%- assign prev_chapter_num = curr_chapter_num | minus: 1 -%}
+  {%- assign prev_chapter_idx = curr_chapter_idx | minus: 1 -%}
+  {%- assign prev_chapter_name = book.chapters[prev_chapter_idx] -%}
+  {%- assign prev_chapter = all_chapters | where: "name", prev_chapter_name | first -%}
+{%- endif -%}
+
+{%- comment -%}
+  If a previous chapter exists, and it has at least one subchapter:
+  * prev_chapter_last_subchapter - previous chapter's last subchapter object.
+  * prev_chapter_last_subchapter_num - the 1-based subchapter index of the previous chapter's last subchapter
+  * prev_chapter_last_subchapter_idx - the 0-based subchapter index of the previous chapter's last subchapter
+{%- endcomment -%}
+
+{%- if prev_chapter and 0 < prev_chapter.subchapter.size -%}
+  {%- assign prev_chapter_last_subchapter_name = prev_chapter.subchapters.last -%}
+  {%- assign prev_chapter_last_subchapter_num  = prev_chapter.subchapters.size -%}
+  {%- assign prev_chapter_last_subchapter_idx  = prev_chapter.subchapters.size | minus: 1 -%}
+  {%- assign prev_chapter_last_subchapter      = all_subchapters | where: "name", prev_chapter_last_subchapter_name | first -%}
+{%- endif -%}
+
+{%- comment -%}
+  * next_chapter     - next chapter object, or nil
+  * next_chapter_num - 1-based index of the next chapter
+  * next_chapter_idx - 0-based index of the next chapter
+{%- endcomment -%}
+
+{%- if curr_chapter_num < book.chapters.size -%}
+  {%- assign next_chapter_num  = curr_chapter_num | plus: 1 -%}
+  {%- assign next_chapter_idx  = curr_chapter_idx | plus: 1 -%}
+  {%- assign next_chapter_name = book.chapters[next_chapter_idx] -%}
+  {%- assign next_chapter      = site.pages | where: "name", next_chapter_name | first -%}
+{%- endif -%}
+
+{%- comment -%}
+  For chapters only:
+  * first_subchapter
+{%- endcomment -%}
+
+{%- if page.layout == "chapter" and page.subchapters -%}
+    {%- assign first_subchapter = all_subchapters | where: "name", page.subchapters.first | first -%}
+{%- else -%}
+  {%- assign first_subchapter = nil -%}
+{%- endif -%}
+
+{%- comment -%}
+  For subchapters only:
+  * prev_subchapter      - the prev subchapter object
+  * prev_subchapter_num  - the 1-based index of the prev subchapter
+  * prev_subchapter_idx  - the 0-based index of the prev subchapter
+  * prev_subchapter_name - the name of the prev subchapter (subchapter.name)
+  * next_subchapter      - the next subchapter object
+  * next_subchapter_num  - the 1-based index of the next subchapter
+  * next_subchapter_idx  - the 0-based index of the next subchapter
+  * next_subchapter_name - the name of the next subchapter (subchapter.name)
+{%- endcomment -%}
+
+{%- if page.layout == "subchapter" -%}
+
+  {%- if 1 < curr_subchapter_num -%}
+    {%- assign prev_subchapter_num  = curr_subchapter_num | minus: 1 -%}
+    {%- assign prev_subchapter_idx  = curr_subchapter_idx | minus: 1 -%}
+    {%- assign prev_subchapter_name = curr_chapter.subchapters[prev_subchapter_idx] -%}
+    {%- assign prev_subchapter      = site.pages | where: 'name', prev_subchapter_name | first -%}
+  {%- endif -%}
+
+  {%- if curr_subchapter_num < curr_chapter.subchapters.size -%}
+    {%- assign next_subchapter_num  = curr_subchapter_num | plus:  1 -%}
+    {%- assign next_subchapter_idx  = curr_subchapter_idx | plus:  1 -%}
+    {%- assign next_subchapter_name = curr_chapter.subchapters[next_subchapter_idx] -%}
+    {%- assign next_subchapter      = site.pages | where: 'name', next_subchapter_name | first -%}
+  {%- endif -%}
+
+{%- endif -%}
+
+{%- comment -%}
+  For all pages:
+  * prev_page
+  * prev_page_chapter_num
+  * prev_page_subchapter_num
+  * next_page
+  * next_page_chapter_num
+  * next_page_subchapter_num
+{%- endcomment -%}
+
+{%- if page.layout == "chapter" -%}
+  {%- if prev_chapter_last_subchapter -%}
+    {%- assign prev_page                = prev_chapter_last_subchapter -%}
+    {%- assign prev_page_chapter_num    = prev_chapter_num -%}
+    {%- assign prev_page_subchapter_num = prev_chapter_last_subchapter_num -%}
+  {%- elsif prev_chapter -%}
+    {%- assign prev_page                = prev_chapter -%}
+    {%- assign prev_page_chapter_num    = prev_chapter_num -%}
+    {%- assign prev_page_subchapter_num = nil -%}
+  {%- else -%}
+    {%- assign prev_page                = nil -%}
+    {%- assign prev_page_chapter_num    = nil -%}
+    {%- assign prev_page_subchapter_num = nil -%}
+  {%- endif -%}
+{%- endif -%}
+
+{%- if page.layout == "subchapter" -%}
+  {%- if prev_subchapter -%}
+    {%- assign prev_page                = prev_subchapter -%}
+    {%- assign prev_page_chapter_num    = curr_chapter_num -%}
+    {%- assign prev_page_subchapter_num = prev_subchapter_num -%}
+  {%- elsif curr_chapter -%}
+    {%- assign prev_page                = curr_chapter -%}
+    {%- assign prev_page_chapter_num    = curr_chapter_num -%}
+    {%- assign prev_page_subchapter_num = nil -%}
+  {%- else -%}
+    {%- assign prev_page                = nil -%}
+    {%- assign prev_page_chapter_num    = nil -%}
+    {%- assign prev_page_subchapter_num = nil -%}
+  {%- endif -%}
+{%- endif -%}
+
+{% if page.layout == "chapter" -%}
+  {%- if first_subchapter -%}
+    {%- assign next_page                = first_subchapter -%}
+    {%- assign next_page_chapter_num    = curr_chapter_num -%}
+    {%- assign next_page_subchapter_num = 1 -%}
+  {%- elsif next_chapter -%}
+    {%- assign next_page                = next_chapter -%}
+    {%- assign next_page_chapter_num    = next_chapter_num -%}
+    {%- assign next_page_subchapter_num = nil -%}
+  {%- else -%}
+    {%- assign next_page                = nil -%}
+    {%- assign next_page_chapter_num    = nil -%}
+    {%- assign next_page_subchapter_num = nil -%}
+  {%- endif -%}
+{%- endif -%}
+
+{%- if page.layout == "subchapter" -%}
+  {%- if next_subchapter -%}
+    {%- assign next_page                = next_subchapter -%}
+    {%- assign next_page_chapter_num    = curr_chapter_num -%}
+    {%- assign next_page_subchapter_num = next_subchapter_num -%}
+  {%- elsif next_chapter -%}
+    {%- assign next_page                = next_chapter -%}
+    {%- assign next_page_chapter_num    = next_chapter_num -%}
+    {%- assign next_page_subchapter_num = nil -%}
+  {%- else -%}
+    {%- assign next_page                = nil -%}
+    {%- assign next_page_chapter_num    = nil -%}
+    {%- assign next_page_subchapter_num = nil -%}
+  {%- endif -%}
+{%- endif -%}

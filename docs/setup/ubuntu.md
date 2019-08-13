@@ -3,11 +3,10 @@ title: Ubuntu Setup
 section: setup
 ---
 
-## Setting up Base9 on Ubuntu
-
 Depending on your user privileges, you may have to precede some of the
 commands in the steps below with `sudo`.
-### 1. Requirements
+
+## Requirements
 
 To get started with b9 using the Ninja build system, you'll need the following:
 
@@ -24,14 +23,13 @@ You can install the packages above using the following command:
 apt-get update && apt-get install git build-essential nodejs npm cmake
 ```
 
-### 2. Clone the repository and get the submodules
+## Clone the repository and get the submodules
 
 ```sh
 git clone --recursive https://github.com/b9org/b9.git
 ```
 
-
-### 3. Upgrading node.js
+## Upgrade node.js
 
 If you are running Ubuntu 16.04 and older, your nodejs may be older than version 4.5, in
 which case you will need to upgrade it. You can install newer nodejs binaries from 
@@ -47,12 +45,14 @@ on obtaining node.js packages.
 
 You may run `nodejs -v` to verify that your nodejs version is 4.5.0 or above.
 
-### 4. Install Esprima
+## Install Esprima
+
 ```sh
 cd b9 \
 && npm install esprima
 ```
-### 4. Build b9
+
+## Build b9
 
 ```sh
 mkdir build \
@@ -61,7 +61,7 @@ mkdir build \
 && ninja
 ```
 
-### 5. Run Hello World!
+## Run Hello World!
 
 Ensure you're in the build directory and run:
 
@@ -69,7 +69,7 @@ Ensure you're in the build directory and run:
 ./b9run/b9run ./test/hello.b9mod
 ```
 
-### 6. Test b9
+## Test b9
 
 You can run the full b9 test suite with:
 

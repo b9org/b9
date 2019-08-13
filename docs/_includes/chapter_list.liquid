@@ -1,0 +1,33 @@
+{%- if page.chapters -%}
+  <div class="row">
+    <div class="col">
+      <h2>Contents</h2>
+    </div>
+  </div>
+  <div class="row pl-4">
+    <div class="col">
+      <ul class="nav flex-column">
+        {% for chapter_name in page.chapters %}
+          {%- assign chapter = site.pages | where: 'name', chapter_name | first -%}
+          {%- assign chapter_num = forloop.index -%}
+          <li>
+            <a class="nav-link" href="{{ chapter.url | relative_url }}">{{ chapter_num }}&ndash;{{ chapter.title }}</a>
+            {%- if chapter.subchapters -%}
+              <ul class="nav ml-4 flex-column">
+                {%- for subchapter_name in chapter.subchapters -%}
+                  {%- assign subchapter = site.pages | where: 'name', subchapter_name | first -%}
+                  {%- assign subchapter_num = forloop.index -%}
+                  <li>
+                    <a class="nav-link" href="{{ subchapter.url | relative_url }}">
+                      {{ chapter_num }}.{{ subchapter_num }}&ndash;{{ subchapter.title }}
+                    </a>
+                  </li>
+                {%- endfor -%}
+              </ul>
+            {%- endif -%}
+          </li>
+        {%- endfor -%}
+      </ul>
+    </div>
+  </div>
+{%- endif -%}

@@ -1,7 +1,7 @@
 # Site Settings
 title: Base9
 description: >
-  An educational virtual machine
+  An educational virtual machine built with Eclipse OMR
 # baseurl: /b9
 github_username: b9org
 theme: minima

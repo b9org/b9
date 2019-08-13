@@ -1,35 +1,40 @@
 <!-- Navigation Bar -->
 <nav class="navbar navbar-expand-md navbar-light bg-light mb-4">
-
-	<a class="navbar-brand mr-md-4" href="{{ "/index.html" | relative_url}}">
-		<img src={{ "/assets/images/logoIcon.png" | relative_url }} height="30" title="Home" alt="Icon" class="d-inline-block align-top">
-		Base9
-	</a>
-	<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#topNavBarContent" aria-controls="navbarToggler"
-	 aria-expanded="false">
-		<span class="navbar-toggler-icon"></span>
-	</button>
-	<div class="collapse navbar-collapse" id="topNavBarContent">
-		<ul class="navbar-nav mr-auto mt-2 mt-lg-0">
-			{% for section in site.data.sections %}
-				<li class="nav-item">
-					{% assign section_name = section.name | default: section.title | slugify %}
-					{% assign section_url = section.url | default: section_name | relative_url %}
-					{% if section_name == page.section %}
-						<a class="nav-link active" href="{{section_url}}">{{section.title}}</a>
-					{% else %}
-						<a class="nav-link" href="{{section_url}}">{{section.title}}</a>
-					{% endif %}
-				</li>
-			{% endfor %}
-		</ul>
-		<ul class=navbar-nav>
-			<li class="nav-item link mr-sm-2">
-				<a class="btn btn-outline-primary" href="https://github.com/b9org/b9">
-					<span class="nav-item mr-2">GitHub</span>
-					<img class="d-inline-block align-top" src={{ "/assets/images/logoGitHub.svg" | relative_url }} height="20" title="Base9 on GitHub" alt="GitHub Icon">
-				</a>
-			</li>
-		</ul>
-	</div>
+  <a class="navbar-brand mr-md-4" href="{{ "/index.html" | relative_url}}">
+    <img src={{ "/assets/images/logoIcon.png" | relative_url }} height="30" title="Home" alt="Icon" class="d-inline-block align-top">
+    Base9
+  </a>
+  <button
+    class="navbar-toggler"
+    type="button"
+    data-toggle="collapse"
+    data-target="#top-navbar-content"
+    aria-controls="navbarToggler"
+    aria-expanded="false"
+  >
+  <span class="navbar-toggler-icon"></span>
+  </button>
+  <div class="collapse navbar-collapse" id="top-navbar-content">
+    <ul class="navbar-nav mr-auto mt-2 mt-lg-0">
+      {% for section in site.data.sections %}
+        <li class="nav-item">
+          {% assign section_name = section.name | default: section.title | slugify %}
+          {% assign section_url = section.url | default: section_name | relative_url %}
+          {% if section_name == page.section %}
+            <a class="nav-link active" href="{{section_url}}">{{section.title}}</a>
+          {% else %}
+            <a class="nav-link" href="{{section_url}}">{{section.title}}</a>
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+    <ul class=navbar-nav>
+      <li class="nav-item link mr-sm-2">
+        <a class="btn btn-outline-primary" href="https://github.com/b9org/b9">
+          <span class="nav-item mr-2">GitHub</span>
+          <img class="d-inline-block align-top" src={{ "/assets/images/github_logo.svg" | relative_url }} height="20" title="Base9 on GitHub" alt="GitHub">
+        </a>
+      </li>
+    </ul>
+  </div>
 </nav>

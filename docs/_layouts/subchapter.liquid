@@ -1,0 +1,19 @@
+---
+layout: content
+---
+{%- include nav_helpers.liquid -%}
+<div class="row">
+  <div class="col">
+    <h1 class="pb-2">
+      {{ curr_chapter_num }}.{{ curr_subchapter_num }}&ndash;{{ page.title }}
+    </h1>
+  </div>
+</div>
+<div class="row">
+  <div class="col">
+    <main role="main">
+      {{ content }}
+    </main>
+  </div>
+</div>
+{% include subchapter_list.liquid %}

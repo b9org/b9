@@ -3,13 +3,10 @@ title: Base9 Dictionary
 layout: page
 ---
 
-# Base9 Dictionary
-
 Welcome to the Base9 Dictionary! This is where you can find definitions for terms and phrases used throughout the documentation.
 
 ### Ahead-of-time Compilation
 Ahead-of-time compilation refers to translating one language representation to another before runtime.
-
 
 ### Base9 Assembly
 The [base9 assembly] language is the human readable representation of both the binary and in-memory module. The [base9 disassembler] deserializes the binary module and outputs base9 assembly.

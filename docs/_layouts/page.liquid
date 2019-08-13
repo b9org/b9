@@ -1,19 +1,13 @@
 ---
 layout: default
 ---
-<div class="container-fluid">
-<div class="row">
-  {% if page.toc %}
-    {%- include side_navbar.liquid -%}
-    {% else %}
-      <div class="col-md-1">
-      </div>
-  {% endif %}
-  <div class="col-md-9 col-xl-7 mx-md-4">
-    <main role="main" class="col-justify-content-md-center">
-      <h1>{{page.title}}</h1>
-      {{ content }}
-    </main>
-  </div>
-</div>
+<div class="container">
+  <div class="row">
+    <div class="col">
+      <main role="main">
+        <h1>{{page.title}}</h1>
+        {{ content }}
+      </main>
+    </div>
+  <div>
 </div>

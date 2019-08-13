@@ -1,19 +1,30 @@
-<nav class="sidebar col-md-3 col-lg-2 col-xl-2">
-  <a class="navbar-brand">Contents</a>
+{%- assign book = site.pages | where: "layout", "book" | first -%}
+
+<nav class="sidebar col col-xs-12 col-sm-3 col-xl-3 d-none d-sm-inline">
+  <a class="navbar-brand text-dark" href="{{ book.url | relative_url }}">Contents</a>
   <ul class="nav flex-column nav-pills">
-    {% for entry in page.toc %}
-      <li class="nav-item">
-        <a class="nav-link text-secondary" href="#{{ entry.ref | default: entry.title | slugify }}">{{entry.title}}</a>
-        {% if entry.subsections %}
-          <ul class="nav flex-column ml-3">
-            {% for subentry in entry.subsections %}
-              <li class="nav-item">
-                <a class="nav-link text-secondary" href="#{{ subentry.ref | default: subentry.title | slugify }}">{{subentry.title}}</a>
-              </li>
-            {% endfor %}
-          </ul>
-        {% endif %}
-      </li>
+    {%- for chapter_name in book.chapters -%}
+      {%- assign chapter = site.pages | where: "name", chapter_name | first -%}
+      {%- assign chapter_num = forloop.index -%}
+      {%- if chapter -%}
+        <li class="nav-item">
+          <a class="nav-link {% include active url=chapter.url %}" href="{{ chapter.url | relative_url }}">{{ chapter_num }}&ndash;{{ chapter.title }}</a>
+          {%- if chapter.subchapters -%}
+            <ul class="nav flex-column ml-3">
+              {%- for subchapter_name in chapter.subchapters -%}
+                {%- assign subchapter = site.pages | where: "name", subchapter_name | first -%}
+                {%- if subchapter -%}
+                  <li class="nav-item">
+                    <a class="nav-link {% include active url=subchapter.url %}" href="{{ subchapter.url | relative_url }}">
+                        {{ chapter_num }}.{{ forloop.index }}&ndash;{{ subchapter.title }}
+                    </a>
+                  </li>
+                {%- endif -%}
+              {%- endfor -%}
+            </ul>
+          {%- endif -%}
+        </li>
+      {%- endif -%}
     {% endfor %}
   </ul>
 </nav>

@@ -1,0 +1,37 @@
+{%- include nav_helpers.liquid -%}
+
+<h1>Debug Information</h1>
+
+<h2>Common Data</h2>
+<table class="table">
+  <tr><th>Name</th><th>Value</th></tr>
+  {% include dbg val='book.title' %}
+  {% include dbg val='prev_page.title' %}
+  {% include dbg val='prev_page_chapter_num' %}
+  {% include dbg val='prev_page_subchapter_num' %}
+  {% include dbg val='next_page.title' %}
+  {% include dbg val='next_page_chapter_num' %}
+  {% include dbg val='next_page_subchapter_num' %}
+</table>
+
+<h2>Chapter Data</h2>
+<table class="table">
+  <tr><th>Name</th><th>Value</th></tr>
+  {% include dbg val='curr_chapter_idx' %}
+  {% include dbg val='curr_chapter.title' %}
+  {% include dbg val='prev_chapter_idx' %}
+  {% include dbg val='prev_chapter.title' %}
+  {% include dbg val='next_chapter_idx' %}
+  {% include dbg val='next_chapter.title' %}
+</table>
+
+<h2>Subchapter Data</h2>
+<table class="table">
+  <tr><th>Name</th><th>Value</th></tr>
+    {% include dbg val='curr_subchapter_idx' %}
+    {% include dbg val='curr_subchapter.title' %}
+    {% include dbg val='prev_subchapter_idx' %}
+    {% include dbg val='prev_subchapter.title' %}
+    {% include dbg val='next_subchapter_idx' %}
+    {% include dbg val='next_subchapter.title' %}
+</table>

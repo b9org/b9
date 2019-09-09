@@ -1,0 +1,21 @@
+{%- assign tokens     = include.val | split: "." -%}
+{%- assign variable   = tokens.first -%}
+{%- assign value      = [variable] -%}
+{%- assign properties = tokens | shift -%}
+
+{%- for property in properties -%}
+  {%- case property -%}
+    {%- when "size" -%}
+      {%- assign value = value.size -%}
+    {%- when "first" -%}
+      {%- assign value = value.first -%}
+    {%- when "last" -%}
+      {%- assign value = value.last -%}
+    {%- else -%}
+      {%- assign value = value[property] -%}
+  {%- endcase -%}
+{%- endfor -%}
+
+<tr>
+  <td><code>{{ include.val }}</code></td><td>{{ value }}</td>
+</tr>

@@ -20,7 +20,7 @@ To get started with b9 using the Ninja build system, you'll need the following:
 You can install the packages above using the following command:
 
 ```sh
-apt-get update && apt-get install git build-essential nodejs npm cmake
+apt-get update && apt-get install git build-essential nodejs npm cmake ninja-build
 ```
 
 ## Clone the repository and get the submodules

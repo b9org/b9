@@ -9,13 +9,13 @@ title: The Frontend Language
 
 ### Frontend Language
 
-Our frontend language is a primitive subset of JavaScript. Currently, it can only operate on integers. Let's have a look at some code:
+Our frontend language is a primitive subset of JavaScript. Let's have a look at some code:
  
  ```js
 b9PrintString("Hello World!");
 ```
 
- `b9PrintString` is a method from a tiny library of functions that will be compiled with every program. The library is called b9stdlib and can be found in [b9/js_compiler/b9stdlib.js]. The functions in b9stdlib all call base9 [primitive functions]. In the Hello, World! program, Our script uses `b9PrintString` from b9stdlib to write text to console.
+ `b9PrintString` is a method from a tiny library of functions that will be compiled with every program, called `b9stdlib`. This library acts as a kind of prelude . The library is called b9stdlib and can be found in [b9/js_compiler/b9stdlib.js]. The functions in b9stdlib all call base9 [primitive functions]. In the Hello, World! program, Our script uses `b9PrintString` from b9stdlib to write text to console.
 
 [test/hello.js]: https://github.com/b9org/b9/blob/master/test/hello.js
 [primitive functions]: ../docs/Dictionary.md#primitive-function

@@ -14,7 +14,6 @@ Expr           : "(" WhiteSpace? ExpressionBody WhiteSpace? ")"
 ExprBody       : FunctionExpr | StringExpr
 FunctionExpr   : "function" WhiteSpace Str Int Int Operation*
 Operation      : "(" OperatorExpr ")"
-```
 
 String "\"" Characters "\""
 
@@ -28,6 +27,7 @@ program := <expression>*
 
 WhiteSpace := 
 Comment := ";" 
+```
 
 ## Operators
 
@@ -47,4 +47,3 @@ Push string
 #### Primitives
 | 0 | `print_int`    | print an integer
 | 1 | `print_string` | print a string
-

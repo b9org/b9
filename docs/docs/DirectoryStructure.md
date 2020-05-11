@@ -5,7 +5,7 @@ layout: page
 
 Lets take a moment to get familiar with the directory structure of Base9. We'll leave out certain, less relevant, artifacts, like those belonging to `cmake` and `docker`, to simplify the discussion. 
 
-## Base9 layout 
+## Base9 layout
 
 ```
 b9/
@@ -21,7 +21,6 @@ b9/
 |---test/
 |---third_party/
 ```
-
 
 ## The b9/ directory
 
@@ -41,7 +40,6 @@ Note:
   - The Interpreter => ExecutionContext.cpp
   - The JIT => Compiler.cpp
   - The VM => VirtualMachine.hpp
-
 
 ## The b9asm/ directory
 

@@ -23,22 +23,19 @@ The `=> (integer 0)` is the return code of the program.
 
 The interpreter's job is to take a sequence of bytecodes and match each of them with a corresponding C++ function. This relationship is one-to-one. Earlier, when we ran our Hello, World! program, it ran by default on the interpreter. The VM will always run the interpreter by default. The base9 interpreter is very simple, consisting of a while-loop and switch statement to iterate a sequence of bytecodes. Let's take a look at some pseudocode for the interpreter:
 
-```
+```c++
 interpreter (function) {
   for all bytecodes in the function {
     switch(bytecode) {
-      case functionCall
-        doFunctionCall()
-      case functionReturn
-        doFunctionReturn()
-      
-      ...
-      
-      case integerAdd
-        dointegerAdd()
-      case integerSubtract
-        doIntegerSubtract()
-      
+      case functionCall:
+        doFunctionCall();
+      case functionReturn:
+        doFunctionReturn();
+      case integerAdd:
+        dointegerAdd();
+      case integerSubtract:
+        doIntegerSubtract();
+  
       ...
 
     }

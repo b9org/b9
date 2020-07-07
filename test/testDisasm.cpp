@@ -276,7 +276,7 @@ TEST(ReadBinaryTest, runValidModule) {
   serialize(buffer, *m1);
 
   auto m2 = deserialize(buffer);
-  Om::ProcessRuntime runtime;
+  OMR::Runtime runtime;
   VirtualMachine vm(runtime, {});
   vm.load(m2);
   vm.run(0, {Om::Value(Om::AS_INT48, 1), Om::Value(Om::AS_INT48, 2)});

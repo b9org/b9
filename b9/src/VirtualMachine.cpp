@@ -2,10 +2,10 @@
 #include <b9/VirtualMachine.hpp>
 #include <b9/compiler/Compiler.hpp>
 
+#include <OMR/GC/StackRoot.hpp>
 #include <OMR/Om/Allocator.hpp>
 #include <OMR/Om/ArrayOperations.hpp>
 #include <OMR/Om/ObjectOperations.hpp>
-#include <OMR/Om/RootRef.hpp>
 #include <OMR/Om/ShapeOperations.hpp>
 #include <OMR/Om/Value.hpp>
 
@@ -25,7 +25,7 @@ namespace b9 {
 
 constexpr PrimitiveFunction *const VirtualMachine::primitives_[3];
 
-VirtualMachine::VirtualMachine(Om::ProcessRuntime &runtime, const Config &cfg)
+VirtualMachine::VirtualMachine(OMR::Runtime &runtime, const Config &cfg)
     : cfg_{cfg}, memoryManager_(runtime), compiler_{nullptr} {
   if (cfg_.verbose) std::cout << "VM initializing..." << std::endl;
 

@@ -7,7 +7,7 @@
 
 #include <OMR/Om/ArrayOperations.hpp>
 #include <OMR/Om/ObjectOperations.hpp>
-#include <OMR/Om/RootRef.hpp>
+#include <OMR/GC/StackRoot.hpp>
 #include <OMR/Om/ShapeOperations.hpp>
 #include <OMR/Om/Value.hpp>
 
@@ -27,8 +27,8 @@ ExecutionContext::ExecutionContext(VirtualMachine &virtualMachine,
     : omContext_(virtualMachine.memoryManager()),
       virtualMachine_(&virtualMachine),
       cfg_(&cfg) {
-  omContext().userMarkingFns().push_back(
-      [this](Om::MarkingVisitor &v) { this->visit(v); });
+  omContext().gc().markingFns().push_back(
+      [this](GC::MarkingVisitor &v) { this->visit(v); });
 }
 
 void ExecutionContext::reset() {
@@ -426,7 +426,7 @@ void ExecutionContext::doPopIntoObject(Om::Id slotId) {
   if (!found) {
     static constexpr Om::SlotType type(Om::Id(0), Om::CoreType::VALUE);
 
-    Om::RootRef<Om::Object> root(*this, object);
+    GC::StackRoot<Om::Object> root(omContext().gc(), object);
     auto map = Om::transitionLayout(*this, root, {{type, slotId}});
     assert(map != nullptr);
 
@@ -446,7 +446,7 @@ void ExecutionContext::doCallIndirect() {
 
 void ExecutionContext::doSystemCollect() {
   std::cout << "SYSTEM COLLECT!!!" << std::endl;
-  OMR_GC_SystemCollect(omContext_.vmContext(), 0);
+  OMR_GC_SystemCollect(omContext().gc().vm(), 0);
 }
 
 }  // namespace b9

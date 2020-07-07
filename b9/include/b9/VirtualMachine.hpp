@@ -6,13 +6,12 @@
 #include <b9/compiler/Compiler.hpp>
 #include <b9/instructions.hpp>
 
-#include <OMR/Om/Context.inl.hpp>
-#include <OMR/Om/MemorySystem.hpp>
+#include <OMR/GC/StackRoot.hpp>
+#include <OMR/Om/Context.hpp>
 #include <OMR/Om/ObjectOperations.hpp>
-#include <OMR/Om/RootRef.hpp>
-#include <OMR/Om/Runtime.hpp>
 #include <OMR/Om/ShapeOperations.hpp>
 #include <OMR/Om/Value.hpp>
+#include <OMR/Runtime.hpp>
 
 #include <cstring>
 #include <map>
@@ -30,6 +29,7 @@ b9::PrimitiveFunction b9_prim_print_stack;
 namespace b9 {
 
 namespace Om = ::OMR::Om;
+namespace GC = ::OMR::GC;
 
 class Compiler;
 class ExecutionContext;
@@ -65,7 +65,7 @@ extern "C" typedef Om::RawValue (*JitFunction)(void *executionContext, ...);
 
 class VirtualMachine {
  public:
-  VirtualMachine(Om::ProcessRuntime &runtime, const Config &cfg);
+  VirtualMachine(OMR::Runtime &runtime, const Config &cfg);
 
   ~VirtualMachine() noexcept;
 
@@ -96,9 +96,9 @@ class VirtualMachine {
 
   const std::shared_ptr<const Module> &module() { return module_; }
 
-  Om::MemorySystem &memoryManager() { return memoryManager_; }
+  Om::System &memoryManager() { return memoryManager_; }
 
-  const Om::MemorySystem &memoryManager() const { return memoryManager_; }
+  const Om::System &memoryManager() const { return memoryManager_; }
 
   std::shared_ptr<Compiler> compiler() { return compiler_; }
 
@@ -109,7 +109,7 @@ class VirtualMachine {
       b9_prim_print_string, b9_prim_print_number, b9_prim_print_stack};
 
   Config cfg_;
-  Om::MemorySystem memoryManager_;
+  Om::System memoryManager_;
   std::shared_ptr<Compiler> compiler_;
   std::shared_ptr<const Module> module_;
   std::vector<JitFunction> compiledFunctions_;
